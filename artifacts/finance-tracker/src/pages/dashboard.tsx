@@ -46,9 +46,9 @@ import { SmartAlertsWidget } from "@/components/widgets/smart-alerts";
 import { DecisionEngineWidget } from "@/components/widgets/decision-engine";
 import { CashRunwayWidget } from "@/components/widgets/cash-runway";
 import { COMPACT_WIDGET_COMPONENTS, COMPACT_WIDGET_FULL_WIDTH } from "@/components/widgets/compact-tiles";
-import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard } from "@workspace/api-client-react";
+import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard, useGetAccountsChangeAttribution } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { formatBaseMoney, formatNative } from "@/lib/utils";
+import { formatBaseMoney, formatMoney, formatNative } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useLocation } from "wouter";
@@ -66,6 +66,7 @@ import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboar
 import { categoryTransactionsHref, entityHref, ledgerHref, merchantTransactionsHref, recurringSeriesHref, thisMonthRange } from "@/lib/entity-href";
 import { Drill, DrillTarget } from "@/components/drill";
 import { ChangeAttributionBand } from "@/components/change-attribution";
+import { attributionView } from "@/lib/change-attribution-view";
 import { useProtoDesign } from "@/lib/use-proto-design";
 import { ProtoDashboard } from "@/components/proto";
 
@@ -1905,18 +1906,256 @@ function DashboardEmptyState() {
   );
 }
 
+/**
+ * The page's one number. 48px was the floor the rebuild specified;
+ * `3.6vw` puts it at 52px at 1440 — against 15px for its trend and 13px
+ * for everything demoted below it. That is a ladder. What preceded it
+ * was 25px against 18px, a 1.39x step that reads as "six figures, one
+ * of them slightly bigger" rather than as a headline.
+ *
+ * No colour of its own: the cell supplies it, and NET_WORTH now supplies
+ * --ft-text. See the note on that cell for why the blue went.
+ */
+const NET_WORTH_HERO_STYLE: React.CSSProperties = {
+  display: "block",
+  fontFamily: "var(--font-mono)",
+  fontSize: "clamp(34px, 3.6vw, 52px)",
+  fontWeight: 700,
+  letterSpacing: "-0.035em",
+  lineHeight: 1,
+  fontVariantNumeric: "tabular-nums",
+  whiteSpace: "nowrap",
+};
+
+/**
+ * The trend under the hero — what has already moved the figure above it,
+ * and over what window. Reuses the change-attribution report that
+ * `ChangeAttributionBand` renders in full further down the page; the
+ * query is shared, so this costs no second request.
+ *
+ * It states the total, its sign and the window, and stops. The
+ * decomposition — how much was the rate, how much was spending — stays
+ * in the band, because repeating it here would make the header a second
+ * copy of that surface instead of a headline with a direction.
+ *
+ * Renders nothing when the report is insufficient. A headline figure
+ * with an invented "+£0.00" under it would be the fabrication CLAUDE.md
+ * forbids: an unmeasured zero and a measured one are different claims.
+ */
+function NetWorthTrend() {
+  const { data } = useGetAccountsChangeAttribution();
+  const view = attributionView(data);
+  if (data == null || view == null || view.status !== "ok") return null;
+
+  const value = view.totalBase;
+  // A zero movement is --ft-muted, not green: nothing happened is not a
+  // gain. Sign carries direction alongside hue (DESIGN.md §7).
+  const colour = value === 0
+    ? "var(--ft-muted)"
+    : value > 0 ? "var(--ft-green)" : "var(--ft-red)";
+
+  return (
+    <HStack align="baseline" gap={8} marginTop={11}>
+      <DrillTarget href="/net-worth" title="Net worth — what moved it over this window">
+        <span className="pnum ft-drill" style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: 15,
+          fontWeight: 700,
+          letterSpacing: "-0.01em",
+          color: colour,
+          fontVariantNumeric: "tabular-nums",
+          whiteSpace: "nowrap",
+        }}>
+          {value > 0 ? "+" : ""}{formatMoney(value, data.baseCurrency)}
+        </span>
+      </DrillTarget>
+      <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.10em" nowrap>
+        net {view.windowLabel}
+      </Text>
+    </HStack>
+  );
+}
+
+/**
+ * One row of the motion block. The glyph carries the direction and the
+ * colour agrees with it, so the row stays legible without hue
+ * (DESIGN.md §7). A zero is --ft-dim rather than green: nothing expected
+ * is not income.
+ */
+function MotionRow({ label, value, sign, href }: { label: string; value: number; sign: "+" | "−"; href: string }) {
+  const colour = value === 0
+    ? "var(--ft-dim)"
+    : sign === "+" ? "var(--ft-green)" : "var(--ft-red)";
+  return (
+    <HStack align="baseline" justify="between" gap={16} wide paddingY={3}>
+      <span style={{ color: "var(--ft-text)", minWidth: 0 }}>
+        <Drill href={href} title={`${label} — the items this is the sum of`} style={{ fontSize: 11, fontWeight: 500 }}>
+          {label}
+        </Drill>
+      </span>
+      {/* shrink is not offered to the figure: "in full or not at all". */}
+      <Text as="span" mono size={13} weight={600} color={colour} numeric nowrap>
+        {sign}{formatBaseMoney(Math.abs(value))}
+      </Text>
+    </HStack>
+  );
+}
+
+/**
+ * Money in motion — the second priority in the header, and the only
+ * forward-looking thing in it. Net worth answers "am I okay"; this
+ * answers "is that about to change", which is the other half of the
+ * question a person opens a finance app with, and it was previously
+ * reachable only by scrolling to a half-width widget.
+ *
+ * Anchored on NET WORTH, deliberately. `CashFlowPreviewPanel` — the
+ * widget, which keeps its place — projects the same two committed sums
+ * forward from the CASH balance. This block projects them forward from
+ * net worth instead, so its third line is a figure the widget does not
+ * carry and the two surfaces answer different questions rather than
+ * printing one answer twice. The two inputs are shared; a shared input
+ * read under two different subjects is not the page repeating itself.
+ *
+ * Nothing here is fabricated. An upcoming item with no base-currency
+ * equivalent is skipped from the roll-up exactly as the widget skips it,
+ * the committed COUNT is printed so "nothing is committed" and "we have
+ * no upcoming data" stay distinguishable, and when there is no net worth
+ * to project from the projection renders an em dash rather than
+ * projecting from zero.
+ */
+function MoneyInMotion({ netWorth }: { netWorth: number | null }) {
+  const { data: upcoming } = useListUpcoming();
+
+  const { inflows, outflows, count } = useMemo(() => {
+    const now = new Date();
+    const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const items = (upcoming ?? []).filter((item) => {
+      const due = new Date(item.dueDate);
+      return due >= now && due <= in30Days && item.status === "pending";
+    });
+    return {
+      inflows: items.filter((i) => i.type === "income").reduce((sum, i) => sum + (i.baseEquivalent ?? 0), 0),
+      outflows: items.filter((i) => i.type === "expense").reduce((sum, i) => sum + (i.baseEquivalent ?? 0), 0),
+      count: items.length,
+    };
+  }, [upcoming]);
+
+  const projected = netWorth == null ? null : netWorth + inflows - outflows;
+
+  return (
+    <VStack minWidth={300} maxWidth={430} grow>
+      <HStack align="baseline" justify="between" gap={12} wide marginBottom={10}>
+        <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.10em" nowrap>
+          Money in motion · next 30 days
+        </Text>
+        <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.08em" nowrap>
+          <Text as="span" numeric size={9}>{count}</Text> committed
+        </Text>
+      </HStack>
+
+      <MotionRow label="Expected in" value={inflows} sign="+" href="/upcoming" />
+      <MotionRow label="Committed out" value={outflows} sign="−" href="/upcoming" />
+
+      {/* The projection sits under a hairline because it is the SUM of the
+          two rows above, not a third peer of them. A one-off surface
+          treatment stays inline rather than being folded into a
+          primitive: Stack owns layout and PanelBox always paints a fill
+          and four borders, which is a frame, and this is structure
+          (CLAUDE.md, DESIGN.md §6). */}
+      <div style={{ borderTop: "1px solid var(--ft-border)", marginTop: 8, paddingTop: 8 }}>
+        <HStack align="baseline" justify="between" gap={16} wide>
+          <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.12em" nowrap>
+            Projected worth
+          </Text>
+          {/* 20px, against 13px for the two rows it sums and 52px for the
+              hero. It is the page's SECOND figure and now reads as one:
+              net worth once everything already committed has happened,
+              which is the whole of "is anything about to change that". At
+              13px it was the same size as its own inputs and the answer
+              was quieter than the working. */}
+          {projected == null ? (
+            <Text as="span" mono size={20} weight={700} color="var(--ft-dim)">—</Text>
+          ) : (
+            <Text as="span" mono size={20} weight={700} color="var(--ft-text)"
+              letterSpacing="-0.02em" numeric nowrap>
+              {formatBaseMoney(projected)}
+            </Text>
+          )}
+        </HStack>
+      </div>
+    </VStack>
+  );
+}
+
+/**
+ * A demoted cell. 13px against the hero's 52px, and the label above it
+ * unchanged at 9px.
+ *
+ * These are not peers of the headline and no longer render as if they
+ * were. Three of the five on a seeded "full" account currently have
+ * nothing to say — MONTHLY INCOME, SAVINGS RATE and MoM SPEND all print
+ * an en dash — and a metric with nothing to say does not belong at the
+ * top of the page at the same size as the one number the page exists to
+ * state.
+ */
+function DemotedCell({ cell }: { cell: KpiCellData }) {
+  const value = (
+    <span className={cell.href ? "pnum ft-drill" : "pnum"} style={{
+      display: "block",
+      fontFamily: "var(--font-mono)",
+      fontSize: 13,
+      fontWeight: 700,
+      letterSpacing: "-0.01em",
+      lineHeight: 1,
+      fontVariantNumeric: "tabular-nums",
+      whiteSpace: "nowrap",
+    }}>{cell.value}</span>
+  );
+  return (
+    <VStack gap={5} shrink={false} minWidth={104} paddingY={10}>
+      <Text as="span" mono size={9} weight={600} upper color="var(--ft-dim)" letterSpacing="0.10em" lineHeight={1.2}>
+        {cell.label}
+      </Text>
+      {/* The semantic colour sits on the wrapper, never on .ft-drill —
+          an inline colour there would beat the accent it takes on hover. */}
+      <span style={{ color: cell.valueColor ?? "var(--ft-text)" }}>
+        {cell.href ? (
+          <DrillTarget href={cell.href} title={`${cell.label} — open what it is made of`}>{value}</DrillTarget>
+        ) : value}
+      </span>
+      {/* Reserved whether or not the cell carries a delta, so the run of
+          values keeps one baseline. */}
+      <span className="pnum" aria-hidden={cell.delta ? undefined : true} style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: 10,
+        fontWeight: 600,
+        lineHeight: 1.2,
+        minHeight: 12,
+        color: cell.deltaColor ?? "var(--ft-dim)",
+        fontVariantNumeric: "tabular-nums",
+        whiteSpace: "nowrap",
+      }}>{cell.delta ?? ""}</span>
+    </VStack>
+  );
+}
+
 function DashboardKpiBar({
   cells,
   onCustomize,
   isCustomizing,
   dashboardLabel,
   isMobile,
+  netWorth,
 }: {
   cells: KpiCellData[];
   onCustomize: () => void;
   isCustomizing: boolean;
   dashboardLabel: string;
   isMobile: boolean;
+  /** Base-currency net worth, or null when the dashboard has not
+   *  supplied one. Null projects nothing rather than projecting from a
+   *  fabricated zero. */
+  netWorth: number | null;
 }) {
   // Narrow-viewport layout picks by POSITION, not label. Each persona's
   // kpiCells array puts the primary figure at index 0 and two
@@ -2041,215 +2280,190 @@ function DashboardKpiBar({
     );
   }
 
-  // Rainbow-coloured accent stripes deleted per docs/MOBILE-CONCEPT.md
-  // § Desktop port: "Colour was not encoding rank. Deleted in the
-  // pilot; do not reintroduce. Colour on desktop is semantic
-  // (--ft-green for positive P&L, --ft-red for negative) or absent."
-  // The value tint (cell.valueColor) already carries the semantic
-  // colour; the border stripe was pure decoration. Structural hairline
-  // stays as --ft-border across every cell.
+  // ── The header ────────────────────────────────────────────────────────────
+  //
+  // What this replaced, and why the replacement is structural rather than
+  // another pass of type work.
+  //
+  // The strip was `grid-template-columns: auto auto <n tracks>`: the page
+  // label, the Edit-layout control, then every KPI cell on ONE ROW at ONE
+  // BASELINE, 73px tall. Eight rounds of design adjusted borders, fills,
+  // rules and type inside that arrangement and Thomas said each time that
+  // the page still read the same, which is the correct reading — the
+  // arrangement was never the thing being changed. Measured on the strip
+  // as it stood: six values, five of them at 18px and NET WORTH at 25px,
+  // all six sharing y=92. A 1.39x step inside a single row is not a
+  // hierarchy; it is a row.
+  //
+  // Every well-regarded finance dashboard consulted for this rebuild —
+  // Mercury, Stripe, Ramp, Brex, Wise — leads with ONE number and demotes
+  // the rest, on the stated grounds that a dashboard which does not answer
+  // the user's first question in about two seconds gets skipped. So:
+  //
+  //   1. the hero is the page — one figure, 52px at 1440, with its trend;
+  //   2. money in motion is second — what is about to change that figure;
+  //   3. everything else drops a level, to 13px, below both.
+  //
+  // Structure, not a widget (DESIGN.md §6). Nothing here is framed and
+  // nothing paints --ft-surface: it cannot be dragged, removed or
+  // reordered, so it sits on --ft-base and hairlines and spacing do the
+  // whole of its separation.
+  //
+  // The hero is `lead` if any cell declares it and cells[0] otherwise,
+  // which is how the four non-"full" personas keep working — market
+  // declares no lead and opens on PORTFOLIO_DAY, so that becomes its
+  // headline rather than a net worth it does not show.
+
+  const heroFigure = cells.find((c) => c.lead) ?? cells[0];
+  const demoted = cells.filter((c) => c !== heroFigure);
+  // The trend component states a NET WORTH movement over a window. Under
+  // a hero that is not net worth — market's 24H delta — that sentence
+  // would be about a different figure than the one above it, so the cell
+  // falls back to whatever delta it declared for itself.
+  const heroIsNetWorth = heroFigure?.href === "/net-worth";
 
   return (
-    <div style={{
-      display: "grid",
-      // The lead cell takes a wider track. Not decoration: at 1440 a
-      // six-cell strip gives each 1fr track ~143px of usable width, and
-      // `£229,782.20` at 25px mono measures ~165px. Equal tracks would
-      // push the figure past its column into the strip's hidden
-      // overflow-x, and a net worth that scrolls out of view is the
-      // "shown in full or not at all" rule broken by the fix for it.
-      // Derived from the data rather than hardcoded to index 0, because
-      // the persona compositions below reorder these cells.
-      gridTemplateColumns: `auto auto ${cells.map((c) => (c.lead ? "1.35fr" : "1fr")).join(" ")}`,
-      // Structure, not a widget — DESIGN.md § 6. The KPI strip is the page:
-      // it cannot be dragged, removed or reordered, so it is not framed and
-      // does not paint --ft-surface. One hairline underneath seats it against
-      // the content below and it is the only line here. The vertical rules
-      // that used to divide the cells are gone (DESIGN.md § 5): a column of
-      // figures is separated by its own alignment and by the space around it,
-      // which is how a terminal has always done it. Ruling every cell is what
-      // turned one strip into eight rectangles.
-      borderBottom: "1px solid var(--ft-border)",
-      columnGap: 8,
-      marginBottom: 10,
-      overflowX: "auto",
-      scrollbarWidth: "none",
-    }}>
-      {/* Page identifier cell — first, so the strip opens by naming itself
-          and the control that follows is read as belonging to it. It used
-          to be second, behind [CUSTOMIZE], which put a control where a
-          reader expects the page's name.
-
-          0.10em, not the 0.12em it carried before: three 9px uppercase
-          labels sat in this 68px strip at 0.08 / 0.10 / 0.12em, which is
-          tracking chosen by whoever typed the line rather than by size.
-          The six KPI cell labels are the majority and they are at 0.10em,
-          so that is what 9px uppercase means here now. */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        padding: "0 12px 0 4px",
-        borderTop: "2px solid transparent",
-        flexShrink: 0,
-        minWidth: 110,
-        gap: 4,
-      }}>
+    <VStack marginBottom={14}>
+      {/* Chrome: the page names itself, and the control that edits it sits
+          at the other end. Both are 9px mono — neither is a headline, and
+          before this rebuild they occupied two of the eight tracks in the
+          same row as net worth, which is part of why that row read as a
+          strip of equals rather than as a page with a subject. */}
+      <HStack align="center" justify="between" gap={12} wide paddingY={9}>
         <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.10em" nowrap>
           {dashboardLabel}
         </Text>
-      </div>
-
-      {/* Edit layout — second cell.
-
-          This was `[CUSTOMIZE]`: 9px sans, --ft-dim (#556677, the dimmest
-          token in the palette), no border, no icon, seated in a row of
-          figures. Measured at 1440 it rendered 77x68 and read as a third
-          label next to PORTFOLIO OVERVIEW rather than as something you
-          could press — which is exactly what Thomas said about it, and
-          it is the entry point to the whole widget system.
-
-          Four things changed and each answers one half of "obvious that
-          it is pressable, obvious what it does":
-            · an edge (1px --ft-border2) and a radius, so it is an object
-              rather than a run of text;
-            · --ft-muted rather than --ft-dim, so it is not the quietest
-              thing in the strip;
-            · a LayoutGrid glyph, because the thing it edits is the
-              arrangement of the page — not a settings cog, which would
-              promise preferences;
-            · the word. "Customize" does not say customise what. "Edit
-              layout" says what pressing it gets you, and its counterpart
-              is "Done" rather than "Exit customize", which is what you
-              press when the layout is how you want it.
-
-          Not a --ft-accent fill: the accent is the app's interactive
-          colour and a permanently-accented control in the KPI strip would
-          outrank net worth. It earns the accent on hover and while
-          active, which is when it is actually the subject. */}
-      <button
-        onClick={onCustomize}
-        style={{
-          alignSelf: "center",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          height: 26,
-          background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
-          border: `1px solid ${isCustomizing ? "var(--ft-accent)" : "var(--ft-border2)"}`,
-          borderRadius: 2,
-          color: isCustomizing ? "var(--ft-accent)" : "var(--ft-muted)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 9,
-          fontWeight: 600,
-          letterSpacing: "0.10em",
-          textTransform: "uppercase",
-          padding: "0 10px",
-          marginRight: 4,
-          cursor: "pointer",
-          flexShrink: 0,
-          transition: "color 0.1s, background 0.1s, border-color 0.1s",
-          whiteSpace: "nowrap",
-        }}
-        onMouseEnter={e => {
-          if (isCustomizing) return;
-          e.currentTarget.style.color = "var(--ft-accent)";
-          e.currentTarget.style.borderColor = "var(--ft-accent)";
-        }}
-        onMouseLeave={e => {
-          if (isCustomizing) return;
-          e.currentTarget.style.color = "var(--ft-muted)";
-          e.currentTarget.style.borderColor = "var(--ft-border2)";
-        }}
-        title={isCustomizing
-          ? "Finish editing — the layout is saved as you go"
-          : "Edit layout — add, remove, resize and rearrange the widgets on this page"}
-      >
-        <LayoutGrid size={11} aria-hidden />
-        {isCustomizing ? "Done" : "Edit layout"}
-      </button>
-
-      {/* KPI cells */}
-      {cells.map((cell, i) => (
-        <div
-          key={cell.label}
+        {/* Unchanged from the strip it came out of: an edge and a radius so
+            it reads as pressable, --ft-muted so it is not the quietest
+            thing in its row, a LayoutGrid glyph because what it edits is
+            the arrangement of the page, and "Edit layout" because
+            "Customize" does not say customise what. Not an --ft-accent
+            fill — the accent means "you can press this" and a permanently
+            accented control up here would outrank the hero. */}
+        <button
+          onClick={onCustomize}
           style={{
             display: "flex",
-            flexDirection: "column",
-            // flex-start, not center. Centering a column over variable-height
-            // content means a cell that carries a delta is taller, so its
-            // label and value ride UP relative to the cells that don't:
-            // measured labelTop 79.0px on SAVINGS RATE / PORTFOLIO against
-            // 87.5px on the four without a delta, an 8.5px break in a row of
-            // six labels that are meant to read as one line. The delta row
-            // below is reserved whether or not a delta exists, so the six
-            // labels and the six values each share a baseline.
-            justifyContent: "flex-start",
-            padding: "var(--ft-metric-py) 14px var(--ft-metric-py) 0",
-            flexShrink: 0,
-            minWidth: 100, // widened from 90 so a 6-digit figure at 18px
-                           // does not need to shrink; column widths on
-                           // aligned tables (MOBILE-CONCEPT § Ports with
-                           // scaling) get minmax not fixed sub-readable min
-            minHeight: 52,
-          }}
-        >
-          {/* Label wraps rather than clips. The audit's pnum rule
-              ("show in full or not at all") is enforced on figures via
-              lib/pnum-invariant.test.ts; the same principle applies to
-              labels — a user reading 'MONTHLY SP…' cannot tell which
-              metric they're seeing. At the 100px cell minWidth,
-              'SAVINGS RATE' at 9px mono needs ~96px inside 72px of
-              usable space after padding, so it clips on one line.
-              Allowing wrap costs ~11px of cell height on that row
-              (minHeight:52 absorbs it) and preserves the full name. */}
-          <span style={{
+            alignItems: "center",
+            gap: 8,
+            height: 26,
+            background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
+            border: `1px solid ${isCustomizing ? "var(--ft-accent)" : "var(--ft-border2)"}`,
+            borderRadius: 2,
+            color: isCustomizing ? "var(--ft-accent)" : "var(--ft-muted)",
             fontFamily: "var(--font-mono)",
             fontSize: 9,
             fontWeight: 600,
             letterSpacing: "0.10em",
             textTransform: "uppercase",
-            color: "var(--ft-dim)",
-            marginBottom: 2,
-            lineHeight: 1.2,
-          }}>
-            {cell.label}
-          </span>
-          {/* No overflow:hidden + text-overflow:ellipsis on the .pnum
-              value or delta. "A financial figure is shown in full or
-              not at all" (CLAUDE.md). Font-size clamp allows the value
-              to shrink instead of clip; nowrap keeps it single-line. */}
-          {/* The cell's semantic colour sits on the wrapper, not on
-              `.ft-drill` — an inline colour on the drill itself would beat
-              the accent it takes on hover. */}
-          <span style={{ color: cell.valueColor ?? "var(--ft-text)" }}>
-            {cell.href ? (
-              <DrillTarget href={cell.href} title={`${cell.label} — open what it is made of`}>
-                <span className="pnum ft-drill" style={cell.lead ? KPI_LEAD_VALUE_STYLE : KPI_VALUE_STYLE}>{cell.value}</span>
+            padding: "0 10px",
+            cursor: "pointer",
+            flexShrink: 0,
+            transition: "color 0.1s, background 0.1s, border-color 0.1s",
+            whiteSpace: "nowrap",
+          }}
+          onMouseEnter={e => {
+            if (isCustomizing) return;
+            e.currentTarget.style.color = "var(--ft-accent)";
+            e.currentTarget.style.borderColor = "var(--ft-accent)";
+          }}
+          onMouseLeave={e => {
+            if (isCustomizing) return;
+            e.currentTarget.style.color = "var(--ft-muted)";
+            e.currentTarget.style.borderColor = "var(--ft-border2)";
+          }}
+          title={isCustomizing
+            ? "Finish editing — the layout is saved as you go"
+            : "Edit layout — add, remove, resize and rearrange the widgets on this page"}
+        >
+          <LayoutGrid size={11} aria-hidden />
+          {isCustomizing ? "Done" : "Edit layout"}
+        </button>
+      </HStack>
+
+      {/* The two things the page is for, side by side and nothing else in
+          the row. `wrap` drops money-in-motion beneath the hero under
+          about 760px rather than squeezing a 52px figure and three rows of
+          committed movement into half a narrow viewport each. */}
+      {/* `justify` is deliberately NOT `between`. The first build of this
+          header pushed the hero to the left edge and money-in-motion to the
+          right, which at 1440 put about 380px of nothing between them and
+          sent the eye 1000px across the page to answer the second half of
+          the question. Measured against the rebuild's own test — "how much
+          am I worth and is anything about to change that" — the first half
+          landed immediately and the second did not. They are one thought,
+          so they are now adjacent, with a rule between them doing the
+          separating that distance was doing badly. */}
+      <HStack
+        align="stretch"
+        gap={40}
+        wrap
+        wide
+        paddingY={4}
+        marginBottom={16}
+      >
+        <VStack shrink={false} minWidth={280} maxWidth={520} grow>
+          <Text as="span" mono size={9} weight={600} upper color="var(--ft-dim)" letterSpacing="0.14em" mb={10} nowrap>
+            {heroFigure?.label ?? "NET WORTH"}
+          </Text>
+          {/* No overflow:hidden and no ellipsis anywhere on this figure.
+              It is the largest number in the product and a clipped
+              £229,792.65 that reads as £2 is the worst defect this app
+              can ship (CLAUDE.md). clamp() lets it shrink; it never
+              crops. */}
+          <span style={{ color: heroFigure?.valueColor ?? "var(--ft-text)" }}>
+            {heroFigure?.href ? (
+              <DrillTarget href={heroFigure.href} title={`${heroFigure.label} — open what it is made of`}>
+                <span className="pnum ft-drill" style={NET_WORTH_HERO_STYLE}>{heroFigure.value}</span>
               </DrillTarget>
             ) : (
-              <span className="pnum" style={cell.lead ? KPI_LEAD_VALUE_STYLE : KPI_VALUE_STYLE}>{cell.value}</span>
+              <span className="pnum" style={NET_WORTH_HERO_STYLE}>{heroFigure?.value ?? "—"}</span>
             )}
           </span>
-          {/* Reserved whether or not this cell has a delta. An absent delta
-              collapsing the cell is what made the labels above disagree by
-              8.5px; holding the row costs 15px of dead space on four cells
-              and buys a straight line across all six. */}
-          <span className="pnum" aria-hidden={cell.delta ? undefined : true} style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            fontWeight: 600,
-            lineHeight: 1.2,
-            minHeight: 13,
-            color: cell.deltaColor ?? "var(--ft-dim)",
-            marginTop: 2,
-            fontVariantNumeric: "tabular-nums",
-            whiteSpace: "nowrap",
-          }}>
-            {cell.delta ?? ""}
-          </span>
+
+          {heroIsNetWorth ? <NetWorthTrend /> : heroFigure?.delta ? (
+            <HStack align="baseline" gap={8} marginTop={11}>
+              <span className="pnum" style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 15,
+                fontWeight: 700,
+                letterSpacing: "-0.01em",
+                color: heroFigure.deltaColor ?? "var(--ft-dim)",
+                fontVariantNumeric: "tabular-nums",
+                whiteSpace: "nowrap",
+              }}>{heroFigure.delta}</span>
+            </HStack>
+          ) : null}
+        </VStack>
+
+        {/* The rule appears only above 900px. Below that the row wraps and
+            a "vertical" divider would be a stray horizontal line between
+            two stacked blocks. */}
+        <div className="ft-header-divide" style={{ width: 1, background: "var(--ft-border)", flexShrink: 0 }} />
+
+        <MoneyInMotion netWorth={netWorth} />
+      </HStack>
+
+      {/* Everything else, a level down. One quiet run of 13px figures
+          seated between two hairlines — present, readable, drillable, and
+          no longer competing with the number above it. overflowX so a
+          narrow viewport scrolls this run rather than shrinking a figure
+          into a crop. */}
+      {demoted.length > 0 && (
+        <div style={{
+          display: "flex",
+          gap: 34,
+          borderTop: "1px solid var(--ft-border)",
+          borderBottom: "1px solid var(--ft-border)",
+          overflowX: "auto",
+          scrollbarWidth: "none",
+        }}>
+          {demoted.map((cell) => (
+            <DemotedCell key={cell.label} cell={cell} />
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+    </VStack>
   );
 }
 
@@ -3005,7 +3219,17 @@ export default function Dashboard() {
       href: "/net-worth",
       value: formatBaseMoney(netWorth),
       delta: netWorth > 0 ? undefined : "–",
-      valueColor: "var(--ft-blue)",
+      // --ft-text, not --ft-blue. DESIGN.md §11 defines blue as
+      // categorical — "a series line, a type badge, an identity" — and
+      // says it "carries no affordance". A person's net worth is not a
+      // category and does not press, so the blue encoded nothing; it was
+      // there because the biggest figure on the page had been given a
+      // colour. The state that this figure genuinely has is its
+      // DIRECTION, and that is carried by the trend beneath it, in green
+      // or red, with the sign carrying it too so it does not depend on
+      // hue. This was the largest of the four decorative colours the
+      // rebuild's colour audit found.
+      valueColor: "var(--ft-text)",
     };
     const MONTHLY_INCOME: KpiCellData = {
       label: "MONTHLY INCOME",
@@ -3192,6 +3416,7 @@ export default function Dashboard() {
         isCustomizing={isCustomizing}
         dashboardLabel={dashboardLabel}
         isMobile={isMobile}
+        netWorth={dashData?.netWorth ?? null}
       />
 
       {/* ── What changed, and what caused it ──

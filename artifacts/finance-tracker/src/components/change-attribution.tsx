@@ -74,11 +74,23 @@ export function ChangeAttributionBand() {
           property of a figure, not of a heading. Printing it in both places
           would be one fact stated twice, so the header slot now carries
           only the reason there is nothing to show. */}
-      <SectionRule right={view.status === "insufficient" ? (
-        <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.08em">
-          {view.emptyReason}
-        </Text>
-      ) : undefined}>
+      <SectionRule right={
+        view.status === "insufficient" ? (
+          <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.08em">
+            {view.emptyReason}
+          </Text>
+        ) : (
+          /* The window moved up here when the total below it was removed
+             — see the note on that removal. A period still has to be
+             stated on this surface, because the rows on the right are
+             sums over it and a decomposition with no window is not
+             checkable. It qualifies every row in the band rather than a
+             single figure now, which is what a header slot is for. */
+          <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.08em">
+            {view.windowLabel}
+          </Text>
+        )
+      }>
         WHAT CHANGED
       </SectionRule>
 
@@ -127,28 +139,26 @@ export function ChangeAttributionBand() {
               </Text>
             )}
 
-            {/* The total. 20px rather than the 26px it carried as a floated
-                column: it is no longer the first thing read, and at 26px
-                under a 17px sentence it took the sentence's job back. It
-                stays the largest FIGURE here, which is the rank it should
-                have.
+            {/* The total used to be printed here at 20px, with its window
+                beside it. It was REMOVED on 2026-09-08, when the dashboard
+                header was rebuilt around one number: that header now states
+                this same figure, with the same sign, colour, window and
+                drill target, about 300px above this line.
 
-                The window sits with the figure it qualifies rather than in
-                the section header, because a period is a property of a
-                number, not of a heading. */}
-            <HStack align="baseline" gap={8} marginTop={12}>
-              <DrillTarget href="/net-worth" title="Net worth — everything this is the change in">
-                <span className="ft-drill">
-                  <Text as="span" size={20} weight={700} letterSpacing="-0.02em"
-                    color={amountColour(view.totalBase)} numeric>
-                    {signed(view.totalBase, data.baseCurrency)}
-                  </Text>
-                </span>
-              </DrillTarget>
-              <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.10em">
-                net {view.windowLabel}
-              </Text>
-            </HStack>
+                Two statements of one fact is bad enough. This pair was
+                worse than that, because the second one was BIGGER — 20px
+                here against 15px in the header — so the page restated its
+                headline movement and then outranked its own first
+                statement of it. A reader scanning down met the number,
+                met it again larger, and had no way to tell whether the two
+                were the same measurement or two different windows.
+
+                What is left in this column is what only this surface has:
+                the finding in prose, and its supporting magnitudes. The
+                figure lives once, in the header, and the drill to
+                /net-worth went up there with it. The window moved to the
+                SectionRule above, because it qualifies the decomposition
+                on the right as much as it qualified this figure. */}
           </VStack>
 
           {/* THE WORKINGS. Left to right is a reading order too: the claim,

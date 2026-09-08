@@ -2208,3 +2208,13 @@ strong.pnum {
   letter-spacing: 0.15em;
   color: var(--ft-dim);
 }
+
+/* The dashboard header's vertical rule between the hero and money-in-motion.
+   The row wraps below 900px, at which point the two blocks stack and a 1px
+   vertical divider becomes a stray horizontal line lying between them. It is
+   a structural rule, so it lives here rather than as an inline style — an
+   inline style cannot carry a media query. */
+.ft-header-divide { display: block; }
+@media (max-width: 900px) {
+  .ft-header-divide { display: none; }
+}
