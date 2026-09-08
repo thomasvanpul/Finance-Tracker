@@ -68,10 +68,18 @@ export const POUNCE_RADIUS = 320;
  *
  *  1. The pointer wins, because it is the user's own hand and a companion
  *     that ignores it feels like a video rather than a thing in the room.
- *  2. Then work in flight — searching, syncing — because those are the
+ *  2. Then the companion's own feet. `moving` is not a preference, it is a
+ *     fact about the pixels: the sprite is sliding sideways this frame, and
+ *     every clip below except `walking` is drawn standing still. Measured on
+ *     the dashboard on 2026-09-08, the companion was in motion in 99.9% of
+ *     frames while `unreadInsight` held it on `lookAround` for 60 seconds
+ *     out of 60 — a stationary look-around animation moonwalking across the
+ *     page. A clip that contradicts the motion is not a status light, it is
+ *     a glitch, so locomotion outranks everything the app has to say.
+ *  3. Then work in flight — searching, syncing — because those are the
  *     moments the user is waiting and wants to see that something is happening.
- *  3. Then things waiting to be read.
- *  4. Then rest, and only at the bottom sleep, which requires a MEASURED
+ *  4. Then things waiting to be read.
+ *  5. Then rest, and only at the bottom sleep, which requires a MEASURED
  *     zero. A null gap means "not known", and the cat stays awake for it:
  *     sleeping on unknown data would be the app claiming a clean set of books
  *     it has not checked.
@@ -80,12 +88,13 @@ export function chooseState(app: CompanionSignals, pointer: PointerSignals, movi
   if (pointer.present && pointer.distance < POUNCE_RADIUS && pointer.speed >= POUNCE_SPEED_MIN) return "pouncing";
   if (pointer.present && pointer.distance < STALK_RADIUS && pointer.speed <= STALK_SPEED_MAX) return "stalking";
 
+  if (moving) return "walking";
+
   if (app.searching) return "digging";
   if (app.incomeLanded) return "eating";
   if (app.syncing) return "walking";
   if (app.unreadInsight) return "lookAround";
 
-  if (moving) return "walking";
   if (app.reconciliationGap === 0) return "sleeping";
   if (app.reconciliationGap === null) return "sitting";
   return "resting";

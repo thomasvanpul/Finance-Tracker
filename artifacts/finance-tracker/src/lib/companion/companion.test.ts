@@ -107,6 +107,43 @@ describe("chooseState", () => {
   it("walks when it is moving and the app is quiet", () => {
     expect(chooseState(signals({ reconciliationGap: 0 }), NO_POINTER, true)).toBe("walking");
   });
+
+  it("never plays a standing clip while the sprite is sliding sideways", () => {
+    // Measured on the dashboard, 2026-09-08: the companion was in motion in
+    // 99.9% of frames while unreadInsight pinned it to lookAround for 60
+    // seconds out of 60 — a stationary look-around animation moonwalking
+    // across the page. Every clip below draws a cat that is not travelling,
+    // so a moving companion may only ever be shown walking.
+    const standing = ["digging", "eating", "lookAround", "sleeping", "sitting", "resting"];
+    const cases: Partial<CompanionSignals>[] = [
+      { searching: true },
+      { incomeLanded: true },
+      { unreadInsight: true },
+      { reconciliationGap: 0 },
+      { reconciliationGap: null },
+      { reconciliationGap: 4200 },
+      { searching: true, incomeLanded: true, unreadInsight: true, syncing: true },
+    ];
+    for (const over of cases) {
+      const got = chooseState(signals(over), NO_POINTER, true);
+      expect(standing, JSON.stringify(over)).not.toContain(got);
+      expect(got, JSON.stringify(over)).toBe("walking");
+    }
+  });
+
+  it("still reports the app's signal the moment it stops", () => {
+    // The rule above is about the pixels, not about priority in general:
+    // standing still, the ambient signals mean what they always meant.
+    expect(chooseState(signals({ unreadInsight: true }), NO_POINTER, false)).toBe("lookAround");
+    expect(chooseState(signals({ searching: true }), NO_POINTER, false)).toBe("digging");
+  });
+
+  it("the pointer still outranks the companion's own feet", () => {
+    // A cat that will not look at the cursor because it happens to be
+    // mid-stride is the "video, not a thing in the room" failure.
+    const close = { distance: 60, speed: 10, present: true };
+    expect(chooseState(signals({ syncing: true }), close, true)).toBe("stalking");
+  });
 });
 
 describe("facingFor", () => {
