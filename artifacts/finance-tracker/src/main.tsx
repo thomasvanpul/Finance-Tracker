@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { Component, type ReactNode } from "react";
 import { setBaseUrl } from "@workspace/api-client-react";
 import { initNativeAuth, isNativeShell } from "./lib/native-auth";
+import { watchForNewBuild } from "./lib/sw-update";
 import App from "./App";
 import "./index.css";
 
@@ -40,6 +41,13 @@ if (isNativeShell() && import.meta.env.VITE_NATIVE_API_URL) {
 } else if (!import.meta.env.DEV && import.meta.env.VITE_API_URL) {
   setBaseUrl(import.meta.env.VITE_API_URL as string);
 }
+
+// Ask, on a timer, whether a newer build has been deployed — and reload the
+// tab when one takes over. The generated registerSW.js registers the worker
+// once on load and never checks again, so before this an open tab kept
+// serving the build it started with for as long as it stayed open. See
+// lib/sw-update.ts.
+watchForNewBuild();
 
 // Wire the Authorization: Bearer <token> flow. No-op on web (the
 // getter returns null so no header is added; cookies keep working).

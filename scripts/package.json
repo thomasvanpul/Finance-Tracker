@@ -8,6 +8,7 @@
     "seed:dev": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/seed-dev-user.ts",
     "screenshot": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/screenshot.ts",
     "companion:observe": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/companion-observe.ts",
+    "sw:reload-check": "tsx ./src/sw-reload-check.ts",
     "inspect": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/inspect.ts",
     "verify:inspect-assertions": "tsx ./src/verify-inspect-assertions.ts",
     "backfill:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/backfill-tx-rates.ts --branch=dev",
