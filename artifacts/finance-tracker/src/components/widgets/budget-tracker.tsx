@@ -163,7 +163,26 @@ function BudgetCard({
           {/* The category and the amount spent are both about the same set
               of rows — this month's expenses in this category — so both open
               them (DESIGN.md §14). The limit beside them is a setting the
-              user typed, and the percentage is a ratio; both stay flat. */}
+              user typed, and the percentage is a ratio; both stay flat.
+
+              And when nothing has been spent in this category this month
+              there are no rows at all, so neither opens: a budget with £0.00
+              against it drilled into an empty list, four times over on the
+              seeded account. §14 — zero prints the figure and takes no
+              drill. The category is not a figure, but it is the same
+              promise about the same empty list, so it goes flat with it. */}
+          {s === 0 ? (
+            <span style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: "var(--ft-text)",
+              textOverflow: "ellipsis",
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+            }}>
+              {budget.category}
+            </span>
+          ) : (
           <Drill
             href={categoryTransactionsHref(budget.category, { from: monthFrom })}
             style={{
@@ -176,6 +195,7 @@ function BudgetCard({
           >
             {budget.category}
           </Drill>
+          )}
         </div>
         <span style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
           <span
@@ -239,7 +259,9 @@ function BudgetCard({
             minWidth: 0,
           }}
         >
-          <Drill href={categoryTransactionsHref(budget.category, { from: monthFrom })}>{formatBaseMoney(s)}</Drill>
+          {s === 0
+            ? formatBaseMoney(s)
+            : <Drill href={categoryTransactionsHref(budget.category, { from: monthFrom })}>{formatBaseMoney(s)}</Drill>}
         </span>
         <span
           style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
@@ -503,7 +525,9 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  <Drill href={ledgerHref({ type: "expense", from: dateFrom })} title="Total spent this month — every expense it is the sum of">{formatBaseMoney(totalSpent)}</Drill>
+                  {totalSpent === 0
+                    ? formatBaseMoney(totalSpent)
+                    : <Drill href={ledgerHref({ type: "expense", from: dateFrom })} title="Total spent this month — every expense it is the sum of">{formatBaseMoney(totalSpent)}</Drill>}
                 </span>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, whiteSpace: "nowrap" }}>
                   / <span className="pnum">{formatBaseMoney(totalLimit)}</span>

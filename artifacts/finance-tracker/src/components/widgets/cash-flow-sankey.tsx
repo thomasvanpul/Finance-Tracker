@@ -121,7 +121,7 @@ export function CashFlowSankeyWidget() {
               { label: "Expenses", value: totalExpense, color: "var(--ft-red)", href: ledgerHref({ type: "expense", from: dateFrom, to: dateTo }) },
               { label: savings >= 0 ? "Saved" : "Deficit", value: Math.abs(savings), color: savings >= 0 ? "var(--ft-accent)" : "var(--ft-red)", href: ledgerHref({ from: dateFrom, to: dateTo }) },
             ].map((item) => (
-              <div key={item.label} style={{ padding: "8px 12px 8px 0", overflow: "hidden", minWidth: 0 }}>
+              <div key={item.label} style={{ padding: "8px 12px 8px 0", minWidth: 0 }}>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
                   {item.label}
                 </div>

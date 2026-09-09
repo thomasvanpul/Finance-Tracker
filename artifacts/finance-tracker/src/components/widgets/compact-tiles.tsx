@@ -346,7 +346,6 @@ function CashFlowCol({ label, value, color, borderRight, href }: CashFlowColProp
           borderRight: borderRight ? "1px solid var(--ft-border)" : "none",
           background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
           transition: "background 0.1s",
-          overflow: "hidden",
         }}
         onMouseEnter={() => setHov(true)}
         onMouseLeave={() => setHov(false)}

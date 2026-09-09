@@ -224,8 +224,13 @@ function KpiCell({ label, raw, value, color, sub, animate, href, isLast }: KpiCe
         padding: "14px 12px 14px 0",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
-        overflow: "hidden",
-        minWidth: 0,
+        // No overflow: hidden and no minWidth: 0 here. Together they are the
+        // recipe that clipped £229,628.27 to £229,6 — minWidth: 0 lets the grid
+        // track shrink below the figure, overflow: hidden hides the evidence,
+        // and the result is a readable number that is wrong. The grids these
+        // cells sit in drop a column instead (auto-fit, below), so the figure
+        // is never asked for less width than it needs. Locked by
+        // pnum-clip.lock.test.ts.
       }}
     >
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
@@ -262,8 +267,13 @@ function MonthStatCell({ label, value, color, href, isLast }: MonthStatCellProps
         padding: "10px 12px 10px 0",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
-        overflow: "hidden",
-        minWidth: 0,
+        // No overflow: hidden and no minWidth: 0 here. Together they are the
+        // recipe that clipped £229,628.27 to £229,6 — minWidth: 0 lets the grid
+        // track shrink below the figure, overflow: hidden hides the evidence,
+        // and the result is a readable number that is wrong. The grids these
+        // cells sit in drop a column instead (auto-fit, below), so the figure
+        // is never asked for less width than it needs. Locked by
+        // pnum-clip.lock.test.ts.
       }}
     >
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
@@ -290,8 +300,13 @@ function BreakdownCell({ label, value, color, href, isLast }: BreakdownCellProps
         padding: "8px 12px 8px 0",
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
-        overflow: "hidden",
-        minWidth: 0,
+        // No overflow: hidden and no minWidth: 0 here. Together they are the
+        // recipe that clipped £229,628.27 to £229,6 — minWidth: 0 lets the grid
+        // track shrink below the figure, overflow: hidden hides the evidence,
+        // and the result is a readable number that is wrong. The grids these
+        // cells sit in drop a column instead (auto-fit, below), so the figure
+        // is never asked for less width than it needs. Locked by
+        // pnum-clip.lock.test.ts.
       }}
     >
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 3, whiteSpace: "nowrap" }}>
@@ -375,25 +390,34 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   // "This month" here must sum the same window the ledger will show.
   const month = thisMonthRange();
 
+  // DESIGN.md §14's three states. Zero is a real sum that prints, but it
+  // means the ledger holds no rows for this window, so it takes no drill —
+  // and this widget shipped four figures that offered one anyway (INCOME
+  // +£0.00 was the live case on the seeded account, the other three were the
+  // same defect waiting on different data). A drill that opens an empty list
+  // is a promise the product did not keep.
+  const drillWhen = (hasRows: boolean, href: string): string | undefined =>
+    hasRows ? href : undefined;
+
   const kpis = d ? [
-    { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true, href: "/net-worth" },
-    { label: "Total Cash",   raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false, href: "/accounts" },
-    { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(d.portfolio.totalValueBase), color: d.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(d.portfolio.totalPlBase)}`, animate: false, href: "/investments" },
-    { label: "Net Liquidity",raw: null,                                   value: formatBaseMoney(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false, href: "/accounts" },
+    { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true, href: drillWhen(d.accountBreakdown.length > 0, "/net-worth") },
+    { label: "Total Cash",   raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
+    { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(d.portfolio.totalValueBase), color: d.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(d.portfolio.totalPlBase)}`, animate: false, href: drillWhen(d.portfolio.totalValueBase !== 0, "/investments") },
+    { label: "Net Liquidity",raw: null,                                   value: formatBaseMoney(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
   ] : [];
 
   const monthStats = d ? [
-    { label: "Income",       value: `+${formatBaseMoney(Math.abs(d.thisMonth.income))}`,   color: "var(--ft-green)", href: ledgerHref({ type: "income", ...month }) },
-    { label: "Expenses",     value: `-${formatBaseMoney(Math.abs(d.thisMonth.expenses))}`, color: "var(--ft-red)", href: ledgerHref({ type: "expense", ...month }) },
+    { label: "Income",       value: `+${formatBaseMoney(Math.abs(d.thisMonth.income))}`,   color: "var(--ft-green)", href: drillWhen(d.thisMonth.income !== 0, ledgerHref({ type: "income", ...month })) },
+    { label: "Expenses",     value: `-${formatBaseMoney(Math.abs(d.thisMonth.expenses))}`, color: "var(--ft-red)", href: drillWhen(d.thisMonth.expenses !== 0, ledgerHref({ type: "expense", ...month })) },
     // Savings Rate is income over expenses, a ratio rather than a set of
     // rows. §14: a figure not made of rows is not a button.
     { label: "Savings Rate", value: d.thisMonth.savingsRate == null ? "—" : formatPercent(d.thisMonth.savingsRate), color: (d.thisMonth.savingsRate ?? 0) >= 20 ? "var(--ft-green)" : "var(--ft-amber)" },
   ] : [];
 
   const breakdownItems = d ? [
-    { label: "Cash",      value: formatBaseMoney(d.totalCash),                color: "var(--ft-accent)", href: "/accounts" },
-    { label: "Portfolio", value: formatBaseMoney(d.portfolio.totalValueBase),  color: "var(--ft-green)", href: "/investments" },
-    { label: "Net Debt",  value: formatBaseMoney(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)", href: "/owing" },
+    { label: "Cash",      value: formatBaseMoney(d.totalCash),                color: "var(--ft-accent)", href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
+    { label: "Portfolio", value: formatBaseMoney(d.portfolio.totalValueBase),  color: "var(--ft-green)", href: drillWhen(d.portfolio.totalValueBase !== 0, "/investments") },
+    { label: "Net Debt",  value: formatBaseMoney(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)", href: drillWhen(d.owing.totalIOwe !== 0, "/owing") },
   ] : [];
 
   const chartSection = (
@@ -433,10 +457,17 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
 
   const compactContent = d && (
     <>
-      {/* KPI strip — border-as-gap pattern. ft-four-col opts into the
-          main-content container query: 4-col at wide, 3-col ≤900
-          container width, 2-col ≤700. */}
-      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", columnGap: 16, padding: "0 0 0 12px" }}>
+      {/* KPI strip — border-as-gap pattern.
+
+          The column count is `auto-fit` rather than a fixed 4, because this
+          widget is not always as wide as the page. `.ft-four-col` also opts
+          into the main-content container query (3-col ≤900 content width,
+          2-col ≤700), and that query measures `.ft-main-inner` — the whole
+          content area — not this box. On a wide page inside a narrow panel it
+          never fires, which is how a 291px box kept four columns and cropped
+          its figures. `auto-fit` measures the box itself, so the two agree:
+          the query handles a narrow PAGE, auto-fit handles a narrow BOX. */}
+      <div className="ft-four-col" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", columnGap: 16, padding: "0 0 0 12px" }}>
         {kpis.map((k, i) => (
           <KpiCell
             key={k.label}
@@ -467,7 +498,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
       )}
 
       {/* Month stats strip */}
-      <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", columnGap: 16, padding: "0 0 0 12px" }}>
+      <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(115px, 1fr))", columnGap: 16, padding: "0 0 0 12px" }}>
         {monthStats.map((item, i) => (
           <MonthStatCell
             key={item.label}
@@ -481,7 +512,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
       </div>
 
       {/* Breakdown strip */}
-      <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", columnGap: 16, padding: "0 0 12px 12px" }}>
+      <div className="ft-three-col" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(115px, 1fr))", columnGap: 16, padding: "0 0 12px 12px" }}>
         {breakdownItems.map((item, i) => (
           <BreakdownCell
             key={item.label}

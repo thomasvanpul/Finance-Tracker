@@ -804,3 +804,65 @@ interior padding does not route through the density tokens: 110
 nothing on a literal. Converting the other 108 would deepen this
 considerably — and would change every other page those widgets appear on,
 so it is its own task, not part of this one.
+
+## 18. The dashboard's top region, and the two rules it breaks
+
+`components/dashboard/top-region.tsx`. One block between the breadcrumb and
+the widget grid, three bands with no whitespace between them, only rules:
+
+1. the KPI run — every reading at the same size, dashed cells included, with
+   EDIT LAYOUT as the last cell of that same run;
+2. WHAT CHANGED on one line — the finding, its causes, their amounts and the
+   window;
+3. the AI insights, in the same ruled register.
+
+It replaces three separate surfaces that used to stack here: the KPI bar,
+`ChangeAttributionBand`, and the AI insights float. All three are suppressed
+on desktop, because each is now a band of this block and rendering both would
+print the same finding twice. The phone keeps the KPI bar — its narrow branch
+is a different design under the Mobile Amendment and was never part of what
+was compared.
+
+It was chosen from six arrangements of the same treatment (round 3, captured
+2026-09-09; the other five stay behind `SCREENSHOT_PROTO` and now render out
+of this file's marks rather than a copy of them).
+
+### The premise it refuses
+
+§17's page rested on *one number leads*: a dashboard answers one question in
+two seconds, so net worth is 52px and everything else drops a level. This
+refuses that. A person who opens this every day already knows roughly where
+their net worth is; what they want is to SCAN. So there is no hero at all —
+every KPI is the same size, and the largest thing on the page is now a widget.
+
+That is not a DESIGN.md clause being broken; it is the argument the previous
+header rested on, and refusing it is the point of the arrangement.
+
+### Two clauses that ARE broken, deliberately
+
+**§3's rhythm ("~16px between groups").** There is no whitespace between the
+three bands at all. The density is the claim being made, so 0 is the point
+rather than a slip — the same override §17 took, one level up. §3's asymmetry
+survives inside the cells, where it still does the work.
+
+**§6's ephemeral-surface mark.** The AI insights panel is dismissible, and §6
+gives radius and elevation to an ephemeral surface precisely so it stays
+distinguishable from a permanent one. In the top region it has neither: it is
+the third band of a block whose whole argument is that it has no frames, and a
+floating card inside it would be the one thing on the page announcing itself.
+The trade is that the terminal register is worth more here than that
+distinction — and it is not a free one. What carries "ephemeral" in this
+register is behaviour rather than marking: the refresh and dismiss controls
+are a trailing cell of the run, and a reload still brings the panel back.
+
+`AiInsightsPanel` keeps both registers (`register="float" | "dense"`). The
+phone and any other surface that wants an ephemeral card still gets §6's
+marking unchanged.
+
+### Where the first-run surface went
+
+`PersonaQuickStart` used to sit between the top region and the widget grid.
+It is a first-run surface — on an established account it is ~150px of
+suggestions standing above the content the page exists to show — so it now
+renders below the grid. It earns its position exactly once; a new account has
+few widgets and a short page, so the person who needs it still finds it.

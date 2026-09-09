@@ -55,7 +55,7 @@ import { useLocation } from "wouter";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
 import { Zap, RefreshCw, X, LayoutGrid } from "lucide-react";
 import { useState, useMemo, useEffect, useRef, memo } from "react";
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
 import { useToast } from "@/hooks/use-toast";
@@ -71,6 +71,7 @@ import { useProtoDesign } from "@/lib/use-proto-design";
 import { topRegionVariant } from "@/lib/proto-design";
 import { ProtoDashboard } from "@/components/proto";
 import { ProtoTopRegion } from "@/components/proto/top-region";
+import { DashboardTopRegion, Insights } from "@/components/dashboard/top-region";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -510,7 +511,11 @@ function CashFlowPreviewPanel() {
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", marginTop: 3 }}>projected net</div>
         </div>
-        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", paddingBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 }}>
+        {/* The figure is the LAST thing in this sentence, so an ellipsis here
+            eats the number and not the word: "from £214,17…". It wraps
+            instead. A caption on two lines is a smaller cost than a starting
+            balance that reads as a different amount. */}
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", paddingBottom: 2, minWidth: 0, flex: 1 }}>
           from <span className="pnum">{formatBaseMoney(startingBalance)}</span>
         </div>
       </HStack>
@@ -804,10 +809,57 @@ interface AiInsightsPanelProps {
   budgetStatus: string;
 }
 
+/** The two controls in the dense run. No border and no fill — the rule to
+ *  their left is already the edge, and a bordered button inside a ruled cell
+ *  is a box in a box. */
+function DenseIconButton({ children, onClick, title, label, disabled }: {
+  children: ReactNode;
+  onClick: () => void;
+  title: string;
+  label: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      aria-label={label}
+      disabled={disabled === true}
+      style={{
+        background: "none", border: "none", padding: "4px 4px",
+        cursor: disabled === true ? "default" : "pointer",
+        color: "var(--ft-dim)", display: "flex", alignItems: "center",
+        opacity: disabled === true ? 0.4 : 1, transition: "color 0.15s, opacity 0.15s",
+      }}
+      onMouseEnter={e => { if (disabled !== true) e.currentTarget.style.color = "var(--ft-text)"; }}
+      onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * `float` is DESIGN.md §6's ephemeral surface — radius, elevation, its own
+ * header row — and is what the phone and customize mode still get.
+ *
+ * `dense` is the same three findings as a ruled run with no radius and no
+ * elevation, which is what the adopted top region needs: it is the third band
+ * of a block whose entire argument is that it has no whitespace and no
+ * frames, and a floating card sitting inside it would be the one thing on the
+ * page announcing itself. That KNOWINGLY breaks §6 — radius and elevation are
+ * how an ephemeral surface stays distinguishable from a permanent one. The
+ * trade is deliberate, and it is not a free one: what carries "ephemeral" in
+ * dense is behaviour, not marking — the dismiss and refresh controls are in
+ * the run itself, and a reload still brings the panel back. Recorded in
+ * DESIGN.md §18.
+ */
+type AiInsightsRegister = "float" | "dense";
+
 // Props are for the parent's own summary chips — this component uses
 // none of them to build a prompt. Server reads dashboard state via
 // buildChatContext(userId, "/").
-function AiInsightsPanel(_props: AiInsightsPanelProps) {
+function AiInsightsPanel({ register = "float", ..._props }: AiInsightsPanelProps & { register?: AiInsightsRegister }) {
   const [insights, setInsights] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(false);
   // Ephemeral (DESIGN.md §6): the card pops in and can be sent away for the
@@ -884,6 +936,31 @@ function AiInsightsPanel(_props: AiInsightsPanelProps) {
   // Don't render anything until we know the result (avoids layout shift)
   if (dismissed) return null;
   if (!loading && insights === null) return null;
+
+  if (register === "dense") {
+    // Same lines, same splitInsight, same three parts — only the surface
+    // differs. `Insights` is the mark the top region is built out of, so this
+    // band cannot drift out of register with the two above it.
+    return (
+      <Insights
+        lines={insights ?? []}
+        register="dense"
+        trailing={
+          <HStack align="center" shrink={false} padding="0 8px" gap={2}>
+            <DenseIconButton onClick={handleRefresh} disabled={loading}
+              title="Refresh AI insights" label="Refresh AI insights">
+              <RefreshCw size={10} />
+            </DenseIconButton>
+            <DenseIconButton
+              onClick={() => { setDismissed(true); try { sessionStorage.setItem(AI_INSIGHTS_DISMISSED_KEY, "1"); } catch {} }}
+              title="Dismiss for this session" label="Dismiss AI insights">
+              <X size={11} />
+            </DenseIconButton>
+          </HStack>
+        }
+      />
+    );
+  }
 
   return (
     <div className="ft-float" style={{
@@ -1303,7 +1380,21 @@ function LongPressDraggableWidget({ id, anyDragging, onExpand }: { id: WidgetId;
       transform ? { ...transform, scaleX: 1, scaleY: 1 } : { x: 0, y: 0, scaleX: 1, scaleY: 1 }
     ),
     transition: isDragging ? "none" : "transform 0.12s ease",
-    opacity: isDragging ? 0 : anyDragging ? 0.8 : 1,
+    // The source slot used to be `opacity: 0`, which left the widget's box in
+    // the layout but drew nothing in it — a ~500px void with no edges, no
+    // label and no explanation, and because the sortable strategy moves that
+    // box as you hover, the void moved and the column visibly jumped. It is
+    // now a slot: same box, same height (the widget is still rendered under
+    // it, just not visible), with a dashed edge and the widget's name across
+    // it. Dashed is this product's mark for something that has not happened
+    // yet, which is exactly what a landing place is.
+    //
+    // That one change is also the drop indicator. The slot IS where the
+    // widget lands — verticalListSortingStrategy moves it to the candidate
+    // index as you hover, and handleDragOver moves it across columns — so
+    // showing the slot is showing the destination. There is nothing to
+    // invent and nothing that can disagree with where the drop will go.
+    opacity: anyDragging && !isDragging ? 0.8 : 1,
     outline: holding && !isDragging ? "1px solid var(--ft-accent)" : "none",
     cursor: isDragging ? "grabbing" : holding ? "grab" : "default",
     userSelect: "none",
@@ -1320,7 +1411,32 @@ function LongPressDraggableWidget({ id, anyDragging, onExpand }: { id: WidgetId;
       {...attributes}
       {...listeners}
     >
-      <Component />
+      {/* Still rendered while dragging, and only hidden: it is what holds the
+          slot at the right height. Measuring the height instead and drawing a
+          box of that size would be a second source of truth for a number the
+          layout already knows. */}
+      <div style={{ visibility: isDragging ? "hidden" : "visible" }}>
+        <Component />
+      </div>
+      {isDragging && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            border: "1px dashed var(--ft-accent)",
+            background: "color-mix(in srgb, var(--ft-accent) 6%, transparent)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <MonoLabel as="span" size={10} color="var(--ft-accent)" letterSpacing="0.14em">
+            {WIDGET_DEF_MAP[id]?.label ?? id}
+          </MonoLabel>
+        </div>
+      )}
       {hovered && !isDragging && !anyDragging && (
         <button
           onPointerDown={e => e.stopPropagation()}
@@ -1351,6 +1467,35 @@ function LongPressDraggableWidget({ id, anyDragging, onExpand }: { id: WidgetId;
           ⤢
         </button>
       )}
+    </div>
+  );
+}
+
+/**
+ * What follows the cursor during a view-mode drag.
+ *
+ * The widget, rendered again at the width it occupied in the column, with an
+ * accent edge and a small drop of transparency so the slot beneath it stays
+ * readable through it. Nothing is cropped and nothing is scaled — a figure
+ * this app shows is shown in full or not at all, and a scaled preview is a
+ * figure at a size the type ladder does not have.
+ *
+ * `width` is null only if dnd-kit could not measure the source, in which case
+ * the preview sizes to its content rather than to a guess.
+ */
+function DragPreview({ id, width }: { id: WidgetId; width: number | null }) {
+  const Component = WIDGET_COMPONENTS[id];
+  if (!Component) return null;
+  return (
+    <div style={{
+      width: width ?? undefined,
+      border: "1px solid var(--ft-accent)",
+      background: "var(--ft-surface)",
+      opacity: 0.92,
+      cursor: "grabbing",
+      pointerEvents: "none",
+    }}>
+      <Component />
     </div>
   );
 }
@@ -1503,7 +1648,9 @@ function SortableWidget({ id, span, index, anyDragging, onToggleSpan, onRemove, 
         : { x: 0, y: 0, scaleX: 1, scaleY: 1 }
     ),
     transition: isDragging ? "none" : "transform 0.12s ease",
-    opacity: isDragging ? 0 : 1,
+    // Not opacity: 0 — see LongPressDraggableWidget. Customize mode had the
+    // identical void for the identical reason, and a page whose two drags
+    // behave differently is worse than either behaviour on its own.
     animationName: entranceKilledRef.current ? "none" : undefined,
     position: "relative" as const,
     "--widget-stagger": `${index * 40}ms`,
@@ -1520,8 +1667,30 @@ function SortableWidget({ id, span, index, anyDragging, onToggleSpan, onRemove, 
       onMouseLeave={() => setHovered(false)}
       onMouseMove={() => { if (!hovered) setHovered(true); }}
     >
-      {/* Relative wrapper: rail is absolutely positioned so it never inflates widget height */}
-      <div style={{ position: "relative" }}>
+      {isDragging && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 6,
+            border: "1px dashed var(--ft-accent)",
+            background: "color-mix(in srgb, var(--ft-accent) 6%, transparent)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <MonoLabel as="span" size={10} color="var(--ft-accent)" letterSpacing="0.14em">
+            {WIDGET_DEF_MAP[id]?.label ?? id}
+          </MonoLabel>
+        </div>
+      )}
+      {/* Relative wrapper: rail is absolutely positioned so it never inflates widget height.
+          Hidden rather than unmounted while dragging: it is what holds the
+          slot above at the widget's real height. */}
+      <div style={{ position: "relative", visibility: isDragging ? "hidden" : "visible" }}>
 
         {/* Left rail — absolute so short widgets aren't forced to match button stack height */}
         <div
@@ -1588,7 +1757,15 @@ function SortableWidget({ id, span, index, anyDragging, onToggleSpan, onRemove, 
           paddingLeft: hovered ? 30 : 0,
           transition: "padding-left 0.1s ease",
         }}>
-          <StableWidgetContent Component={Component} isExpanded={span === "full"} />
+          {/* `isExpanded` means "you have the whole page width" — WidgetModal is
+              the only surface that can promise that, and it is the only other
+              caller passing it. Customize mode used to pass `span === "full"`
+              here, which promised a width this column never had: the widget
+              switched to its two-column layout inside a 586px panel, its figure
+              grid halved to 291px, and NET WORTH printed £229,6 for
+              £229,628.27. A ⊞ widget renders exactly as it does in view mode
+              until something actually gives it the width. */}
+          <StableWidgetContent Component={Component} isExpanded={false} />
         </div>
       </div>
     </div>
@@ -1949,14 +2126,15 @@ const NET_WORTH_HERO_STYLE: React.CSSProperties = {
 
 /**
  * The trend under the hero — what has already moved the figure above it,
- * and over what window. Reuses the change-attribution report that
- * `ChangeAttributionBand` renders in full further down the page; the
- * query is shared, so this costs no second request.
+ * and over what window. Reuses the change-attribution report the phone also
+ * renders in full on MobileHome; the query is shared, so this costs no
+ * second request.
  *
  * It states the total, its sign and the window, and stops. The
- * decomposition — how much was the rate, how much was spending — stays
- * in the band, because repeating it here would make the header a second
- * copy of that surface instead of a headline with a direction.
+ * decomposition — how much was the rate, how much was spending — is not
+ * repeated here, which would make the header a second copy of that surface
+ * instead of a headline with a direction. On desktop that decomposition is
+ * now the top region's middle band; this component reaches only the phone.
  *
  * Renders nothing when the report is insufficient. A headline figure
  * with an invented "+£0.00" under it would be the fabrication CLAUDE.md
@@ -2511,15 +2689,10 @@ function DashboardKpiBar({
 
 // ── Terminal Three-Zone Default Layout ────────────────────────────────────────
 
-interface TerminalLayoutProps {
-  aiInsightsProps: AiInsightsPanelProps;
-  /** False only under a top-region prototype, which states the insight lines
-   *  in its own register further up (or, for 5 · MINIMUM, deliberately not at
-   *  all). Nothing in a real session passes anything but true. */
-  showAiInsights: boolean;
-}
-
-function TerminalLayout({ aiInsightsProps, showAiInsights }: TerminalLayoutProps) {
+// This layout is the desktop no-widgets fallback, so it no longer carries an
+// AI insights panel of its own: the adopted top region states those lines
+// directly above it, in the ruled register, on every desktop session.
+function TerminalLayout() {
   return (
     // 8, matching the intra-row gap, which is the point: the vertical
     // distance between rows and the horizontal distance inside one are the
@@ -2529,9 +2702,6 @@ function TerminalLayout({ aiInsightsProps, showAiInsights }: TerminalLayoutProps
     // original argument against 16 — that the rows read as separate pages —
     // still holds and 8 is nowhere near it.
     <VStack gap={8}>
-      {/* AI Insights — only shown if AI available */}
-      {showAiInsights && <AiInsightsPanel {...aiInsightsProps} />}
-
       {/* Row 1: Accounts (60%) + Transactions (40%) */}
       <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }} className="ft-dashboard-two-col">
         {/* Accounts panel — 60%: AccountsSummaryWidget has its own WidgetShell header */}
@@ -3033,6 +3203,10 @@ export default function Dashboard() {
   const { data: monthTxs } = useListTransactions({ type: "expense", dateFrom: monthStart });
   const { data: prevMonthTxs } = useListTransactions({ type: "expense", dateFrom: prevBounds.from, dateTo: prevBounds.to });
   const [activeId, setActiveId] = useState<WidgetId | null>(null);
+  /** The dragged widget's own width at the moment the drag began. The drag
+   *  overlay is position-fixed and inherits nothing from the grid, so without
+   *  this the preview has no width to be. */
+  const [activeWidth, setActiveWidth] = useState<number | null>(null);
   const [expandedWidgetId, setExpandedWidgetId] = useState<WidgetId | null>(null);
   const [views, setViews] = useState<DashboardView[]>(() => loadViews());
   const [viewNameInput, setViewNameInput] = useState("");
@@ -3111,6 +3285,7 @@ export default function Dashboard() {
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as WidgetId);
+    setActiveWidth(event.active.rect.current.initial?.width ?? null);
     lastOverRef.current = null;
     preDragOrderRef.current = [...order];
     preDragRightSetRef.current = new Set(rightSet);
@@ -3146,6 +3321,7 @@ export default function Dashboard() {
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveId(null);
+    setActiveWidth(null);
     lastOverRef.current = null;
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -3259,10 +3435,23 @@ export default function Dashboard() {
     // Individual cells. Keeping each as a const so the persona table
     // below reads like a table, not a tangle of inline object literals.
 
+    // DESIGN.md §14, the three states in one place. Null, zero and non-zero
+    // are three cases and not two: null prints an en dash and takes no
+    // drill, zero prints the figure and takes no drill, non-zero opens its
+    // rows. Written as a helper because getting it right on one cell and
+    // wrong on the next is exactly how MONTHLY INCOME shipped offering a
+    // drill into an empty September — a promise the product did not keep.
+    const drillWhen = (hasRows: boolean, href: string): string | undefined =>
+      hasRows ? href : undefined;
+    // Net worth is the sum of the account rows. Its test is not "is it
+    // non-zero" — two accounts that cancel out sum to a real zero — but
+    // whether this dashboard has already proved the rows exist.
+    const hasAccounts = (dashData.accountBreakdown?.length ?? 0) > 0;
+
     const NET_WORTH: KpiCellData = {
       label: "NET WORTH",
       lead: true,
-      href: "/net-worth",
+      href: drillWhen(hasAccounts, "/net-worth"),
       value: formatBaseMoney(netWorth),
       delta: netWorth > 0 ? undefined : "–",
       // --ft-text, not --ft-blue. DESIGN.md §11 defines blue as
@@ -3279,13 +3468,13 @@ export default function Dashboard() {
     };
     const MONTHLY_INCOME: KpiCellData = {
       label: "MONTHLY INCOME",
-      href: ledgerHref({ type: "income", ...thisMonthRange() }),
+      href: drillWhen(income > 0, ledgerHref({ type: "income", ...thisMonthRange() })),
       value: income > 0 ? formatBaseMoney(income) : "–",
       valueColor: income > 0 ? "var(--ft-green)" : "var(--ft-dim)",
     };
     const MONTHLY_SPEND: KpiCellData = {
       label: "MONTHLY SPEND",
-      href: ledgerHref({ type: "expense", ...thisMonthRange() }),
+      href: drillWhen(expenses > 0, ledgerHref({ type: "expense", ...thisMonthRange() })),
       value: expenses > 0 ? formatBaseMoney(expenses) : "–",
       valueColor: expenses > 0 ? "var(--ft-red)" : "var(--ft-dim)",
     };
@@ -3483,16 +3672,34 @@ export default function Dashboard() {
           isCustomizing={isCustomizing}
           onCustomize={handleCustomizeToggle}
         />
+      ) : isMobile ? (
+        /* The phone keeps DashboardKpiBar. Its narrow branch is a different
+           design under a different spec (the Mobile Amendment), the six
+           arrangements were all captured at 1440, and adopting a desktop
+           answer for a screen it was never tested at is how the last three
+           rounds of this went wrong. */
+        <DashboardKpiBar
+          cells={kpiCells}
+          onCustomize={handleCustomizeToggle}
+          isCustomizing={isCustomizing}
+          dashboardLabel={dashboardLabel}
+          isMobile={isMobile}
+          netWorth={dashData?.netWorth ?? null}
+        />
       ) : (
-      /* ── Bloomberg KPI Bar ── */
-      <DashboardKpiBar
-        cells={kpiCells}
-        onCustomize={handleCustomizeToggle}
-        isCustomizing={isCustomizing}
-        dashboardLabel={dashboardLabel}
-        isMobile={isMobile}
-        netWorth={dashData?.netWorth ?? null}
-      />
+        /* The adopted top region. One block, three bands, no whitespace
+           between them: the KPI run with EDIT LAYOUT as its last cell, WHAT
+           CHANGED on one line, and the AI insights in the same ruled
+           register. It replaces three separate surfaces that used to stack
+           here — DashboardKpiBar, ChangeAttributionBand and the AI float —
+           which is why all three are suppressed below on desktop. */
+        <DashboardTopRegion
+          cells={kpiCells}
+          dashboardLabel={dashboardLabel}
+          isCustomizing={isCustomizing}
+          onCustomize={handleCustomizeToggle}
+          insights={<AiInsightsPanel {...aiInsightsProps} register="dense" />}
+        />
       )}
 
       {/* ── What changed, and what caused it ──
@@ -3502,13 +3709,12 @@ export default function Dashboard() {
           same reason the KPI bar cannot — a headline figure with no stated
           cause is what this is here to stop. The phone gets the same rows
           from MobileHome; this branch is the wide one only. */}
-      {/* Suppressed under a top-region prototype: each of the six states the
-          same decomposition in its own arrangement, and rendering the shipped
-          band as well would print one finding twice. */}
-      {!isMobile && topRegion === null && <ChangeAttributionBand />}
-
-      {/* Persona quick start — shown once, disappears when all steps done or dismissed */}
-      <PersonaQuickStart />
+      {/* ChangeAttributionBand used to stand here, desktop only. It is gone
+          from this page: the adopted top region states the same
+          decomposition as its middle band, and rendering the band as well
+          would print one finding twice. The phone never had it here — it
+          gets the same rows from MobileHome — so nothing is lost on either
+          width. The component itself is untouched and still used there. */}
 
       {/* ── Main Content ── */}
       {isCustomizing ? (
@@ -3575,8 +3781,10 @@ export default function Dashboard() {
             ))}
           </HStack>
 
-          {/* AI Insights panel in customize mode too */}
-          <AiInsightsPanel {...aiInsightsProps} />
+          {/* No AI insights panel here any more. The top region carries the
+              same three findings above this banner, in both modes, and a
+              float repeating them was the one duplicate the adoption
+              introduced. */}
 
           {enabledIds.length === 0 ? (
             <VStack gap={12} align="center" justify="center" padding="60px 0">
@@ -3586,7 +3794,7 @@ export default function Dashboard() {
             </VStack>
           ) : isMobile ? (
             /* Mobile: compact tile DnD — matches view mode exactly, just adds grip + remove strip */
-            <DndContext sensors={mobileSensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOverMobile} onDragEnd={handleDragEndMobile} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) setOrder(preDragOrderRef.current); }}>
+            <DndContext sensors={mobileSensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOverMobile} onDragEnd={handleDragEndMobile} onDragCancel={() => { setActiveId(null); setActiveWidth(null); lastOverRef.current = null; if (preDragOrderRef.current.length) setOrder(preDragOrderRef.current); }}>
               <div className="ft-mobile-widget-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <SortableContext items={enabledIds} strategy={rectSortingStrategy}>
                   {enabledIds.map(id => (
@@ -3629,7 +3837,7 @@ export default function Dashboard() {
             </DndContext>
           ) : (
             /* Desktop: drag-and-drop two-column grid */
-            <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) { setOrder(preDragOrderRef.current); setRightSet(preDragRightSetRef.current); } }}>
+            <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); setActiveWidth(null); lastOverRef.current = null; if (preDragOrderRef.current.length) { setOrder(preDragOrderRef.current); setRightSet(preDragRightSetRef.current); } }}>
               <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 {/* Left column */}
                 <VStack gap={6} grow>
@@ -3648,24 +3856,9 @@ export default function Dashboard() {
                   </SortableContext>
                 </VStack>
               </div>
+              {/* Same preview as view mode, same reason. */}
               <DragOverlay dropAnimation={{ duration: 150, easing: "ease" }}>
-                {activeId ? (
-                  <div style={{
-                    background: "var(--ft-surface)",
-                    border: "1px solid var(--ft-accent)",
-                    padding: "10px 14px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    cursor: "grabbing",
-                    minHeight: 48,
-                  }}>
-                    <Text as="span" mono size={13} color="var(--ft-dim)">⠿</Text>
-                    <MonoLabel as="span" size={11} color="var(--ft-accent)" letterSpacing="0.08em">
-                      {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
-                    </MonoLabel>
-                  </div>
-                ) : null}
+                {activeId ? <DragPreview id={activeId} width={activeWidth} /> : null}
               </DragOverlay>
             </DndContext>
           )}
@@ -3681,7 +3874,7 @@ export default function Dashboard() {
         <div>
           {enabledIds.length === 0 ? (
             /* No custom widgets — show terminal layout (desktop) or overview (mobile) */
-            isMobile ? <DashboardOverview /> : <TerminalLayout aiInsightsProps={aiInsightsProps} showAiInsights={topRegion === null} />
+            isMobile ? <DashboardOverview /> : <TerminalLayout />
           ) : isMobile ? (
             <>
               <AiInsightsPanel {...aiInsightsProps} />
@@ -3711,13 +3904,11 @@ export default function Dashboard() {
             </>
           ) : (
             <>
-              {/* Suppressed under a top-region prototype for the same reason
-                  ChangeAttributionBand is: five of the six render the insight
-                  lines themselves, in their own register and their own
-                  position, and the sixth (5 · MINIMUM) deliberately does not
-                  show them at all. Leaving the shipped float here would print
-                  them twice in five cases and contradict the sixth. */}
-              {topRegion === null && <AiInsightsPanel {...aiInsightsProps} />}
+              {/* The AI float is gone from the desktop grid. Its lines are
+                  the third band of the top region now — same three findings,
+                  same splitInsight, dense register — and a second copy here
+                  would print them twice. This held for the six prototypes for
+                  the same reason; it now holds in every desktop session. */}
               <DndContext
                 sensors={longPressDesktopSensors}
                 collisionDetection={customCollisionDetection}
@@ -3726,6 +3917,7 @@ export default function Dashboard() {
                 onDragEnd={handleDragEnd}
                 onDragCancel={() => {
                   setActiveId(null);
+                  setActiveWidth(null);
                   lastOverRef.current = null;
                   if (preDragOrderRef.current.length) {
                     setOrder(preDragOrderRef.current);
@@ -3755,23 +3947,22 @@ export default function Dashboard() {
                     onEnter={handleCustomizeToggle}
                   />
                 </div>
+                {/* What follows the cursor is the widget itself, at the width
+                    it had in the column. It used to be a 528x50 chip carrying
+                    the widget's NAME — which told you what you had picked up,
+                    something you already knew, and told you nothing about
+                    what you were placing. A drag is a spatial operation and
+                    the thing being moved should look like the thing being
+                    moved.
+
+                    Full size, not cropped: this widget's figures are the
+                    reason it is on the page, and a preview that cut them off
+                    mid-digit would be the clipping defect again in a new
+                    place. Width comes from the source element; height is
+                    whatever the widget is. */}
                 <DragOverlay dropAnimation={{ duration: 150, easing: "ease" }}>
                   {activeId ? (
-                    <div style={{
-                      background: "var(--ft-surface)",
-                      border: "1px solid var(--ft-accent)",
-                      padding: "10px 14px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      cursor: "grabbing",
-                      minHeight: 48,
-                    }}>
-                      <Text as="span" mono size={13} color="var(--ft-dim)">⠿</Text>
-                      <MonoLabel as="span" size={11} color="var(--ft-accent)" letterSpacing="0.08em">
-                        {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
-                      </MonoLabel>
-                    </div>
+                    <DragPreview id={activeId} width={activeWidth} />
                   ) : null}
                 </DragOverlay>
               </DndContext>
@@ -3780,6 +3971,18 @@ export default function Dashboard() {
           )}
         </div>
       )}
+
+      {/* Persona quick start — shown once, disappears when all steps done or
+          dismissed.
+
+          It used to sit between the top region and the widget grid. That is a
+          first-run surface: on an established account it is ~150px of
+          suggestions standing above the content the page exists to show, and
+          it earns that position exactly once. Below the grid it is still
+          found by the person who needs it — a new account has few widgets and
+          a short page — and costs nothing to the person who does not. Nothing
+          was deleted and the move is one line. */}
+      <PersonaQuickStart />
     </div>
     </DashboardCustomizeContext.Provider>
   );

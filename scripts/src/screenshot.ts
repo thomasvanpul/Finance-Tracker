@@ -537,13 +537,26 @@ async function captureOne(context: BrowserContext, route: string, theme: string,
 
   const dragSel = process.env.SCREENSHOT_DRAG ?? null;
   if (dragSel !== null) {
-    const box = await page.$(dragSel).then((el) => el === null ? null : el.boundingBox());
-    if (box === null) {
+    const el = await page.$(dragSel);
+    const box = el === null ? null : await el.boundingBox();
+    if (box === null || el === null) {
       console.log(`[interact] ${route} drag ${dragSel}: no match`);
     } else {
       const [dx, dy] = (process.env.SCREENSHOT_DRAG_TO ?? "0,240").split(",").map((n) => Number(n.trim()));
-      const x = box.x + box.width / 2;
-      const y = box.y + Math.min(box.height / 2, 60);
+      // Move first, settle, then MEASURE AGAIN before pressing. A drag handle
+      // that is revealed by hover has a different box after the pointer
+      // arrives than before it — the dashboard's customize rail is
+      // `width: hovered ? 30 : 0` with overflow: hidden, so its ⠿ button
+      // measures 0px wide until the mouse is over the widget. Pressing the
+      // pre-hover centre landed outside the button, dnd-kit never saw the
+      // pointerdown, and the run silently produced a text selection instead
+      // of a drag. Measuring twice costs one settle and removes a whole class
+      // of "the capture shows nothing happened".
+      await page.mouse.move(box.x + box.width / 2, box.y + Math.min(box.height / 2, 60));
+      await page.waitForTimeout(250);
+      const settled = await el.boundingBox() ?? box;
+      const x = settled.x + settled.width / 2;
+      const y = settled.y + Math.min(settled.height / 2, 60);
       await page.mouse.move(x, y);
       await page.mouse.down();
       // Past both timers the widget runs: a 150ms hold before it draws the

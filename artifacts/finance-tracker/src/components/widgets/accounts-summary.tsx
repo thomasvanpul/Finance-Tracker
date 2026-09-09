@@ -119,7 +119,10 @@ function OwingCell({ label, value, raw, color, href, isLast }: OwingCellProps) {
         borderRight: !isLast ? "1px solid var(--ft-border)" : undefined,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-raised))" : "var(--ft-raised)",
         transition: "background 0.1s",
-        overflow: "hidden",
+        // No overflow: hidden — this cell holds a .pnum, and cropping a figure
+        // turns "too narrow" into "wrong number". minWidth: 0 stays so the
+        // track can still shrink; if it shrinks past the figure the figure
+        // overflows, visibly. Locked by pnum-clip.lock.test.ts.
         minWidth: 0,
       }}
     >

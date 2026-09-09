@@ -227,11 +227,11 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
           </div>
 
           <div style={{ display: "flex", gap: 16, minWidth: 0 }}>
-            <div style={{ minWidth: 0, overflow: "hidden" }}>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>MTD SPEND</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", whiteSpace: "nowrap" }}><Drill href={ledgerHref({ type: "expense", from: dateFrom, to: dateTo })}>{formatBaseMoney(thisMonthExpenses)}</Drill></div>
             </div>
-            <div style={{ minWidth: 0, overflow: "hidden" }}>
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 1, whiteSpace: "nowrap" }}>PROJECTED</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: projectedMonthEnd > runRate * 1.1 ? "var(--ft-red)" : "var(--ft-muted)", whiteSpace: "nowrap" }}>{formatBaseMoney(projectedMonthEnd)}</div>
             </div>

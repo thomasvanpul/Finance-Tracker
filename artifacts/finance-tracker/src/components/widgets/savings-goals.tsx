@@ -321,7 +321,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
 
       {/* amount row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4, minWidth: 0 }}>
-        <div style={{ minWidth: 0, overflow: "hidden" }}>
+        <div style={{ minWidth: 0 }}>
           <div
             className="pnum"
             style={{
@@ -438,7 +438,7 @@ function GoalsSummary({ totalSaved, totalTarget, totalPct, onAdd, adding }: Goal
         borderBottom: "1px solid var(--ft-border)",
       }}
     >
-      <div style={{ display: "flex", gap: 12, alignItems: "center", flex: 1, minWidth: 0, overflow: "hidden" }}>
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flex: 1, minWidth: 0 }}>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, flexShrink: 0, whiteSpace: "nowrap" }}>
           <span style={{ color: "var(--ft-dim)", marginRight: 4, textTransform: "uppercase", letterSpacing: "0.06em", fontSize: 9 }}>
             Saved

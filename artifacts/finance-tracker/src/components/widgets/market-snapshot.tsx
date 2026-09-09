@@ -115,8 +115,9 @@ function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
         background: rowBg,
         transition: "background 0.1s",
         cursor: "default",
+        // No overflow: hidden on the row. The ticker name below clips itself;
+        // the figures at the end of the row must not be clipped by the row.
         minWidth: 0,
-        overflow: "hidden",
       }}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}

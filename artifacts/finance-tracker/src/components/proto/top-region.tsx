@@ -39,17 +39,22 @@
 // Where an iteration breaks a DESIGN.md rule it names the rule at its own
 // definition below.
 
-import { useMemo, type CSSProperties, type ReactNode } from "react";
+import { useMemo } from "react";
 import { useListUpcoming } from "@workspace/api-client-react";
 import { Text, HStack, VStack } from "@/components/primitives";
-import { Drill, DrillTarget } from "@/components/drill";
-import { LayoutGrid } from "lucide-react";
-import { formatBaseMoney, formatMoney } from "@/lib/utils";
-import { splitInsight } from "@/lib/insight-split";
-import { useProtoAttribution, useProtoInsights, type ProtoKpiCell } from "@/components/proto/proto-shared";
-import type { AttributionRow, AttributionView } from "@/lib/change-attribution-view";
-
-const RULE = "1px solid var(--ft-border)";
+import { Drill } from "@/components/drill";
+import { formatBaseMoney } from "@/lib/utils";
+import { useProtoInsights, type ProtoKpiCell } from "@/components/proto/proto-shared";
+import type { AttributionRow } from "@/lib/change-attribution-view";
+// Iteration 1 was adopted. Its marks moved to components/dashboard/top-region
+// with it, and the other five now render out of the shipped vocabulary rather
+// than a copy of it — so a change to the real top region shows up here, which
+// is what makes these still worth comparing against.
+import {
+  RULE, Strip, Divided, Col, Reading, EditLayout, Key, PageLabel, Insights, Hero,
+  useAttribution, isDashed, signColour, signed,
+  DashboardTopRegion,
+} from "@/components/dashboard/top-region";
 
 export interface ProtoTopRegionProps {
   variant: number;
@@ -110,131 +115,7 @@ function useMotion(netWorth: number | null) {
   }, [upcoming, netWorth]);
 }
 
-/** The attribution report, already narrowed, plus the currency it is in.
- *  Both or neither — a figure with no currency is not renderable. */
-function useAttribution(): { ok: Extract<AttributionView, { status: "ok" }> | null; currency: string; emptyReason: string | null } {
-  const { view, baseCurrency } = useProtoAttribution();
-  if (view === null || baseCurrency === null) return { ok: null, currency: "", emptyReason: null };
-  if (view.status === "insufficient") return { ok: null, currency: baseCurrency, emptyReason: view.emptyReason };
-  return { ok: view, currency: baseCurrency, emptyReason: null };
-}
-
-/** A cell printing an en dash has nothing to say. Iteration 5 drops these;
- *  every other iteration prints them, which is the comparison. */
-function isDashed(cell: ProtoKpiCell): boolean {
-  return cell.value === "–" || cell.value === "—";
-}
-
-function signColour(v: number): string {
-  if (v === 0) return "var(--ft-muted)";
-  return v > 0 ? "var(--ft-green)" : "var(--ft-red)";
-}
-
-function signed(v: number, currency: string): string {
-  return `${v > 0 ? "+" : ""}${formatMoney(v, currency)}`;
-}
-
 // ── Shared marks ────────────────────────────────────────────────────────────
-
-/**
- * One reading in a status strip — the mark lifted straight out of
- * iter-terminal.tsx's StatusStrip, which is the surface Thomas picked. Key
- * and value on one baseline; the run divides its cells with a left rule and
- * no gap, because a gap says "these are separate" and a rule says "these are
- * adjacent", and on a strip of readings adjacency is the whole idea.
- */
-function Reading({ cell, valueSize = 12 }: { cell: ProtoKpiCell; valueSize?: number }) {
-  const figure = (
-    <Text as="span" numeric size={valueSize} weight={600}
-      color={cell.valueColor ?? "var(--ft-text)"} className={cell.href ? "ft-drill" : undefined} nowrap>
-      {cell.value}
-    </Text>
-  );
-  return (
-    <HStack align="baseline" gap={6} padding="5px 12px" shrink={false}>
-      <Text as="span" mono size={8} upper letterSpacing="0.14em" color="var(--ft-dim)" nowrap>{cell.label}</Text>
-      {cell.href
-        ? <DrillTarget href={cell.href} title={`${cell.label} — open what it is made of`}>{figure}</DrillTarget>
-        : figure}
-      {cell.delta !== undefined && (
-        <Text as="span" numeric size={9} weight={600} color={cell.deltaColor ?? "var(--ft-dim)"} nowrap>{cell.delta}</Text>
-      )}
-    </HStack>
-  );
-}
-
-/** The run those readings sit in. `edges` says which hairlines it seats
- *  itself on, so a strip that follows an already-bordered block does not
- *  paint a second line on top of the first. */
-function Strip({ children, edges = "both" }: { children: ReactNode; edges?: "both" | "bottom" | "none" }) {
-  return (
-    <div style={{
-      display: "flex",
-      flexWrap: "wrap",
-      alignItems: "stretch",
-      borderTop: edges === "both" ? RULE : undefined,
-      borderBottom: edges === "none" ? undefined : RULE,
-      overflowX: "auto",
-      scrollbarWidth: "none",
-    }}>
-      {children}
-    </div>
-  );
-}
-
-/** The divider belongs to the run, not to the cell, so every mark in a strip
- *  goes through here rather than deciding for itself. */
-function Divided({ children, first }: { children: ReactNode; first: boolean }) {
-  return <div style={{ borderLeft: first ? undefined : RULE, flexShrink: 0, display: "flex", alignItems: "center" }}>{children}</div>;
-}
-
-/** A column inside a ruled block. Same argument as Divided one level up: the
- *  rule between two columns is a property of the block. */
-function Col({ children, divided, padding }: { children: ReactNode; divided?: boolean; padding: string }) {
-  return <div style={{ borderLeft: divided === true ? RULE : undefined, padding, minWidth: 0 }}>{children}</div>;
-}
-
-/**
- * EDIT LAYOUT, in two registers.
- *
- * `chip` is the shipped control unchanged — an edge and a radius so it reads
- * as pressable, --ft-muted so it is not the quietest thing in its row.
- * `cell` is the same control as a divided strip cell, which is what an
- * arrangement with no chrome row needs: at that point the strip IS the frame
- * and a border inside it would be a box in a box. Which register an iteration
- * uses is one of the six things being varied.
- */
-function EditLayout({ register, isCustomizing, onCustomize }: {
-  register: "chip" | "cell";
-  isCustomizing: boolean;
-  onCustomize: () => void;
-}) {
-  const shared: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    color: isCustomizing ? "var(--ft-accent)" : "var(--ft-muted)",
-    fontFamily: "var(--font-mono)",
-    fontSize: 9,
-    fontWeight: 600,
-    letterSpacing: "0.10em",
-    textTransform: "uppercase",
-    cursor: "pointer",
-    flexShrink: 0,
-    whiteSpace: "nowrap",
-    background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
-  };
-  const style: CSSProperties = register === "chip"
-    ? { ...shared, height: 26, border: `1px solid ${isCustomizing ? "var(--ft-accent)" : "var(--ft-border2)"}`, borderRadius: 2, padding: "0 10px" }
-    : { ...shared, border: "none", padding: "6px 12px", alignSelf: "stretch" };
-  return (
-    <button onClick={onCustomize} style={style}
-      title={isCustomizing ? "Finish editing" : "Edit layout — add, remove, resize and rearrange the widgets on this page"}>
-      <LayoutGrid size={register === "chip" ? 11 : 10} aria-hidden />
-      {isCustomizing ? "Done" : "Edit layout"}
-    </button>
-  );
-}
 
 /** One decomposition row: the cause, its evidence, its amount, and the
  *  accounts under it.
@@ -277,90 +158,6 @@ function CauseRow({ row, currency, size }: { row: AttributionRow; currency: stri
   );
 }
 
-/**
- * The insight cells.
- *
- * `dense` is the terminal reading of the shipped card's three parts — figure,
- * clause, support — with no float, no radius and no elevation, divided by
- * rules. That knowingly breaks DESIGN.md §6: the AI panel is dismissible, and
- * §6 gives radius and elevation to an ephemeral surface precisely so it stays
- * distinguishable from a permanent one. Every iteration using `dense` is
- * making the trade that the terminal register is worth more than that
- * distinction, and the screenshot is what says whether it is.
- *
- * `column` drops the support line and sets the three findings as a list,
- * which is what an iteration placing them ABOVE the page's subject needs —
- * at that position a three-across grid outranks the hero outright.
- */
-function Insights({ lines, register }: { lines: string[]; register: "dense" | "column" }) {
-  if (lines.length === 0) return null;
-  if (register === "column") {
-    return (
-      <VStack gap={3} paddingY={8}>
-        {lines.map((line, i) => {
-          const { figure, clause } = splitInsight(line);
-          return (
-            <HStack key={i} align="baseline" gap={10} wide>
-              {figure !== null && (
-                <Text as="span" numeric size={12} weight={700} color="var(--ft-text)" nowrap>{figure}</Text>
-              )}
-              <Text as="span" size={11} color="var(--ft-muted)" lineHeight={1.35}>{clause}</Text>
-            </HStack>
-          );
-        })}
-      </VStack>
-    );
-  }
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${lines.length}, minmax(0, 1fr))`, borderTop: RULE, borderBottom: RULE }}>
-      {lines.map((line, i) => {
-        const { figure, clause, support } = splitInsight(line);
-        return (
-          <Col key={i} divided={i > 0} padding="7px 12px">
-            <VStack gap={3}>
-              {figure !== null && (
-                <Text as="div" numeric size={14} weight={700} color="var(--ft-text)" lineHeight={1.1}>{figure}</Text>
-              )}
-              <Text as="div" size={11} color="var(--ft-text)" lineHeight={1.35}>{clause}</Text>
-              {support !== null && (
-                <Text as="div" mono size={9} color="var(--ft-dim)" lineHeight={1.4}>{support}</Text>
-              )}
-            </VStack>
-          </Col>
-        );
-      })}
-    </div>
-  );
-}
-
-/** The hero figure, at whatever size an iteration gives it. Never
- *  overflow-hidden, never ellipsised, and it keeps its drill. */
-function Hero({ cell, size }: { cell: ProtoKpiCell | undefined; size: number }) {
-  const figure = (
-    <Text as="span" numeric size={size} weight={700} letterSpacing="-0.035em" lineHeight={1}
-      className={cell?.href ? "ft-drill" : undefined} nowrap>
-      {cell?.value ?? "—"}
-    </Text>
-  );
-  return (
-    <span style={{ color: cell?.valueColor ?? "var(--ft-text)" }}>
-      {cell?.href
-        ? <DrillTarget href={cell.href} title={`${cell.label} — open what it is made of`}>{figure}</DrillTarget>
-        : figure}
-    </span>
-  );
-}
-
-function Key({ children }: { children: ReactNode }) {
-  return <Text as="span" mono size={8} upper letterSpacing="0.14em" color="var(--ft-dim)" nowrap>{children}</Text>;
-}
-
-/** The page names itself in every iteration. A page label is not one of the
- *  things being varied. */
-function PageLabel({ label }: { label: string }) {
-  return <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.10em" nowrap>{label}</Text>;
-}
-
 /** The two committed rows, at whatever size an iteration gives them. */
 function MotionRows({ inflows, outflows, size }: { inflows: number; outflows: number; size: number }) {
   return (
@@ -392,62 +189,23 @@ export function ProtoTopRegion(props: ProtoTopRegionProps) {
 }
 
 /**
- * 1 · FLAT — no hero at all.
+ * 1 · FLAT — adopted. This is the shipped top region, not a copy of it.
  *
- * The premise the shipped header was rebuilt on is that a dashboard answers
- * one question in two seconds, so one figure leads and the rest drop a level.
- * This tests the opposite premise: that a person who opens this every day
- * already knows roughly where their net worth is and wants to SCAN. Every KPI
- * is the same size, in one ruled run, dashed cells included, EDIT LAYOUT at
- * the end of the same run.
+ * It was the arrangement Thomas picked, so it moved to
+ * components/dashboard/top-region.tsx and came out from behind the flag. The
+ * variant stays wired here so `data-proto="top-1"` still renders the thing
+ * the other five are being compared against — and now it renders the REAL
+ * thing, so the comparison cannot silently drift out of date.
  *
- * Breaks, named: the rebuild's own "one number leads the page". That is not a
- * DESIGN.md clause — it is the argument the current header rests on — and
- * refusing it is the entire point of this iteration. Also DESIGN.md §3's
- * rhythm: there is no whitespace between the three bands at all, only rules.
+ * Its argument, its two knowing rule breaks, and its marks all live in that
+ * file now.
  */
 function TopFlat({ cells, dashboardLabel, isCustomizing, onCustomize }: ProtoTopRegionProps) {
-  const { ok, currency, emptyReason } = useAttribution();
   const lines = useProtoInsights();
-
   return (
-    <VStack marginBottom={14}>
-      <Strip>
-        <Divided first><HStack align="center" padding="5px 12px" shrink={false}><PageLabel label={dashboardLabel} /></HStack></Divided>
-        {cells.map((cell) => (
-          <Divided key={cell.label} first={false}><Reading cell={cell} /></Divided>
-        ))}
-        <HStack grow />
-        <Divided first={false}><EditLayout register="cell" isCustomizing={isCustomizing} onCustomize={onCustomize} /></Divided>
-      </Strip>
-
-      {/* WHAT CHANGED as ONE ROW. Everything the shipped band says — the
-          finding, the causes, their amounts, the window — on a single line,
-          because a page with no hierarchy cannot afford a two-column block
-          for it either. */}
-      <HStack align="baseline" gap={16} wide wrap padding="8px 12px">
-        <Key>WHAT CHANGED</Key>
-        {ok === null ? (
-          <Text as="span" mono size={10} color="var(--ft-dim)">{emptyReason ?? "—"}</Text>
-        ) : (
-          <>
-            <Text as="span" size={12} color="var(--ft-text)" lineHeight={1.35}>{ok.finding.headline}</Text>
-            <HStack grow minWidth0 />
-            {ok.rows.map((row) => (
-              <HStack key={row.kind} align="baseline" gap={5} shrink={false}>
-                <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`} style={{ fontSize: 9 }}>
-                  <Text as="span" mono size={9} upper letterSpacing="0.10em" color="var(--ft-muted)" nowrap>{row.label}</Text>
-                </Drill>
-                <Text as="span" mono size={11} numeric weight={600} color={signColour(row.amountBase)} nowrap>{signed(row.amountBase, currency)}</Text>
-              </HStack>
-            ))}
-            <Key>{ok.windowLabel}</Key>
-          </>
-        )}
-      </HStack>
-
-      <Insights lines={lines} register="dense" />
-    </VStack>
+    <DashboardTopRegion cells={cells} dashboardLabel={dashboardLabel}
+      isCustomizing={isCustomizing} onCustomize={onCustomize}
+      insights={<Insights lines={lines} register="dense" />} />
   );
 }
 

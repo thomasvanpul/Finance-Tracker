@@ -55,8 +55,9 @@ function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
         borderBottom: "1px solid var(--ft-border)", gap: 8,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-raised))" : "transparent",
         transition: "background 0.1s",
+        // No overflow: hidden on the row — the description Drill inside it
+        // already ellipsises itself, and the amount at the end is a figure.
         minWidth: 0,
-        overflow: "hidden",
       }}
     >
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: TYPE_COLOR[tx.type] ?? "var(--ft-muted)", width: 14, flexShrink: 0, textAlign: "center" }}>
@@ -124,7 +125,7 @@ function TxSummaryCard({ type, count, total }: TxSummaryCardProps) {
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color, width: 16, flexShrink: 0, textAlign: "center" }}>
         {TYPE_PREFIX[type]}
       </span>
-      <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {type}
         </div>

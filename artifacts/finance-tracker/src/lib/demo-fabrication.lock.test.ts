@@ -136,8 +136,8 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // Preview-mode UI state — theme-swatch preview, widget-carousel preview.
   // Not a data fabrication; the "preview" here is a controlled UI state
   // toggled by the user, and no financial value is invented.
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1643, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1645, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1820, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1822, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
   { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 773, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
   { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 774, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
@@ -149,7 +149,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/components/investments/derivatives-tab.tsx", line: 1489, reason: "chart normalisation denominator: payoffData empty → 1 to avoid /0 in bar height calc" },
   { path: "artifacts/finance-tracker/src/components/investments/portfolio-tables.tsx", line: 148, reason: "ratio for weighting bar; 1 = fully weighted when live price is missing (chart geometry, not currency)" },
   { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 593, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
-  { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 147, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
+  { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 150, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 549, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1511, reason: "chart max denominator: empty merchants → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1580, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
@@ -160,7 +160,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
 
   // Percentage caps — `... ? Math.min(100, real) : 100` returns 100 as the
   // "already at cap" branch. Non-money literal (percentage points).
-  { path: "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx", line: 1021, reason: "milestone progress cap: no next milestone → 100% (all reached)" },
+  { path: "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx", line: 1020, reason: "milestone progress cap: no next milestone → 100% (all reached)" },
   { path: "artifacts/finance-tracker/src/pages/analytics-helpers.ts", line: 36, reason: "pct-change fallback: curr === 0 branch returns 0; else 100 (∞ growth from 0 baseline)" },
   { path: "artifacts/finance-tracker/src/pages/fire.tsx", line: 374, reason: "coast-FIRE progress cap: coastNeeded <= 0 → 100% (already coasted)" },
   // pension.tsx:285 and :389 were the "100% bar when target undefined"
@@ -185,7 +185,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/recurring.tsx", line: 184, reason: "grid column count for the KPI strip: phone=2, desktop=4 — drives the borderRight column rules, not a figure" },
   { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 1388, reason: "grid column count for the KPI strip: phone=2, desktop=5 — drives the borderRight column rules, not a figure" },
   { path: "artifacts/finance-tracker/src/components/widgets/cash-flow.tsx", line: 149, reason: "chart height in px (220 expanded or 150 collapsed)" },
-  { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", line: 157, reason: "row cap: 30 expanded or 15 collapsed" },
+  { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", line: 158, reason: "row cap: 30 expanded or 15 collapsed" },
   { path: "artifacts/finance-tracker/src/components/widgets/top-merchants.tsx", line: 143, reason: "row cap: 8 expanded or 5 collapsed" },
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1574, reason: "border thickness (2px hi-value, 4px normal)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1248, reason: "chart bar width in px (38 mobile / 44 desktop)" },

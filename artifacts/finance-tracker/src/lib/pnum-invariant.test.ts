@@ -20,8 +20,12 @@
 // surface it visually.
 //
 // Escapes if you genuinely need them:
-//   - Wrap the figure in its own element (a parent can be overflow:
-//     hidden; the .pnum span does not carry it).
+//   - Wrap the figure in its own element. NOTE: narrower than this used to
+//     read. Moving `overflow: hidden` to a parent does NOT make the figure
+//     safe — a parent that also sets `minWidth: 0` crops the digits exactly
+//     as this element would, and that shipped: NET WORTH printed `£229,6`
+//     for `£229,628.27` in customize mode with a perfectly clean `.pnum`.
+//     pnum-clip.lock.test.ts covers the ancestor case; both must pass.
 //   - Use font-size clamp() so the figure shrinks instead of clipping.
 //   - Use pre-computed abbreviations (£1.2k) rather than truncation.
 
