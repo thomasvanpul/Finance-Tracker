@@ -68,7 +68,9 @@ import { Drill, DrillTarget } from "@/components/drill";
 import { ChangeAttributionBand } from "@/components/change-attribution";
 import { attributionView } from "@/lib/change-attribution-view";
 import { useProtoDesign } from "@/lib/use-proto-design";
+import { topRegionVariant } from "@/lib/proto-design";
 import { ProtoDashboard } from "@/components/proto";
+import { ProtoTopRegion } from "@/components/proto/top-region";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -2511,9 +2513,13 @@ function DashboardKpiBar({
 
 interface TerminalLayoutProps {
   aiInsightsProps: AiInsightsPanelProps;
+  /** False only under a top-region prototype, which states the insight lines
+   *  in its own register further up (or, for 5 · MINIMUM, deliberately not at
+   *  all). Nothing in a real session passes anything but true. */
+  showAiInsights: boolean;
 }
 
-function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
+function TerminalLayout({ aiInsightsProps, showAiInsights }: TerminalLayoutProps) {
   return (
     // 8, matching the intra-row gap, which is the point: the vertical
     // distance between rows and the horizontal distance inside one are the
@@ -2524,7 +2530,7 @@ function TerminalLayout({ aiInsightsProps }: TerminalLayoutProps) {
     // still holds and 8 is nowhere near it.
     <VStack gap={8}>
       {/* AI Insights — only shown if AI available */}
-      <AiInsightsPanel {...aiInsightsProps} />
+      {showAiInsights && <AiInsightsPanel {...aiInsightsProps} />}
 
       {/* Row 1: Accounts (60%) + Transactions (40%) */}
       <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }} className="ft-dashboard-two-col">
@@ -3418,7 +3424,16 @@ export default function Dashboard() {
   // comparison. Placed after every hook above has run, so the branch cannot
   // change the hook order. Desktop only: the four are answers to a
   // question about a wide dense screen, and the phone has its own.
-  if (protoDesign !== null && !isMobile) {
+  // Round 3 is not one of those. A `top-*` design replaces the TOP REGION
+  // only — the KPI strip, WHAT CHANGED and the AI insights panel — and lets
+  // the shipped widget grid render underneath it unchanged. The grid is the
+  // part of this page that landed, and a full-page prototype would have
+  // re-opened a question that is already answered. `topRegion` is non-null
+  // for exactly those, and null in every real session for the same reason
+  // protoDesign is.
+  const topRegion = isMobile ? null : topRegionVariant(protoDesign);
+
+  if (protoDesign !== null && topRegion === null && !isMobile) {
     return <ProtoDashboard design={protoDesign} cells={kpiCells} dashboardLabel={dashboardLabel} />;
   }
 
@@ -3453,7 +3468,23 @@ export default function Dashboard() {
         <DashboardEmptyState />
       )}
 
-      {/* ── Bloomberg KPI Bar ── */}
+      {/* ── The top region ──
+          PROTOTYPE BRANCH. `topRegion` is null in every real session, so the
+          shipped arm below is what anyone but the screenshot harness ever
+          sees. The prototype arm swaps the KPI bar, WHAT CHANGED and the AI
+          insights panel for one of the six in components/proto/top-region.tsx;
+          everything after it on this page is identical either way. */}
+      {topRegion !== null ? (
+        <ProtoTopRegion
+          variant={topRegion}
+          cells={kpiCells}
+          dashboardLabel={dashboardLabel}
+          netWorth={dashData?.netWorth ?? null}
+          isCustomizing={isCustomizing}
+          onCustomize={handleCustomizeToggle}
+        />
+      ) : (
+      /* ── Bloomberg KPI Bar ── */
       <DashboardKpiBar
         cells={kpiCells}
         onCustomize={handleCustomizeToggle}
@@ -3462,6 +3493,7 @@ export default function Dashboard() {
         isMobile={isMobile}
         netWorth={dashData?.netWorth ?? null}
       />
+      )}
 
       {/* ── What changed, and what caused it ──
           Directly under the KPI bar because the bar's hero cell is the net
@@ -3470,7 +3502,10 @@ export default function Dashboard() {
           same reason the KPI bar cannot — a headline figure with no stated
           cause is what this is here to stop. The phone gets the same rows
           from MobileHome; this branch is the wide one only. */}
-      {!isMobile && <ChangeAttributionBand />}
+      {/* Suppressed under a top-region prototype: each of the six states the
+          same decomposition in its own arrangement, and rendering the shipped
+          band as well would print one finding twice. */}
+      {!isMobile && topRegion === null && <ChangeAttributionBand />}
 
       {/* Persona quick start — shown once, disappears when all steps done or dismissed */}
       <PersonaQuickStart />
@@ -3646,7 +3681,7 @@ export default function Dashboard() {
         <div>
           {enabledIds.length === 0 ? (
             /* No custom widgets — show terminal layout (desktop) or overview (mobile) */
-            isMobile ? <DashboardOverview /> : <TerminalLayout aiInsightsProps={aiInsightsProps} />
+            isMobile ? <DashboardOverview /> : <TerminalLayout aiInsightsProps={aiInsightsProps} showAiInsights={topRegion === null} />
           ) : isMobile ? (
             <>
               <AiInsightsPanel {...aiInsightsProps} />
@@ -3676,7 +3711,13 @@ export default function Dashboard() {
             </>
           ) : (
             <>
-              <AiInsightsPanel {...aiInsightsProps} />
+              {/* Suppressed under a top-region prototype for the same reason
+                  ChangeAttributionBand is: five of the six render the insight
+                  lines themselves, in their own register and their own
+                  position, and the sixth (5 · MINIMUM) deliberately does not
+                  show them at all. Leaving the shipped float here would print
+                  them twice in five cases and contradict the sixth. */}
+              {topRegion === null && <AiInsightsPanel {...aiInsightsProps} />}
               <DndContext
                 sensors={longPressDesktopSensors}
                 collisionDetection={customCollisionDetection}

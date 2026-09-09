@@ -34,5 +34,13 @@ export function ProtoDashboard({ design, ...props }: ProtoDashboardProps & { des
     case "plausible": return <PlausibleDashboard />;
     case "broadsheet": return <BroadsheetDashboard />;
     case "timeline": return <TimelineDashboard />;
+    // Round 3 ("top-N") never arrives here. Those replace the TOP REGION of
+    // the real dashboard rather than the page, so pages/dashboard.tsx routes
+    // them to ProtoTopRegion before this switch is reached
+    // (topRegionVariant, lib/proto-design.ts). Returning null rather than
+    // widening the union keeps the two families separate: a whole-page design
+    // and a top-region design are not interchangeable and should not share a
+    // component.
+    default: return null;
   }
 }

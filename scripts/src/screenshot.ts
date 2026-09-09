@@ -493,11 +493,107 @@ async function captureOne(context: BrowserContext, route: string, theme: string,
     await page.waitForTimeout(200);
   }
 
+  // ── Interaction states ───────────────────────────────────────────────────
+  //
+  // Every screenshot this harness had taken until 2026-09-09 was a RESTING
+  // state. Nobody had looked at what any surface does when it is touched,
+  // which is half of what makes an interface read as considered rather than
+  // generated — and DESIGN.md §14 closes on exactly this point: "an
+  // affordance that is wired is not an affordance that is visible, and only a
+  // screenshot tells you which you have."
+  //
+  // Four opt-in variables, same precedent as every other toggle above: no
+  // effect on any existing run, and each one is a single mechanism rather
+  // than a scripting language.
+  //
+  //   SCREENSHOT_CLICK='<sel>'   click the first match, then settle. Use for
+  //                              a mode toggle (EDIT LAYOUT) or to follow a
+  //                              drill into the rows behind a figure.
+  //   SCREENSHOT_DRAG='<sel>'    press and HOLD on the first match, wait past
+  //     SCREENSHOT_DRAG_TO=dx,dy dnd-kit's activation delay, move by dx,dy and
+  //                              stop with the button still down. The dashboard
+  //                              grid drags on a 250ms long press in view mode
+  //                              (longPressDesktopSensors), so a plain
+  //                              mouse.down/move never starts one.
+  //   SCREENSHOT_TAB='<n>'       press Tab n times from the top of the
+  //                              document, to photograph a keyboard focus
+  //                              state.
+  //   SCREENSHOT_HOVER='<sel>'   hover the first match.
+  //
+  // Applied in that order and hover LAST, deliberately: the pointer is a
+  // single piece of state, so whichever step touched it most recently is what
+  // the PNG shows. A run that both clicks and hovers gets the hover.
+  const clickSel = process.env.SCREENSHOT_CLICK ?? null;
+  if (clickSel !== null) {
+    const el = await page.$(clickSel);
+    if (el === null) {
+      console.log(`[interact] ${route} click ${clickSel}: no match`);
+    } else {
+      await el.click();
+      await page.waitForTimeout(600);
+      console.log(`[interact] ${route} click ${clickSel}: clicked, now at ${page.url()}`);
+    }
+  }
+
+  const dragSel = process.env.SCREENSHOT_DRAG ?? null;
+  if (dragSel !== null) {
+    const box = await page.$(dragSel).then((el) => el === null ? null : el.boundingBox());
+    if (box === null) {
+      console.log(`[interact] ${route} drag ${dragSel}: no match`);
+    } else {
+      const [dx, dy] = (process.env.SCREENSHOT_DRAG_TO ?? "0,240").split(",").map((n) => Number(n.trim()));
+      const x = box.x + box.width / 2;
+      const y = box.y + Math.min(box.height / 2, 60);
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      // Past both timers the widget runs: a 150ms hold before it draws the
+      // accent outline, and dnd-kit's own 250ms activation delay.
+      await page.waitForTimeout(450);
+      await page.mouse.move(x + dx, y + dy, { steps: 12 });
+      await page.waitForTimeout(350);
+      // No mouse.up — the capture below is of the drag IN FLIGHT, which is
+      // the state that has never been looked at. The page is closed at the
+      // end of this function, so nothing is left held.
+      console.log(`[interact] ${route} drag ${dragSel}: held at ${Math.round(x)},${Math.round(y)} → +${dx},+${dy}`);
+    }
+  }
+
+  const tabCount = process.env.SCREENSHOT_TAB ?? null;
+  if (tabCount !== null) {
+    const n = Number(tabCount);
+    // Start from the document, not from whatever the click above focused,
+    // so "the nth tab stop" means the same thing between runs.
+    await page.evaluate(() => { (document.activeElement as HTMLElement | null)?.blur(); });
+    for (let i = 0; i < n; i++) await page.keyboard.press("Tab");
+    await page.waitForTimeout(250);
+    const focused = await page.evaluate(() => {
+      const el = document.activeElement;
+      if (el === null || el === document.body) return "body (nothing focused)";
+      return `${el.tagName.toLowerCase()}${el.className ? "." + String(el.className).split(" ").join(".") : ""} "${(el.textContent ?? "").trim().slice(0, 40)}"`;
+    });
+    console.log(`[interact] ${route} tab x${n}: focus is on ${focused}`);
+  }
+
+  const hoverSel = process.env.SCREENSHOT_HOVER ?? null;
+  if (hoverSel !== null) {
+    const el = await page.$(hoverSel);
+    if (el === null) {
+      console.log(`[interact] ${route} hover ${hoverSel}: no match`);
+    } else {
+      await el.hover();
+      await page.waitForTimeout(350);
+      console.log(`[interact] ${route} hover ${hoverSel}: hovering`);
+    }
+  }
+
   const measure = process.env.SCREENSHOT_MEASURE ?? null;
   if (measure !== null) {
     const boxes = await page.$$eval(measure, (els) => els.map((el) => {
       const r = el.getBoundingClientRect();
-      return { text: (el.textContent ?? "").trim().slice(0, 40), x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+      // 160 rather than 40. A 40-character slice is enough to tell two cells
+      // apart and not enough to READ one, and a run whose whole purpose is
+      // "what does this surface actually say" then needs a second tool.
+      return { text: (el.textContent ?? "").trim().slice(0, 160), x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
     }));
     for (const [i, b] of boxes.entries()) {
       console.log(`[measure] ${route} ${measure}[${i}] "${b.text}" x=${b.x} y=${b.y} w=${b.w} h=${b.h}`);

@@ -32,6 +32,21 @@
 //   timeline    (free choice) — the dashboard as a log; a balance is a
 //               reading taken at a point on a spine, not a headline
 //
+// ── Round 3 · the TOP REGION only ───────────────────────────────────────────
+// Six arrangements of the KPI strip, WHAT CHANGED and AI insights — the
+// band from the breadcrumb down to the top edge of the widget grid.
+//
+// These are NOT whole-page prototypes. The widget grid below is the one
+// that shipped in 1889007 and it renders unchanged underneath every one of
+// them: `top-*` swaps the top region inside the real dashboard rather than
+// replacing the page. That is the whole point of the round — the grid was
+// the part that landed, and a full-page prototype would have re-opened a
+// question that is already answered.
+//
+// All six are in the terminal register that shipped with the grid. This is
+// not a second design language; it is six ways of arranging and weighting
+// one treatment. See components/proto/top-region.tsx for what each varies.
+//
 // Delete this file, components/proto/ and the four index.css `flat` blocks
 // once a direction has been picked.
 
@@ -40,10 +55,28 @@ export const PROTO_DESIGNS = [
   "ledger", "editorial", "panelled", "bands",
   // Round 2
   "mercury", "stripe", "terminal", "linear", "ramp", "plausible", "broadsheet", "timeline",
+  // Round 3 — top region only, rendered inside the real dashboard
+  "top-1", "top-2", "top-3", "top-4", "top-5", "top-6",
 ] as const;
 
 export type ProtoDesign = (typeof PROTO_DESIGNS)[number];
 
 export function isProtoDesign(value: string | null | undefined): value is ProtoDesign {
   return value != null && (PROTO_DESIGNS as readonly string[]).includes(value);
+}
+
+/**
+ * Round 3's variant number, or null for anything else.
+ *
+ * The distinction matters at the branch in pages/dashboard.tsx: a round-1 or
+ * round-2 design REPLACES the page, and a `top-*` design replaces only the
+ * top region and leaves the shipped widget grid rendering underneath it.
+ * Keeping the test here rather than inline at the branch means the two
+ * families cannot drift apart — a new `top-N` added to the list above is
+ * routed correctly without touching the page.
+ */
+export function topRegionVariant(design: ProtoDesign | null): number | null {
+  if (design === null) return null;
+  const match = /^top-([1-9][0-9]*)$/.exec(design);
+  return match === null ? null : Number(match[1]);
 }
