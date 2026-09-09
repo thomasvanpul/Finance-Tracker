@@ -1150,6 +1150,126 @@ input[type="checkbox"]:checked {
   gap: 8px;
 }
 
+
+/* ── The terminal treatment ─────────────────────────────────────────────────
+   Lifted from components/proto/iter-terminal.tsx (iter-3-terminal, "terminal
+   void"), which Thomas picked out of eight prototypes on 2026-09-08. What is
+   lifted is the TREATMENT, not the layout: the prototype's four-column slab
+   is not here and nothing on the dashboard moved. Only density, edges, and
+   the header register changed.
+
+   Scoped to .ft-terminal, which pages/dashboard.tsx puts on its root. No
+   other page is touched. Density stays a real setting — the three blocks
+   below shift each of the user's density choices rather than replacing it,
+   so compact-on-the-dashboard is still tighter than normal-on-the-dashboard.
+
+   The properties, and where each came from:
+
+     T1  header height    Head is one text row: padding 2px 6px round an
+                          8px label. Here 22px against the app's 34px.
+     T2  header label     8px mono, uppercase, 0.14em, --ft-muted. Size,
+                          tracking and colour are taken; the FACE is not.
+                          DESIGN.md §2 records that mono headers are what
+                          made this page read as monospace and were removed
+                          on purpose, and states the register lives "in the
+                          case and the tracking, not in the face". So Plex
+                          Sans stays and the other three properties move.
+     T3  header fill      --ft-hover (a 7% text tint) rather than
+                          --ft-raised (a second surface). A tint sits on the
+                          panel; a surface step sits above it.
+     T4  row padding      Row is padding 1.5px 6px, columnGap 6. §3 still
+                          holds: cell-py, widget-py and page padding remain
+                          three different numbers, they are just tighter.
+     T5  gaps             The prototype's container gap is 6 and its columns
+                          are divided by rules, not gaps. 6 here.
+
+   What was NOT lifted, and why, is in the report and in DESIGN.md: the
+   prototype has no frames (§1 — the frame is the hierarchy), no hero
+   (the brief keeps it), and no floats (§6 — the AI panel is dismissible
+   and must stay distinguishable from a permanent surface). */
+.ft-terminal {
+  --ft-panel-header-h: 22px;
+  --ft-cell-py: 3px;
+  --ft-cell-px: 8px;
+  --ft-widget-py: 4px;
+  --ft-widget-px: 8px;
+  --ft-metric-py: 5px;
+  --ft-row-gap: 4px;
+  --ft-empty-py: 14px;
+  --ft-empty-px: 10px;
+}
+body.density-compact .ft-terminal {
+  --ft-panel-header-h: 20px;
+  --ft-cell-py: 2px;
+  --ft-cell-px: 7px;
+  --ft-widget-py: 3px;
+  --ft-widget-px: 7px;
+  --ft-metric-py: 4px;
+  --ft-row-gap: 3px;
+  --ft-empty-py: 12px;
+  --ft-empty-px: 9px;
+}
+body.density-comfortable .ft-terminal {
+  --ft-panel-header-h: 28px;
+  --ft-cell-py: 6px;
+  --ft-cell-px: 12px;
+  --ft-widget-py: 7px;
+  --ft-widget-px: 12px;
+  --ft-metric-py: 8px;
+  --ft-row-gap: 6px;
+  --ft-empty-py: 18px;
+  --ft-empty-px: 13px;
+}
+
+/* T2 + T3. .ft-panelrule is the marker class PanelHeader carries for exactly
+   this — a stylesheet naming the one section header without the primitive
+   growing a `style?` hatch (CLAUDE.md, the primitives split). */
+.ft-terminal .ft-panelrule {
+  background: var(--ft-hover);
+}
+.ft-terminal .ft-panel-label {
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  color: var(--ft-muted);
+}
+
+/* T10. Measured after T1 landed: headers carrying a right-slot link came out
+   at 25px while headers without one came out at 22px, because WidgetShell's
+   "→ View" link is 11px sans and its line box is taller than the 22px the
+   token now asks for. The prototype's Head has no such link and is one row
+   everywhere. §2 already specifies right-slot meta as "dim 9-10px mono", so
+   10px fixes the height and moves the link toward the spec at the same time. */
+.ft-terminal .ft-panelrule > div:last-child,
+.ft-terminal .ft-panelrule > div:last-child * {
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+/* T5. The prototype puts 6 between its blocks and nothing inside them. 6
+   between panels here, in both axes, because the vertical distance between
+   two widgets and the horizontal distance between two widgets are the same
+   claim and should not be two numbers. This is the one place the treatment
+   knowingly overrides DESIGN.md §3's ~16px between groups: "no whitespace
+   padding" is the central claim of the prototype that was chosen, and §3's
+   asymmetry survives inside the panels where it does the actual work. */
+.ft-terminal .ft-dashboard-two-col,
+.ft-terminal .ft-dashboard-two-col > div,
+.ft-terminal .ft-three-col {
+  gap: 6px;
+}
+
+/* T9. The rule-based insight cells were three blocks floating in an 8px
+   grid gap. The prototype has no gaps between adjacent readings — it has
+   rules — so they become one ruled slab. Cells already paint --ft-surface,
+   so only the container edge and the dividers are new. */
+.ft-terminal .ft-dashboard-strip {
+  gap: 0;
+  border: 1px solid var(--ft-border);
+}
+.ft-terminal .ft-dashboard-strip > * + * {
+  border-left: 1px solid var(--ft-border);
+}
+
 /* ── Container-query fabric ────────────────────────────────────────────────
    ft-main-inner (in components/layout.tsx) is the wrapper around every
    page's content. Turning it into a query container lets responsive

@@ -644,7 +644,7 @@ function InsightRow({ label, text }: { label: string; text: string }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         background: hovered ? "var(--ft-raised)" : "var(--ft-surface)",
-        padding: "10px 12px",
+        padding: "6px 8px",
         fontFamily: "var(--font-sans)",
         fontSize: 11,
         color: "var(--ft-muted)",
@@ -652,7 +652,12 @@ function InsightRow({ label, text }: { label: string; text: string }) {
         transition: "background 0.1s",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-accent)", marginBottom: 4 }}>
+      {/* T8. Was --ft-accent. Nothing in the prototype is accent-coloured:
+          colour there carries sign and nothing else (green, red, amber),
+          and --ft-muted/--ft-dim carry the rest of the hierarchy. §11
+          reserves the accent for "you can press this", and these labels
+          are not pressable. */}
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ft-muted)", marginBottom: 4 }}>
         {label}
       </div>
       {text}
@@ -734,11 +739,24 @@ function AiInsightsStrip() {
   if (insightRows.length === 0) return null;
 
   return (
-    <div style={{ marginTop: 10 }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
-        Insights
+    <div style={{ marginTop: 6 }}>
+      {/* T9. The label is the prototype's `Head` verbatim — 8px mono,
+          0.14em, --ft-muted, on --ft-hover, one text row tall, ruled top
+          and bottom (iter-terminal.tsx, Head). It is not a PanelHeader:
+          this strip is unframed page structure, and §2 is explicit that a
+          PanelHeader above unframed content draws a lid with no box. */}
+      <div style={{
+        background: "var(--ft-hover)",
+        padding: "2px 8px",
+        borderTop: "1px solid var(--ft-border)",
+        borderBottom: "1px solid var(--ft-border)",
+      }}>
+        <Text as="span" mono size={8} upper letterSpacing="0.14em" color="var(--ft-muted)">Insights</Text>
       </div>
-      <div className="ft-dashboard-insights">
+      {/* ft-dashboard-strip is the marker the terminal scope divides with
+          rules instead of the 8px grid gap it carries elsewhere. The class
+          it also keeps derives the column count from the row count. */}
+      <div className="ft-dashboard-insights ft-dashboard-strip">
         {insightRows.map(({ label, text }) => (
           <InsightRow key={label} label={label} text={text} />
         ))}
@@ -2098,22 +2116,37 @@ function MoneyInMotion({ netWorth }: { netWorth: number | null }) {
  * top of the page at the same size as the one number the page exists to
  * state.
  */
-function DemotedCell({ cell }: { cell: KpiCellData }) {
+function DemotedCell({ cell, divided }: { cell: KpiCellData; divided?: boolean }) {
+  // T7. 13px/700 -> 12px/600, matching the reading value in the status
+  // strip of the prototype. The step down from the hero is unchanged in
+  // kind and one notch deeper in degree.
   const value = (
     <span className={cell.href ? "pnum ft-drill" : "pnum"} style={{
       display: "block",
       fontFamily: "var(--font-mono)",
-      fontSize: 13,
-      fontWeight: 700,
+      fontSize: 12,
+      fontWeight: 600,
       letterSpacing: "-0.01em",
       lineHeight: 1,
       fontVariantNumeric: "tabular-nums",
       whiteSpace: "nowrap",
     }}>{cell.value}</span>
   );
+  // The rule and the padding come from the strip rather than from a gap:
+  // 5px 12px in StatusStrip, 6/14 here because these cells stack a label,
+  // a value and a delta rather than sitting on one baseline. A one-off
+  // surface treatment stays inline rather than being folded into a
+  // primitive — Stack owns layout, and a left rule is surface (CLAUDE.md,
+  // the primitives split).
   return (
-    <VStack gap={5} shrink={false} minWidth={104} paddingY={10}>
-      <Text as="span" mono size={9} weight={600} upper color="var(--ft-dim)" letterSpacing="0.10em" lineHeight={1.2}>
+    <div style={{
+      borderLeft: divided === true ? "1px solid var(--ft-border)" : undefined,
+      padding: "6px 14px",
+      flexShrink: 0,
+      minWidth: 104,
+    }}>
+    <VStack gap={5}>
+      <Text as="span" mono size={8} weight={600} upper color="var(--ft-dim)" letterSpacing="0.14em" lineHeight={1.2}>
         {cell.label}
       </Text>
       {/* The semantic colour sits on the wrapper, never on .ft-drill —
@@ -2127,15 +2160,16 @@ function DemotedCell({ cell }: { cell: KpiCellData }) {
           values keeps one baseline. */}
       <span className="pnum" aria-hidden={cell.delta ? undefined : true} style={{
         fontFamily: "var(--font-mono)",
-        fontSize: 10,
+        fontSize: 9,
         fontWeight: 600,
         lineHeight: 1.2,
-        minHeight: 12,
+        minHeight: 11,
         color: cell.deltaColor ?? "var(--ft-dim)",
         fontVariantNumeric: "tabular-nums",
         whiteSpace: "nowrap",
       }}>{cell.delta ?? ""}</span>
     </VStack>
+    </div>
   );
 }
 
@@ -2449,17 +2483,23 @@ function DashboardKpiBar({
           no longer competing with the number above it. overflowX so a
           narrow viewport scrolls this run rather than shrinking a figure
           into a crop. */}
+      {/* T6. Was gap: 34. The status strip in the prototype divides its
+          readings with borderLeft and no gap at all (iter-terminal.tsx,
+          StatusStrip) — a gap says "these are separate", a rule says
+          "these are adjacent", and on a strip of readings adjacency is
+          the whole idea. Same cells, same order, nothing moved: only
+          what sits between them changed. */}
       {demoted.length > 0 && (
         <div style={{
           display: "flex",
-          gap: 34,
+          gap: 0,
           borderTop: "1px solid var(--ft-border)",
           borderBottom: "1px solid var(--ft-border)",
           overflowX: "auto",
           scrollbarWidth: "none",
         }}>
-          {demoted.map((cell) => (
-            <DemotedCell key={cell.label} cell={cell} />
+          {demoted.map((cell, i) => (
+            <DemotedCell key={cell.label} cell={cell} divided={i > 0} />
           ))}
         </div>
       )}
@@ -3384,7 +3424,11 @@ export default function Dashboard() {
 
   return (
     <DashboardCustomizeContext.Provider value={isCustomizing}>
-    <div>
+    {/* .ft-terminal is the terminal treatment's scope (index.css, "The
+        terminal treatment"). It carries density tokens and the header
+        register lifted from components/proto/iter-terminal.tsx and reaches
+        nothing outside this page. Nothing below it moved. */}
+    <div className="ft-terminal">
       {/* Expanded widget modal */}
       {expandedWidgetId && (
         <WidgetModal id={expandedWidgetId} onClose={() => setExpandedWidgetId(null)} />
@@ -3553,7 +3597,7 @@ export default function Dashboard() {
             <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); lastOverRef.current = null; if (preDragOrderRef.current.length) { setOrder(preDragOrderRef.current); setRightSet(preDragRightSetRef.current); } }}>
               <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 {/* Left column */}
-                <VStack gap={16} grow>
+                <VStack gap={6} grow>
                   <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
                     {leftIds.map((id, idx) => (
                       <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} anyDragging={activeId !== null} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
@@ -3561,7 +3605,7 @@ export default function Dashboard() {
                   </SortableContext>
                 </VStack>
                 {/* Right column */}
-                <VStack gap={16} grow>
+                <VStack gap={6} grow>
                   <SortableContext items={rightIds} strategy={verticalListSortingStrategy}>
                     {rightIds.map((id, idx) => (
                       <SortableWidget key={id} id={id} span={getSpan(id)} index={idx} anyDragging={activeId !== null} onToggleSpan={() => toggleSpan(id)} onRemove={() => toggle(id)} onExpand={() => setExpandedWidgetId(id)} />
@@ -3649,14 +3693,14 @@ export default function Dashboard() {
                 }}
               >
                 <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                  <VStack gap={16} grow>
+                  <VStack gap={6} grow>
                     <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
                       {leftIds.map(id => (
                         <LongPressDraggableWidget key={id} id={id} anyDragging={activeId !== null} onExpand={() => setExpandedWidgetId(id)} />
                       ))}
                     </SortableContext>
                   </VStack>
-                  <VStack gap={16} grow>
+                  <VStack gap={6} grow>
                     <SortableContext items={rightIds} strategy={verticalListSortingStrategy}>
                       {rightIds.map(id => (
                         <LongPressDraggableWidget key={id} id={id} anyDragging={activeId !== null} onExpand={() => setExpandedWidgetId(id)} />

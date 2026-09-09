@@ -728,3 +728,79 @@ matches nothing still moved the list to nothing, and the empty state says so.
 The test is whether the screen responded, not whether the response was
 interesting.
 
+
+## 17. The terminal treatment, and where it applies
+
+The dashboard — and only the dashboard — carries a density and header
+register lifted from `components/proto/iter-terminal.tsx` ("terminal void"),
+the prototype Thomas picked out of eight on 2026-09-08. The scope is the
+class `.ft-terminal`, which `pages/dashboard.tsx` puts on its root; the
+block is in `index.css` under "The terminal treatment". No other page is
+affected, and nothing on the dashboard moved — the KPI row, CUSTOMIZE, the
+AI insights grid and the widget grid are arranged exactly as they were.
+
+**What was lifted.** Ten properties, each traced to the prototype:
+
+| | Property | Prototype | Dashboard now |
+| --- | --- | --- | --- |
+| T1 | Header height | `Head` is one text row (`2px 6px` round an 8px label) | `--ft-panel-header-h: 22px`, from 34px |
+| T2 | Header label | 8px mono, upper, `0.14em`, `--ft-muted` | 10px, `0.13em`, `--ft-muted` — **face stays Plex Sans** |
+| T3 | Header fill | `--ft-hover` | `--ft-hover`, from `--ft-raised` |
+| T4 | Row padding | `Row` is `1.5px 6px`, `columnGap: 6` | `--ft-cell-py: 3`, `--ft-cell-px: 8`, `--ft-widget-py: 4`, `--ft-widget-px: 8` |
+| T5 | Gaps | container gap 6; columns divided by rules | 6px between panels, both axes |
+| T6 | Strip dividers | `StatusStrip` divides readings with `borderLeft`, no gap | the demoted KPI run: `gap: 34` → `gap: 0` + left rules |
+| T7 | Reading type | key 8px `0.14em`; value 12px w600 | demoted cells: label 9→8px, value 13/700→12/600, delta 10→9px |
+| T8 | Colour | sign only — green, red, amber; never the accent | insight labels `--ft-accent` → `--ft-muted` |
+| T9 | Adjacency | blocks abut inside one ruled slab | insights strip: 8px grid gap → 0 + rules + border |
+| T10 | Right-slot meta | no such links exist in the prototype | 10px, so a header with a link is still 22px (§2 already asks for 9–10px mono here) |
+
+T2 takes the size, tracking and colour but **not the face.** §2 records that
+mono headers are what made this page read as monospace and were removed on
+purpose, and states the register lives "in the case and the tracking, not in
+the face". Plex Sans stays.
+
+T5 is the one place this knowingly overrides §3's ~16px between groups. "No
+whitespace padding" is the central claim of the prototype that was chosen.
+§3's asymmetry survives *inside* the panels, where it does the actual work:
+cell padding, widget padding and page padding remain three different numbers.
+
+**Density stays a real setting.** The block has three variants —
+`.ft-terminal`, `body.density-compact .ft-terminal`,
+`body.density-comfortable .ft-terminal` — so the treatment shifts the user's
+choice rather than replacing it. Comfortable-on-the-dashboard is still
+looser than normal-on-the-dashboard.
+
+### What was NOT lifted, and why
+
+- **"No cards."** The prototype has no frames at all: four columns in one
+  slab, divided by rules. §1 is explicit that the frame *is* the hierarchy,
+  that removing it made the page read as "an undifferentiated sheet of
+  numbers", and that Thomas's first positive reaction to the desktop was to
+  the frames landing. Frames stay. This is also the brief's own constraint
+  — the widgets keep their arrangement.
+- **The hero.** The prototype's largest figure is 12px; this page's is 52px.
+  Flattening to 12 deletes the hero, which is structural and contradicts "I
+  still want some important numbers above like before". The ladder is
+  therefore 8 / 10 / 12 / 20 / 52 — wider than the reference, by instruction.
+- **Floats.** The prototype has no radius and no elevation anywhere. The AI
+  insights panel keeps `.ft-float` because §6 uses radius and elevation to
+  mark an *ephemeral* surface, and that panel is dismissible. Stripping it
+  would make a dismissible surface indistinguishable from a permanent one.
+- **Fixed figure columns.** `Row`'s `62px / 88px` tracks work because every
+  row in the prototype is the same three-part shape. Real widgets render
+  donuts, sankeys, calendars, gauges and progress bars; there is no single
+  grid to align them to. Alignment is applied where rows actually exist, via
+  the padding tokens.
+
+### The ceiling on this
+
+Measured 2026-09-09 at 1440×900, seed account, eight widgets enabled: the
+page went 2845px → 2593px, and all nine panel headers went 34px → 22px.
+
+252px is less than the treatment implies because roughly half the widget
+interior padding does not route through the density tokens: 110
+`var(--ft-widget-p[xy])` sites against 108 hard-coded literals across
+`components/widgets/*.tsx`. The treatment reaches everything on a token and
+nothing on a literal. Converting the other 108 would deepen this
+considerably — and would change every other page those widgets appear on,
+so it is its own task, not part of this one.
