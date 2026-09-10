@@ -67,7 +67,7 @@ import {
 } from "@workspace/db";
 import { getBaseCurrency } from "./app-settings-db";
 import { toBase, txToBase, getFxRates, getStockPrices } from "./market";
-import { monthRange, localDateString } from "./date-ranges";
+import { monthRange, localDateString, forwardWindow } from "./date-ranges";
 
 // Roughly 2.5k tokens at ~4 chars/token. Well under Groq's 131k window
 // and small enough that per-message quota cost stays predictable as a
@@ -152,13 +152,12 @@ async function loadCurrentMonthTxs(userId: string): Promise<Array<typeof transac
 }
 
 async function loadUpcoming30d(userId: string): Promise<Array<typeof upcomingTable.$inferSelect>> {
-  const now = new Date();
-  const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const { from, to } = forwardWindow(new Date(), 30);
   return db.select().from(upcomingTable).where(and(
     eq(upcomingTable.userId, userId),
     eq(upcomingTable.status, "pending"),
-    gte(upcomingTable.dueDate, localDateString(now)),
-    lte(upcomingTable.dueDate, localDateString(in30)),
+    gte(upcomingTable.dueDate, from),
+    lte(upcomingTable.dueDate, to),
   ));
 }
 

@@ -17,6 +17,7 @@ import { toBase, snapshotFxRate } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { adjustAccountBalance, isAccountOwnedBy } from "../lib/balance";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
+import { forwardWindow, addCalendarMonths } from "../lib/date-ranges";
 
 const router: IRouter = Router();
 
@@ -65,11 +66,7 @@ router.get("/upcoming", async (req, res): Promise<void> => {
 router.get("/upcoming/summary", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
   await ensureGeneratedUpcoming(userId);
-  const today = new Date();
-  const in30 = new Date(today);
-  in30.setDate(today.getDate() + 30);
-  const todayStr = today.toISOString().slice(0, 10);
-  const in30Str = in30.toISOString().slice(0, 10);
+  const { from: todayStr, to: in30Str } = forwardWindow(new Date(), 30);
 
   const items = await db
     .select()
@@ -167,10 +164,8 @@ router.post("/upcoming/installments", async (req, res): Promise<void> => {
 
   const rows = [];
   for (let i = 0; i < numberOfMonths; i++) {
-    const d = new Date(startDate);
-    d.setMonth(d.getMonth() + i);
     rows.push({
-      dueDate: d.toISOString().slice(0, 10),
+      dueDate: addCalendarMonths(startDate, i),
       description: `${description} (${i + 1}/${numberOfMonths})`,
       category,
       type: "expense" as const,

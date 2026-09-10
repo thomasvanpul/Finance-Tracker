@@ -22,6 +22,7 @@ import { getAiHealth } from "../lib/ai-config";
 import { chainChat, chainChatStream, chainCategorize, chainVision } from "../lib/ai-providers/chain";
 import { buildChatContext, buildCategorizeContext, buildReceiptScanContext, type ContextProgress } from "../lib/ai-context";
 import { logger } from "../lib/logger";
+import { localDateString } from "../lib/date-ranges";
 import { AiChatRequestSchema } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -468,7 +469,7 @@ router.post("/ai/receipt-scan", async (req, res): Promise<void> => {
     const amount = typeof parsed.amount === "number" ? parsed.amount : parseFloat(String(parsed.amount ?? 0)) || 0;
     const date = typeof parsed.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.date)
       ? parsed.date
-      : new Date().toISOString().slice(0, 10);
+      : localDateString(new Date());
     const rawCategory = typeof parsed.category === "string" ? parsed.category : "Other";
     const category: ReceiptCategory = (RECEIPT_CATEGORIES as readonly string[]).includes(rawCategory)
       ? (rawCategory as ReceiptCategory)

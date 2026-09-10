@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import { db, subscriptionsTable, dismissedSubscriptionsTable } from "@workspace/db";
+import { localDateString } from "../lib/date-ranges";
 
 const router: IRouter = Router();
 
@@ -54,7 +55,7 @@ router.post("/subscriptions", async (req, res): Promise<void> => {
     frequency: body.frequency ?? "monthly",
     category: body.category ?? "Other",
     nextDue: body.nextDue ?? null,
-    startDate: body.startDate ?? new Date().toISOString().slice(0, 10),
+    startDate: body.startDate ?? localDateString(new Date()),
     active: body.active ?? true,
     notes: body.notes ?? null,
     manuallyAdded: body.manuallyAdded ?? true,

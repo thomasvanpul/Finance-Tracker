@@ -5,16 +5,9 @@ import { and, eq, gte } from "drizzle-orm";
 import type { Transaction } from "@workspace/db";
 import { txToBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
+import { trailingWindow } from "../lib/date-ranges";
 
 const router = Router();
-
-function getWeekBounds(): { from: Date; to: Date } {
-  const now = new Date();
-  const from = new Date(now);
-  from.setDate(from.getDate() - 7);
-  from.setHours(0, 0, 0, 0);
-  return { from, to: now };
-}
 
 function formatBaseMoney(amount: number): string {
   return new Intl.NumberFormat("en-GB", {
@@ -109,8 +102,7 @@ router.post("/send", async (req: Request, res: Response): Promise<void> => {
 
     const resend = new Resend(apiKey);
 
-    const { from } = getWeekBounds();
-    const fromStr = from.toISOString().slice(0, 10);
+    const fromStr = trailingWindow(new Date(), 7).from;
 
     // Fetch week's transactions
     const weekTxs = await db

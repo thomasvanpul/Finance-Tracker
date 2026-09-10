@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import { db, goalsTable } from "@workspace/db";
+import { localDateString } from "../lib/date-ranges";
 
 const router: IRouter = Router();
 
@@ -116,7 +117,7 @@ router.post("/goals/:id/add-funds", async (req, res): Promise<void> => {
   if (!existing) { res.status(404).json({ error: "Goal not found" }); return; }
 
   const newCurrent = parseFloat(existing.current) + amount;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateString(new Date());
   const history = [...((existing.history as Array<{ date: string; amount: number }> | null) ?? []),
     { date: today, amount: newCurrent }];
 

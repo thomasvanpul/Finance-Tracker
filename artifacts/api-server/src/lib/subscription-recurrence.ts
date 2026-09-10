@@ -32,6 +32,8 @@
 // overstate the commitment. One row ahead means committedOut counts each
 // subscription at most once per window, which is what it means.
 
+import { localDateString } from "./date-ranges";
+
 /** The vocabulary `upcoming.frequency` uses. */
 export type UpcomingFrequency = "one-time" | "weekly" | "monthly" | "quarterly" | "yearly";
 
@@ -203,7 +205,7 @@ export interface GenerationResult {
 }
 
 export function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return localDateString(new Date());
 }
 
 export async function generateUpcomingFromSubscriptions(

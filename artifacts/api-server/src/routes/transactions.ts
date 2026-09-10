@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { db, transactionsTable, accountsTable } from "@workspace/db";
+import { localMonthString } from "../lib/date-ranges";
 import {
   CreateTransactionBody,
   UpdateTransactionParams,
@@ -195,7 +196,7 @@ router.get("/transactions/summary", async (req, res): Promise<void> => {
     res.status(400).json({ error: query.error.message });
     return;
   }
-  const month = query.data.month ?? new Date().toISOString().slice(0, 7);
+  const month = query.data.month ?? localMonthString(new Date());
   const dateFrom = `${month}-01`;
   const lastDay = new Date(parseInt(month.slice(0, 4)), parseInt(month.slice(5, 7)), 0).getDate();
   const dateTo = `${month}-${String(lastDay).padStart(2, "0")}`;

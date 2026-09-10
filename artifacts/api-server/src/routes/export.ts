@@ -6,6 +6,7 @@ import {
 } from "@workspace/db";
 import { txToBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
+import { localDateString } from "../lib/date-ranges";
 
 const router: IRouter = Router();
 
@@ -38,7 +39,7 @@ router.get("/export/backup", async (req, res): Promise<void> => {
   };
 
   res.setHeader("Content-Type", "application/json");
-  res.setHeader("Content-Disposition", `attachment; filename="numeris-backup-${new Date().toISOString().slice(0, 10)}.json"`);
+  res.setHeader("Content-Disposition", `attachment; filename="numeris-backup-${localDateString(new Date())}.json"`);
   res.json(backup);
 });
 

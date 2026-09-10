@@ -5,7 +5,7 @@ import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, txToBase, getStockPrices } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
-import { trailingMonthRanges, localDateString } from "../lib/date-ranges";
+import { trailingMonthRanges, forwardWindow } from "../lib/date-ranges";
 import { captureAccountSnapshots } from "../lib/account-snapshots";
 
 const router: IRouter = Router();
@@ -425,10 +425,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const earliestFrom = ranges[0]!.from;
   const latestTo = ranges[ranges.length - 1]!.to;
 
-  const todayStr = localDateString(now);
-  const in30 = new Date(now);
-  in30.setDate(now.getDate() + 30);
-  const in30Str = localDateString(in30);
+  const { from: todayStr, to: in30Str } = forwardWindow(now, 30);
 
   // Level 0 — nine independent queries + one aggregated 12-month SUM.
   // Fired in parallel because none of them depend on any of the others.
