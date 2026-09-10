@@ -36,6 +36,7 @@ import {
   BlocksView,
   type BandsMonth,
 } from "./CompositionChart";
+import { signedAccountAmount } from "@/lib/account-sign";
 
 // WORTH — the balance-sheet tab. What am I worth, across currencies and
 // across assets, as a 5-second check.
@@ -166,9 +167,15 @@ function computeCurrencyExposure(
 
   for (const a of accounts) {
     if (a.baseEquivalent == null) { unconvertibleCount += 1; continue; }
-    byCurrencyBase.set(a.currency, (byCurrencyBase.get(a.currency) ?? 0) + a.baseEquivalent);
-    byCurrencyNative.set(a.currency, (byCurrencyNative.get(a.currency) ?? 0) + a.balance);
-    totalBase += a.baseEquivalent;
+    // A liability is denominated in a currency too, and it reduces the
+    // exposure rather than adding to it — a £6,800 sterling loan against
+    // £11,375 of sterling cash is £4,575 of sterling, not £18,175. The
+    // balance is stored positive and the type carries the sign.
+    const base = signedAccountAmount(a.type, a.baseEquivalent);
+    const native = signedAccountAmount(a.type, a.balance);
+    byCurrencyBase.set(a.currency, (byCurrencyBase.get(a.currency) ?? 0) + base);
+    byCurrencyNative.set(a.currency, (byCurrencyNative.get(a.currency) ?? 0) + native);
+    totalBase += base;
   }
   for (const p of positions) {
     if (p.baseEquivalent == null) { unconvertibleCount += 1; continue; }
@@ -223,8 +230,18 @@ export function WorthScreen() {
     () => accounts.filter((a) => a.type === "cash"),
     [accounts],
   );
+  // HOLDINGS is what you own that is not cash. A `liability` is not a
+  // holding — it used to fall into this bucket by default, so a season-
+  // ticket loan sat between a SIPP and a flat, added £6,800 to the
+  // holdings subtotal, and read as an asset. It gets its own section
+  // below, which is also how the balance sheet this screen is modelled
+  // on composes: what you have, then what you owe.
   const holdingAccounts = useMemo(
-    () => accounts.filter((a) => a.type !== "cash"),
+    () => accounts.filter((a) => a.type !== "cash" && a.type !== "liability"),
+    [accounts],
+  );
+  const owedAccounts = useMemo(
+    () => accounts.filter((a) => a.type === "liability"),
     [accounts],
   );
 
@@ -239,6 +256,13 @@ export function WorthScreen() {
     if (acctSum == null || posSum == null) return null;
     return acctSum + posSum;
   }, [holdingAccounts, positions]);
+  // Negative, because that is what it does to the total above it. The
+  // sign comes from the value, never from a glyph typed in front of the
+  // formatted string — DESIGN.md §7, Lock #19.
+  const owedSubtotal = useMemo(
+    () => sumBase(owedAccounts, (a) => signedAccountAmount(a.type, a.baseEquivalent)),
+    [owedAccounts],
+  );
 
   const netWorth = dashboard?.netWorth ?? null;
   // MTD delta as proxy for month-to-date net worth change. Same shape
@@ -270,12 +294,13 @@ export function WorthScreen() {
     const orderedLabels: string[] = [];
     for (const a of cashAccounts) { orderedIds.push(`a:${a.id}`); orderedLabels.push(a.name); }
     for (const a of holdingAccounts) { orderedIds.push(`a:${a.id}`); orderedLabels.push(a.name); }
+    for (const a of owedAccounts) { orderedIds.push(`a:${a.id}`); orderedLabels.push(a.name); }
     for (const p of positions) { orderedIds.push(`p:${p.id}`); orderedLabels.push(p.ticker); }
     const tones = deriveTonesForList(orderedLabels);
     const m = new Map<string, string>();
     orderedIds.forEach((id, i) => m.set(id, tones[i]));
     return m;
-  }, [cashAccounts, holdingAccounts, positions]);
+  }, [cashAccounts, holdingAccounts, owedAccounts, positions]);
   // Keyed by String(id) because that is what a URL carries.
   const accountsById = useMemo(() => {
     const m = new Map<string, Account>();
@@ -483,6 +508,20 @@ export function WorthScreen() {
               />
             )
           ),
+        )}
+
+        {/* Always last, whatever the persona ordering does above: a
+            balance sheet reads what you have and then what you owe, and
+            no persona wants its debts first. */}
+        {owedAccounts.length > 0 && (
+          <AccountSection
+            label="OWED"
+            subtotal={owedSubtotal}
+            accounts={owedAccounts}
+            baseCurrency={baseCurrency}
+            tonesById={tonesById}
+            onTap={(a) => openDetail("account", a.id)}
+          />
         )}
       </div>
 
@@ -813,8 +852,11 @@ function AccountRow({
   isLast: boolean;
   onTap: () => void;
 }) {
+  // Signed by type: a liability's stored balance is a positive magnitude,
+  // and the row is where a user reads whether a number is theirs or owed.
+  // The formatter states the sign; never prefix a glyph (§7 / Lock #19).
   const baseStr = account.baseEquivalent != null
-    ? formatBaseMoney(account.baseEquivalent)
+    ? formatBaseMoney(signedAccountAmount(account.type, account.baseEquivalent))
     : "—";
   // Native line only when the account's currency differs from base —
   // "£412.00 / £412.00" is noise. Amount is always the account's own
@@ -823,7 +865,7 @@ function AccountRow({
   // resolved (null), suppress the native line — we cannot compare so
   // we don't fake the answer either way.
   const nativeStr = baseCurrency != null && account.currency !== baseCurrency
-    ? formatNative(account.balance, account.currency)
+    ? formatNative(signedAccountAmount(account.type, account.balance), account.currency)
     : undefined;
   // Secondary line: skip when it would just restate the section header
   // above. CASH accounts already sit under a "CASH" header, and
@@ -913,10 +955,12 @@ function DetailNotFound({ what }: { what: string }) {
 }
 
 function AccountDetail({ account, baseCurrency }: { account: Account; baseCurrency: string | null }) {
+  // Same signing as the row it opened from. A figure that changes sign
+  // when you tap it is worse than either version of it on its own.
   const baseStr = account.baseEquivalent != null
-    ? formatBaseMoney(account.baseEquivalent)
+    ? formatBaseMoney(signedAccountAmount(account.type, account.baseEquivalent))
     : "—";
-  const nativeStr = formatNative(account.balance, account.currency);
+  const nativeStr = formatNative(signedAccountAmount(account.type, account.balance), account.currency);
   const sameCurrency = baseCurrency != null && account.currency === baseCurrency;
   return (
     <>

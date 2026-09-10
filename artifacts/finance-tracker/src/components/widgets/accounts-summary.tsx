@@ -5,6 +5,7 @@ import { useGetDashboard } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import { CurrencyMark } from "@/components/currency-mark";
+import { netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
 
 type SortKey = "name" | "balance" | "gbp";
 
@@ -20,20 +21,26 @@ function formatNative(amount: number, currency: string): string {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 type AccountRowProps = {
-  acct: { id: number | string; name: string; currency: string; balance: number; baseEquivalent: number | null };
+  acct: { id: number | string; name: string; currency: string; balance: number; baseEquivalent: number | null; type: string };
   maxGbp: number;
   share: number | null;
-  totalCash: number;
   isExpanded: boolean;
   isEven: boolean;
 };
 
 function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
   const [hov, setHov] = useState(false);
+  // A liability is stored positive and signed by its type. This column used
+  // to print that magnitude as-is, in green, indistinguishable from savings
+  // — and the footer beneath it excluded the same row, so the column did not
+  // sum to its own total. One signed figure fixes both: the row goes red and
+  // negative (two carriers, never hue alone), and the footer can now add up
+  // what is written above it.
+  const gbp = signedAccountAmount(acct.type, acct.baseEquivalent);
   // Balance bar reads 0-width for unconvertible accounts — comparing
   // magnitude across currencies needs a GBP figure to normalise.
-  const barPct = acct.baseEquivalent != null && maxGbp > 0 ? (Math.abs(acct.baseEquivalent) / maxGbp) * 100 : 0;
-  const isNeg = acct.baseEquivalent != null && acct.baseEquivalent < 0;
+  const barPct = gbp != null && maxGbp > 0 ? (Math.abs(gbp) / maxGbp) * 100 : 0;
+  const isNeg = gbp != null && gbp < 0;
 
   return (
     <tr
@@ -87,11 +94,13 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
       </td>
       <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>
         <span className="pnum">
-          {acct.currency !== "GBP" ? formatNative(acct.balance, acct.currency) : "—"}
+          {acct.currency !== "GBP"
+            ? formatNative(signedAccountAmount(acct.type, acct.balance), acct.currency)
+            : "—"}
         </span>
       </td>
-      <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: acct.baseEquivalent == null ? "var(--ft-dim)" : isNeg ? "var(--ft-red)" : "var(--ft-green)" }}>
-        {acct.baseEquivalent == null ? "—" : <span className="pnum">{formatBaseMoney(acct.baseEquivalent)}</span>}
+      <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: gbp == null ? "var(--ft-dim)" : isNeg ? "var(--ft-red)" : "var(--ft-green)" }}>
+        {gbp == null ? "—" : <span className="pnum">{formatBaseMoney(gbp)}</span>}
       </td>
       {isExpanded && (
         <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
@@ -148,13 +157,27 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
 
   const accounts = d?.accountBreakdown ?? [];
   const maxGbp = accounts.length > 0 ? Math.max(...accounts.map(a => Math.abs(a.baseEquivalent ?? 0))) : 1;
+  // What the rows above the footer actually add up to. `totalCash` is the
+  // ASSET total and deliberately excludes liabilities (routes/dashboard.ts
+  // keeps the terms apart so the response identity holds), so it is the
+  // wrong number to put under a column that lists them.
+  const netTotal = netAccountsTotal(accounts);
+  const owed = accounts.reduce((s, a) => (a.type === "liability" ? s + (a.baseEquivalent ?? 0) : s), 0);
 
   const sorted = [...accounts].sort((a, b) => {
     let diff = 0;
+    // Sort on the SIGNED figures, the ones actually printed in the column.
+    // Sorting the stored magnitudes put a £6,800 loan between £8,100 and
+    // £2,450 while the cell beside it read −£6,800 — a descending column
+    // that visibly does not descend.
     if (sort === "name") diff = a.name.localeCompare(b.name);
-    else if (sort === "balance") diff = a.balance - b.balance;
+    else if (sort === "balance")
+      diff = signedAccountAmount(a.type, a.balance) - signedAccountAmount(b.type, b.balance);
     // GBP sort: unconvertible sinks to the bottom (desc) via -Infinity.
-    else diff = (a.baseEquivalent ?? -Infinity) - (b.baseEquivalent ?? -Infinity);
+    else
+      diff =
+        (signedAccountAmount(a.type, a.baseEquivalent) ?? -Infinity) -
+        (signedAccountAmount(b.type, b.baseEquivalent) ?? -Infinity);
     return sortDir === "desc" ? -diff : diff;
   });
 
@@ -228,15 +251,21 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
               // Without one — an unconvertible account, or no cash at all —
               // the share is unknown, not 0.0%. The GBP cell already
               // em-dashes; the share column must agree with it.
+              //
+              // The denominator stays `totalCash`, the ASSET total, so the
+              // asset rows still sum to 100%. A liability's share is
+              // therefore negative — what it takes back out of the assets —
+              // which is the honest reading and matches its signed figure.
               const share: number | null =
-                d!.totalCash > 0 && acct.baseEquivalent != null ? (acct.baseEquivalent / d!.totalCash) * 100 : null;
+                d!.totalCash > 0 && acct.baseEquivalent != null
+                  ? (signedAccountAmount(acct.type, acct.baseEquivalent)! / d!.totalCash) * 100
+                  : null;
               return (
                 <AccountRow
                   key={acct.id}
                   acct={acct}
                   maxGbp={maxGbp}
                   share={share}
-                  totalCash={d!.totalCash}
                   isExpanded={!!isExpanded}
                   isEven={i % 2 === 0}
                 />
@@ -248,11 +277,24 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
             <tr style={{ background: "var(--ft-raised)", borderTop: "1px solid var(--ft-border2)" }}>
               <td colSpan={3} style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase", fontWeight: 600 }}>
                 {/* `totalCash` is every non-liability account, so it counts a
-                    flat, a SIPP and an ISA. "Total Cash" said otherwise. */}
-                Accounts · {sorted.length} account{sorted.length !== 1 ? "s" : ""}
+                    flat, a SIPP and an ISA. "Total Cash" said otherwise.
+                    The label names the netting when there is netting to
+                    name — a footer that silently subtracts a debt is a
+                    different figure with no way for a reader to tell. */}
+                {owed !== 0 ? "Accounts, net of debt" : "Accounts"} · {sorted.length} account
+                {sorted.length !== 1 ? "s" : ""}
               </td>
-              <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-green)", fontWeight: 600 }}>
-                <Drill href="/accounts" title="Account assets — every account it is the sum of"><span className="pnum">{formatBaseMoney(d!.totalCash)}</span></Drill>
+              <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: netTotal < 0 ? "var(--ft-red)" : "var(--ft-green)", fontWeight: 600 }}>
+                <Drill
+                  href="/accounts"
+                  title={
+                    owed !== 0
+                      ? `Accounts — assets less ${formatBaseMoney(owed)} owed`
+                      : "Account assets — every account it is the sum of"
+                  }
+                >
+                  <span className="pnum">{formatBaseMoney(netTotal)}</span>
+                </Drill>
               </td>
               {isExpanded && <td />}
             </tr>

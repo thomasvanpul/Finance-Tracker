@@ -4,6 +4,7 @@ import { MobileEmptyState } from "./mobile-ui";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
 import { formatMoney } from "@/lib/utils";
 import { getBaseCurrency } from "@/lib/currency-store";
+import { netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
 import { figureFits, labelFits } from "@/components/primitives/block-field";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 
@@ -41,7 +42,8 @@ export function MobileAccounts() {
   // it always tallies real balances. gbpSum drops the FX-missing rows;
   // the per-currency section header still cites `rows.length` so the
   // account count is honest even when the GBP total is under-stated.
-  const total = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+  const total = netAccountsTotal(accounts);
+  const owed = accounts.reduce((s, a) => (a.type === "liability" ? s + (a.baseEquivalent ?? 0) : s), 0);
   const unconvertibleAccounts = accounts.filter((a) => a.baseEquivalent == null).length;
   const currencies = [...new Set(accounts.map((a) => a.currency))].sort((a, b) => {
     // GBP first, then others alphabetical
@@ -51,8 +53,8 @@ export function MobileAccounts() {
   });
   const perCurrency = currencies.map((cur) => {
     const rows = accounts.filter((a) => a.currency === cur);
-    const nativeSum = rows.reduce((s, a) => s + a.balance, 0);
-    const gbpSum = rows.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+    const nativeSum = rows.reduce((s, a) => s + signedAccountAmount(a.type, a.balance), 0);
+    const gbpSum = rows.reduce((s, a) => s + signedAccountAmount(a.type, a.baseEquivalent ?? 0), 0);
     return { currency: cur, rows, nativeSum, gbpSum };
   });
 
@@ -80,8 +82,13 @@ export function MobileAccounts() {
 
       {/* Headline */}
       <VStack padding="4px 18px 18px">
+        {/* The label names the netting where there is netting to name. A
+            headline that silently subtracts a debt is a different figure
+            from the one it was yesterday with no way for the reader to tell
+            which they are looking at. */}
         <MonoLabel size={11} letterSpacing="0.16em">
-          TOTAL · £ · {currencies.length} {currencies.length === 1 ? "CURRENCY" : "CURRENCIES"}
+          {owed !== 0 ? "TOTAL · NET OF DEBT · £" : "TOTAL · £"} · {currencies.length}{" "}
+          {currencies.length === 1 ? "CURRENCY" : "CURRENCIES"}
         </MonoLabel>
         <HStack align="baseline" gap={4} marginTop={6}>
           <Text as="span" size={17} color="var(--ft-dim)">£</Text>
@@ -105,7 +112,7 @@ export function MobileAccounts() {
 
       {/* Currency exposure block field — area encodes GBP share per currency */}
       <div style={{ padding: "0 18px" }}>
-        <CurrencyBlocks perCurrency={perCurrency} total={total} />
+        <CurrencyBlocks perCurrency={perCurrency} />
       </div>
 
       {/* Per-currency account lists */}
@@ -122,10 +129,8 @@ export function MobileAccounts() {
 // Cells below 24px collapse into a +n cell (per approved design rule).
 function CurrencyBlocks({
   perCurrency,
-  total,
 }: {
   perCurrency: Array<{ currency: string; gbpSum: number }>;
-  total: number;
 }) {
   const AVAILABLE_W = 354;
   const FIELD_H = 132;
@@ -135,6 +140,14 @@ function CurrencyBlocks({
   // a small currency share). 48px is the tightest that keeps "+1" fully
   // visible in every theme.
   const COLLAPSED_MIN_W = 48;
+  // A currency whose accounts net to zero or less has no area to draw, so it
+  // is not a tile. The denominator is the sum of what IS drawn — the same
+  // number the widths are computed from. It used to be the screen's headline
+  // total, which was the same figure until that headline began netting debt
+  // out; from that point a currency section that nets negative would have
+  // shrunk the denominator without removing itself from the numerators, and
+  // the tiles would have read past 100%. A percentage on a tile describes
+  // the tile it is written on.
   const items = perCurrency.filter((c) => c.gbpSum > 0);
   const sumForRatio = items.reduce((s, c) => s + c.gbpSum, 0) || 1;
 
@@ -194,7 +207,8 @@ function CurrencyBlocks({
         // A share of a zero or negative total has no denominator, so there
         // is no percentage to show. The tile shows its currency label alone
         // rather than a fabricated "0%".
-        const pctText = total > 0 ? `${Math.round((c.gbpSum / total) * 100)}%` : null;
+        const pctText =
+          items.length > 0 ? `${Math.round((c.gbpSum / sumForRatio) * 100)}%` : null;
         const showPct = pctText != null && figureFits(pctText, c.pxWidth, 15, 14);
         const showLabel = labelFits(c.currency, c.pxWidth, 11, 14);
         return (
@@ -238,19 +252,33 @@ function CurrencyBlocks({
 // Cash rows carry nothing: the default is the norm, we mark the exception.
 type AccountRow = { id: number; name: string; balance: number; baseEquivalent: number | null; type: "cash" | "investment" | "pension" | "property" | "other" | "liability" };
 
-// `liability` is deliberately null — the same "no mark" cash gets — because
-// choosing its mark is a design decision, and this change (2026-09-11) was
-// scoped to the arithmetic, not the screens. CONSEQUENCE, stated rather than
-// hidden: a liability account currently renders in this list exactly like an
-// asset, with a positive balance and no mark, even though net worth now
-// subtracts it. That gap is real and belongs to the allocation-UI task.
+// The liability mark, and why it is not two letters like the rest.
+//
+// The other four abbreviate a type that only changes what KIND of asset a
+// row is: an ISA and a savings account are both money you have. `liability`
+// changes the SIGN of the row — the balance is stored positive and the type
+// supplies the sign (schema/accounts.ts) — and this list is where a user
+// reads what they are worth. A row misread here is a user who thinks a debt
+// is savings, which is the expensive direction.
+//
+// So it gets a word, not an abbreviation. "LB" would be consistent with IV /
+// PN / PR / OT and would be the one mark in the set whose meaning a reader
+// cannot guess, on the one row where guessing wrong costs money. Consistency
+// is not worth that.
+//
+// The mark is the SECOND carrier, not the first. The figure itself is
+// rendered negative below — DESIGN.md §7: legibility never rests on one
+// signal, and a glyph is a weaker signal than a minus sign in front of the
+// number a user is reading. Colour is deliberately NOT used: red on this
+// list means an outward movement, and a debt balance is a standing position,
+// not a movement.
 const TYPE_MARK: Record<AccountRow["type"], string | null> = {
   cash: null,
   investment: "IV",
   pension: "PN",
   property: "PR",
   other: "OT",
-  liability: null,
+  liability: "OWED",
 };
 
 function CurrencySection({
@@ -336,19 +364,24 @@ function CurrencySection({
                 </span>
               )}
             </HStack>
+            {/* The sign comes from the FORMATTER, never from a glyph typed in
+                front of it. nfmt and formatMoney both sign a negative, and
+                prefixing "−" to an already-signed value yields "−−£6,800.00"
+                — DESIGN.md §7, Lock #19. So the VALUE is negated and the
+                formatter states it. */}
             {isGbp ? (
               <Text as="span" mono size={13} numeric>
-                {a.baseEquivalent == null ? "—" : nfmt(a.baseEquivalent)}
+                {a.baseEquivalent == null ? "—" : nfmt(signedAccountAmount(a.type, a.baseEquivalent))}
               </Text>
             ) : (
               // Foreign row: native amount stays honest on the left;
               // "≈ —" replaces the GBP figure when FX is unavailable.
               <HStack gap={10} align="baseline">
                 <Text as="span" mono size={12} color="var(--ft-dim)" numeric>
-                  {sym}{nfmt(a.balance)} ≈
+                  {sym}{nfmt(signedAccountAmount(a.type, a.balance))} ≈
                 </Text>
                 <Text as="span" mono size={13} color={a.baseEquivalent == null ? "var(--ft-dim)" : undefined} numeric>
-                  {formatMoney(a.baseEquivalent, getBaseCurrency())}
+                  {formatMoney(a.baseEquivalent == null ? null : signedAccountAmount(a.type, a.baseEquivalent), getBaseCurrency())}
                 </Text>
               </HStack>
             )}

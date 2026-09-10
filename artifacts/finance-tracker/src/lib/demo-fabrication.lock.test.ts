@@ -149,7 +149,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/components/investments/derivatives-tab.tsx", line: 1489, reason: "chart normalisation denominator: payoffData empty → 1 to avoid /0 in bar height calc" },
   { path: "artifacts/finance-tracker/src/components/investments/portfolio-tables.tsx", line: 148, reason: "ratio for weighting bar; 1 = fully weighted when live price is missing (chart geometry, not currency)" },
   { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 591, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
-  { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 150, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
+  { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 159, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 549, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1511, reason: "chart max denominator: empty merchants → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1580, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
