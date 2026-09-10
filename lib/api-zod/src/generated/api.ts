@@ -165,13 +165,14 @@ export const GetDashboardResponse = zod.object({
   "netLiquidity": zod.number(),
   "netWorth": zod.number(),
   "totalCash": zod.number(),
+  "totalLiabilities": zod.number(),
   "accountBreakdown": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "currency": zod.string(),
   "balance": zod.number(),
   "baseEquivalent": zod.number().nullable(),
-  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other'])
+  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other', 'liability'])
 })),
   "portfolio": zod.object({
   "totalValueBase": zod.number(),
@@ -223,7 +224,7 @@ export const ListAccountsResponseItem = zod.object({
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number(),
   "baseEquivalent": zod.number().nullable(),
-  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other']),
+  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other', 'liability']),
   "isWiseLinked": zod.boolean(),
   "wiseProfileId": zod.string().nullish(),
   "wiseBalanceId": zod.string().nullish(),
@@ -240,7 +241,7 @@ export const CreateAccountBody = zod.object({
   "name": zod.string(),
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number(),
-  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other']).optional()
+  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other', 'liability']).optional()
 })
 
 
@@ -470,7 +471,7 @@ export const UpdateAccountBody = zod.object({
   "name": zod.string().optional(),
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']).optional(),
   "balance": zod.number().optional(),
-  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other']).optional()
+  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other', 'liability']).optional()
 })
 
 export const UpdateAccountResponse = zod.object({
@@ -479,7 +480,7 @@ export const UpdateAccountResponse = zod.object({
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']),
   "balance": zod.number(),
   "baseEquivalent": zod.number().nullable(),
-  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other']),
+  "type": zod.enum(['cash', 'investment', 'pension', 'property', 'other', 'liability']),
   "isWiseLinked": zod.boolean(),
   "wiseProfileId": zod.string().nullish(),
   "wiseBalanceId": zod.string().nullish(),

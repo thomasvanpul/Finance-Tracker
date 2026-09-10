@@ -17,6 +17,7 @@ export interface DashboardSummary {
   netLiquidity: number;
   netWorth: number;
   totalCash: number;
+  totalLiabilities: number;
   accountBreakdown: DashboardSummaryAccountBreakdownItem[];
   portfolio: DashboardSummaryPortfolio;
   thisMonth: DashboardSummaryThisMonth;

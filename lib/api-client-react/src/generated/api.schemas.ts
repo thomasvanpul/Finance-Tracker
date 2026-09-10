@@ -668,6 +668,7 @@ export const AccountType = {
   pension: 'pension',
   property: 'property',
   other: 'other',
+  liability: 'liability',
 } as const;
 
 export interface Account {
@@ -715,6 +716,7 @@ export const AccountInputType = {
   pension: 'pension',
   property: 'property',
   other: 'other',
+  liability: 'liability',
 } as const;
 
 export interface AccountInput {
@@ -751,6 +753,7 @@ export const AccountUpdateType = {
   pension: 'pension',
   property: 'property',
   other: 'other',
+  liability: 'liability',
 } as const;
 
 export interface AccountUpdate {
@@ -1675,6 +1678,7 @@ export const DashboardSummaryAccountBreakdownItemType = {
   pension: 'pension',
   property: 'property',
   other: 'other',
+  liability: 'liability',
 } as const;
 
 export type DashboardSummaryAccountBreakdownItem = {
@@ -1751,6 +1755,7 @@ export interface DashboardSummary {
   netLiquidity: number;
   netWorth: number;
   totalCash: number;
+  totalLiabilities: number;
   accountBreakdown: DashboardSummaryAccountBreakdownItem[];
   portfolio: DashboardSummaryPortfolio;
   thisMonth: DashboardSummaryThisMonth;

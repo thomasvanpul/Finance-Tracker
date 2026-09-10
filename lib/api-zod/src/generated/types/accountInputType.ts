@@ -15,4 +15,5 @@ export const AccountInputType = {
   pension: 'pension',
   property: 'property',
   other: 'other',
+  liability: 'liability',
 } as const;

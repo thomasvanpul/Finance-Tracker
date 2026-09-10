@@ -80,17 +80,70 @@ interface OwingRow { name: string; amountBase: number; direction: "they_owe_me" 
 // Finance, so without this the account-type filter would be asserted only by
 // a comment — and it is the whole point of the fix.
 //
-// `other` is the type a season-ticket loan, a mortgage or a credit card lands
-// in today, because accountsTable.type has NO liability member. Those rows
-// therefore ADD to any total that includes them. Excluding every non-`cash`
-// type is what keeps a debt out of "what can I spend", and it is why this is
-// an allowlist of one type rather than a denylist of the types known to be
-// wrong.
+// An allowlist of one type rather than a denylist of the types known to be
+// wrong. Since 2026-09-11 a loan, mortgage or credit card has its own
+// `liability` type, but the allowlist is still the right shape: `property`,
+// `pension` and `investment` are not spendable either, and a denylist would
+// have to be extended by hand every time a type is added.
+//
+// UNCHANGED by the liability work, deliberately. A liability is not spendable
+// cash in either direction — it must neither add to netLiquidity (the bug
+// that existed while loans lived in `other`) nor subtract from it. Same for
+// GET /allocation.availableNow, which applies the identical `type = 'cash'`
+// filter in SQL (routes/allocation.ts:57).
+//
+// A NEGATIVE baseEquivalent on a `cash` row is an overdraft and DOES belong
+// here, as a negative contribution: an overdrawn current account really does
+// reduce what you can spend this month. That is the whole reason overdraft
+// and liability are not collapsed onto the sign.
 export function spendableCashTotal(
   breakdown: readonly { type: string; baseEquivalent: number | null }[],
 ): number {
   return breakdown.reduce<number>(
     (sum, a) => (a.type === "cash" ? sum + (a.baseEquivalent ?? 0) : sum), 0);
+}
+
+// The two halves of the account ledger, split by whether the type owes or
+// owns. Pure and exported for the same reason spendableCashTotal is: the
+// handler around them needs a live DB and Yahoo Finance, so without these
+// the sign of a loan would be asserted only by a comment.
+//
+// The invariant that binds them, and that the tests pin:
+//
+//   assetAccountsTotal(rows) - liabilityAccountsTotal(rows)
+//     == the net contribution of accounts to net worth
+//
+// and, crucially, for the SAME magnitude entered two different ways:
+//
+//   a £6,800 `liability` with balance +6800  → net worth −6800
+//   a −£6,800 balance on a `cash` account    → net worth −6800  (same)
+//                                            → netLiquidity −6800 (different)
+//
+// Identical on net worth, different on spendable cash. That is what makes an
+// overdraft and a loan distinguishable, and it is the distinction a future
+// refactor will quietly break.
+export function assetAccountsTotal(
+  breakdown: readonly { type: string; baseEquivalent: number | null }[],
+): number {
+  return breakdown.reduce<number>(
+    (sum, a) => (a.type === "liability" ? sum : sum + (a.baseEquivalent ?? 0)), 0);
+}
+
+// Returns a POSITIVE magnitude. The caller subtracts it. Returning it
+// pre-negated would put two negations in the codebase — one here and one at
+// whichever call site forgot — and the sign of a debt is exactly the thing
+// that has already been wrong once.
+//
+// A liability row whose balance is somehow negative is summed as given
+// (a −£100 `liability` reduces the debt total by £100, i.e. increases net
+// worth). No clamping: clamping would be the app deciding it knows better
+// than the number the user entered, and CLAUDE.md's rule is that a figure is
+// shown as supplied or not at all.
+export function liabilityAccountsTotal(
+  breakdown: readonly { type: string; baseEquivalent: number | null }[],
+): number {
+  return breakdown.reduce<number>(
+    (sum, a) => (a.type === "liability" ? sum + (a.baseEquivalent ?? 0) : sum), 0);
 }
 
 async function processAccounts(accounts: Account[], baseCurrency: string) {
@@ -110,7 +163,16 @@ async function processAccounts(accounts: Account[], baseCurrency: string) {
       };
     }),
   );
-  const totalCash = accountBreakdown.reduce<number>((s, a) => s + (a.baseEquivalent ?? 0), 0);
+  // totalCash counts every ASSET type and excludes `liability`, which is
+  // reported alongside it as a positive magnitude. The alternative — netting
+  // the loan into totalCash — was rejected: it would make a field named
+  // "Cash" fall when a loan is entered, and it would hide the size of the
+  // debt inside an opaque total. Keeping the terms separate also preserves
+  // the response identity a consumer can check:
+  //   netWorth == totalCash + portfolio.totalValueBase + owing.netBase
+  //               - totalLiabilities
+  const totalCash = assetAccountsTotal(accountBreakdown);
+  const totalLiabilities = liabilityAccountsTotal(accountBreakdown);
   // Spendable cash is a NARROWER total than totalCash, and the two are not
   // interchangeable. totalCash is a net-worth input and legitimately counts a
   // flat, a pension and an ISA. netLiquidity answers "what can move this
@@ -121,7 +183,7 @@ async function processAccounts(accounts: Account[], baseCurrency: string) {
   // because a Kuala Lumpur flat, a SIPP, an ISA and a season-ticket LOAN were
   // all being counted as money in hand.
   const cashOnlyTotal = spendableCashTotal(accountBreakdown);
-  return { accountBreakdown, totalCash, cashOnlyTotal, unconvertibleAccounts };
+  return { accountBreakdown, totalCash, totalLiabilities, cashOnlyTotal, unconvertibleAccounts };
 }
 
 async function processInvestments(investments: Investment[], baseCurrency: string) {
@@ -346,19 +408,31 @@ async function processMyPayerExpenses(
 //      "unknown / dotted / —", NEVER a fabricated 0. The pnum invariant
 //      applied to a monthly total, per CLAUDE.md — "a number the API did
 //      not supply" is the exact defect this null is preventing.
-// Net worth, as a pure function of its four terms. Extracted for the same
+// Net worth, as a pure function of its five terms. Extracted for the same
 // reason as foldMonthlyConverted below: the handler it lives in needs a
 // live DB and Yahoo Finance to run, so without this the owing term would
 // be asserted only by a comment. See the call site for why the term is
 // there and what invariant it buys.
 export interface NetWorthTerms {
+  /** Sum of ASSET accounts in base. Excludes `liability` rows. */
   totalCash: number;
   portfolioValueBase: number;
   totalOwedToMe: number;
   totalIOwe: number;
+  /**
+   * Sum of `liability` accounts in base, as a POSITIVE magnitude —
+   * a £6,800 season-ticket loan is 6800 here, and net worth falls by 6800.
+   *
+   * REQUIRED, not optional-with-a-default. A default of 0 would let a call
+   * site that forgot the term compile and quietly return the pre-2026-09-11
+   * answer, which is the exact defect this term was added to fix. Missing it
+   * must be a type error.
+   */
+  totalLiabilities: number;
 }
 export function computeNetWorth(t: NetWorthTerms): number {
-  return t.totalCash + t.portfolioValueBase + t.totalOwedToMe - t.totalIOwe;
+  return t.totalCash + t.portfolioValueBase + t.totalOwedToMe - t.totalIOwe
+    - t.totalLiabilities;
 }
 
 export interface MonthlyConvertedBucket { month: string; type: string; gbp: number | null }
@@ -496,7 +570,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // Level-0 result + baseCurrency (which resolved with them). Independent
   // of each other, so Promise.all across domains.
   const [
-    { accountBreakdown, totalCash, cashOnlyTotal, unconvertibleAccounts },
+    { accountBreakdown, totalCash, totalLiabilities, cashOnlyTotal, unconvertibleAccounts },
     { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase },
     { monthIncome, monthExpenses },
     { committedOut, expectedIn },
@@ -521,10 +595,29 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const snapshotMap = new Map<string, typeof snapshots[number]>();
   for (const s of snapshots) snapshotMap.set(s.month, s);
 
-  const liveComposition = { cash: 0, investment: 0, pension: 0, property: 0, other: 0 };
+  // nw_snapshots has exactly five columns — cash / investment / pension /
+  // property / other — and no liability bucket, so a `liability` row has
+  // nowhere honest to go here and is SKIPPED. That is deliberate and it is
+  // stated in the response: composition sums the ASSET side only, and it is
+  // already documented as not totalling net worth (the owing term is absent
+  // from it for the same structural reason).
+  //
+  // The skip is explicit rather than incidental. Without it the index
+  // expression below evaluates `liveComposition["liability"]` → undefined,
+  // `undefined + 6800` → NaN, and writes a NaN onto a sixth key. Nothing
+  // reads that key today, so the bug would have been invisible until the
+  // day someone widened the rounding block below to iterate the object.
+  //
+  // What a sixth bucket would take is in .review/report.md — it is a
+  // migration, a spec change to a `required:` list, and a decision about
+  // whether a ring can render a segment that subtracts. Not built here.
+  type AssetBucket = "cash" | "investment" | "pension" | "property" | "other";
+  const liveComposition: Record<AssetBucket, number> =
+    { cash: 0, investment: 0, pension: 0, property: 0, other: 0 };
   for (const a of accountBreakdown) {
     if (a.baseEquivalent == null) continue;
-    liveComposition[a.type as "cash" | "investment" | "pension" | "property" | "other"] += a.baseEquivalent;
+    if (a.type === "liability") continue;
+    liveComposition[a.type as AssetBucket] += a.baseEquivalent;
   }
   liveComposition.investment += portfolioValueBase;
   const round4 = (n: number) => Math.round(n * 100) / 100;
@@ -676,7 +769,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // it is not an argument against this term: before this change the same
   // debt was never counted at all, which is wrong in both phases rather
   // than one.
-  const netWorth = computeNetWorth({ totalCash, portfolioValueBase, totalOwedToMe, totalIOwe });
+  const netWorth = computeNetWorth({ totalCash, portfolioValueBase, totalOwedToMe, totalIOwe, totalLiabilities });
   const portfolioPlBase = portfolioValueBase - portfolioCostBase;
   // No cost basis (empty portfolio) → no return to compute. Null, not 0
   // — a "+0.00%" render for a user who holds nothing is a fabricated
@@ -693,6 +786,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       netLiquidity: Math.round(netLiquidity * 100) / 100,
       netWorth: Math.round(netWorth * 100) / 100,
       totalCash: Math.round(totalCash * 100) / 100,
+      totalLiabilities: Math.round(totalLiabilities * 100) / 100,
       unconvertibleAccounts,
       accountBreakdown,
       portfolio: {

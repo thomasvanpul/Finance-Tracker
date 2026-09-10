@@ -236,14 +236,21 @@ function CurrencyBlocks({
 // same treatment as the WISE pill on the desktop accounts page — because the
 // currency grouping alone can't tell you an ISA from a savings account.
 // Cash rows carry nothing: the default is the norm, we mark the exception.
-type AccountRow = { id: number; name: string; balance: number; baseEquivalent: number | null; type: "cash" | "investment" | "pension" | "property" | "other" };
+type AccountRow = { id: number; name: string; balance: number; baseEquivalent: number | null; type: "cash" | "investment" | "pension" | "property" | "other" | "liability" };
 
+// `liability` is deliberately null — the same "no mark" cash gets — because
+// choosing its mark is a design decision, and this change (2026-09-11) was
+// scoped to the arithmetic, not the screens. CONSEQUENCE, stated rather than
+// hidden: a liability account currently renders in this list exactly like an
+// asset, with a positive balance and no mark, even though net worth now
+// subtracts it. That gap is real and belongs to the allocation-UI task.
 const TYPE_MARK: Record<AccountRow["type"], string | null> = {
   cash: null,
   investment: "IV",
   pension: "PN",
   property: "PR",
   other: "OT",
+  liability: null,
 };
 
 function CurrencySection({

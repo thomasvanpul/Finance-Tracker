@@ -104,7 +104,7 @@ interface Account {
   currency: string;
   balance: number;
   baseEquivalent: number | null;
-  type: "cash" | "investment" | "pension" | "property" | "other";
+  type: "cash" | "investment" | "pension" | "property" | "other" | "liability";
 }
 
 interface Position {

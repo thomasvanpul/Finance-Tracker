@@ -11,7 +11,14 @@ import { BlockField } from "@/components/primitives/block-field";
 // Exported so MobileHome can re-export them for backward-compat callers
 // (MobileNetWorth, mobile-home.test).
 
-export type AccountType = "cash" | "investment" | "pension" | "property" | "other";
+// Mirrors the API's account-type enum (lib/api-spec/openapi.yaml). `liability`
+// joined it on 2026-09-11 and is NOT a Holdings bucket: nw_snapshots has five
+// columns and no liability one, so computeHoldings skips those rows. See the
+// skip in computeHoldings for why that is explicit rather than incidental.
+export type AccountType = "cash" | "investment" | "pension" | "property" | "other" | "liability";
+
+/** The five composition buckets. A strict subset of AccountType. */
+export type HoldingsBucket = Exclude<AccountType, "liability">;
 
 export interface HoldingsInput {
   accountBreakdown?: Array<{ type: AccountType; baseEquivalent: number | null }>;
@@ -30,6 +37,11 @@ export function computeHoldings(d: HoldingsInput | null | undefined): Holdings {
   const buckets: Holdings = { cash: 0, investment: 0, pension: 0, property: 0, other: 0 };
   for (const a of d?.accountBreakdown ?? []) {
     if (a.baseEquivalent == null) continue;
+    // A `liability` account has no bucket here and is skipped, matching the
+    // server's snapshot write (routes/dashboard.ts). Composition is the ASSET
+    // side only; it already does not total net worth. Without this line
+    // `buckets["liability"]` is undefined and `undefined + 6800` is NaN.
+    if (a.type === "liability") continue;
     buckets[a.type] += a.baseEquivalent;
   }
   if (d?.portfolio?.totalValueBase != null) {

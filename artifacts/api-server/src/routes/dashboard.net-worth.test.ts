@@ -25,7 +25,10 @@ const { computeNetWorth } = await import("./dashboard");
 // so this pure function is where the arithmetic is pinned.
 
 describe("computeNetWorth", () => {
-  const base = { totalCash: 10_000, portfolioValueBase: 5_000, totalOwedToMe: 0, totalIOwe: 0 };
+  const base = {
+    totalCash: 10_000, portfolioValueBase: 5_000,
+    totalOwedToMe: 0, totalIOwe: 0, totalLiabilities: 0,
+  };
 
   it("sums cash and portfolio when nothing is owed either way", () => {
     expect(computeNetWorth(base)).toBe(15_000);
@@ -65,5 +68,27 @@ describe("computeNetWorth", () => {
     const pending = computeNetWorth({ ...base, totalOwedToMe: 100 });
     const settled = computeNetWorth({ ...base, totalCash: base.totalCash + 100, totalOwedToMe: 0 });
     expect(settled).toBe(pending);
+  });
+
+  // The account-liability term, added 2026-09-11. Until then accountsTable
+  // had no `liability` type, so a loan was entered as `other`, counted in
+  // totalCash, and ADDED to the number the sidebar footer calls net worth.
+  // See dashboard.liability.test.ts for the split that feeds this term and
+  // for the overdraft-vs-loan distinction it rests on.
+  it("subtracts an account liability", () => {
+    expect(computeNetWorth({ ...base, totalLiabilities: 6_800 })).toBe(8_200);
+  });
+
+  it("moves by twice the balance when a loan is re-typed out of an asset bucket", () => {
+    const asAsset = computeNetWorth({ ...base, totalCash: base.totalCash + 6_800 });
+    const asLiability = computeNetWorth({ ...base, totalLiabilities: 6_800 });
+    expect(asAsset - asLiability).toBe(13_600);
+  });
+
+  // Distinct terms, not one netted figure. An account liability and a debt
+  // owed to a person are different rows in different tables and must both
+  // land, or the first one entered silently masks the second.
+  it("subtracts an account liability and an owed debt independently", () => {
+    expect(computeNetWorth({ ...base, totalLiabilities: 6_800, totalIOwe: 200 })).toBe(8_000);
   });
 });

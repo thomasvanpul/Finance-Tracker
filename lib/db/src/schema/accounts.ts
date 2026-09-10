@@ -11,10 +11,27 @@ export const accountsTable = pgTable(
     name: text("name").notNull(),
     currency: text("currency").notNull().default("GBP"),
     balance: numeric("balance", { precision: 18, scale: 4 }).notNull().default("0"),
-    // cash | investment | pension | property | other. Every existing account
-    // was Wise-linked or a manually-entered liquid account, so the migration
-    // backfills all rows to 'cash' (rationale recorded in the migration's
-    // accompanying commit). Users can reclassify later.
+    // cash | investment | pension | property | other | liability.
+    //
+    // A plain text column, NOT a pgEnum, and deliberately left that way:
+    // adding `liability` (2026-09-11) needed no migration at all, whereas a
+    // pgEnum would have needed ALTER TYPE ... ADD VALUE, which Postgres
+    // forbids using in the same transaction that adds it — and drizzle's
+    // migrator runs each file in a transaction. The allowed set is enforced
+    // at the API boundary by the generated zod enum (lib/api-zod, from
+    // lib/api-spec/openapi.yaml), which is where a bad value can actually
+    // arrive from.
+    //
+    // `liability` carries a POSITIVE balance and the type supplies the sign:
+    // net worth subtracts it (see computeNetWorth in routes/dashboard.ts). A
+    // negative balance on a `cash` account is a genuine OVERDRAFT and is a
+    // different thing — collapsing both onto the sign would destroy that
+    // distinction permanently, which is why the type exists.
+    //
+    // Every account predating 2026-08 was Wise-linked or a manually-entered
+    // liquid account, so the original migration backfilled all rows to
+    // 'cash'. Nothing is re-typed automatically: which of a user's accounts
+    // is a liability is the user's judgement, not a heuristic over names.
     type: text("type").notNull().default("cash"),
     // Wise-specific columns kept for backwards compatibility with the
     // dozen frontend/backend sites that read them. New provider adapters

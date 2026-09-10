@@ -2112,7 +2112,7 @@ components:
           type: ["number", "null"]
         type:
           type: string
-          enum: [cash, investment, pension, property, other]
+          enum: [cash, investment, pension, property, other, liability]
         isWiseLinked:
           type: boolean
         wiseProfileId:
@@ -2137,7 +2137,7 @@ components:
           type: number
         type:
           type: string
-          enum: [cash, investment, pension, property, other]
+          enum: [cash, investment, pension, property, other, liability]
 
     AccountUpdate:
       type: object
@@ -2151,7 +2151,7 @@ components:
           type: number
         type:
           type: string
-          enum: [cash, investment, pension, property, other]
+          enum: [cash, investment, pension, property, other, liability]
 
     # ── TRANSACTION ──────────────────────────────────────────────────────────
     Transaction:
@@ -3040,7 +3040,7 @@ components:
     # ── DASHBOARD ─────────────────────────────────────────────────────────────
     DashboardSummary:
       type: object
-      required: [baseCurrency, netLiquidity, netWorth, totalCash, unconvertibleAccounts, accountBreakdown, portfolio, thisMonth, owing]
+      required: [baseCurrency, netLiquidity, netWorth, totalCash, totalLiabilities, unconvertibleAccounts, accountBreakdown, portfolio, thisMonth, owing]
       properties:
         # Count of accounts whose FX rate was unavailable at request time.
         # Their balance is NOT included in totalCash/netWorth/netLiquidity
@@ -3055,7 +3055,24 @@ components:
           type: number
         netWorth:
           type: number
+        # Sum of every ASSET account converted to base — cash, investment,
+        # pension, property, other. It does NOT include `liability`
+        # accounts; those are reported separately in totalLiabilities so
+        # the response still reconciles:
+        #   netWorth = totalCash + portfolio.totalValueBase
+        #            + owing.netBase - totalLiabilities
+        # Netting a liability into totalCash would have broken that
+        # identity silently and made a field named "Cash" fall when a
+        # loan is entered.
         totalCash:
+          type: number
+        # Sum of `liability` accounts, converted to base, as a POSITIVE
+        # number. The account balance stays positive and the type carries
+        # the sign; net worth subtracts this term. A negative balance on a
+        # `cash` account is an OVERDRAFT, not a liability — it stays in
+        # totalCash (and in netLiquidity) as a negative contribution. The
+        # two are deliberately not collapsed onto the sign.
+        totalLiabilities:
           type: number
         accountBreakdown:
           type: array
@@ -3075,7 +3092,7 @@ components:
                 type: ["number", "null"]
               type:
                 type: string
-                enum: [cash, investment, pension, property, other]
+                enum: [cash, investment, pension, property, other, liability]
         portfolio:
           type: object
           required: [totalValueBase, totalPlBase, totalPlPercent, dayChangeBase, dayChangePercent]

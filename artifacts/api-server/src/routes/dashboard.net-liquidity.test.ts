@@ -23,8 +23,10 @@ const { spendableCashTotal } = await import("./dashboard");
 // /allocation.availableNow — same user, same instant, cash accounts only —
 // read 11,375.28. The 203,070.75 difference was a Kuala Lumpur flat
 // (MYR 850,000, type `property`), a SIPP (£27,500), an ISA (£14,200), and a
-// season-ticket LOAN of £6,800 sitting in type `other` and being counted as
-// money in hand.
+// season-ticket LOAN of £6,800 — which sat in type `other` until 2026-09-11
+// and was being counted as money in hand. That loan is type `liability`
+// below; spendableCashTotal's answer is unchanged by the re-typing, which is
+// itself one of the assertions.
 //
 // The seed breakdown below is the real one, so the numbers in these
 // assertions are the numbers the endpoint returned.
@@ -37,7 +39,7 @@ const SEED_BREAKDOWN = [
   { type: "investment", baseEquivalent: 14200.00 }, // Vanguard ISA
   { type: "pension", baseEquivalent: 27500.00 },    // Aviva SIPP
   { type: "property", baseEquivalent: 154570.75 },  // Flat, Kuala Lumpur
-  { type: "other", baseEquivalent: 6800.00 },       // Season ticket loan
+  { type: "liability", baseEquivalent: 6800.00 },   // Season ticket loan
 ];
 
 describe("spendableCashTotal", () => {
@@ -50,12 +52,28 @@ describe("spendableCashTotal", () => {
     expect(spendableCashTotal(SEED_BREAKDOWN)).toBeCloseTo(spendableCashTotal(cashOnly), 2);
   });
 
-  it("does not let a liability parked in `other` add to spendable cash", () => {
-    // accountsTable.type has no liability member, so a loan is entered as
-    // `other` and its balance is POSITIVE. Any total that includes it is
-    // made larger by a debt. This is the assertion that matters most.
-    const withoutLoan = SEED_BREAKDOWN.filter((a) => a.type !== "other");
+  it("does not let a liability add to spendable cash", () => {
+    // The loan carries a POSITIVE balance — the `liability` type supplies the
+    // sign, net worth subtracts it, and spendable cash ignores it entirely.
+    // Any total that included it would be made larger by a debt. This is the
+    // assertion that matters most.
+    const withoutLoan = SEED_BREAKDOWN.filter((a) => a.type !== "liability");
     expect(spendableCashTotal(SEED_BREAKDOWN)).toBe(spendableCashTotal(withoutLoan));
+  });
+
+  it("does not let a liability SUBTRACT from spendable cash either", () => {
+    // The other direction, and the easier one to get wrong when the
+    // liability term lands in net worth. A season-ticket loan does not
+    // reduce what can move this month; only an overdraft does, and an
+    // overdraft is a negative `cash` balance, asserted below.
+    const loanOnly = [{ type: "liability", baseEquivalent: 6800.00 }];
+    expect(spendableCashTotal(loanOnly)).toBe(0);
+  });
+
+  it("counts an overdrawn cash account as negative spendable cash", () => {
+    // The distinction the `liability` type exists to preserve: same
+    // magnitude, opposite treatment here. See dashboard.liability.test.ts.
+    expect(spendableCashTotal([{ type: "cash", baseEquivalent: -250 }])).toBe(-250);
   });
 
   it("treats an unconvertible cash account as contributing nothing, not NaN", () => {
