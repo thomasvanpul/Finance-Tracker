@@ -45,6 +45,22 @@ pkill -f "dist/index.mjs"; cd artifacts/api-server && pnpm dev
 pkill -f vite; cd artifacts/finance-tracker && PORT=4321 BASE_PATH=/ pnpm dev
 ```
 
+The capture scripts that need a not-yet-onboarded account — `onboarding-shot.ts`,
+and the `restore()` of any script that sets persona — call
+`POST /api/dev/reset-onboarding`, which is **off unless the api-server was
+started with `ENABLE_DEV_ROUTES=1`** (and refuses outright when
+`NODE_ENV=production`). Without it, `onboarding-shot.ts` fails with the 403 and
+the others warn that they left the account onboarded:
+
+```bash
+pkill -f "dist/index.mjs"; cd artifacts/api-server && ENABLE_DEV_ROUTES=1 pnpm dev
+```
+
+Only one capture script may run at a time — theme, persona and tab_slot are
+account-level columns on the one seed account, so two concurrent runs overwrite
+each other. `scripts/src/capture-lock.ts` enforces it with a lockfile at
+`scripts/.capture-lock`; a second run refuses, naming the holder and its pid.
+
 Also kill any Playwright browsers you spawn — one session left 129 Chromium
 processes running.
 

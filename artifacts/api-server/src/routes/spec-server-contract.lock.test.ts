@@ -169,6 +169,13 @@ const KNOWN_SERVER_ONLY = new Set<string>([
   "GET /users/lookup",
   // Export — tax-year report, not in spec.
   "GET /export/tax-year/:id",
+  // Dev-only, and deliberately NOT in the spec — this is the one category of
+  // entry this list is allowed to grow by. openapi.yaml is what orval builds
+  // lib/api-client-react and lib/api-zod from, so anything declared there
+  // ships a typed hook and a schema into the frontend bundle. A route that
+  // 403s unless ENABLE_DEV_ROUTES=1 and NODE_ENV is not "production" is not
+  // part of the contract any client should be able to see. See routes/dev.ts.
+  "POST /dev/reset-onboarding",
 ]);
 
 // ─── Tests ───────────────────────────────────────────────────────────────────

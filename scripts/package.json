@@ -18,7 +18,7 @@
     "verify:tx-rate-lock:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/verify-tx-rate-lock.ts --branch=dev",
     "verify:tx-rate-lock:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/verify-tx-rate-lock.ts --branch=prod",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx ./src/app-routes.test.ts"
+    "test": "tsx ./src/app-routes.test.ts && tsx ./src/capture-lock.test.ts"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",

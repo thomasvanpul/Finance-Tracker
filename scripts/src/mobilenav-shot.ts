@@ -42,13 +42,16 @@ for (const persona of Object.keys(ROUTES)) {
   for (const theme of ['void', 'arctic'] as const) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
     const cookie = await signInSeedUser(ctx);
-    // theme is an account column the app hydrates on boot, so the
-    // localStorage seed alone is overwritten. persona is deliberately
-    // NOT set through the API here: the first PUT stamps onboarded_at
-    // permanently and there is no route to undo it, which would break
-    // onboarding-shot.ts and first-run-flow-shot.ts. See account-prefs.ts.
+    // theme AND persona are account columns the app hydrates on boot, so a
+    // localStorage seed alone is overwritten and the capture shows the
+    // stored values under this filename. Both go through the API. The PUT
+    // to persona stamps onboarded_at, which used to be one-way and is why
+    // this script avoided it; prefs.resetOnboarding() undoes it now, so
+    // onboarding-shot.ts is no longer downstream of this choice.
+    // See account-prefs.ts.
     const prefs = await openAccountPrefs(ctx, cookie);
     await prefs.setTheme(theme);
+    await prefs.setPersona(persona);
     await proxy(ctx);
     for (const route of ROUTES[persona]!) {
       const page = await ctx.newPage();

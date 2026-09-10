@@ -111,3 +111,23 @@ export async function setTabSlot(userId: string, tabSlot: TabSlotId | null): Pro
     .set({ tabSlot })
     .where(eq(appSettingsTable.userId, userId));
 }
+
+// Unset the onboarding stamp, returning the account to "has never
+// answered". The only writer of onboarded_at is setPersona() above, and
+// it stamps on the FIRST PUT and never clears — which is right for a
+// real user and wrong for the seed account, whose capture scripts need
+// the questionnaire to render more than once. Without this, the first
+// `screenshot.ts --persona` run permanently ends onboarding-shot.ts's
+// ability to photograph the flow.
+//
+// Nothing in the product calls this. Its only caller is the dev route in
+// routes/dev.ts, and the guard that keeps it away from production lives
+// there rather than here — a db helper that inspects the environment is
+// a guard nobody can see from the call site.
+export async function clearOnboardedAt(userId: string): Promise<void> {
+  await ensureSettings(userId);
+  await db
+    .update(appSettingsTable)
+    .set({ onboardedAt: null })
+    .where(eq(appSettingsTable.userId, userId));
+}

@@ -6,6 +6,15 @@
 // tap a row -> the id is in the URL -> hardware back closes the sheet.
 import { chromium } from 'playwright';
 import { SEED_EMAIL, SEED_PASSWORD } from './seed-credentials.js';
+import { acquireCaptureLock } from './capture-lock.js';
+
+// One capture at a time. This script PUTs the seed account's theme, which is
+// an account-level column shared with every other capture script — two runs at
+// once overwrite each other and one photographs the other's state. Refuses to
+// start while another capture holds the lock; released on exit, including an
+// uncaught throw or Ctrl-C. See capture-lock.ts.
+acquireCaptureLock();
+
 
 const FRONTEND = 'http://localhost:4321';
 const API = 'http://localhost:3001';

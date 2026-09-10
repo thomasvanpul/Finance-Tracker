@@ -16,6 +16,15 @@ import { mkdir } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
+import { acquireCaptureLock } from "./capture-lock.js";
+
+// One capture at a time. This script PUTs the seed account's theme, which is
+// an account-level column shared with every other capture script — two runs at
+// once overwrite each other and one photographs the other's state. Refuses to
+// start while another capture holds the lock; released on exit, including an
+// uncaught throw or Ctrl-C. See capture-lock.ts.
+acquireCaptureLock();
+
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(__dirname, "../screenshots");

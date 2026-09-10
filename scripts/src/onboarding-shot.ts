@@ -8,10 +8,16 @@ const cookie = await signInSeedUser(ctx);
 
 // The account theme wins over the localStorage seed once theme-sync
 // hydrates, so setTheme is what makes each pass the theme its filename
-// claims. persona is untouched on purpose: this script wants the
-// onboarding questionnaire, which only renders while app_settings has
-// no onboarded_at, and the first PUT /api/settings/persona stamps that
-// column for good. See account-prefs.ts.
+// claims.
+//
+// This script wants the onboarding questionnaire, which renders only
+// while app_settings has no onboarded_at — and every pass below ANSWERS
+// the questionnaire, which stamps it. So the reset is per pass, not once
+// at the top: without it the second theme opens on a dashboard and the
+// screenshot is silently of the wrong screen. It also no longer matters
+// what any earlier script left behind. Needs the api-server running with
+// ENABLE_DEV_ROUTES=1; it throws with the 403 reason otherwise.
+// See account-prefs.ts and api-server routes/dev.ts.
 const prefs = await openAccountPrefs(ctx, cookie);
 
 await ctx.route(`${FRONTEND}/api/**`, async route => {
@@ -39,6 +45,7 @@ await ctx.route(`${FRONTEND}/api/**`, async route => {
 
 for (const theme of ['void', 'arctic']) {
   await prefs.setTheme(theme);
+  await prefs.resetOnboarding();
   const page = await ctx.newPage();
   await page.addInitScript(`try {
     window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});
@@ -101,6 +108,7 @@ await mctx.route(`${FRONTEND}/api/**`, async route => {
 });
 for (const theme of ['void', 'arctic']) {
   await mprefs.setTheme(theme);
+  await mprefs.resetOnboarding();
   const page = await mctx.newPage();
   await page.addInitScript(`try {
     window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});

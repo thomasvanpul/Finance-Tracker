@@ -24,10 +24,16 @@ import recurringRouter from "./recurring";
 import accountRouter from "./account";
 import preferencesRouter from "./preferences";
 import adminRouter from "./admin";
+import devRouter from "./dev";
 
 const router: IRouter = Router();
 
 router.use(adminRouter);
+// Dev-only, and mounted unconditionally on purpose: the router carries its
+// own per-request guard (routes/dev.ts) and answers 403 with the reason it
+// refused. Mounting conditionally would make a misconfigured instance look
+// like a misspelled path.
+router.use(devRouter);
 router.use(marketLiveRouter);
 router.use(budgetsRouter);
 router.use(goalsRouter);

@@ -49,6 +49,7 @@ for (const persona of ['market', 'budget'] as const) {
     // values under this filename. See account-prefs.ts.
     const prefs = await openAccountPrefs(ctx, cookie);
     await prefs.setTheme(theme);
+    await prefs.setPersona(persona);
     await proxy(ctx);
     const page = await ctx.newPage();
     await page.addInitScript(seedCacheScript({

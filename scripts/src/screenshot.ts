@@ -18,6 +18,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
 import { assertRoutesKnown } from "./app-routes.js";
+import { acquireCaptureLock, type ReleaseLock } from "./capture-lock.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -145,6 +146,13 @@ async function applyAccountPrefs(context: BrowserContext, cookie: string, args: 
   const headers = { "Content-Type": "application/json", "Origin": FRONTEND, Cookie: cookie };
   const restores: Restore[] = [];
 
+  // persona, tab_slot and theme are one shared row on one shared seed account.
+  // Held from before the first read (a read-modify-restore is not safe to
+  // start while another capture is mid-write) until restore(). A second
+  // capture started now refuses with the holder named rather than quietly
+  // interleaving its writes with these. See capture-lock.ts.
+  let releaseLock: ReleaseLock | null = acquireCaptureLock();
+
   async function put(path: string, body: unknown): Promise<void> {
     const r = await context.request.put(`${API_BASE}${path}`, { headers, data: body });
     if (!r.ok()) throw new Error(`PUT ${path} failed: ${r.status()} ${await r.text()}`);
@@ -178,7 +186,12 @@ async function applyAccountPrefs(context: BrowserContext, cookie: string, args: 
   };
 
   const restore = async () => {
-    for (const r of restores.reverse()) await r();
+    try {
+      for (const r of restores.reverse()) await r();
+    } finally {
+      releaseLock?.();
+      releaseLock = null;
+    }
   };
   return { restore, setTheme };
 }
