@@ -34,6 +34,49 @@
 // the same obligations rather than two overlapping sets.
 export const HORIZON_DAYS = 30;
 
+// The shortest observed period the drift term will extrapolate from.
+//
+// driftReduction multiplies gapBase/days by a 30-day horizon, so a short
+// sample is not merely noisy — it is amplified by 30/days. What the code did
+// before this constant: computeReconciliation reports `insufficient` only
+// when there is NO complete baseline date strictly before today
+// (reconciliation.ts:169-171), so ONE qualifying snapshot day was enough and
+// the worst case was a 30x projection of a single day. On the seed account,
+// measured 2026-09-11, driftDays was 4 — a 7.5x projection, and snapshots
+// cannot be backfilled (schema/account-balance-snapshots.ts:41-43), so every
+// real user passes through that on day five.
+//
+// SEVEN, on this basis: the movement drift measures — untracked card taps,
+// cash withdrawals, hand-corrected balances — is weekly-periodic. A sample
+// shorter than seven days does not contain each weekday once, so gapBase/days
+// estimates a WEEKDAY-SPECIFIC rate and calls it a daily one. That is bias,
+// not noise, and no amount of rounding fixes it. Seven days is the shortest
+// window where the mean is of the thing it claims to be the mean of. It caps
+// the projection at 4.3x as a consequence, not as the reason.
+//
+// The error is deliberately on the LOW side, against the instinct that a
+// bigger floor is a safer floor. Two reasons:
+//
+//   1. Short-sample noise cannot push this number in the dangerous
+//      direction. driftReduction honours only a NEGATIVE per-day gap — an
+//      unexplained increase is never read as headroom — so a noisy sample can
+//      only make the allowance smaller. The optimistic direction is the one
+//      that hurts a user, and the drift term structurally cannot go there.
+//
+//   2. Below the floor the cost is not a slightly-wrong number, it is NO
+//      number: dailyAllowance is null and the whole figure is withheld. At 14
+//      the engine's headline is absent for a user's first fortnight; at 30,
+//      for their first month. That is precisely the period in which someone
+//      decides whether this app is worth keeping, and the floor is served in
+//      real time, once, with no way to shorten it.
+//
+// What seven does NOT buy: a single mis-keyed balance correction inside the
+// week still projects at 4.3x. That is real, and it is why the floor is not
+// lower. It is not an argument for 14 — the amplification does not vanish at
+// any floor below 30, and since the term is a DISCOUNT, over-discounting is
+// the safe error and under-sampling it is not.
+export const MIN_DRIFT_DAYS = 7;
+
 // Days in a year, for turning a monthly contribution into a daily claim.
 // 365.25/12 rather than 30, so twelve monthly contributions claim exactly a
 // year rather than 360 days' worth.
@@ -287,8 +330,21 @@ export async function computeAllocation(input: AllocationInput): Promise<Allocat
   const goalClaimTotal = goalClaims.reduce((sum, c) => sum + c.claimedOverWindow, 0);
 
   // Leg 5 — observed drift.
+  //
+  // Two ways to have no drift term, reported as the same blocker because they
+  // are the same thing to a reader: there is not enough history to say. Either
+  // reconciliation found no complete baseline at all, or it found one too
+  // recent to extrapolate from (see MIN_DRIFT_DAYS).
+  //
+  // Below the floor the term does not apply AT ALL, rather than applying with
+  // a caveat attached. A confidence marker would still let the noisy number
+  // reach the figure a user acts on, and per this engine's existing rule an
+  // unknown leg makes the total unknown — so dailyAllowance goes null and the
+  // blocker says why. There is deliberately no drift-free allowance for the
+  // first week: that is the partial figure this engine does not have.
+  const driftSampleTooShort = drift.status === "ok" && drift.days < MIN_DRIFT_DAYS;
   let driftReductionBase: number | null;
-  if (drift.status === "insufficient") {
+  if (drift.status === "insufficient" || driftSampleTooShort) {
     blockers.push("drift-insufficient-history");
     driftReductionBase = null;
   } else if (drift.gapBase == null) {
@@ -297,7 +353,15 @@ export async function computeAllocation(input: AllocationInput): Promise<Allocat
   } else {
     driftReductionBase = driftReduction(drift.gapBase, drift.days, horizonDays);
   }
-  const driftPerDay = drift.gapBase != null && drift.days > 0 ? drift.gapBase / drift.days : null;
+
+  // driftGapBase and driftDays stay populated below the floor: an observed gap
+  // over a known number of days is a FACT, and /accounts/reconciliation
+  // reports it as one without extrapolating. driftPerDay is the extrapolation,
+  // and it is the number that must not reach a screen — a rate derived from
+  // four days is the thing the floor exists to withhold.
+  const driftPerDay = drift.gapBase != null && drift.days > 0 && !driftSampleTooShort
+    ? drift.gapBase / drift.days
+    : null;
 
   // Written as one narrowing expression rather than a `known` boolean so the
   // compiler, not a comment, is what guarantees no null reaches the

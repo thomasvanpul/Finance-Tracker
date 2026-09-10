@@ -14,6 +14,7 @@ import {
   daysBetween,
   addDays,
   HORIZON_DAYS,
+  MIN_DRIFT_DAYS,
   type AllocationInput,
   type AllocationUpcomingInput,
   type AllocationGoalInput,
@@ -386,6 +387,18 @@ describe("properties", () => {
         ...base,
         drift: { status: "ok", gapBase: gap, days, periodFrom: "2026-08-01" },
       });
+
+      // `days` is drawn from [1, 60], which straddles MIN_DRIFT_DAYS. Both
+      // sides of the floor are asserted rather than narrowing the draw:
+      // below it the figure is withheld whatever the gap, which is the
+      // stronger statement, and above it the original property holds.
+      if (days < MIN_DRIFT_DAYS) {
+        expect(withDrift.dailyAllowance).toBeNull();
+        expect(noDrift.dailyAllowance).toBeNull();
+        expect(withDrift.driftReduction).toBeNull();
+        expect(withDrift.blockers).toContain("drift-insufficient-history");
+        continue;
+      }
       expect(withDrift.dailyAllowance!).toBeLessThanOrEqual(noDrift.dailyAllowance! + 1e-9);
       expect(withDrift.driftReduction!).toBeGreaterThanOrEqual(0);
     }
@@ -407,5 +420,98 @@ describe("properties", () => {
       expect(r.status).toBe("unknown");
       expect(r.dailyAllowance).toBeNull();
     }
+  });
+});
+
+// ── The drift floor ─────────────────────────────────────────────────────────
+//
+// driftReduction extrapolates gapBase/days across a 30-day horizon, so a
+// four-day sample is amplified 7.5x. Before MIN_DRIFT_DAYS, the only bar was
+// computeReconciliation's — one complete baseline date strictly before today
+// (reconciliation.ts:169-171) — so a ONE-day sample was projected 30x. On the
+// seed account, measured 2026-09-11, driftDays was 4, and snapshots cannot be
+// backfilled, so every real user meets this on day five.
+
+describe("MIN_DRIFT_DAYS floor", () => {
+  const base = {
+    today: "2026-09-11",
+    baseCurrency: "GBP",
+    cashAccounts: [{ id: 1, name: "Monzo", currency: "GBP", balance: 3000 }],
+    upcoming: [],
+    goals: [],
+    convert: async (amount: number) => amount,
+  };
+
+  it("is 7, and that is the number the reasoning in allocation.ts argues for", () => {
+    expect(MIN_DRIFT_DAYS).toBe(7);
+  });
+
+  it("withholds the whole figure below the floor — no drift-free allowance", async () => {
+    // The tempting wrong answer is to drop the drift term and hand back the
+    // other four legs. That is a partial figure presented as a total, and it
+    // errs OPTIMISTIC, which is the direction that costs a user money.
+    const r = await computeAllocation({
+      ...base,
+      drift: { status: "ok", gapBase: -40, days: 4, periodFrom: "2026-09-07" },
+    });
+    expect(r.dailyAllowance).toBeNull();
+    expect(r.status).toBe("unknown");
+    expect(r.blockers).toContain("drift-insufficient-history");
+  });
+
+  it("does not let a rate extrapolated from four days reach the response", async () => {
+    // -40 over 4 days is -10/day, which the old code projected to -300 across
+    // the window off a single event. driftPerDay is the extrapolation and is
+    // withheld; the observed gap and the day count are facts and are kept, so
+    // a surface can say "4 days of history, 7 needed" without inventing a rate.
+    const r = await computeAllocation({
+      ...base,
+      drift: { status: "ok", gapBase: -40, days: 4, periodFrom: "2026-09-07" },
+    });
+    expect(r.driftPerDay).toBeNull();
+    expect(r.driftReduction).toBeNull();
+    expect(r.driftGapBase).toBe(-40);
+    expect(r.driftDays).toBe(4);
+  });
+
+  it("applies at exactly 7 days and not at 6 — the boundary is inclusive", async () => {
+    const at6 = await computeAllocation({
+      ...base, drift: { status: "ok", gapBase: -70, days: 6, periodFrom: "2026-09-05" },
+    });
+    const at7 = await computeAllocation({
+      ...base, drift: { status: "ok", gapBase: -70, days: 7, periodFrom: "2026-09-04" },
+    });
+    expect(at6.dailyAllowance).toBeNull();
+    expect(at6.blockers).toContain("drift-insufficient-history");
+    expect(at7.dailyAllowance).not.toBeNull();
+    expect(at7.blockers).not.toContain("drift-insufficient-history");
+    expect(at7.driftReduction).toBeCloseTo(300, 2); // 70/7 = 10/day over 30 days
+  });
+
+  it("still blocks when there is no history at all, as it always did", async () => {
+    const r = await computeAllocation({
+      ...base, drift: { status: "insufficient", gapBase: null, days: 0, periodFrom: null },
+    });
+    expect(r.dailyAllowance).toBeNull();
+    expect(r.blockers).toContain("drift-insufficient-history");
+  });
+
+  it("reports one blocker, not two, when the sample is short AND unconvertible", async () => {
+    // Short-sample is checked first and short-circuits, so a user is told the
+    // one thing that is actionable: wait for more history.
+    const r = await computeAllocation({
+      ...base, drift: { status: "ok", gapBase: null, days: 3, periodFrom: "2026-09-08" },
+    });
+    expect(r.blockers.filter((b) => b.startsWith("drift-"))).toEqual(["drift-insufficient-history"]);
+  });
+
+  it("does not withhold anything above the floor, including a zero gap", async () => {
+    const r = await computeAllocation({
+      ...base, drift: { status: "ok", gapBase: 0, days: 30, periodFrom: "2026-08-12" },
+    });
+    expect(r.blockers).not.toContain("drift-insufficient-history");
+    expect(r.driftReduction).toBe(0);
+    expect(r.driftPerDay).toBe(0);
+    expect(r.dailyAllowance).not.toBeNull();
   });
 });
