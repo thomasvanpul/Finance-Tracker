@@ -148,6 +148,13 @@
       "when": 1788716801074,
       "tag": "0020_lucky_liz_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789054695819,
+      "tag": "0021_lean_gamora",
+      "breakpoints": true
     }
   ]
 }

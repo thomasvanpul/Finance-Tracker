@@ -4,6 +4,7 @@ import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, 
 import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, txToBase, getStockPrices } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
+import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
 import { trailingMonthRanges, localDateString } from "../lib/date-ranges";
 import { captureAccountSnapshots } from "../lib/account-snapshots";
 
@@ -405,6 +406,25 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // baseCurrency is a special case: A produces it and everything downstream
   // needs it, but the QUERIES below don't need it — only the FX conversions
   // that consume them do. So we can fire A in the same Promise.all.
+  // Active subscriptions emit their next upcoming row before the window
+  // below is read, so committedOut counts them without this query — or the
+  // one at upcoming.ts:82, or ai-context.ts:157 — changing at all.
+  //
+  // This is a write during a GET, which is a real trade and these are its
+  // terms. (1) It cannot run against a read-only replica; Numeris has none
+  // today, and the day it gains one this call has to move. (2) The app
+  // fires GET /dashboard and GET /upcoming together on load, so two
+  // requests routinely compute the same occurrence at the same moment —
+  // that race is absorbed by upcoming_subscription_due_uniq (migration
+  // 0021) and onConflictDoNothing, not by luck. (3) It adds one SELECT and
+  // at most one INSERT per active subscription to first render.
+  //
+  // What it buys: subscriptions that already existed before this shipped
+  // generate on their owner's next page load, with nobody editing anything.
+  // A write-path trigger would have left every existing subscription
+  // invisible to committedOut until it was touched by hand.
+  await ensureGeneratedUpcoming(userId);
+
   const [
     baseCurrency,
     accounts,

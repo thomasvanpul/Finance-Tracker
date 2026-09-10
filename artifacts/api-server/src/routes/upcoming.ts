@@ -16,6 +16,7 @@ import {
 import { toBase, snapshotFxRate } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { adjustAccountBalance, isAccountOwnedBy } from "../lib/balance";
+import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
 
 const router: IRouter = Router();
 
@@ -44,6 +45,9 @@ async function enrichUpcoming(item: typeof upcomingTable.$inferSelect, accountMa
 
 router.get("/upcoming", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
+  // A read that writes. Named trade, not an oversight — see the comment
+  // above ensureGeneratedUpcoming's call in dashboard.ts.
+  await ensureGeneratedUpcoming(userId);
   const items = await db
     .select()
     .from(upcomingTable)
@@ -60,6 +64,7 @@ router.get("/upcoming", async (req, res): Promise<void> => {
 
 router.get("/upcoming/summary", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
+  await ensureGeneratedUpcoming(userId);
   const today = new Date();
   const in30 = new Date(today);
   in30.setDate(today.getDate() + 30);

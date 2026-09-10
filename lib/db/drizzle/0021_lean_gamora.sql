@@ -1,0 +1,3 @@
+ALTER TABLE "upcoming" ADD COLUMN "subscription_id" integer;--> statement-breakpoint
+ALTER TABLE "upcoming" ADD CONSTRAINT "upcoming_subscription_id_subscriptions_id_fk" FOREIGN KEY ("subscription_id") REFERENCES "public"."subscriptions"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "upcoming_subscription_due_uniq" ON "upcoming" USING btree ("subscription_id","due_date") WHERE "upcoming"."subscription_id" is not null;

@@ -144,7 +144,7 @@ function fixtureRaw(overrides: Partial<ChatContextRaw> = {}): ChatContextRaw {
       { id: 3, userId: "u1", date: today, description: SENTINELS.merchant, type: "income",  category: "Salary",    accountId: 1, nativeAmount: "4850.00", currency: "GBP", source: "manual", externalId: null, nativeToBaseRate: null, rateAsOf: null, transferGroupId: null, transferDirection: null, createdAt: new Date(), updatedAt: new Date() },
     ],
     upcoming: [
-      { id: 1, userId: "u1", dueDate: today, description: SENTINELS.merchant, category: "Bills", type: "expense", frequency: "one-time", status: "pending", nativeAmount: "340.00", currency: "GBP", accountId: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: 1, userId: "u1", dueDate: today, description: SENTINELS.merchant, category: "Bills", type: "expense", frequency: "one-time", status: "pending", nativeAmount: "340.00", currency: "GBP", accountId: null, subscriptionId: null, createdAt: new Date(), updatedAt: new Date() },
     ],
     goals: [
       { id: 1, userId: "u1", name: SENTINELS.goalName, target: "3000.00", current: "820.00", deadline: "2027-03-01", emoji: null, color: null, image: null, monthlyContribution: "200.00", history: [], createdAt: new Date(), updatedAt: new Date() },
