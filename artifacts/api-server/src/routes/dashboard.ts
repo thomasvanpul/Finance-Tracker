@@ -74,6 +74,25 @@ type Debt = typeof debtsTable.$inferSelect;
 
 interface OwingRow { name: string; amountBase: number; direction: "they_owe_me" | "i_owe_them"; date: string }
 
+// The spendable-cash basis, as a pure function. Exported for direct unit
+// testing (dashboard.net-liquidity.test.ts) for the same reason
+// computeNetWorth is: the handler around it needs a live DB and Yahoo
+// Finance, so without this the account-type filter would be asserted only by
+// a comment — and it is the whole point of the fix.
+//
+// `other` is the type a season-ticket loan, a mortgage or a credit card lands
+// in today, because accountsTable.type has NO liability member. Those rows
+// therefore ADD to any total that includes them. Excluding every non-`cash`
+// type is what keeps a debt out of "what can I spend", and it is why this is
+// an allowlist of one type rather than a denylist of the types known to be
+// wrong.
+export function spendableCashTotal(
+  breakdown: readonly { type: string; baseEquivalent: number | null }[],
+): number {
+  return breakdown.reduce<number>(
+    (sum, a) => (a.type === "cash" ? sum + (a.baseEquivalent ?? 0) : sum), 0);
+}
+
 async function processAccounts(accounts: Account[], baseCurrency: string) {
   let unconvertibleAccounts = 0;
   const accountBreakdown = await Promise.all(
@@ -92,7 +111,17 @@ async function processAccounts(accounts: Account[], baseCurrency: string) {
     }),
   );
   const totalCash = accountBreakdown.reduce<number>((s, a) => s + (a.baseEquivalent ?? 0), 0);
-  return { accountBreakdown, totalCash, unconvertibleAccounts };
+  // Spendable cash is a NARROWER total than totalCash, and the two are not
+  // interchangeable. totalCash is a net-worth input and legitimately counts a
+  // flat, a pension and an ISA. netLiquidity answers "what can move this
+  // month", so it counts only `cash` accounts — the same filter
+  // GET /allocation (routes/allocation.ts:57) and computeReconciliation
+  // (routes/accounts.ts:84) already apply. Before this split, netLiquidity on
+  // the seed account read 213,217.97 against a genuine spendable 11,375.28,
+  // because a Kuala Lumpur flat, a SIPP, an ISA and a season-ticket LOAN were
+  // all being counted as money in hand.
+  const cashOnlyTotal = spendableCashTotal(accountBreakdown);
+  return { accountBreakdown, totalCash, cashOnlyTotal, unconvertibleAccounts };
 }
 
 async function processInvestments(investments: Investment[], baseCurrency: string) {
@@ -470,7 +499,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // Level-0 result + baseCurrency (which resolved with them). Independent
   // of each other, so Promise.all across domains.
   const [
-    { accountBreakdown, totalCash, unconvertibleAccounts },
+    { accountBreakdown, totalCash, cashOnlyTotal, unconvertibleAccounts },
     { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase },
     { monthIncome, monthExpenses },
     { committedOut, expectedIn },
@@ -620,7 +649,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // "0.0%" render tells a user who simply has no income recorded that
   // they saved nothing, which is a different and worse claim.
   const savingsRate: number | null = monthIncome > 0 ? (monthNet / monthIncome) * 100 : null;
-  const netLiquidity = totalCash - committedOut + expectedIn;
+  const netLiquidity = cashOnlyTotal - committedOut + expectedIn;
   // Net worth = assets − liabilities. `owing.netBase` is the third term:
   // pending debts (debts.ts) plus outstanding shared-expense shares in
   // BOTH directions, already combined into totalOwedToMe / totalIOwe
