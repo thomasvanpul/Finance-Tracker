@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   useListTransactions,
+  useListAccounts,
   useListBudgets,
   useDeleteTransaction,
   getListTransactionsQueryKey,
@@ -10,6 +11,7 @@ import {
   type Transaction,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLocation, useSearch } from "wouter";
 import { Plus } from "lucide-react";
 
 import { useBaseCurrency } from "@/lib/currency-store";
@@ -20,6 +22,7 @@ import { useSwipeDelete } from "@/hooks/use-swipe-delete";
 
 import { Drill, DrillTarget } from "@/components/drill";
 import { categoryTransactionsHref, entityHref, ledgerHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
+import { isUnfiltered, matchesLedgerFilters, readLedgerFilters, type LedgerRowFilters } from "@/lib/ledger-query";
 import { PhoneEntityRow, deriveTone } from "./PhoneEntityRow";
 import { SectionHeader } from "./SectionHeader";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
@@ -272,8 +275,39 @@ export function SpendingScreen() {
   if (nowRef.current == null) nowRef.current = new Date();
   const now = nowRef.current;
 
+  // ── the filters the URL is carrying ──────────────────────────────
+  // /transactions, /budget, /analytics and /cashflow all render this
+  // screen (PhoneShell), so every `ledgerHref` in the app lands here:
+  // a category on the strip above, a merchant or account from a
+  // transaction's detail sheet, a month from the hero. All six filters
+  // `ledgerHref` spells were being dropped — pressing a category
+  // navigated to the same unfiltered list it was already showing, which
+  // teaches the user the affordance is unreliable.
+  //
+  // The URL is the state. There is no filter bar on a phone to write
+  // back from, so unlike pages/transactions.tsx this needs no return
+  // leg — and the chips below clear a filter by stripping its
+  // parameter, which is the same single source of truth.
+  const search = useSearch();
+  const [location, navigate] = useLocation();
+  const { data: accountList } = useListAccounts();
+  const filters = useMemo(() => readLedgerFilters(search, accountList), [search, accountList]);
+  const filtered = !isUnfiltered(filters);
+
+  const clearFilter = useCallback((keys: readonly string[]) => {
+    const next = new URLSearchParams(window.location.search);
+    for (const k of keys) next.delete(k);
+    const qs = next.toString();
+    navigate(qs ? `${location}?${qs}` : location, { replace: true });
+  }, [location, navigate]);
+
   const queryMonths = monthsShown + 1;
-  const dateFrom = ymd(startOfMonthNBack(now, queryMonths - 1));
+  const defaultFrom = ymd(startOfMonthNBack(now, queryMonths - 1));
+  // A drill to an older month asks for rows outside the default two-month
+  // window. Without widening the read, the filter would be applied to
+  // transactions that were never fetched and the screen would say the
+  // month was empty — a fabricated answer, not a missing one.
+  const dateFrom = filters.from !== "" && filters.from < defaultFrom ? filters.from : defaultFrom;
   const {
     data: transactions,
     isLoading,
@@ -348,9 +382,13 @@ export function SpendingScreen() {
   );
 
   // ── grouped data ───────────────────────────────────────────────
+  const visibleTxs = useMemo(
+    () => (filtered ? (transactions ?? []).filter((tx) => matchesLedgerFilters(tx, filters)) : (transactions ?? [])),
+    [transactions, filtered, filters],
+  );
   const months = useMemo(
-    () => groupIntoMonths(transactions ?? [], pendingDeleteIds),
-    [transactions, pendingDeleteIds],
+    () => groupIntoMonths(visibleTxs, pendingDeleteIds),
+    [visibleTxs, pendingDeleteIds],
   );
 
   // Current-month txs, for the category strip and the insight producers.
@@ -403,7 +441,13 @@ export function SpendingScreen() {
 
   // Slice to `monthsShown` for the list. The query fetches one more.
   // Ordered newest-first via groupIntoMonths.
-  const visibleMonths = months.slice(0, monthsShown);
+  // Unfiltered, the list pages a month at a time and the sentinel loads
+  // more. Filtered, it must not: the sentinel stands down (a filter empties
+  // the months it pages through), so slicing here would find N matching rows
+  // and render only the newest month's — the chip would say "5 ROWS" over a
+  // list of one, and the other four would be unreachable. The filter is the
+  // scope; inside it, everything that matched is shown.
+  const visibleMonths = filtered ? months : months.slice(0, monthsShown);
   const hasMoreToLoad = months.length > monthsShown || monthsShown < 12;
   //                                                    ^ 12-month floor: user can
   // always request one more month even if the current fetch is empty (a genuine
@@ -437,6 +481,29 @@ export function SpendingScreen() {
       sameDayLastIso,
     };
   }, [transactions, pendingDeleteIds, now]);
+
+  // While a filter is on the hero must describe the rows under it. Left as
+  // month-to-date it contradicts them outright — "£40.45" sitting above
+  // "0 ROWS · No transactions match this filter" reads as £40.45 of the
+  // thing that matched nothing. A figure that reads as a different,
+  // plausible number is the defect class CLAUDE.md names first.
+  const filterTotal = useMemo(() => {
+    if (!filtered) return null;
+    let spent = 0, received = 0, unconverted = false, rows = 0;
+    for (const tx of visibleTxs) {
+      if (pendingDeleteIds.has(tx.id)) continue;
+      rows += 1;
+      if (tx.baseEquivalent == null) { unconverted = true; continue; }
+      if (tx.type === "expense") spent += Math.abs(tx.baseEquivalent);
+      else if (tx.type === "income") received += Math.abs(tx.baseEquivalent);
+    }
+    // Nothing matched, or something in the match has no base equivalent:
+    // there is no total to state, so state none rather than a partial one.
+    if (rows === 0 || unconverted) return { label: "MATCHING", value: null };
+    if (received === 0) return { label: "SPENT · MATCHING", value: spent };
+    if (spent === 0) return { label: "RECEIVED · MATCHING", value: received };
+    return { label: "NET · MATCHING", value: received - spent };
+  }, [filtered, visibleTxs, pendingDeleteIds]);
 
   // ── infinite-scroll sentinel ───────────────────────────────────
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -530,9 +597,19 @@ export function SpendingScreen() {
           background: "var(--ft-base)",
         }}
       >
-        <SpendingHero hero={hero} now={now} loading={isLoading && !hero} />
-        <CategoryStrip txs={currentMonthTxs} />
-        <InsightSlot insight={currentInsight} onDismiss={handleDismissInsight} />
+        <SpendingHero hero={hero} now={now} loading={isLoading && !hero} filter={filterTotal} />
+        {/* While a filter is on, the strip and the insight are about the
+            whole month and the list below is not — showing both invites
+            the reader to compare two things that do not answer the same
+            question. The chips take their place and say what the list is. */}
+        {filtered ? (
+          <FilterChips filters={filters} count={visibleTxs.length} onClear={clearFilter} />
+        ) : (
+          <>
+            <CategoryStrip txs={currentMonthTxs} />
+            <InsightSlot insight={currentInsight} onDismiss={handleDismissInsight} />
+          </>
+        )}
         {visibleMonths.map((month, idx) => (
           <MonthSection
             key={month.monthStart}
@@ -543,7 +620,19 @@ export function SpendingScreen() {
             pendingDeleteIds={pendingDeleteIds}
           />
         ))}
-        {hasMoreToLoad && (
+        {/* "no transactions" and "no transactions MATCHING THIS" are
+            different claims, and only the second one is true here. The
+            branch above owns the first; saying it again while a filter is
+            on would tell the user their ledger is empty when it is not. */}
+        {filtered && visibleTxs.length === 0 && (
+          <div style={{ padding: "32px 16px", color: "var(--ft-muted)", fontSize: "var(--ft-text-body)", lineHeight: "20px" }}>
+            No transactions match this filter.
+          </div>
+        )}
+        {/* The infinite-scroll sentinel pages the ledger, not the filter.
+            While filtered it would keep asking for older months to fill a
+            list the filter is emptying, so it stands down. */}
+        {hasMoreToLoad && !filtered && (
           <div ref={sentinelRef} style={{ padding: "24px 16px", textAlign: "center" }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
               LOADING EARLIER…
@@ -610,15 +699,35 @@ interface HeroData {
   sameDayLastIso: string;
 }
 
-function SpendingHero({ hero, now, loading }: { hero: HeroData | null; now: Date; loading: boolean }) {
-  const label = `SPENT · ${shortMonthLabel(ymd(now))} · MTD`;
-  const value = hero?.mtd != null ? formatBaseMoney(hero.mtd) : (loading ? "…" : "—");
+const heroValueStyle: React.CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: "var(--ft-text-primary-num)",   // 30px (Amendment :77)
+  fontWeight: 700,
+  lineHeight: "34px",
+  letterSpacing: "-0.02em",
+  marginTop: 6,
+  whiteSpace: "nowrap",
+};
+
+interface FilterTotal {
+  label: string;
+  value: number | null;
+}
+
+function SpendingHero({ hero, now, loading, filter }: { hero: HeroData | null; now: Date; loading: boolean; filter: FilterTotal | null }) {
+  const label = filter != null ? filter.label : `SPENT · ${shortMonthLabel(ymd(now))} · MTD`;
+  const value = filter != null
+    ? (filter.value != null ? formatBaseMoney(filter.value) : "—")
+    : (hero?.mtd != null ? formatBaseMoney(hero.mtd) : (loading ? "…" : "—"));
 
   // Delta: signed (positive = spending more, red; negative = less, green).
   // Amendment :88 — sign carried in the string ("+"/"−" plus "more"/"less"),
   // not by hue alone.
   let deltaLine: React.ReactNode = null;
-  if (hero != null && hero.mtd != null && hero.lastMonthSamePoint != null) {
+  if (filter != null) {
+    // The month-on-month delta is about the month, not about the filter.
+    deltaLine = null;
+  } else if (hero != null && hero.mtd != null && hero.lastMonthSamePoint != null) {
     const diff = hero.mtd - hero.lastMonthSamePoint;
     const abs = Math.abs(diff);
     const dayLabel = sameDayLabel(hero.sameDayLastIso);
@@ -658,25 +767,19 @@ function SpendingHero({ hero, now, loading }: { hero: HeroData | null; now: Date
       >
         {label}
       </div>
-      <DrillTarget
-        href={ledgerHref({ type: "expense", ...thisMonthRange(now) })}
-        title="Month-to-date spend — every expense it is the sum of"
-      >
-        <div
-          className="pnum ft-drill"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--ft-text-primary-num)",   // 30px (Amendment :77)
-            fontWeight: 700,
-            lineHeight: "34px",
-            letterSpacing: "-0.02em",
-            marginTop: 6,
-            whiteSpace: "nowrap",
-          }}
+      {filter != null ? (
+        // Filtered, the rows this totals are already on screen. A drill
+        // here would navigate to the unfiltered month, which is the one
+        // thing the figure is no longer about.
+        <div className="pnum" style={heroValueStyle}>{value}</div>
+      ) : (
+        <DrillTarget
+          href={ledgerHref({ type: "expense", ...thisMonthRange(now) })}
+          title="Month-to-date spend — every expense it is the sum of"
         >
-          {value}
-        </div>
-      </DrillTarget>
+          <div className="pnum ft-drill" style={heroValueStyle}>{value}</div>
+        </DrillTarget>
+      )}
       {deltaLine && <div style={{ marginTop: 6 }}>{deltaLine}</div>}
     </div>
   );
@@ -975,6 +1078,69 @@ function TxDetailSheet({
         </button>
       </div>
     </MobileSheet>
+  );
+}
+
+// ── filter chips ────────────────────────────────────────────────────
+// DetailRow's note below is the rule this exists to satisfy: "a drill that
+// lands on a filter the user cannot see or clear is worse than none". Every
+// filter the URL carries gets a chip, and every chip clears its own
+// parameter. The row count is stated because it is the one number that says
+// whether the drill found anything, and it is the API's count of matching
+// rows, never an estimate.
+//
+// `from`+`to` clear together: they are one date range, and clearing half of
+// it leaves a bound the user never set.
+function FilterChips({
+  filters,
+  count,
+  onClear,
+}: {
+  filters: LedgerRowFilters;
+  count: number;
+  onClear: (keys: readonly string[]) => void;
+}) {
+  const chips: { label: string; keys: readonly string[] }[] = [];
+  if (filters.category !== "all") chips.push({ label: filters.category, keys: ["category"] });
+  if (filters.account !== "all") chips.push({ label: filters.account, keys: ["account"] });
+  if (filters.type !== "all") chips.push({ label: filters.type, keys: ["type"] });
+  if (filters.q !== "") chips.push({ label: `"${filters.q}"`, keys: ["q"] });
+  if (filters.from !== "" || filters.to !== "") {
+    chips.push({ label: [filters.from, filters.to].filter(Boolean).join(" – "), keys: ["from", "to"] });
+  }
+
+  return (
+    <div style={{ padding: "12px 16px 4px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+        {chips.map((chip) => (
+          <button
+            key={chip.keys.join(",")}
+            type="button"
+            onClick={() => onClear(chip.keys)}
+            aria-label={`Clear filter ${chip.label}`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              minHeight: 44,
+              padding: "0 12px",
+              borderRadius: 8,
+              border: "1px solid var(--ft-border2)",
+              background: "var(--ft-surface)",
+              color: "var(--ft-text)",
+              font: "inherit",
+              fontSize: "var(--ft-text-body)",
+            }}
+          >
+            {chip.label}
+            <span aria-hidden="true" style={{ fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>×</span>
+          </button>
+        ))}
+      </div>
+      <div style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", letterSpacing: "0.12em", color: "var(--ft-dim)" }}>
+        <span className="pnum">{count}</span>{count === 1 ? " ROW" : " ROWS"}
+      </div>
+    </div>
   );
 }
 

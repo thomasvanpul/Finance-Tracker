@@ -3,8 +3,11 @@
 // hand-filtered one stop being the same view.
 
 import { describe, it, expect } from "vitest";
-import { ledgerSearch, ledgerLocation, ledgerSearchMatches, type LedgerFilterState } from "./ledger-query";
-import { ledgerHref, categoryTransactionsHref, accountTransactionsHref, monthTransactionsHref } from "./entity-href";
+import {
+  ledgerSearch, ledgerLocation, ledgerSearchMatches, type LedgerFilterState,
+  matchesLedgerFilters, readLedgerFilters, isUnfiltered, NO_LEDGER_FILTERS, type LedgerRow,
+} from "./ledger-query";
+import { ledgerHref, categoryTransactionsHref, accountTransactionsHref, merchantTransactionsHref, monthTransactionsHref } from "./entity-href";
 
 const EMPTY: LedgerFilterState = { q: "", type: "all", category: "all", accountId: null, from: "", to: "" };
 const state = (over: Partial<LedgerFilterState> = {}): LedgerFilterState => ({ ...EMPTY, ...over });
@@ -81,5 +84,82 @@ describe("ledgerSearchMatches — when not to rewrite the URL", () => {
     // The regression this guards: clearing the filter left ?account=105 in
     // the URL, so a refresh restored a filter the user had just removed.
     expect(ledgerSearchMatches("account=105", EMPTY)).toBe(false);
+  });
+});
+
+const rows: LedgerRow[] = [
+  { date: "2026-09-03", type: "expense", category: "Groceries", accountName: "Monzo Current", description: "TESCO STORES 3456" },
+  { date: "2026-09-01", type: "expense", category: "Transport", accountName: "Monzo Current", description: "UBER *TRIP" },
+  { date: "2026-08-10", type: "income",  category: "Salary",    accountName: "Barclays",      description: "UROP STIPEND" },
+];
+const accounts = [{ id: 132, name: "Monzo Current" }, { id: 140, name: "Barclays" }];
+
+// The URL half and the predicate half have to agree, or a drilled-in view
+// stops matching the figure that was pressed to reach it. Each case starts
+// from the href builder rather than from a hand-written query string.
+function applyHref(href: string): LedgerRow[] {
+  const search = href.split("?")[1] ?? "";
+  const f = readLedgerFilters(search, accounts);
+  return rows.filter((r) => matchesLedgerFilters(r, f));
+}
+
+describe("the six URL-spelled ledger filters", () => {
+  it("categoryTransactionsHref selects that category", () => {
+    expect(applyHref(categoryTransactionsHref("Groceries")).map(r => r.description)).toEqual(["TESCO STORES 3456"]);
+  });
+
+  it("categoryTransactionsHref with a range also bounds the dates", () => {
+    expect(applyHref(categoryTransactionsHref("Salary", { from: "2026-09-01", to: "2026-09-30" }))).toEqual([]);
+    expect(applyHref(categoryTransactionsHref("Salary", { from: "2026-08-01", to: "2026-08-31" })).length).toBe(1);
+  });
+
+  it("accountTransactionsHref carries an id and matches on the name", () => {
+    expect(applyHref(accountTransactionsHref(132)).length).toBe(2);
+    expect(applyHref(accountTransactionsHref(140)).map(r => r.accountName)).toEqual(["Barclays"]);
+  });
+
+  it("an account id that matches nothing shows the ledger, not an empty screen", () => {
+    // A stale link must not read as "you have no transactions".
+    expect(applyHref(accountTransactionsHref(99999)).length).toBe(rows.length);
+  });
+
+  it("merchantTransactionsHref searches description, category and account", () => {
+    expect(applyHref(merchantTransactionsHref("UBER")).length).toBe(1);
+    expect(applyHref(merchantTransactionsHref("monzo")).length).toBe(2);   // account name, case-insensitive
+    expect(applyHref(merchantTransactionsHref("Groceries")).length).toBe(1); // category
+  });
+
+  it("monthTransactionsHref bounds inclusively at both ends", () => {
+    expect(applyHref(monthTransactionsHref("2026-09")).map(r => r.date)).toEqual(["2026-09-03", "2026-09-01"]);
+  });
+
+  it("ledgerHref({type}) selects that type", () => {
+    expect(applyHref(ledgerHref({ type: "income" })).map(r => r.description)).toEqual(["UROP STIPEND"]);
+  });
+
+  it("filters compose", () => {
+    expect(applyHref(ledgerHref({ account: 132, type: "expense", category: "Transport" })).length).toBe(1);
+  });
+
+  it("the bare ledger URL filters nothing", () => {
+    expect(applyHref("/transactions").length).toBe(rows.length);
+    expect(isUnfiltered(readLedgerFilters("", accounts))).toBe(true);
+  });
+
+  it("readLedgerFilters ignores a type the URL is not allowed to spell", () => {
+    // Anything outside the three real types is "all", not a filter that
+    // silently empties the screen.
+    expect(readLedgerFilters("type=banana", accounts).type).toBe("all");
+  });
+
+  it("round-trips through ledgerSearch unchanged", () => {
+    const f = readLedgerFilters("category=Groceries&type=expense&from=2026-09-01", accounts);
+    const back = readLedgerFilters(ledgerSearch({ ...f, accountId: null }), accounts);
+    expect(back).toEqual(f);
+  });
+
+  it("NO_LEDGER_FILTERS is unfiltered", () => {
+    expect(isUnfiltered(NO_LEDGER_FILTERS)).toBe(true);
+    expect(rows.every((r) => matchesLedgerFilters(r, NO_LEDGER_FILTERS))).toBe(true);
   });
 });

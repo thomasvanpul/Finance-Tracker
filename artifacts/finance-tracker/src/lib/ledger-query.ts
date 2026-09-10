@@ -89,3 +89,98 @@ export function ledgerSearchMatches(currentSearch: string, state: LedgerFilterSt
   const have = new URLSearchParams(currentSearch);
   return KEYS.every((key) => (have.get(key) ?? "") === (want.get(key) ?? ""));
 }
+
+// ── The predicate ───────────────────────────────────────────────────────────
+// `ledgerHref` spells six filters into a URL. Until now, only
+// pages/transactions.tsx could read them back, and it did so with an inline
+// predicate — so the phone's SPENDING tab, which the phone shell routes
+// /transactions to, dropped every one of them. Pressing a category on the
+// phone navigated to the same unfiltered list it was already showing.
+//
+// One predicate, so a drilled-in view on the phone and one on desktop cannot
+// mean different things by the same URL. Amount range, tag and sort stay at
+// the desktop call site: they have no spelling in `ledgerHref`, so they are
+// not part of what a URL can claim.
+
+/** The subset of a transaction the six URL-spelled filters read. */
+export interface LedgerRow {
+  date: string;
+  type?: string | null;
+  category?: string | null;
+  accountName?: string | null;
+  description?: string | null;
+}
+
+/**
+ * The six filters, in the form the predicate matches on.
+ *
+ * `account` is a NAME here, not an id. The URL carries an id (see
+ * `entityHref`, where `account` means an id everywhere); resolving it to a
+ * name is the caller's job, because only the caller has the account list.
+ * A name that is later edited therefore never strands a link.
+ *
+ * "all" and "" are the unfiltered values, matching what the desktop selects
+ * hold, so a state object round-trips through `ledgerSearch` unchanged.
+ */
+export interface LedgerRowFilters {
+  q: string;
+  type: string;
+  category: string;
+  account: string;
+  from: string;
+  to: string;
+}
+
+export const NO_LEDGER_FILTERS: LedgerRowFilters = {
+  q: "", type: "all", category: "all", account: "all", from: "", to: "",
+};
+
+export function matchesLedgerFilters(tx: LedgerRow, f: LedgerRowFilters): boolean {
+  if (f.type !== "all" && tx.type !== f.type) return false;
+  if (f.category !== "all" && tx.category !== f.category) return false;
+  if (f.account !== "all" && tx.accountName !== f.account) return false;
+  if (f.from && tx.date < f.from) return false;
+  if (f.to && tx.date > f.to) return false;
+  if (f.q) {
+    const q = f.q.toLowerCase();
+    const desc = (tx.description ?? "").toLowerCase();
+    const cat = (tx.category ?? "").toLowerCase();
+    const acct = (tx.accountName ?? "").toLowerCase();
+    if (!desc.includes(q) && !cat.includes(q) && !acct.includes(q)) return false;
+  }
+  return true;
+}
+
+/** True when nothing is filtered — the URL for the whole ledger. */
+export function isUnfiltered(f: LedgerRowFilters): boolean {
+  return f.q === "" && f.type === "all" && f.category === "all"
+    && f.account === "all" && f.from === "" && f.to === "";
+}
+
+/**
+ * Read the six filters out of a query string.
+ *
+ * `account` arrives as an id and is resolved through `accounts`. An id that
+ * matches no account resolves to "all" rather than to a name that filters
+ * everything out: a stale link should show the ledger, not an empty screen
+ * that looks like the user has no transactions.
+ */
+export function readLedgerFilters(
+  search: string | URLSearchParams,
+  accounts: readonly { id: number | string; name: string }[] | undefined,
+): LedgerRowFilters {
+  const p = typeof search === "string" ? new URLSearchParams(search) : search;
+  const accountParam = p.get("account");
+  const matched = accountParam == null
+    ? undefined
+    : accounts?.find((a) => String(a.id) === accountParam);
+  const type = p.get("type");
+  return {
+    q: p.get("q") ?? "",
+    type: type === "income" || type === "expense" || type === "transfer" ? type : "all",
+    category: p.get("category") ?? "all",
+    account: matched?.name ?? "all",
+    from: p.get("from") ?? "",
+    to: p.get("to") ?? "",
+  };
+}

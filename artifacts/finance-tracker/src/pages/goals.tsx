@@ -1,4 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from "react";
+import { useQueryParam } from "@/hooks/use-query-param";
+import { ENTITY_PARAM } from "@/lib/entity-href";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ReferenceLine, Line, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Skeleton as FtSkeleton } from "@/components/skeleton";
@@ -988,6 +990,26 @@ export default function Goals() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [addFunds, setAddFunds] = useState<Record<string, string>>({});
   const [expandedAnalytics, setExpandedAnalytics] = useState<Record<string, boolean>>({});
+
+  // ?goal=<id>. Every `entityHref("goal", id)` in the app pointed here and
+  // this page read nothing, so a goal drill — from HOME's WHAT CHANGED, from
+  // global search — landed on the list of all goals. The user pressed one
+  // goal and got the general page, which is what teaches them the affordance
+  // is unreliable.
+  //
+  // A card here is already the goal's full detail: figures, progress, add
+  // funds, the analytics disclosure. So this scrolls to it and marks it
+  // rather than opening a sheet that would be a SECOND rendering of the same
+  // goal — the divergence this codebase is actively trying to undo
+  // elsewhere. Marking, not replacing.
+  const openGoalId = useQueryParam(ENTITY_PARAM.goal);
+  useEffect(() => {
+    if (openGoalId == null) return;
+    // Wait for the cards to exist; the goals read may still be in flight.
+    const el = document.querySelector(`[data-goal-id="${CSS.escape(openGoalId)}"]`);
+    if (el == null) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [openGoalId, goals.length]);
   const [compoundToggles, setCompoundToggles] = useState<Record<string, boolean>>({});
   const [compoundRates, setCompoundRates] = useState<Record<string, number>>({});
   const [whatIfMonthly, setWhatIfMonthly] = useState<Record<string, string>>({});
@@ -1508,8 +1530,10 @@ export default function Goals() {
         <SectionRule>Active Goals</SectionRule>
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, paddingTop: 6 }}>
         {goals.map((goal) => (
+          <div key={goal.id} data-goal-id={goal.id} style={openGoalId === String(goal.id)
+            ? { outline: "2px solid var(--ft-accent)", outlineOffset: 2 }
+            : undefined}>
           <GoalCard
-            key={goal.id}
             goal={goal}
             now={now}
             sharedMonthlyRate={sharedMonthlyRate}
@@ -1533,6 +1557,7 @@ export default function Goals() {
             onWhatIfChange={(id, val) => setWhatIfMonthly((prev) => ({ ...prev, [String(id)]: val }))}
             onSetDeadline={handleSetDeadline}
           />
+          </div>
         ))}
         </div>
         </div>

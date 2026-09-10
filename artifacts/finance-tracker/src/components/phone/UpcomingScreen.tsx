@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useLocation, useSearch } from "wouter";
 import {
   useListUpcoming,
   useGetUpcomingSummary,
@@ -375,7 +376,31 @@ export function UpcomingScreen() {
   const { toast } = useToast();
   const now = useMemo(() => new Date(), []);
 
-  const [lens, setLens] = useState<Lens>("all");
+  // The URL says two things this screen was ignoring.
+  //
+  // `?q=` comes from `recurringSeriesHref(merchantName)` — pressing a
+  // recurring series anywhere in the app asks for that series, and landed
+  // on the whole list instead.
+  //
+  // The PATH says which lens: PhoneShell routes /recurring and
+  // /subscriptions here as aliases of UPCOMING, and both opened on ALL. The
+  // user asked for one of the two segments by name and got neither.
+  const search = useSearch();
+  const [location, navigate] = useLocation();
+  const seriesQuery = useMemo(() => new URLSearchParams(search).get("q") ?? "", [search]);
+  const lensFromPath: Lens =
+    location === "/subscriptions" ? "subscriptions"
+    : location === "/recurring" ? "recurring"
+    : "all";
+  const [lensOverride, setLensOverride] = useState<Lens | null>(null);
+  const lens = lensOverride ?? lensFromPath;
+
+  const clearSeriesQuery = useCallback(() => {
+    const next = new URLSearchParams(window.location.search);
+    next.delete("q");
+    const qs = next.toString();
+    navigate(qs ? `${location}?${qs}` : location, { replace: true });
+  }, [location, navigate]);
 
   const {
     data: items,
@@ -423,10 +448,12 @@ export function UpcomingScreen() {
     [items],
   );
 
-  const filteredItems = useMemo(
-    () => filterItems(pendingItems, lens),
-    [pendingItems, lens],
-  );
+  const filteredItems = useMemo(() => {
+    const byLens = filterItems(pendingItems, lens);
+    if (seriesQuery === "") return byLens;
+    const q = seriesQuery.toLowerCase();
+    return byLens.filter((i) => i.description.toLowerCase().includes(q));
+  }, [pendingItems, lens, seriesQuery]);
 
   const weekGroups = useMemo(
     () => groupByWeek(filteredItems, now),
@@ -448,7 +475,30 @@ export function UpcomingScreen() {
       />
 
       <CountdownStrip items={pendingItems} now={now} />
-      <LensStrip active={lens} onChange={setLens} />
+      <LensStrip active={lens} onChange={setLensOverride} />
+      {/* Same rule as SPENDING's chips: a drill that lands on a filter the
+          user cannot see or clear is worse than none. */}
+      {seriesQuery !== "" && (
+        <div style={{ padding: "8px 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            type="button"
+            onClick={clearSeriesQuery}
+            aria-label={`Clear filter ${seriesQuery}`}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 8, minHeight: 44,
+              padding: "0 12px", borderRadius: 8, border: "1px solid var(--ft-border2)",
+              background: "var(--ft-surface)", color: "var(--ft-text)", font: "inherit",
+              fontSize: "var(--ft-text-body)",
+            }}
+          >
+            {seriesQuery}
+            <span aria-hidden="true" style={{ fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>×</span>
+          </button>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", letterSpacing: "0.12em", color: "var(--ft-dim)" }}>
+            <span className="pnum">{filteredItems.length}</span>{filteredItems.length === 1 ? " ITEM" : " ITEMS"}
+          </span>
+        </div>
+      )}
 
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
         {itemsError ? (

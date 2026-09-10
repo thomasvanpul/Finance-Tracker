@@ -1,5 +1,5 @@
 import { StatGrid } from "./StatGrid";
-import { categoryTransactionsHref } from "@/lib/entity-href";
+import { categoryTransactionsHref, thisMonthRange } from "@/lib/entity-href";
 import { formatBaseMoney } from "@/lib/utils";
 import type { Transaction } from "@workspace/api-client-react";
 
@@ -60,14 +60,19 @@ export function CategoryStrip({ txs }: CategoryStripProps) {
       <StatGrid
         columns={(top.length as 1 | 2 | 3)}
         // Each cell is a category's expense total for the month, so it opens
-        // that category's rows (DESIGN.md §14). The label is upper-cased for
-        // display only; the link carries the category as it is stored, which
-        // is what /transactions matches on.
+        // that category's rows for THAT MONTH (DESIGN.md §14). The range was
+        // missing, so the figure was September's and the rows it opened were
+        // every month the screen had fetched — the drill answered a wider
+        // question than the one the user pressed. `thisMonthRange()` is the
+        // same window the caller uses to build these totals.
+        //
+        // The label is upper-cased for display only; the link carries the
+        // category as it is stored, which is what /transactions matches on.
         items={top.map(([cat, total]) => ({
           label: cat.toUpperCase(),
           value: formatBaseMoney(total),
           isFinancial: true,
-          href: drillable(cat) ? categoryTransactionsHref(cat) : undefined,
+          href: drillable(cat) ? categoryTransactionsHref(cat, thisMonthRange()) : undefined,
         }))}
       />
     </div>
