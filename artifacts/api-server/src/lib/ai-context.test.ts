@@ -229,6 +229,57 @@ describe("assembleChatContext · L3 no context in logs", () => {
   });
 });
 
+// ── A liability is not an asset, in the string the assistant reads out ───
+
+describe("assembleChatContext · liability accounts", () => {
+  // The dashboard's half of this was fixed in 4d0aa9a. This half outlived
+  // it: computeNetPosition summed EVERY account into one total, so a
+  // liability was added rather than subtracted and net worth came out 2x the
+  // debt too high — in the one string the assistant quotes back to the user.
+  function withLoan() {
+    const raw = fixtureRaw();
+    // MYR is unconvertible in the mock and null-poisons net worth, which is
+    // its own test above. Dropped here so this one is about the sign.
+    raw.accounts = raw.accounts.filter((a) => a.currency !== "MYR");
+    raw.accounts.push({
+      id: 9, userId: "u1", name: "Season ticket loan", currency: "GBP", balance: "6800.00",
+      type: "liability", isWiseLinked: false, wiseProfileId: null, wiseBalanceId: null,
+      externalProvider: null, externalId: null,
+      lastSyncedAt: null, createdAt: new Date(), updatedAt: new Date(),
+    } as never);
+    return raw;
+  }
+
+  it("does not count a loan as money in the accounts total", async () => {
+    const withoutLoan = await assembleChatContext(
+      (() => { const r = fixtureRaw(); r.accounts = r.accounts.filter((a) => a.currency !== "MYR"); return r; })());
+    const withIt = await assembleChatContext(withLoan());
+    const accountsLine = (t: string) => t.match(/ {2}Accounts: +(\S+)/)?.[1] ?? "";
+    expect(accountsLine(withIt.text)).toBe(accountsLine(withoutLoan.text));
+  });
+
+  it("states the debt separately, as a positive magnitude", async () => {
+    const ctx = await assembleChatContext(withLoan());
+    expect(ctx.text).toMatch(/ {2}Owed: +£6,800\.00 {2}\(liability accounts, subtracted from net worth\)/);
+  });
+
+  it("subtracts it from net worth rather than adding it", async () => {
+    const withoutLoan = await assembleChatContext(
+      (() => { const r = fixtureRaw(); r.accounts = r.accounts.filter((a) => a.currency !== "MYR"); return r; })());
+    const withIt = await assembleChatContext(withLoan());
+    const money = (t: string) => {
+      const m = t.match(/ {2}Net worth: +£([\d,]+\.\d\d)/);
+      return m ? parseFloat(m[1].replace(/,/g, "")) : NaN;
+    };
+    expect(money(withoutLoan.text) - money(withIt.text)).toBeCloseTo(6800, 2);
+  });
+
+  it("never labels the account total 'Cash' — it counts a flat, a SIPP and an ISA", async () => {
+    const ctx = await assembleChatContext(fixtureRaw());
+    expect(ctx.text).not.toMatch(/Cash total/);
+  });
+});
+
 // ── L1 null propagation ──────────────────────────────────────────────────
 
 describe("assembleChatContext · L1 null propagation", () => {
@@ -337,7 +388,7 @@ describe("buildCategorizeContext · L5 no financial data", () => {
     // If a refactor accidentally imports the full chat context here,
     // one of these strings shows up.
     expect(ctx.text).not.toMatch(/Net worth/);
-    expect(ctx.text).not.toMatch(/Cash total/);
+    expect(ctx.text).not.toMatch(/Accounts:/);
     expect(ctx.text).not.toMatch(/Currency exposure/);
     expect(ctx.text).not.toMatch(/Debts \/ IOUs/);
     expect(ctx.text).not.toMatch(/Portfolio/);
@@ -363,7 +414,7 @@ describe("buildReceiptScanContext · L5 base + vocabulary only", () => {
     const ctx = await buildReceiptScanContext("u1");
     expect(ctx.text).toContain("Food & Drink");
     expect(ctx.text).toContain("base currency: GBP");
-    expect(ctx.text).not.toMatch(/Net worth|Cash total|Debts|Portfolio/);
+    expect(ctx.text).not.toMatch(/Net worth|Accounts:|Debts|Portfolio/);
   });
 });
 

@@ -2169,13 +2169,24 @@ export default function Accounts() {
         if (!pid || pid === "full") return null;
         // Persona strip totals skip unconvertible accounts; message
         // just reads a slightly lower figure rather than lying via 0.
-        const totalCash = (accounts ?? []).reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+        // "cash available" and "liquid" are explicit claims about what can be
+        // SPENT, and this summed every account — so it offered a Kuala Lumpur
+        // flat, a SIPP, an ISA and a season-ticket loan as spending money,
+        // £214,490.91 against a real £11,375.18. Spendable cash is
+        // `type === "cash"`, the same filter GET /allocation
+        // (routes/allocation.ts) and computeReconciliation already apply.
+        const spendableCash = (accounts ?? [])
+          .filter(a => a.type === "cash")
+          .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+        const accountAssets = (accounts ?? [])
+          .filter(a => a.type !== "liability")
+          .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
         const portfolio = (dashData as { portfolio?: { totalValueBase?: number } } | undefined)?.portfolio?.totalValueBase ?? 0;
         const msgs: Record<string, string | null> = {
-          market:  totalCash > 0 ? `${formatBaseMoney(totalCash)} cash available — allocate surplus to investment positions via Portfolio.` : null,
+          market:  spendableCash > 0 ? `${formatBaseMoney(spendableCash)} cash available — allocate surplus to investment positions via Portfolio.` : null,
           budget:  `Your accounts are the source of truth for your budget — reconcile against your budget limits monthly.`,
-          wealth:  `Cash + portfolio = ${formatBaseMoney(totalCash + portfolio)}. Ensure cash earns yield (HYSA/money market) while idle.`,
-          social:  totalCash > 0 ? `${formatBaseMoney(totalCash)} liquid — keep enough buffer for group trip deposits and shared expenses.` : null,
+          wealth:  `Accounts + portfolio = ${formatBaseMoney(accountAssets + portfolio)}. Ensure cash earns yield (HYSA/money market) while idle.`,
+          social:  spendableCash > 0 ? `${formatBaseMoney(spendableCash)} liquid — keep enough buffer for group trip deposits and shared expenses.` : null,
         };
         const msg = msgs[pid];
         if (!msg) return null;
@@ -2271,7 +2282,19 @@ export default function Accounts() {
         // KPI bar total: skip unconvertible accounts. If any exist,
         // the KPI cell below appends " · N NO FX" so the total isn't
         // silently lower than the underlying holdings.
-        const totalCash = accounts!.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+        // Two things this cell got wrong at once. It summed EVERY account
+        // including `liability`, which carries a positive balance and whose
+        // type supplies the sign (schema/accounts.ts) — so a £6,800 loan was
+        // added rather than subtracted, the same defect 4d0aa9a fixed on the
+        // dashboard. And it called the result "Total Cash" while counting a
+        // Kuala Lumpur flat, a SIPP and an ISA.
+        const assetsTotal = accounts!
+          .filter(a => a.type !== "liability")
+          .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+        const liabilitiesTotal = accounts!
+          .filter(a => a.type === "liability")
+          .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+        const totalCash = assetsTotal - liabilitiesTotal;
         const unconvertibleCount = accounts!.filter(a => a.baseEquivalent == null).length;
         const currencies = [...new Set(accounts!.map(a => a.currency))] as string[];
         const lastSync = accounts!
@@ -2332,7 +2355,7 @@ export default function Accounts() {
                 style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}
               >
               <KpiCell
-                label="Total Cash"
+                label={liabilitiesTotal !== 0 ? "Accounts, net of debt" : "Accounts"}
                 value={<span className="pnum" style={{ color: totalCash < 0 ? "var(--ft-red)" : "var(--ft-green)" }}>{formatBaseMoney(totalCash)}</span>}
                 sub={
                   unconvertibleCount > 0
@@ -2370,7 +2393,7 @@ export default function Accounts() {
                 sub={
                   unconvertibleCount > 0
                     ? <span style={{ color: "var(--ft-amber)" }}>{unconvertibleCount} account{unconvertibleCount !== 1 ? "s" : ""} without FX — not in total</span>
-                    : "cash + portfolio"
+                    : "accounts (net of debt) + portfolio"
                 }
                 accent="var(--ft-amber)"
                 icon={<Activity className="w-3.5 h-3.5" />}

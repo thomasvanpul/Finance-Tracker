@@ -399,9 +399,20 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   const drillWhen = (hasRows: boolean, href: string): string | undefined =>
     hasRows ? href : undefined;
 
+  // `d.totalCash` is EVERY non-liability account (assetAccountsTotal,
+  // routes/dashboard.ts), so it legitimately counts a flat, a SIPP and an
+  // ISA — £207,690.91 on the seed account against £11,375.18 of real cash.
+  // It was labelled "Total Cash" here and "Cash" in the breakdown below,
+  // which told the reader a Kuala Lumpur flat was money in hand.
+  //
+  // The label is what was wrong, not the field: totalCash is a term of the
+  // response identity `netWorth == totalCash + portfolio + owing −
+  // totalLiabilities`, and spendable cash already has a name in this same
+  // widget (Net Liquidity). "Accounts" rather than "Assets" because
+  // Portfolio is a separate cell and separate from this figure.
   const kpis = d ? [
-    { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Cash + Portfolio", animate: true, href: drillWhen(d.accountBreakdown.length > 0, "/net-worth") },
-    { label: "Total Cash",   raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
+    { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Accounts + Portfolio − debt", animate: true, href: drillWhen(d.accountBreakdown.length > 0, "/net-worth") },
+    { label: "Accounts",     raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
     { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(d.portfolio.totalValueBase), color: d.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(d.portfolio.totalPlBase)}`, animate: false, href: drillWhen(d.portfolio.totalValueBase !== 0, "/investments") },
     { label: "Net Liquidity",raw: null,                                   value: formatBaseMoney(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
   ] : [];
@@ -415,7 +426,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   ] : [];
 
   const breakdownItems = d ? [
-    { label: "Cash",      value: formatBaseMoney(d.totalCash),                color: "var(--ft-accent)", href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
+    { label: "Accounts",  value: formatBaseMoney(d.totalCash),                color: "var(--ft-accent)", href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
     { label: "Portfolio", value: formatBaseMoney(d.portfolio.totalValueBase),  color: "var(--ft-green)", href: drillWhen(d.portfolio.totalValueBase !== 0, "/investments") },
     { label: "Net Debt",  value: formatBaseMoney(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)", href: drillWhen(d.owing.totalIOwe !== 0, "/owing") },
   ] : [];
@@ -554,10 +565,10 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
         <tfoot>
           <tr style={{ borderTop: "1px solid var(--ft-border2)" }}>
             <td colSpan={3} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", paddingTop: 8 }}>
-              Total Cash
+              Accounts
             </td>
             <td style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-accent)", textAlign: "right", paddingTop: 8 }}>
-              <Drill href="/accounts" title="Total cash — every account it is the sum of"><span className="pnum">{formatBaseMoney(d.totalCash)}</span></Drill>
+              <Drill href="/accounts" title="Account assets — every account it is the sum of"><span className="pnum">{formatBaseMoney(d.totalCash)}</span></Drill>
             </td>
           </tr>
         </tfoot>

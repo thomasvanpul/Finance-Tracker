@@ -247,10 +247,12 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
           {sorted.length > 0 && (
             <tr style={{ background: "var(--ft-raised)", borderTop: "1px solid var(--ft-border2)" }}>
               <td colSpan={3} style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", color: "var(--ft-dim)", textTransform: "uppercase", fontWeight: 600 }}>
-                Total Cash · {sorted.length} account{sorted.length !== 1 ? "s" : ""}
+                {/* `totalCash` is every non-liability account, so it counts a
+                    flat, a SIPP and an ISA. "Total Cash" said otherwise. */}
+                Accounts · {sorted.length} account{sorted.length !== 1 ? "s" : ""}
               </td>
               <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-green)", fontWeight: 600 }}>
-                <Drill href="/accounts" title="Total cash — every account it is the sum of"><span className="pnum">{formatBaseMoney(d!.totalCash)}</span></Drill>
+                <Drill href="/accounts" title="Account assets — every account it is the sum of"><span className="pnum">{formatBaseMoney(d!.totalCash)}</span></Drill>
               </td>
               {isExpanded && <td />}
             </tr>

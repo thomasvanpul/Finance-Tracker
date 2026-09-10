@@ -266,7 +266,14 @@ function renderCurrencyExposure(rows: CurrencyExposureRow[], baseCurrency: strin
 // ── Net position ────────────────────────────────────────────────────────
 
 interface NetPosition {
-  totalCashBase: number;
+  // The ASSET side of the account ledger — every non-liability account. Named
+  // for what it is: it legitimately counts a flat, a SIPP and an ISA, so it
+  // is not "cash" and was never safe to read aloud as cash.
+  assetAccountsBase: number;
+  // A POSITIVE magnitude, subtracted below. Same convention as
+  // liabilityAccountsTotal in routes/dashboard.ts, and for the same reason:
+  // the sign of a debt is the thing that has already been wrong once.
+  liabilityAccountsBase: number;
   portfolioValueBase: number | null;
   netWorthBase: number | null;
   unconvertibleAccounts: number;
@@ -279,12 +286,21 @@ async function computeNetPosition(
   baseCurrency: string,
   debts: DebtsSummary,
 ): Promise<NetPosition> {
-  let totalCashBase = 0;
+  // A `liability` row carries a POSITIVE balance and the type supplies the
+  // sign (schema/accounts.ts). This loop summed every account into one
+  // total, so the season-ticket loan was ADDED — the model was told a debt
+  // was money, and the net worth it read aloud was 2 x the loan too high
+  // (£6,800 on the seed account, so £13,600 out). The dashboard's half of
+  // this was fixed in 4d0aa9a; the assistant's half outlived it, and this
+  // string is what the assistant quotes to the user.
+  let assetAccountsBase = 0;
+  let liabilityAccountsBase = 0;
   let unconvertibleAccounts = 0;
   for (const a of accounts) {
     const gbp = await toBase(parseFloat(a.balance), a.currency, baseCurrency);
-    if (gbp === null) unconvertibleAccounts += 1;
-    else totalCashBase += gbp;
+    if (gbp === null) { unconvertibleAccounts += 1; continue; }
+    if (a.type === "liability") liabilityAccountsBase += gbp;
+    else assetAccountsBase += gbp;
   }
 
   // Portfolio value — null-propagating like the dashboard: ANY position
@@ -333,16 +349,29 @@ async function computeNetPosition(
     netWorthBase = null;
     netWorthUnknownCause = causes.join(" + ");
   } else {
-    netWorthBase = (totalCashBase + (portfolioValueBase as number)) + owingNet;
+    netWorthBase =
+      assetAccountsBase + (portfolioValueBase as number) + owingNet - liabilityAccountsBase;
   }
 
-  return { totalCashBase, portfolioValueBase, netWorthBase, unconvertibleAccounts, netWorthUnknownCause };
+  return {
+    assetAccountsBase,
+    liabilityAccountsBase,
+    portfolioValueBase,
+    netWorthBase,
+    unconvertibleAccounts,
+    netWorthUnknownCause,
+  };
 }
 
 function renderNetPosition(np: NetPosition, baseCurrency: string): string {
   const lines: string[] = ["Net position"];
   lines.push(`  Net worth:  ${formatMoney(np.netWorthBase, baseCurrency, np.netWorthUnknownCause ?? undefined)}`);
-  lines.push(`  Cash total: ${formatMoney(np.totalCashBase, baseCurrency)}${np.unconvertibleAccounts > 0 ? `  (${np.unconvertibleAccounts} account(s) not converted to ${baseCurrency})` : ""}`);
+  lines.push(`  Accounts:   ${formatMoney(np.assetAccountsBase, baseCurrency)}${np.unconvertibleAccounts > 0 ? `  (${np.unconvertibleAccounts} account(s) not converted to ${baseCurrency})` : ""}`);
+  if (np.liabilityAccountsBase !== 0) {
+    // Stated separately and as a positive magnitude, so the assistant can
+    // say what is owed rather than having it netted invisibly into a total.
+    lines.push(`  Owed:       ${formatMoney(np.liabilityAccountsBase, baseCurrency)}  (liability accounts, subtracted from net worth)`);
+  }
   lines.push(`  Portfolio:  ${formatMoney(np.portfolioValueBase, baseCurrency, np.portfolioValueBase === null ? "one or more holdings lack a live price" : undefined)}`);
   return lines.join("\n");
 }

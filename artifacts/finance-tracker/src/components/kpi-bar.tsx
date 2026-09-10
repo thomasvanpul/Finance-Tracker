@@ -32,6 +32,30 @@ function Cell({ drill, label, children }: { drill?: string; label: string; child
   );
 }
 
+// `data.totalCash` is EVERY non-liability account — assetAccountsTotal in
+// routes/dashboard.ts — so on the seed account it is £207,690.91 against
+// £11,375.18 of actual cash. It was labelled "Cash" on all five layouts,
+// which told the user a Kuala Lumpur flat, a SIPP and an ISA were money in
+// hand, eighteen times over, next to where safe-to-spend now sits.
+//
+// The LABEL is what was wrong, not the field. Three reasons for fixing it
+// that way rather than pointing the cell at spendable cash:
+//
+//   1. totalCash is a load-bearing term in the response identity the
+//      dashboard route states and its tests pin:
+//        netWorth == totalCash + portfolio.totalValueBase + owing.netBase
+//                    − totalLiabilities
+//      Repointing the cell would leave that term unnamed on screen.
+//   2. Spendable cash already has a name in this same run — Liquidity,
+//      netLiquidity — and giving the narrower total a second name prints
+//      two labels for very nearly one number.
+//   3. The arithmetic is correct. totalCash is a good net-worth input and
+//      only a bad name for one.
+//
+// "Accounts" rather than "Assets" because Portfolio is a separate cell
+// beside it and separate from this figure: the holdings in the investments
+// table are not accounts, so "Assets" would claim to include them. The
+// drill goes to /accounts, which is exactly what the label now names.
 interface KpiItem {
   label: string;
   raw: number | null;
@@ -72,7 +96,7 @@ export function KpiBar() {
           { label: "Portfolio", raw: data.portfolio.totalValueBase, color: "var(--ft-blue)", fmt, href: "/investments" },
           { label: "P&L", raw: data.portfolio.totalPlBase, color: data.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt, href: "/investments" },
           { label: "Return", raw: data.portfolio.totalPlPercent, color: (data.portfolio.totalPlPercent ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt: fmtPct },
-          { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
+          { label: "Accounts", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
         ];
       case "budget":
         return [
@@ -81,18 +105,18 @@ export function KpiBar() {
           // savingsRate is a percentage (15 means 15%), so the threshold is
           // 15, not 0.15. Null keeps its own colour and KpiValue renders "—".
           { label: "Savings Rate", raw: data.thisMonth.savingsRate, color: (data.thisMonth.savingsRate ?? 0) >= 15 ? "var(--ft-green)" : "var(--ft-amber)", fmt: fmtPct },
-          { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
+          { label: "Accounts", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
         ];
       case "wealth":
         return [
           { label: "Net Worth", raw: data.netWorth, color: "var(--ft-blue)", fmt, href: "/net-worth" },
           { label: "Savings Rate", raw: data.thisMonth.savingsRate, color: (data.thisMonth.savingsRate ?? 0) >= 20 ? "var(--ft-green)" : "var(--ft-amber)", fmt: fmtPct },
           { label: "Portfolio", raw: data.portfolio.totalValueBase, color: "var(--ft-text)", fmt, href: "/investments" },
-          { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
+          { label: "Accounts", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
         ];
       case "social":
         return [
-          { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
+          { label: "Accounts", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
           { label: "Owed to Me", raw: data.owing.totalOwedToMe, color: data.owing.totalOwedToMe > 0 ? "var(--ft-green)" : "var(--ft-dim)", fmt, href: "/owing" },
           { label: "I Owe", raw: data.owing.totalIOwe, color: data.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)", fmt, href: "/owing" },
           { label: "Net Worth", raw: data.netWorth, color: "var(--ft-blue)", fmt, href: "/net-worth" },
@@ -101,7 +125,7 @@ export function KpiBar() {
         return [
           { label: "Net Worth", raw: data.netWorth, color: "var(--ft-blue)", fmt, href: "/net-worth" },
           { label: "Liquidity", raw: data.netLiquidity, color: "var(--ft-green)", fmt, href: "/accounts" },
-          { label: "Cash", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
+          { label: "Accounts", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
           { label: "Portfolio", raw: data.portfolio.totalValueBase, color: data.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt, href: "/investments" },
         ];
     }
