@@ -26,6 +26,7 @@ import { isUnfiltered, matchesLedgerFilters, readLedgerFilters, type LedgerRowFi
 import { PhoneEntityRow, deriveTone } from "./PhoneEntityRow";
 import { SectionHeader } from "./SectionHeader";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
+import { AllowanceBand } from "./AllowanceBand";
 import { CategoryStrip } from "./CategoryStrip";
 import { InsightSlot } from "./InsightSlot";
 import { MobileEmptyState } from "@/components/mobile/mobile-ui";
@@ -598,6 +599,14 @@ export function SpendingScreen() {
         }}
       >
         <SpendingHero hero={hero} now={now} loading={isLoading && !hero} filter={filterTotal} />
+        {/* Directly under the hero, and only unfiltered. The hero states
+            what has gone out this month; this states what can go out today,
+            and the pair is the whole of what this screen answers at a
+            glance. Under a filter the hero is about a subset of the ledger
+            and an allowance about the whole account beside it invites a
+            comparison between two different questions — the same reason the
+            strip and the insight stand down. */}
+        {!filtered && <AllowanceBand />}
         {/* While a filter is on, the strip and the insight are about the
             whole month and the list below is not — showing both invites
             the reader to compare two things that do not answer the same

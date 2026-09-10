@@ -45,6 +45,7 @@ import { LayoutGrid } from "lucide-react";
 import { signColour, signedMoney } from "@/lib/utils";
 import { splitInsight } from "@/lib/insight-split";
 import { attributionView, causeSegments, type AttributionRow, type AttributionView } from "@/lib/change-attribution-view";
+import { AllowanceBand } from "./allowance-band";
 
 export const RULE = "1px solid var(--ft-border)";
 
@@ -416,6 +417,12 @@ export function DashboardTopRegion({ cells, dashboardLabel, isCustomizing, onCus
       </Strip>
 
       <WhatChanged ok={ok} currency={currency} emptyReason={emptyReason} />
+
+      {/* The fourth band. The run above states position, WHAT CHANGED states
+          movement, and neither answers "what can I spend today" — which is
+          the question a person opening this every day actually has. Same
+          ruled register, same Workings disclosure, no whitespace between. */}
+      <AllowanceBand />
 
       {insights}
     </VStack>

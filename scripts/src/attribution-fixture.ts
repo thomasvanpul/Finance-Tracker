@@ -90,7 +90,20 @@ if (atBaseline.length > 0) {
 
 const accounts = await db.select().from(accountsTable);
 const txs = await db.select().from(transactionsTable);
-const today = existing.filter((s) => s.date > BASELINE_DATE);
+// The LATEST snapshot per account, not every snapshot after the baseline.
+// This read `existing.filter((s) => s.date > BASELINE_DATE)` and worked only
+// while the dev branch held exactly one day of history. Once it held five
+// (2026-09-07..11) the loop below tried to write five baseline rows per
+// account and died on account_balance_snapshots_account_date_uniq, which
+// made the fired state uncapturable — found 2026-09-11 while capturing the
+// allocation surface's populated state.
+const latestPerAccount = new Map<number, typeof existing[number]>();
+for (const s of existing) {
+  if (s.date <= BASELINE_DATE) continue;
+  const held = latestPerAccount.get(s.accountId);
+  if (held == null || s.date > held.date) latestPerAccount.set(s.accountId, s);
+}
+const today = [...latestPerAccount.values()];
 
 console.log(`baseline rates (stated): ${JSON.stringify(BASELINE_RATES)}`);
 let written = 0;
