@@ -12,7 +12,7 @@ import {
 } from "@workspace/api-zod";
 import { toBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
-import { adjustAccountBalance } from "../lib/balance";
+import { adjustAccountBalance, isAccountOwnedBy } from "../lib/balance";
 
 const router: IRouter = Router();
 
@@ -123,6 +123,17 @@ router.post("/debts", async (req, res): Promise<void> => {
   }
   const { nativeAmount, linkedEmail, ...rest } = parsed.data;
 
+  // The id stored here is the one POST /debts/:id/settle later moves
+  // money with. The settle handler checks the *debt* is the caller's,
+  // which it is — but this accountId arrived on this request unchecked,
+  // so it is the settle path's hole reached one request earlier.
+  // (The mirror debt written below for a linked user deliberately does
+  // not copy accountId, so no cross-tenant id is written by the server.)
+  if (rest.accountId != null && !(await isAccountOwnedBy(rest.accountId, userId))) {
+    res.status(404).json({ error: `Account ${rest.accountId} not found` });
+    return;
+  }
+
   // Insert the primary debt
   const [item] = await db
     .insert(debtsTable)
@@ -224,7 +235,7 @@ router.post("/debts/:id/settle", async (req, res): Promise<void> => {
   if (existing.accountId) {
     const nativeAmount = parseFloat(existing.nativeAmount);
     const txType = existing.direction === "i_owe_them" ? "expense" : "income";
-    await adjustAccountBalance(existing.accountId, nativeAmount, existing.currency, txType);
+    await adjustAccountBalance(existing.accountId, userId, nativeAmount, existing.currency, txType);
   }
   const enriched = await enrichDebt(item, userId);
   res.json(enriched);
@@ -242,6 +253,12 @@ router.patch("/debts/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // A PATCH may re-point the debt at another account before it settles.
+  if (parsed.data.accountId != null && !(await isAccountOwnedBy(parsed.data.accountId, userId))) {
+    res.status(404).json({ error: `Account ${parsed.data.accountId} not found` });
+    return;
+  }
+
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (parsed.data.nativeAmount !== undefined) updateData.nativeAmount = String(parsed.data.nativeAmount);
   const [item] = await db

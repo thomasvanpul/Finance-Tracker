@@ -28,6 +28,7 @@ import {
   sharedExpenseSettlementsTable,
   userTable,
 } from "@workspace/db";
+import { isAccountOwnedBy } from "../lib/balance";
 import { splitEqual, splitExact, splitShares } from "../lib/split-rules";
 
 const router: IRouter = Router();
@@ -228,6 +229,16 @@ router.post("/shared-expenses", async (req, res): Promise<void> => {
     return;
   }
   const body = parsed.data;
+
+  // `shared_expenses.accountId` is stored and nothing reads it today, so
+  // this moves no money — but it is a user-supplied account id written to
+  // a row, and the column exists so that a transaction can be attached to
+  // the expense later. Gate it now rather than leave a stored foreign id
+  // waiting for the feature that will read it.
+  if (body.accountId != null && !(await isAccountOwnedBy(body.accountId, userId))) {
+    res.status(404).json({ error: `Account ${body.accountId} not found` });
+    return;
+  }
 
   // Split the total. This throws for exact-sum mismatches and any
   // other split-rule input error — surface the message to the user.

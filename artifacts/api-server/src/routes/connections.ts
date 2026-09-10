@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import { db, connectionsTable, transactionsTable, type Connection } from "@workspace/db";
+import { isAccountOwnedBy } from "../lib/balance";
 import {
   CreateConnectionBody,
   DeleteConnectionParams,
@@ -255,6 +256,16 @@ router.post("/connections/:id/import", async (req, res): Promise<void> => {
   const rowsIn = Array.isArray(body?.rows) ? (body.rows as IncomingRow[]) : null;
   if (!Number.isInteger(accountId) || !rowsIn) {
     res.status(400).json({ error: "expected { accountId: number, rows: NormalizedRow[] }" });
+    return;
+  }
+
+  // This handler never touched accountsTable, so it would happily file a
+  // batch of transactions against an account id belonging to someone
+  // else — and DELETE later reverses each of those rows against whatever
+  // accountId it carries. Not one of the seven balance call sites, but
+  // the same unchecked user-supplied id, so it gets the same gate.
+  if (!(await isAccountOwnedBy(accountId, userId))) {
+    res.status(404).json({ error: `Account ${accountId} not found` });
     return;
   }
 

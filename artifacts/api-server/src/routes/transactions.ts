@@ -14,7 +14,7 @@ import {
 } from "@workspace/api-zod";
 import { snapshotFxRate, txToBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
-import { adjustAccountBalance } from "../lib/balance";
+import { adjustAccountBalance, isAccountOwnedBy } from "../lib/balance";
 
 const router: IRouter = Router();
 
@@ -98,6 +98,19 @@ router.post("/transactions", async (req, res): Promise<void> => {
   const baseCurrency = await getBaseCurrency(userId);
   const { toAccountId, toNativeAmount, toCurrency, ...coreData } = parsed.data;
 
+  // Ownership gate. Both ids on this request are user-supplied, and a
+  // transfer carries two — the destination leg had never been checked at
+  // all. 404 rather than 403 so the response does not confirm that
+  // another user's account id exists; same answer routes/import.ts:54
+  // has always given.
+  for (const id of [coreData.accountId, toAccountId]) {
+    if (id == null) continue;
+    if (!(await isAccountOwnedBy(id, userId))) {
+      res.status(404).json({ error: `Account ${id} not found` });
+      return;
+    }
+  }
+
   // Two-leg transfer: write debit and credit atomically, adjust both balances.
   if (coreData.type === "transfer" && toAccountId != null) {
     const outAmount = coreData.nativeAmount;
@@ -134,8 +147,8 @@ router.post("/transactions", async (req, res): Promise<void> => {
           },
         ])
         .returning();
-      await adjustAccountBalance(coreData.accountId, outAmount, coreData.currency, "transfer", false, dbTx, "out");
-      await adjustAccountBalance(toAccountId, inAmount, inCurrency, "transfer", false, dbTx, "in");
+      await adjustAccountBalance(coreData.accountId, userId, outAmount, coreData.currency, "transfer", false, dbTx, "out");
+      await adjustAccountBalance(toAccountId, userId, inAmount, inCurrency, "transfer", false, dbTx, "in");
       return rows;
     });
 
@@ -162,7 +175,7 @@ router.post("/transactions", async (req, res): Promise<void> => {
         rateAsOf: asOf,
       })
       .returning();
-    await adjustAccountBalance(coreData.accountId, coreData.nativeAmount, coreData.currency, coreData.type, false, dbTx);
+    await adjustAccountBalance(coreData.accountId, userId, coreData.nativeAmount, coreData.currency, coreData.type, false, dbTx);
     return rows;
   });
 
@@ -237,6 +250,16 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // A PATCH may re-point the row at another account. That id is
+  // user-supplied and was never checked, and although this handler moves
+  // no balance itself (see the note below), DELETE later reverses the row
+  // against whatever accountId it carries — so an unchecked id here is
+  // the delete path's hole, reached one request earlier.
+  if (parsed.data.accountId !== undefined && !(await isAccountOwnedBy(parsed.data.accountId, userId))) {
+    res.status(404).json({ error: `Account ${parsed.data.accountId} not found` });
+    return;
+  }
+
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (parsed.data.nativeAmount !== undefined) updateData.nativeAmount = String(parsed.data.nativeAmount);
 
@@ -285,6 +308,7 @@ router.delete("/transactions/:id", async (req, res): Promise<void> => {
     if (!row) return null;
     await adjustAccountBalance(
       row.accountId,
+      userId,
       parseFloat(row.nativeAmount),
       row.currency,
       row.type,
@@ -305,6 +329,7 @@ router.delete("/transactions/:id", async (req, res): Promise<void> => {
       if (paired) {
         await adjustAccountBalance(
           paired.accountId,
+          userId,
           parseFloat(paired.nativeAmount),
           paired.currency,
           paired.type,

@@ -15,7 +15,7 @@ import {
 } from "@workspace/api-zod";
 import { toBase, snapshotFxRate } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
-import { adjustAccountBalance } from "../lib/balance";
+import { adjustAccountBalance, isAccountOwnedBy } from "../lib/balance";
 
 const router: IRouter = Router();
 
@@ -105,6 +105,15 @@ router.post("/upcoming", async (req, res): Promise<void> => {
   }
   const { dueDate, description, category, type, frequency, nativeAmount, currency, accountId } = parsed.data;
 
+  // The id stored here is the one /upcoming/:id/pay later moves money
+  // with. The pay handler checks that the *item* is the caller's, which
+  // it is — but the accountId inside it arrived on this request and was
+  // never checked, so it is the same hole reached through a stored row.
+  if (accountId != null && !(await isAccountOwnedBy(accountId, userId))) {
+    res.status(404).json({ error: `Account ${accountId} not found` });
+    return;
+  }
+
   // No rate snapshot at write time. Unlike transactions (historical records where
   // the exchange rate at the moment of the transaction is the fact), upcoming items
   // are future obligations — their base-currency equivalent should reflect the rate
@@ -143,6 +152,12 @@ router.post("/upcoming/installments", async (req, res): Promise<void> => {
     return;
   }
   const { description, category, totalAmount, currency, numberOfMonths, startDate, accountId } = parsed.data;
+
+  // Same gate as POST /upcoming — this writes many rows carrying the id.
+  if (accountId != null && !(await isAccountOwnedBy(accountId, userId))) {
+    res.status(404).json({ error: `Account ${accountId} not found` });
+    return;
+  }
   const monthlyAmount = totalAmount / numberOfMonths;
 
   const rows = [];
@@ -219,7 +234,7 @@ router.post("/upcoming/:id/pay", async (req, res): Promise<void> => {
       nativeToBaseRate: rate == null ? null : String(rate),
       rateAsOf: asOf,
     });
-    await adjustAccountBalance(targetAccountId, parseFloat(item.nativeAmount), item.currency, item.type);
+    await adjustAccountBalance(targetAccountId, userId, parseFloat(item.nativeAmount), item.currency, item.type);
   }
 
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
@@ -239,6 +254,12 @@ router.patch("/upcoming/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  // A PATCH may re-point the item at another account before it is paid.
+  if (parsed.data.accountId != null && !(await isAccountOwnedBy(parsed.data.accountId, userId))) {
+    res.status(404).json({ error: `Account ${parsed.data.accountId} not found` });
+    return;
+  }
+
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (parsed.data.nativeAmount !== undefined) updateData.nativeAmount = String(parsed.data.nativeAmount);
 
