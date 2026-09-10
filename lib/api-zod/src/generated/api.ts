@@ -245,6 +245,62 @@ export const CreateAccountBody = zod.object({
 
 
 /**
+ * A forward-looking daily allowance over a rolling 30-day window, moved
+by four inputs: pending `upcoming` expense rows in the window
+(including rows generated from subscription rules), pending `upcoming`
+income rows in the window, each goal's dated claim on future income
+(remaining / days until its deadline), and the observed reconciliation
+gap — balance movement the ledger does not explain.
+
+Drift only ever reduces the allowance. Unexplained money arriving is
+not treated as headroom, because a mis-keyed balance looks identical
+and honouring it would make the figure more optimistic on worse data.
+
+`dailyAllowance` is the number. Every other field is its
+decomposition, so one surface can show the figure and another the
+reasoning from one computation. When any leg cannot be computed —
+an unconvertible currency, no cash account, or too little snapshot
+history to measure drift — `status` is `unknown`, `dailyAllowance` is
+null and `blockers` names why. There is deliberately no partial
+figure to fall back to.
+
+ * @summary What can be spent today
+ */
+export const GetAllocationResponse = zod.object({
+  "status": zod.enum(['ok', 'unknown']).describe('ok when every leg was computable; unknown when any was not.'),
+  "blockers": zod.array(zod.enum(['no-cash-accounts', 'cash-unconvertible', 'upcoming-unconvertible', 'drift-insufficient-history', 'drift-unconvertible'])).describe('Why the number was withheld. Empty when status is ok.'),
+  "baseCurrency": zod.string(),
+  "today": zod.string().describe('YYYY-MM-DD, server-local'),
+  "horizonDays": zod.number(),
+  "windowEnd": zod.string().describe('today + horizonDays, YYYY-MM-DD, inclusive'),
+  "dailyAllowance": zod.number().nullable().describe('What can be spent today, in base currency. May be negative when commitments exceed what is available.'),
+  "availableNow": zod.number().nullable().describe('Cash-type account balances converted to base. null when any could not be converted.'),
+  "expectedIncome": zod.number().nullable().describe('Dated income due inside the window. null when any row could not be converted.'),
+  "committedOut": zod.number().nullable().describe('Dated obligations due inside the window. null when any row could not be converted.'),
+  "goalClaim": zod.number().describe('What every goal claims across the window, in base. Never null — a goal that makes no dated claim is counted in goalsWithoutClaim rather than guessed at.'),
+  "driftReduction": zod.number().nullable().describe('Positive amount by which measured drift lowers the window. null when drift could not be measured.'),
+  "goalClaims": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "remaining": zod.number().describe('target − current, floored at 0'),
+  "deadline": zod.string().nullable().describe('YYYY-MM-DD. null when the claim rests on a stated monthly contribution instead.'),
+  "daysRemaining": zod.number().nullable().describe('Days from today to the deadline; negative when overdue. null for a monthly-contribution claim.'),
+  "perDay": zod.number().describe('What this goal claims per day'),
+  "claimedOverWindow": zod.number().describe('What this goal claims across the whole window; never more than remaining'),
+  "basis": zod.enum(['deadline', 'monthly-contribution'])
+})),
+  "goalsWithoutClaim": zod.number().describe('Goals already met, or with neither a usable deadline nor a stated monthly contribution. These make the allowance more generous, so the count is reported.'),
+  "cashAccountsCounted": zod.number(),
+  "cashAccountsUnconvertible": zod.number(),
+  "upcomingCounted": zod.number(),
+  "upcomingUnconvertible": zod.number(),
+  "driftGapBase": zod.number().nullable().describe('The measured gap itself, signed. Negative means money left that the ledger does not explain.'),
+  "driftPerDay": zod.number().nullable(),
+  "driftDays": zod.number().describe('Days the gap was measured over')
+})
+
+
+/**
  * Per cash account, (current balance − balance at the baseline snapshot)
 minus the signed effect of every transaction created on that account
 since the baseline was captured. Non-zero means money moved that the

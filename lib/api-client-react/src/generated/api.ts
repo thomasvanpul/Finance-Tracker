@@ -26,6 +26,7 @@ import type {
   AddGoalFundsBody,
   AdminForbidden,
   AdminOverview,
+  AllocationResult,
   Budget,
   ChangeAttributionReport,
   Connection,
@@ -566,6 +567,102 @@ export const useCreateAccount = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateAccountMutationOptions(options));
     }
+
+export const getGetAllocationUrl = () => {
+
+
+
+
+  return `/api/allocation`
+}
+
+/**
+ * A forward-looking daily allowance over a rolling 30-day window, moved
+by four inputs: pending `upcoming` expense rows in the window
+(including rows generated from subscription rules), pending `upcoming`
+income rows in the window, each goal's dated claim on future income
+(remaining / days until its deadline), and the observed reconciliation
+gap — balance movement the ledger does not explain.
+
+Drift only ever reduces the allowance. Unexplained money arriving is
+not treated as headroom, because a mis-keyed balance looks identical
+and honouring it would make the figure more optimistic on worse data.
+
+`dailyAllowance` is the number. Every other field is its
+decomposition, so one surface can show the figure and another the
+reasoning from one computation. When any leg cannot be computed —
+an unconvertible currency, no cash account, or too little snapshot
+history to measure drift — `status` is `unknown`, `dailyAllowance` is
+null and `blockers` names why. There is deliberately no partial
+figure to fall back to.
+
+ * @summary What can be spent today
+ */
+export const getAllocation = async ( options?: RequestInit): Promise<AllocationResult> => {
+
+  return customFetch<AllocationResult>(getGetAllocationUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAllocationQueryKey = () => {
+    return [
+    `/api/allocation`
+    ] as const;
+    }
+
+
+export const getGetAllocationQueryOptions = <TData = Awaited<ReturnType<typeof getAllocation>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAllocation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAllocationQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAllocation>>> = ({ signal }) => getAllocation({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAllocation>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAllocationQueryResult = NonNullable<Awaited<ReturnType<typeof getAllocation>>>
+export type GetAllocationQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary What can be spent today
+ */
+
+export function useGetAllocation<TData = Awaited<ReturnType<typeof getAllocation>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAllocation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAllocationQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetAccountsReconciliationUrl = () => {
 

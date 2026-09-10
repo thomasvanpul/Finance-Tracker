@@ -132,6 +132,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/Account"
 
+  /allocation:
+    get:
+      operationId: getAllocation
+      tags: [allocation]
+      summary: What can be spent today
+      description: |
+        A forward-looking daily allowance over a rolling 30-day window, moved
+        by four inputs: pending `upcoming` expense rows in the window
+        (including rows generated from subscription rules), pending `upcoming`
+        income rows in the window, each goal's dated claim on future income
+        (remaining / days until its deadline), and the observed reconciliation
+        gap — balance movement the ledger does not explain.
+
+        Drift only ever reduces the allowance. Unexplained money arriving is
+        not treated as headroom, because a mis-keyed balance looks identical
+        and honouring it would make the figure more optimistic on worse data.
+
+        `dailyAllowance` is the number. Every other field is its
+        decomposition, so one surface can show the figure and another the
+        reasoning from one computation. When any leg cannot be computed —
+        an unconvertible currency, no cash account, or too little snapshot
+        history to measure drift — `status` is `unknown`, `dailyAllowance` is
+        null and `blockers` names why. There is deliberately no partial
+        figure to fall back to.
+      responses:
+        "200":
+          description: Today's allowance and its decomposition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllocationResult"
+
   /accounts/reconciliation:
     get:
       operationId: getAccountsReconciliation
@@ -1770,6 +1802,98 @@ components:
         fxSkippedTransactions:
           type: integer
           description: Transactions in a currency other than the account's whose conversion was unavailable and were left out of ledgerChange
+    AllocationGoalClaim:
+      type: object
+      required: [id, name, remaining, deadline, daysRemaining, perDay, claimedOverWindow, basis]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        remaining:
+          type: number
+          description: target − current, floored at 0
+        deadline:
+          type: ["string", "null"]
+          description: YYYY-MM-DD. null when the claim rests on a stated monthly contribution instead.
+        daysRemaining:
+          type: ["integer", "null"]
+          description: Days from today to the deadline; negative when overdue. null for a monthly-contribution claim.
+        perDay:
+          type: number
+          description: What this goal claims per day
+        claimedOverWindow:
+          type: number
+          description: What this goal claims across the whole window; never more than remaining
+        basis:
+          type: string
+          enum: [deadline, monthly-contribution]
+    AllocationResult:
+      type: object
+      required: [status, blockers, baseCurrency, today, horizonDays, windowEnd, dailyAllowance, availableNow, expectedIncome, committedOut, goalClaim, driftReduction, goalClaims, goalsWithoutClaim, cashAccountsCounted, cashAccountsUnconvertible, upcomingCounted, upcomingUnconvertible, driftGapBase, driftPerDay, driftDays]
+      properties:
+        status:
+          type: string
+          enum: [ok, unknown]
+          description: ok when every leg was computable; unknown when any was not.
+        blockers:
+          type: array
+          description: Why the number was withheld. Empty when status is ok.
+          items:
+            type: string
+            enum: [no-cash-accounts, cash-unconvertible, upcoming-unconvertible, drift-insufficient-history, drift-unconvertible]
+        baseCurrency:
+          type: string
+        today:
+          type: string
+          description: YYYY-MM-DD, server-local
+        horizonDays:
+          type: integer
+        windowEnd:
+          type: string
+          description: today + horizonDays, YYYY-MM-DD, inclusive
+        # THE NUMBER. Null whenever status is unknown; there is no second figure.
+        dailyAllowance:
+          type: ["number", "null"]
+          description: What can be spent today, in base currency. May be negative when commitments exceed what is available.
+        availableNow:
+          type: ["number", "null"]
+          description: Cash-type account balances converted to base. null when any could not be converted.
+        expectedIncome:
+          type: ["number", "null"]
+          description: Dated income due inside the window. null when any row could not be converted.
+        committedOut:
+          type: ["number", "null"]
+          description: Dated obligations due inside the window. null when any row could not be converted.
+        goalClaim:
+          type: number
+          description: What every goal claims across the window, in base. Never null — a goal that makes no dated claim is counted in goalsWithoutClaim rather than guessed at.
+        driftReduction:
+          type: ["number", "null"]
+          description: Positive amount by which measured drift lowers the window. null when drift could not be measured.
+        goalClaims:
+          type: array
+          items:
+            $ref: "#/components/schemas/AllocationGoalClaim"
+        goalsWithoutClaim:
+          type: integer
+          description: Goals already met, or with neither a usable deadline nor a stated monthly contribution. These make the allowance more generous, so the count is reported.
+        cashAccountsCounted:
+          type: integer
+        cashAccountsUnconvertible:
+          type: integer
+        upcomingCounted:
+          type: integer
+        upcomingUnconvertible:
+          type: integer
+        driftGapBase:
+          type: ["number", "null"]
+          description: The measured gap itself, signed. Negative means money left that the ledger does not explain.
+        driftPerDay:
+          type: ["number", "null"]
+        driftDays:
+          type: integer
+          description: Days the gap was measured over
     ReconciliationReport:
       type: object
       required: [status, baseCurrency, periodRule, periodFrom, periodTo, days, dataAvailableSince, gapBase, accounts, unconvertibleAccounts]

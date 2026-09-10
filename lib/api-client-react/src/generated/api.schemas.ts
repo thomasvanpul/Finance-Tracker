@@ -315,6 +315,114 @@ export interface ReconciliationAccount {
   fxSkippedTransactions: number;
 }
 
+export type AllocationGoalClaimBasis = typeof AllocationGoalClaimBasis[keyof typeof AllocationGoalClaimBasis];
+
+
+export const AllocationGoalClaimBasis = {
+  deadline: 'deadline',
+  'monthly-contribution': 'monthly-contribution',
+} as const;
+
+export interface AllocationGoalClaim {
+  id: number;
+  name: string;
+  /** target − current, floored at 0 */
+  remaining: number;
+  /**
+     * YYYY-MM-DD. null when the claim rests on a stated monthly contribution instead.
+     * @nullable
+     */
+  deadline: string | null;
+  /**
+     * Days from today to the deadline; negative when overdue. null for a monthly-contribution claim.
+     * @nullable
+     */
+  daysRemaining: number | null;
+  /** What this goal claims per day */
+  perDay: number;
+  /** What this goal claims across the whole window; never more than remaining */
+  claimedOverWindow: number;
+  basis: AllocationGoalClaimBasis;
+}
+
+/**
+ * ok when every leg was computable; unknown when any was not.
+ */
+export type AllocationResultStatus = typeof AllocationResultStatus[keyof typeof AllocationResultStatus];
+
+
+export const AllocationResultStatus = {
+  ok: 'ok',
+  unknown: 'unknown',
+} as const;
+
+export type AllocationResultBlockersItem = typeof AllocationResultBlockersItem[keyof typeof AllocationResultBlockersItem];
+
+
+export const AllocationResultBlockersItem = {
+  'no-cash-accounts': 'no-cash-accounts',
+  'cash-unconvertible': 'cash-unconvertible',
+  'upcoming-unconvertible': 'upcoming-unconvertible',
+  'drift-insufficient-history': 'drift-insufficient-history',
+  'drift-unconvertible': 'drift-unconvertible',
+} as const;
+
+export interface AllocationResult {
+  /** ok when every leg was computable; unknown when any was not. */
+  status: AllocationResultStatus;
+  /** Why the number was withheld. Empty when status is ok. */
+  blockers: AllocationResultBlockersItem[];
+  baseCurrency: string;
+  /** YYYY-MM-DD, server-local */
+  today: string;
+  horizonDays: number;
+  /** today + horizonDays, YYYY-MM-DD, inclusive */
+  windowEnd: string;
+  /**
+     * What can be spent today, in base currency. May be negative when commitments exceed what is available.
+     * @nullable
+     */
+  dailyAllowance: number | null;
+  /**
+     * Cash-type account balances converted to base. null when any could not be converted.
+     * @nullable
+     */
+  availableNow: number | null;
+  /**
+     * Dated income due inside the window. null when any row could not be converted.
+     * @nullable
+     */
+  expectedIncome: number | null;
+  /**
+     * Dated obligations due inside the window. null when any row could not be converted.
+     * @nullable
+     */
+  committedOut: number | null;
+  /** What every goal claims across the window, in base. Never null — a goal that makes no dated claim is counted in goalsWithoutClaim rather than guessed at. */
+  goalClaim: number;
+  /**
+     * Positive amount by which measured drift lowers the window. null when drift could not be measured.
+     * @nullable
+     */
+  driftReduction: number | null;
+  goalClaims: AllocationGoalClaim[];
+  /** Goals already met, or with neither a usable deadline nor a stated monthly contribution. These make the allowance more generous, so the count is reported. */
+  goalsWithoutClaim: number;
+  cashAccountsCounted: number;
+  cashAccountsUnconvertible: number;
+  upcomingCounted: number;
+  upcomingUnconvertible: number;
+  /**
+     * The measured gap itself, signed. Negative means money left that the ledger does not explain.
+     * @nullable
+     */
+  driftGapBase: number | null;
+  /** @nullable */
+  driftPerDay: number | null;
+  /** Days the gap was measured over */
+  driftDays: number;
+}
+
 export type ReconciliationReportStatus = typeof ReconciliationReportStatus[keyof typeof ReconciliationReportStatus];
 
 
