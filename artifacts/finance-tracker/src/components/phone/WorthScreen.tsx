@@ -25,6 +25,7 @@ import { QuickAddTransaction } from "@/components/quick-add-transaction";
 import { MobileEmptyState } from "@/components/mobile/mobile-ui";
 import { PhoneSectionError } from "@/components/mobile/mobile-ui";
 import { DetailSurface } from "@/components/detail-surface";
+import { ChangeAttributionBlock } from "@/components/change-attribution";
 import {
   computeHoldings,
   ViewMode,
@@ -398,6 +399,17 @@ export function WorthScreen() {
           unconvertibleAccounts={unconvertibleAccounts}
           loading={isLoading && netWorth == null}
         />
+
+        {/* ── What changed, and what caused it ──────────────────────────
+            Directly under the hero, because the hero states the move and
+            this states what the move was made of. It belongs on this tab
+            rather than on HOME: it is a claim about balances, which is
+            what this screen is, and every row in it drills to an account,
+            which is what this screen lists. It prints its own total beside
+            its own window — the report's baseline usually lands on the 1st
+            and agrees with the hero's MTD, and when it does not, one
+            figure under two unstated periods would be the lie. */}
+        <ChangeAttributionBlock />
 
         {/* ── Composition chart ─────────────────────────────────────────── */}
         <div style={{ padding: "0 16px 16px" }}>

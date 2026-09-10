@@ -1,7 +1,7 @@
 import { useGetAccountsChangeAttribution } from "@workspace/api-client-react";
-import { PanelBox, PanelHeader, SectionRule, Text, HStack, VStack, MonoLabel } from "@/components/primitives";
+import { Text, HStack, VStack, MonoLabel } from "@/components/primitives";
 import { Drill, DrillTarget } from "@/components/drill";
-import { formatMoney } from "@/lib/utils";
+import { signColour, signedMoney } from "@/lib/utils";
 import { attributionView, type AttributionRow, type AttributionBreakdownLine } from "@/lib/change-attribution-view";
 
 // ── Change attribution ──────────────────────────────────────────────────────
@@ -37,149 +37,20 @@ import { attributionView, type AttributionRow, type AttributionBreakdownLine } f
 // figure that reads as a different plausible number is the defect CLAUDE.md
 // names first. It wraps instead.
 
-function signed(value: number, currency: string): string {
-  return `${value > 0 ? "+" : ""}${formatMoney(value, currency)}`;
-}
-
-function amountColour(value: number): string {
-  if (value === 0) return "var(--ft-muted)";
-  return value > 0 ? "var(--ft-green)" : "var(--ft-red)";
-}
-
-// ── Desktop ─────────────────────────────────────────────────────────────────
-
-/**
- * The dashboard band. Sits under the KPI bar, which states net worth; this
- * states what moved it. One panel, the total on the left, the causes on the
- * right, so the figure and its decomposition read as one object.
- */
-export function ChangeAttributionBand() {
-  const { data, isLoading } = useGetAccountsChangeAttribution();
-  const view = attributionView(data);
-  if (isLoading || view == null || data == null) return null;
-
-  // Structure, not a widget — DESIGN.md § 6. This band is the page: it
-  // cannot be dragged, removed or dismissed, and it states what moved the
-  // figure the strip above it prints. So it carries no frame and no
-  // --ft-surface fill; SectionRule's hairline and the spacing beneath are
-  // the whole of its separation. It used to be a PanelBox, which is why the
-  // dashboard read as a stack of identical rectangles.
-  return (
-    <VStack marginBottom={14}>
-      {/* When there is nothing to attribute this is one rule and a reason,
-          not a frame around a single sentence: the reason goes in the
-          right slot and there is no body at all. */}
-      {/* The window used to be printed here AND is now printed next to the
-          total it qualifies, which is where it belongs — a period is a
-          property of a figure, not of a heading. Printing it in both places
-          would be one fact stated twice, so the header slot now carries
-          only the reason there is nothing to show. */}
-      <SectionRule right={
-        view.status === "insufficient" ? (
-          <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.08em">
-            {view.emptyReason}
-          </Text>
-        ) : (
-          /* The window moved up here when the total below it was removed
-             — see the note on that removal. A period still has to be
-             stated on this surface, because the rows on the right are
-             sums over it and a decomposition with no window is not
-             checkable. It qualifies every row in the band rather than a
-             single figure now, which is what a header slot is for. */
-          <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.08em">
-            {view.windowLabel}
-          </Text>
-        )
-      }>
-        WHAT CHANGED
-      </SectionRule>
-
-      {view.status === "insufficient" ? null : (
-        /* Three registers, in the order a person reads them, and that order
-           is the design.
-
-           Until 2026-09-08 this was two columns: the total floating left of
-           an indented list, using 700 of its 1180px and leaving the rest
-           blank. It had correct data and no design, and the finding it
-           exists to deliver — that almost none of the change was the user
-           spending — was not stated anywhere on it. A reader had to compare
-           the spend row against the others to reach it, which is the work
-           the screen is supposed to have already done.
-
-           So the finding is now the first thing on the surface, in prose,
-           at a size nothing else in the band competes with. The claim, then
-           the evidence — which is the shape the AI insight card also takes,
-           and the two now agree with each other rather than each inventing
-           a register.
-
-           It is still two columns, and that is deliberate rather than
-           inherited. What was wrong before was not the number of columns;
-           it was that the left one was a bare figure with nothing to say,
-           so the two halves were fragments rather than a claim and its
-           support. Left is now the sentence, its magnitudes, and the total
-           that sentence is about; right is the decomposition that sentence
-           was derived from. Read across, it is an argument. */
-        <HStack align="start" gap={40} wrap justify="between" wide padding="14px 0 4px">
-          {/* THE CLAIM. Capped at 420px because this column is prose and
-              prose has a measure — a 17px sentence run across 1180px is
-              unreadable, and the cap is what lets the band use its width
-              without the sentence paying for it. */}
-          <VStack gap={2} minWidth={280} maxWidth={420}>
-            <Text as="div" size={16} weight={600} color="var(--ft-text)"
-              lineHeight={1.25} letterSpacing="-0.01em">
-              {view.finding.headline}
-            </Text>
-
-            {/* Its evidence, when there is more than one part to weigh.
-                Mono, because every term in it is a magnitude or a named
-                cause. */}
-            {view.finding.support != null && (
-              <Text as="div" mono size={11} color="var(--ft-muted)" mt={1} lineHeight={1.4}>
-                {view.finding.support}
-              </Text>
-            )}
-
-            {/* The total used to be printed here at 20px, with its window
-                beside it. It was REMOVED on 2026-09-08, when the dashboard
-                header was rebuilt around one number: that header now states
-                this same figure, with the same sign, colour, window and
-                drill target, about 300px above this line.
-
-                Two statements of one fact is bad enough. This pair was
-                worse than that, because the second one was BIGGER — 20px
-                here against 15px in the header — so the page restated its
-                headline movement and then outranked its own first
-                statement of it. A reader scanning down met the number,
-                met it again larger, and had no way to tell whether the two
-                were the same measurement or two different windows.
-
-                What is left in this column is what only this surface has:
-                the finding in prose, and its supporting magnitudes. The
-                figure lives once, in the header, and the drill to
-                /net-worth went up there with it. The window moved to the
-                SectionRule above, because it qualifies the decomposition
-                on the right as much as it qualified this figure. */}
-          </VStack>
-
-          {/* THE WORKINGS. Left to right is a reading order too: the claim,
-              then what it was derived from. This is NOT the arrangement
-              that was rejected — that one put a bare figure to the left of
-              an indented list and stated no finding at all, so the left
-              column was a number with nothing to say and the two halves
-              were not a claim and its evidence, just two fragments.
-
-              `wrap` on the row: under about 700px the workings drop beneath
-              the claim rather than squeezing a rate quote into 200px. The
-              rate lines carry "GBP/MYR 5.4700 → 5.5039", which must not be
-              cropped. */}
-          <VStack gap={4} grow minWidth={340} maxWidth={520} marginTop={2}>
-            <AttributionWorkings rows={view.rows} currency={data.baseCurrency} warning={view.warning} />
-          </VStack>
-        </HStack>
-      )}
-    </VStack>
-  );
-}
+// ── The dead third rendering, removed 2026-09-10 ────────────────────────────
+//
+// `ChangeAttributionBand` stood here: a full desktop band — SectionRule,
+// finding column, workings column — 131 lines. It was imported by
+// pages/dashboard.tsx and rendered by nothing. The adopted top region took
+// over on 2026-09-08 and dashboard.tsx recorded the removal in a comment
+// where the mount used to be, but the component and its import stayed.
+//
+// So the surface had THREE renderings of one report, not two, and the third
+// was the one a reader would find first by grepping for the band. Deleting
+// it is the whole of what "do not add a third" asks for here: the two that
+// remain are the desktop one-liner (dashboard/top-region.tsx `WhatChanged`)
+// and the phone block below, and they now render their rows from one
+// implementation.
 
 /**
  * The decomposition: one line per cause, each with the accounts behind it,
@@ -191,24 +62,48 @@ export function ChangeAttributionBand() {
  * mistake DESIGN.md's §14 rule and this file's header both exist to stop —
  * so the band and the top region's disclosure render the same marks.
  */
-export function AttributionWorkings({ rows, currency, warning }: {
+export function AttributionWorkings({ rows, currency, warning, density = "desktop" }: {
   rows: AttributionRow[];
   currency: string;
   warning: string | null;
+  density?: AttributionDensity;
 }) {
+  const Line = density === "phone" ? PhoneAttributionLine : AttributionLine;
   return (
     <>
       {rows.map((row) => (
-        <AttributionLine key={row.kind} row={row} currency={currency} />
+        <Line key={row.kind} row={row} currency={currency} />
       ))}
       {warning != null && (
-        <Text as="div" mono size={9} mt={3} color="var(--ft-amber)" letterSpacing="0.04em">
+        <Text as="div" mono size={density === "phone" ? 11 : 9} mt={3}
+          lineHeight={density === "phone" ? "15px" : undefined}
+          color="var(--ft-amber)" letterSpacing="0.04em">
           {warning}
         </Text>
       )}
     </>
   );
 }
+
+/**
+ * The two densities are DOM shapes, not two sizes of one shape, which is
+ * why they are two components under one entry point rather than one
+ * component wearing ternaries.
+ *
+ * Desktop is `[label | evidence | figure]` on a single baseline, with the
+ * label held to a 138px column so four rows' figures land on one right
+ * margin, and the drill is an inline `<a>` inside a sentence.
+ *
+ * Phone is `[label over evidence | figure]`, because 390px cannot hold
+ * three columns without cropping a rate quote, and the whole row is the
+ * drill — a 44px block target (Mobile Amendment), which an inline `<a>`
+ * cannot be.
+ *
+ * What they are NOT allowed to differ on is which rows exist, what those
+ * rows say, or what they add to. That is `AttributionRow`, and it comes
+ * out of `attributionView()` for both.
+ */
+export type AttributionDensity = "desktop" | "phone";
 
 function AttributionLine({ row, currency }: { row: AttributionRow; currency: string }) {
   return (
@@ -247,8 +142,8 @@ function AttributionLine({ row, currency }: { row: AttributionRow; currency: str
             thing on the row that must never give up width, so the evidence
             beside it wraps or compresses first. */}
         <HStack shrink={false}>
-          <Text as="span" mono size={11} color={amountColour(row.amountBase)} numeric>
-            {signed(row.amountBase, currency)}
+          <Text as="span" mono size={11} color={signColour(row.amountBase)} numeric>
+            {signedMoney(row.amountBase, currency)}
           </Text>
         </HStack>
       </HStack>
@@ -275,10 +170,79 @@ function BreakdownLine({ line, currency }: { line: AttributionBreakdownLine; cur
       </HStack>
       <HStack shrink={false}>
         <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
-          {signed(line.amountBase, currency)}
+          {signedMoney(line.amountBase, currency)}
         </Text>
       </HStack>
     </HStack>
+  );
+}
+
+/**
+ * A cause row on the phone. The whole row is the tap target, so the label
+ * carries `.ft-drill` for the mark and the DrillTarget above it carries the
+ * href — the split `Drill` uses on desktop does not survive being a block.
+ */
+function PhoneAttributionLine({ row, currency }: { row: AttributionRow; currency: string }) {
+  return (
+    <VStack>
+      <DrillTarget href={row.drillHref} title={`Open what is behind "${row.label}"`}>
+        {/* paddingY 11 on a 22px line box is the Amendment's 44px target,
+            and it is what gives the rows their rhythm. */}
+        <HStack align="baseline" justify="between" gap={12} paddingY={11}>
+          <VStack gap={2} minWidth0>
+            <span className="ft-drill">
+              <Text as="span" size={13} color="var(--ft-text)">{row.label}</Text>
+            </span>
+            <Text as="div" mono size={11} color="var(--ft-dim)" lineHeight="15px">{row.detail}</Text>
+          </VStack>
+          <Text as="span" mono size={13} color={signColour(row.amountBase)} numeric>
+            {signedMoney(row.amountBase, currency)}
+          </Text>
+        </HStack>
+      </DrillTarget>
+      {row.breakdown.map((line) => (
+        <PhoneBreakdownLine key={line.drillHref + line.label} line={line} currency={currency} />
+      ))}
+    </VStack>
+  );
+}
+
+/**
+ * One account under a phone row.
+ *
+ * Until 2026-09-10 the phone rendered no breakdown at all: `row.breakdown`
+ * has been on every row since 2026-09-07 and only the desktop line read it,
+ * so the phone said "the rate moved · 3 currencies" and offered no way to
+ * see which three. That was not a density decision — it was the evidence
+ * being on one platform and not the other, which is exactly the drift a
+ * shared row type exists to prevent.
+ *
+ * Indented to the row's label, a step down in weight, and still a 44px
+ * target of its own because it is still a drill.
+ */
+function PhoneBreakdownLine({ line, currency }: { line: AttributionBreakdownLine; currency: string }) {
+  return (
+    <DrillTarget href={line.drillHref} title={`Open ${line.label}`}>
+      {/* 14 + a 16px line + 14 = 44. The Amendment says "minimum 44x44px
+          for anything tappable, no exceptions", and a sub-line is a drill.
+          Hierarchy against the row above it is carried by type and colour
+          — 12px muted against 13px text — not by making the target small.
+          `padding` alone: passing `paddingY` as well applied both, so each
+          sub-line carried 20px top and bottom and the breakdown read as
+          three separate blocks rather than as lines under a row. */}
+      <HStack align="baseline" justify="between" gap={12} padding="14px 0 14px 14px">
+        <HStack grow minWidth0>
+          <span className="ft-drill">
+            <Text as="span" size={12} color="var(--ft-muted)" lineHeight="16px">{line.label}</Text>
+          </span>
+        </HStack>
+        <HStack shrink={false}>
+          <Text as="span" mono size={12} color="var(--ft-dim)" numeric>
+            {signedMoney(line.amountBase, currency)}
+          </Text>
+        </HStack>
+      </HStack>
+    </DrillTarget>
   );
 }
 
@@ -307,7 +271,7 @@ export function ChangeAttributionBlock() {
       <HStack align="baseline" justify="between" gap={8}>
         <MonoLabel size={11} letterSpacing="0.16em">WHAT CHANGED</MonoLabel>
         <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
-          {signed(view.totalBase, data.baseCurrency)} {view.windowLabel}
+          {signedMoney(view.totalBase, data.baseCurrency)} {view.windowLabel}
         </Text>
       </HStack>
 
@@ -328,31 +292,15 @@ export function ChangeAttributionBlock() {
         </Text>
       )}
 
+      {/* The same implementation the desktop disclosure renders, at the
+          phone's density. The rows, their labels, their evidence, their
+          drill targets and the per-account lines under them are one set of
+          marks fed by one `AttributionRow[]`; what differs between the two
+          surfaces is the DOM shape a 390px column needs and the fact that
+          desktop hides these behind a toggle to keep its one-line band. */}
       <VStack>
-        {view.rows.map((row) => (
-          <DrillTarget key={row.kind} href={row.drillHref} title={`Open what is behind "${row.label}"`}>
-            {/* paddingY 11 on a 22px line box is the Amendment's 44px tap
-                target, and it is what gives the rows their rhythm. */}
-            <HStack align="baseline" justify="between" gap={12} paddingY={11}>
-              <VStack gap={2} minWidth0>
-                <span className="ft-drill">
-                  <Text as="span" size={13} color="var(--ft-text)">{row.label}</Text>
-                </span>
-                <Text as="div" mono size={11} color="var(--ft-dim)">{row.detail}</Text>
-              </VStack>
-              <Text as="span" mono size={13} color={amountColour(row.amountBase)} numeric>
-                {signed(row.amountBase, data.baseCurrency)}
-              </Text>
-            </HStack>
-          </DrillTarget>
-        ))}
+        <AttributionWorkings rows={view.rows} currency={data.baseCurrency} warning={view.warning} density="phone" />
       </VStack>
-
-      {view.warning != null && (
-        <Text as="div" mono size={11} lineHeight="15px" color="var(--ft-amber)">
-          {view.warning}
-        </Text>
-      )}
     </VStack>
   );
 }

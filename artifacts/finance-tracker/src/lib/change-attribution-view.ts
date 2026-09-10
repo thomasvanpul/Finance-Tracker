@@ -180,10 +180,18 @@ function rowFor(part: ChangeAttributionPart, from: string | null, to: string, ba
       };
     case "rate": {
       const currencies = new Set(accounts.map((a) => a.currency));
+      // "2 currencies" was written when nothing rendered the breakdown, so
+      // the count of currencies was the whole of what the row disclosed.
+      // The phone started rendering the account lines on 2026-09-10 and the
+      // seed puts three accounts under two currencies — "2 currencies" then
+      // sits directly above three lines and reads as a miscount. Say both
+      // when they differ; one number is still one number when they agree.
       const detail =
         currencies.size === 1 && first?.fromRate != null && first?.toRate != null
           ? `${base}/${first.currency} ${quote(first.fromRate)} → ${quote(first.toRate)}`
-          : `${currencies.size} currencies`;
+          : accounts.length === currencies.size
+            ? `${currencies.size} ${currencies.size === 1 ? "currency" : "currencies"}`
+            : `${plural(accounts.length, "account")} · ${currencies.size} currencies`;
       return { kind: "rate", label: "the rate moved", amountBase: part.amountBase, detail, drillHref: "/net-worth", breakdown };
     }
     case "valuation":

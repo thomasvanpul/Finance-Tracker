@@ -42,7 +42,7 @@ import { Text, HStack, VStack } from "@/components/primitives";
 import { Drill, DrillButton, DrillTarget } from "@/components/drill";
 import { AttributionWorkings } from "@/components/change-attribution";
 import { LayoutGrid } from "lucide-react";
-import { formatMoney } from "@/lib/utils";
+import { signColour, signedMoney } from "@/lib/utils";
 import { splitInsight } from "@/lib/insight-split";
 import { attributionView, causeSegments, type AttributionRow, type AttributionView } from "@/lib/change-attribution-view";
 
@@ -88,15 +88,6 @@ export function useAttribution(): {
 /** A cell printing an en dash has nothing to say. */
 export function isDashed(cell: TopRegionCell): boolean {
   return cell.value === "–" || cell.value === "—";
-}
-
-export function signColour(v: number): string {
-  if (v === 0) return "var(--ft-muted)";
-  return v > 0 ? "var(--ft-green)" : "var(--ft-red)";
-}
-
-export function signed(v: number, currency: string): string {
-  return `${v > 0 ? "+" : ""}${formatMoney(v, currency)}`;
 }
 
 // ── Marks ───────────────────────────────────────────────────────────────────
@@ -329,7 +320,7 @@ function Causes({ rows, currency }: { rows: AttributionRow[]; currency: string }
               §14 shape. */}
           <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`}>
             <Text as="span" numeric size={12} weight={600} color={signColour(row.amountBase)} nowrap>
-              {signed(row.amountBase, currency)}
+              {signedMoney(row.amountBase, currency)}
             </Text>
           </Drill>
         </Fragment>

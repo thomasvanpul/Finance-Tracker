@@ -19,7 +19,6 @@ import { loadPersonaIds, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { homeSectionOrder } from "@/lib/persona-emphasis";
 import { InsightSlot } from "@/components/phone/InsightSlot";
-import { ChangeAttributionBlock } from "@/components/change-attribution";
 import {
   computeHoldings,
   type Holdings,
@@ -371,15 +370,14 @@ export function MobileHome(_props: MobileHomeProps) {
           </VStack>
         )}
 
-        {/* ── What changed, and what caused it ──
-            Under the hero because the hero states the move ("+£X since 1
-            Sep") and this states what the move was made of. Standing, not an
-            insight: the FX share used to reach the phone only by dismissing
-            whatever outranked it on WORTH. It prints its own total and its
-            own window — the baseline rule usually lands on the 1st and
-            agrees with the hero, and when it does not, saying so is the
-            point. */}
-        <ChangeAttributionBlock />
+        {/* WHAT CHANGED stood here from 2026-09-07 to 2026-09-10 and now
+            stands on WORTH. The reason it was under this hero — the hero
+            states a move and this states what the move was made of — is
+            true of the WORTH hero too, and WORTH is the balance sheet:
+            "what changed" is a statement about balances, and every row in
+            it drills to an account, which is the tab those accounts live
+            on. Rendering it on both tabs would be one finding stated
+            twice, so it moved rather than being copied. */}
 
         {/* Claimed (liabilities are outlined, no depth).
             C2-4: when the API supplies topPending, list up to 3

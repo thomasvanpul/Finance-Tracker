@@ -65,7 +65,6 @@ import { oneShotInsight } from "@/lib/ai-chat-client";
 import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboard-customize-context";
 import { categoryTransactionsHref, entityHref, ledgerHref, merchantTransactionsHref, recurringSeriesHref, thisMonthRange } from "@/lib/entity-href";
 import { Drill, DrillTarget } from "@/components/drill";
-import { ChangeAttributionBand } from "@/components/change-attribution";
 import { attributionView } from "@/lib/change-attribution-view";
 import { useProtoDesign } from "@/lib/use-proto-design";
 import { topRegionVariant } from "@/lib/proto-design";
@@ -3738,12 +3737,13 @@ export default function Dashboard() {
           same reason the KPI bar cannot — a headline figure with no stated
           cause is what this is here to stop. The phone gets the same rows
           from MobileHome; this branch is the wide one only. */}
-      {/* ChangeAttributionBand used to stand here, desktop only. It is gone
-          from this page: the adopted top region states the same
-          decomposition as its middle band, and rendering the band as well
-          would print one finding twice. The phone never had it here — it
-          gets the same rows from MobileHome — so nothing is lost on either
-          width. The component itself is untouched and still used there. */}
+      {/* ChangeAttributionBand used to stand here, desktop only. It went
+          from this page on 2026-09-08 — the adopted top region states the
+          same decomposition as its middle band, and rendering the band as
+          well would print one finding twice — but the component and this
+          import outlived the mount until 2026-09-10, so the report had a
+          third rendering that nothing displayed. Both are gone now. The
+          phone's is on WORTH. */}
 
       {/* ── Main Content ── */}
       {isCustomizing ? (

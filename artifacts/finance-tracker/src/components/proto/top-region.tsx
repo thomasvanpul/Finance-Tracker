@@ -52,9 +52,10 @@ import type { AttributionRow } from "@/lib/change-attribution-view";
 // is what makes these still worth comparing against.
 import {
   RULE, Strip, Divided, Col, Reading, EditLayout, Key, PageLabel, Insights, Hero,
-  useAttribution, isDashed, signColour, signed,
+  useAttribution, isDashed,
   DashboardTopRegion,
 } from "@/components/dashboard/top-region";
+import { signColour, signedMoney } from "@/lib/utils";
 
 export interface ProtoTopRegionProps {
   variant: number;
@@ -141,7 +142,7 @@ function CauseRow({ row, currency, size }: { row: AttributionRow; currency: stri
           <Text as="span" mono size={size - 1} color="var(--ft-dim)">{row.detail}</Text>
         </HStack>
         <HStack shrink={false}>
-          <Text as="span" mono size={size} numeric color={signColour(row.amountBase)}>{signed(row.amountBase, currency)}</Text>
+          <Text as="span" mono size={size} numeric color={signColour(row.amountBase)}>{signedMoney(row.amountBase, currency)}</Text>
         </HStack>
       </HStack>
       {row.breakdown.map((line) => (
@@ -150,7 +151,7 @@ function CauseRow({ row, currency, size }: { row: AttributionRow; currency: stri
             <Drill href={line.drillHref} title={`Open ${line.label}`} style={{ fontSize: size }}>{line.label}</Drill>
           </HStack>
           <HStack shrink={false}>
-            <Text as="span" mono size={size} color="var(--ft-dim)" numeric>{signed(line.amountBase, currency)}</Text>
+            <Text as="span" mono size={size} color="var(--ft-dim)" numeric>{signedMoney(line.amountBase, currency)}</Text>
           </HStack>
         </HStack>
       ))}
@@ -247,7 +248,7 @@ function TopHeroLedger({ cells, dashboardLabel, netWorth, isCustomizing, onCusto
         <Hero cell={hero} size={52} />
         {ok !== null && (
           <HStack align="baseline" gap={8} marginTop={7}>
-            <Text as="span" numeric size={15} weight={700} color={signColour(ok.totalBase)} nowrap>{signed(ok.totalBase, currency)}</Text>
+            <Text as="span" numeric size={15} weight={700} color={signColour(ok.totalBase)} nowrap>{signedMoney(ok.totalBase, currency)}</Text>
             <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.10em" nowrap>net {ok.windowLabel}</Text>
           </HStack>
         )}
@@ -317,7 +318,7 @@ function TopChangeLeads({ cells, dashboardLabel, isCustomizing, onCustomize }: P
           )}
           {ok !== null && (
             <HStack align="baseline" gap={10} wrap marginTop={2}>
-              <Text as="span" numeric size={20} weight={700} color={signColour(ok.totalBase)} nowrap>{signed(ok.totalBase, currency)}</Text>
+              <Text as="span" numeric size={20} weight={700} color={signColour(ok.totalBase)} nowrap>{signedMoney(ok.totalBase, currency)}</Text>
               <Key>total movement</Key>
               <Key>·</Key>
               <Key>{hero?.label ?? "NET WORTH"}</Key>
@@ -378,7 +379,7 @@ function TopThreeColumns({ cells, dashboardLabel, netWorth, isCustomizing, onCus
             <Key>{hero?.label ?? "NET WORTH"}</Key>
             <Hero cell={hero} size={44} />
             {ok !== null && (
-              <Text as="span" numeric size={14} weight={700} color={signColour(ok.totalBase)} nowrap>{signed(ok.totalBase, currency)}</Text>
+              <Text as="span" numeric size={14} weight={700} color={signColour(ok.totalBase)} nowrap>{signedMoney(ok.totalBase, currency)}</Text>
             )}
           </VStack>
         </Col>
@@ -456,7 +457,7 @@ function TopMinimum({ cells, dashboardLabel, isCustomizing, onCustomize }: Proto
         <Hero cell={hero} size={32} />
         {ok !== null && (
           <>
-            <Text as="span" numeric size={14} weight={700} color={signColour(ok.totalBase)} nowrap>{signed(ok.totalBase, currency)}</Text>
+            <Text as="span" numeric size={14} weight={700} color={signColour(ok.totalBase)} nowrap>{signedMoney(ok.totalBase, currency)}</Text>
             <Text as="span" size={12} color="var(--ft-muted)" lineHeight={1.3}>{ok.finding.headline}</Text>
           </>
         )}
@@ -474,7 +475,7 @@ function TopMinimum({ cells, dashboardLabel, isCustomizing, onCustomize }: Proto
               <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`} style={{ fontSize: 8 }}>
                 <Text as="span" mono size={8} upper letterSpacing="0.14em" color="var(--ft-muted)" nowrap>{row.label}</Text>
               </Drill>
-              <Text as="span" mono size={11} numeric weight={600} color={signColour(row.amountBase)} nowrap>{signed(row.amountBase, currency)}</Text>
+              <Text as="span" mono size={11} numeric weight={600} color={signColour(row.amountBase)} nowrap>{signedMoney(row.amountBase, currency)}</Text>
             </HStack>
           </Divided>
         ))}
@@ -529,7 +530,7 @@ function TopTwoFigures({ cells, dashboardLabel, netWorth, isCustomizing, onCusto
             <Hero cell={hero} size={52} />
             {ok !== null && (
               <HStack align="baseline" gap={8}>
-                <Text as="span" numeric size={14} weight={700} color={signColour(ok.totalBase)} nowrap>{signed(ok.totalBase, currency)}</Text>
+                <Text as="span" numeric size={14} weight={700} color={signColour(ok.totalBase)} nowrap>{signedMoney(ok.totalBase, currency)}</Text>
                 <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.10em" nowrap>net {ok.windowLabel}</Text>
               </HStack>
             )}

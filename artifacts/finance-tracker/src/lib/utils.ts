@@ -90,6 +90,24 @@ export function formatMoneyWhole(value: number, currency: string): string {
   }).format(v);
 }
 
+/**
+ * A movement, with its direction in the string as well as in the colour.
+ * DESIGN.md §7: hue is never the only carrier of sign, so the "+" is part
+ * of the figure rather than something the palette implies.
+ *
+ * Lived twice — change-attribution.tsx and dashboard/top-region.tsx — with
+ * identical bodies, on two surfaces that print the same movements.
+ */
+export function signedMoney(value: number, currency: string): string {
+  return `${value > 0 ? "+" : ""}${formatMoney(value, currency)}`;
+}
+
+/** Zero is muted, not green: nothing happened is not a gain. */
+export function signColour(value: number): string {
+  if (value === 0) return "var(--ft-muted)";
+  return value > 0 ? "var(--ft-green)" : "var(--ft-red)";
+}
+
 export function formatNative(value: number, currency: string): string {
   const v = Object.is(value, -0) ? 0 : value;
   return (
