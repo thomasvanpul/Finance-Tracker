@@ -1,8 +1,6 @@
 import { chromium } from 'playwright';
-import { SEED_EMAIL, SEED_PASSWORD } from './seed-credentials.js';
+import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript, assertTheme } from './account-prefs.js';
 
-const FRONTEND = 'http://localhost:4321';
-const API = 'http://localhost:3001';
 
 const browser = await chromium.launch();
 
@@ -44,34 +42,31 @@ async function proxy(ctx: import('playwright').BrowserContext, emptyDash: boolea
   });
 }
 
-async function login(ctx: import('playwright').BrowserContext) {
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { 'Content-Type': 'application/json', 'Origin': FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) { console.error('sign-in failed', res.status()); process.exit(1); }
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map(c => ({ ...c, name: c.name.replace(/^__Secure-/, ''), secure: false, sameSite: 'Lax' as const })));
-}
-
 async function shot(persona: string, theme: string, path: string, emptyDash: boolean) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
-  await login(ctx);
+  const cookie = await signInSeedUser(ctx);
+  // theme is an account column the app hydrates on boot, so the
+  // localStorage seed alone is overwritten. persona is deliberately
+  // NOT set through the API here: the first PUT stamps onboarded_at
+  // permanently and there is no route to undo it, which would break
+  // onboarding-shot.ts and first-run-flow-shot.ts. See account-prefs.ts.
+  const prefs = await openAccountPrefs(ctx, cookie);
+  await prefs.setTheme(theme);
   await proxy(ctx, emptyDash);
   const page = await ctx.newPage();
-  await page.addInitScript(`try {
-    window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});
-    window.localStorage.setItem("ft-onboarding-complete", "1");
-    window.localStorage.setItem("nr-onboarding-complete", "1");
-    window.localStorage.setItem("ft-persona", JSON.stringify([${JSON.stringify(persona)}]));
-  } catch (e) {}`);
+  await page.addInitScript(seedCacheScript({
+    theme,
+    persona,
+    extra: { 'ft-onboarding-complete': '1', 'nr-onboarding-complete': '1' },
+  }));
   await page.goto(`${FRONTEND}${path}`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
   const outPath = `/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots/desktop_${persona}_${theme}_${path.replace(/[^a-z0-9]/gi, '_') || 'root'}.png`;
+  await assertTheme(page, theme);
   await page.screenshot({ path: outPath, fullPage: false });
   await page.unrouteAll({ behavior: 'ignoreErrors' });
   await page.close();
+  await prefs.restore();
   await ctx.close();
   console.log('saved', outPath);
 }

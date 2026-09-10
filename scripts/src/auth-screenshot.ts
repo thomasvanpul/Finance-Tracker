@@ -22,7 +22,21 @@ const OUT_DIR = resolve(__dirname, "../screenshots");
 
 const BASE = "http://localhost:4321";
 
-type Theme = "void" | "arctic";
+// The auth screen has exactly one theme and it is not a choice this
+// script can make. ThemeProvider effect (2) resolves a signed-out
+// session by forcing DEFAULT_THEME and CLEARING the localStorage cache
+// (contexts/theme-context.tsx), so that "the auth screen must look the
+// same for every first-time visitor". Neither a localStorage seed nor a
+// PUT /api/settings/theme survives it — a PUT has no session to write
+// against in the first place.
+//
+// This file used to loop over ["void", "arctic"] and seed ft-theme.
+// Both passes rendered void, so every auth-*_arctic.png ever produced
+// here was a duplicate of its void twin under a filename that claimed
+// otherwise. The loop is gone rather than "fixed": the product refuses
+// the state the arctic pass was asking for, and that refusal is
+// deliberate.
+type Theme = "void";
 type Viewport = "mobile" | "desktop";
 
 interface Shot {
@@ -118,12 +132,6 @@ async function shoot(theme: Theme, viewport: Viewport, shot: Shot): Promise<void
   });
   const page = await context.newPage();
 
-  // Preload the theme choice into localStorage before the app boots.
-  // Theme context reads "ft-theme" (see contexts/theme-context.tsx).
-  await page.addInitScript((t) => {
-    localStorage.setItem("ft-theme", t);
-  }, theme);
-
   // Fake the providers endpoint FIRST so downstream shots can
   // rely on passwordResetEnabled to render the Forgot link.
   if (shot.fakePasswordResetEnabled) {
@@ -196,14 +204,13 @@ async function shoot(theme: Theme, viewport: Viewport, shot: Shot): Promise<void
 
 async function main(): Promise<void> {
   await mkdir(OUT_DIR, { recursive: true });
-  for (const theme of ["void", "arctic"] as Theme[]) {
-    for (const viewport of ["mobile", "desktop"] as Viewport[]) {
-      for (const shot of shots) {
-        try {
-          await shoot(theme, viewport, shot);
-        } catch (err) {
-          console.error(`[auth-screenshot] ${shot.name} · ${viewport} · ${theme} FAILED:`, err);
-        }
+  const theme: Theme = "void";
+  for (const viewport of ["mobile", "desktop"] as Viewport[]) {
+    for (const shot of shots) {
+      try {
+        await shoot(theme, viewport, shot);
+      } catch (err) {
+        console.error(`[auth-screenshot] ${shot.name} · ${viewport} · ${theme} FAILED:`, err);
       }
     }
   }

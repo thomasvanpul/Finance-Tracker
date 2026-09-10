@@ -11,10 +11,8 @@
 // queued follow-up) are visible in the coach-with-messages shot.
 
 import { chromium } from "playwright";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
+import { FRONTEND, API, signInSeedUser, openAccountPrefs, assertTheme } from "./account-prefs.js";
 
-const FRONTEND = "http://localhost:4321";
-const API = "http://localhost:3001";
 
 const browser = await chromium.launch();
 
@@ -64,22 +62,6 @@ async function proxy(ctx: import("playwright").BrowserContext): Promise<void> {
   });
 }
 
-async function login(ctx: import("playwright").BrowserContext): Promise<void> {
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { "Content-Type": "application/json", Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) {
-    console.error("sign-in failed", res.status(), await res.text());
-    process.exit(1);
-  }
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(
-    cookies.map((c) => ({ ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const })),
-  );
-}
-
 // Fixture stream that shows every streaming state visual in one
 // screenshot: streaming caption, reducedCapacity footer, cut marker,
 // error, queued follow-up. Injected via sessionStorage so the coach
@@ -107,7 +89,13 @@ const FIXTURE_MESSAGES = [
 
 async function shot(surface: "coach" | "floating", theme: "void" | "arctic"): Promise<void> {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
-  await login(ctx);
+  const cookie = await signInSeedUser(ctx);
+  // The account theme wins over the localStorage seed once theme-sync
+  // hydrates. This replaces a post-load data-theme poke, which themed
+  // the CSS but left the React state on the stored theme — so anything
+  // reading useFintrackTheme() rendered the wrong one. See account-prefs.ts.
+  const prefs = await openAccountPrefs(ctx, cookie);
+  await prefs.setTheme(theme);
   await proxy(ctx);
   const page = await ctx.newPage();
   await page.addInitScript(`try {
@@ -122,14 +110,7 @@ async function shot(surface: "coach" | "floating", theme: "void" | "arctic"): Pr
   const path = surface === "coach" ? "/ai-coach" : "/budget";
   await page.goto(`${FRONTEND}${path}`, { waitUntil: "networkidle" });
   await page.waitForTimeout(600);
-
-  // Force theme via data-theme attribute — bypasses the server-side
-  // theme hydration that overrides localStorage after sign-in.
-  await page.evaluate((t) => {
-    if (t === "void") document.documentElement.removeAttribute("data-theme");
-    else document.documentElement.setAttribute("data-theme", t);
-  }, theme);
-  await page.waitForTimeout(200);
+  await assertTheme(page, theme);
 
   if (surface === "floating") {
     // Click the classic floating button directly. Its title starts
@@ -143,6 +124,7 @@ async function shot(surface: "coach" | "floating", theme: "void" | "arctic"): Pr
   await page.screenshot({ path: outPath, fullPage: false });
   await page.unrouteAll({ behavior: "ignoreErrors" });
   await page.close();
+  await prefs.restore();
   await ctx.close();
   console.log("saved", outPath);
 }

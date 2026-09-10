@@ -1,20 +1,18 @@
 import { chromium } from 'playwright';
-import { SEED_EMAIL, SEED_PASSWORD } from './seed-credentials.js';
-
-const FRONTEND = 'http://localhost:4321';
-const API = 'http://localhost:3001';
+import { FRONTEND, API, signInSeedUser, openAccountPrefs, assertTheme } from './account-prefs.js';
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
 
-const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-  headers: { 'Content-Type': 'application/json', 'Origin': FRONTEND },
-  data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-});
-if (!res.ok()) { console.error('sign-in failed', res.status(), await res.text()); process.exit(1); }
-const cookies = await ctx.cookies();
-await ctx.clearCookies();
-await ctx.addCookies(cookies.map(c => ({ ...c, name: c.name.replace(/^__Secure-/, ''), secure: false, sameSite: 'Lax' as const })));
+const cookie = await signInSeedUser(ctx);
+
+// The account theme wins over the localStorage seed once theme-sync
+// hydrates, so setTheme is what makes each pass the theme its filename
+// claims. persona is untouched on purpose: this script wants the
+// onboarding questionnaire, which only renders while app_settings has
+// no onboarded_at, and the first PUT /api/settings/persona stamps that
+// column for good. See account-prefs.ts.
+const prefs = await openAccountPrefs(ctx, cookie);
 
 await ctx.route(`${FRONTEND}/api/**`, async route => {
   try {
@@ -40,6 +38,7 @@ await ctx.route(`${FRONTEND}/api/**`, async route => {
 });
 
 for (const theme of ['void', 'arctic']) {
+  await prefs.setTheme(theme);
   const page = await ctx.newPage();
   await page.addInitScript(`try {
     window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});
@@ -50,6 +49,7 @@ for (const theme of ['void', 'arctic']) {
   } catch (e) {}`);
   await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
+  await assertTheme(page, theme);
   await page.screenshot({ path: `/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots/onboarding_desktop_${theme}.png`, fullPage: true });
   // Simulate filling: Q1 pick market, Q2 pick no, Q3 pick focused.
   // Use a string body so tsx/esbuild does not inject __name references.
@@ -64,22 +64,19 @@ for (const theme of ['void', 'arctic']) {
     clickByAria('Visibility: Focused');
   })();`);
   await page.waitForTimeout(300);
+  await assertTheme(page, theme);
   await page.screenshot({ path: `/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots/onboarding_desktop_market_${theme}.png`, fullPage: true });
   await page.unrouteAll({ behavior: 'ignoreErrors' });
   await page.close();
 }
 
 // Mobile view
+// restore before the context closes — prefs holds ctx.request.
+await prefs.restore();
 await ctx.close();
 const mctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
-const mres = await mctx.request.post(`${API}/api/auth/sign-in/email`, {
-  headers: { 'Content-Type': 'application/json', 'Origin': FRONTEND },
-  data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-});
-if (!mres.ok()) { console.error('mobile sign-in failed'); process.exit(1); }
-const mc = await mctx.cookies();
-await mctx.clearCookies();
-await mctx.addCookies(mc.map(c => ({ ...c, name: c.name.replace(/^__Secure-/, ''), secure: false, sameSite: 'Lax' as const })));
+const mcookie = await signInSeedUser(mctx);
+const mprefs = await openAccountPrefs(mctx, mcookie);
 await mctx.route(`${FRONTEND}/api/**`, async route => {
   try {
     const req = route.request();
@@ -103,6 +100,7 @@ await mctx.route(`${FRONTEND}/api/**`, async route => {
   }
 });
 for (const theme of ['void', 'arctic']) {
+  await mprefs.setTheme(theme);
   const page = await mctx.newPage();
   await page.addInitScript(`try {
     window.localStorage.setItem("ft-theme", ${JSON.stringify(theme)});
@@ -112,9 +110,11 @@ for (const theme of ['void', 'arctic']) {
   } catch (e) {}`);
   await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
+  await assertTheme(page, theme);
   await page.screenshot({ path: `/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots/onboarding_mobile_${theme}.png`, fullPage: true });
   await page.unrouteAll({ behavior: 'ignoreErrors' });
   await page.close();
 }
+await mprefs.restore();
 await browser.close();
 console.log('done');

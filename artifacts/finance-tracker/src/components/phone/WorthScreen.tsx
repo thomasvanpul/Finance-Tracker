@@ -22,6 +22,7 @@ import { reconciliationInsight } from "@/lib/reconciliation-insight";
 import { fxDriftInsight } from "@/lib/fx-drift-insight";
 import { loadDismissedIds, dismissInsight, rankInsights } from "@/lib/spending-insights";
 import { QuickAddTransaction } from "@/components/quick-add-transaction";
+import { AddPositionSheet } from "./add-position-sheet";
 import { MobileEmptyState } from "@/components/mobile/mobile-ui";
 import { PhoneSectionError } from "@/components/mobile/mobile-ui";
 import { DetailSurface } from "@/components/detail-surface";
@@ -519,6 +520,9 @@ export function WorthScreen() {
         }}
       </DetailSurface>
       <QuickAddTransaction open={addOpen} onClose={() => setAddOpen(false)} />
+      {/* /investments?add=1 — the market persona's FAB and the N key both
+          land here. See add-position-sheet.tsx. */}
+      <AddPositionSheet />
     </div>
   );
 }

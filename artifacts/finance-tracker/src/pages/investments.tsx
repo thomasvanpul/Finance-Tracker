@@ -61,6 +61,7 @@ import {
   newsScore, timeAgo, fmtCap, fmtNum,
 } from "@/components/investments/markets-data";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { InvestmentFormFields } from "@/components/investments/investment-form-fields";
 import {
   CandlestickLayer, OHLCTooltip, RangeBar, RecBar, RatingBar,
 } from "@/components/investments/markets-widgets";
@@ -1623,32 +1624,6 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     catch { toast({ title: "Failed to delete", variant: "destructive" }); }
   };
 
-  const setField = <K extends keyof InvForm>(k: K, v: InvForm[K]) => setForm((f) => ({ ...f, [k]: v }));
-
-  const handleTickerChange = (raw: string) => {
-    const t = raw.toUpperCase();
-    const exchInfo = detectExchange(t);
-    const autoClass = t.length >= 2 ? detectAssetClass(t) : "";
-    setForm((f) => ({
-      ...f,
-      ticker: t,
-      nativeCurrency: exchInfo?.currency ?? f.nativeCurrency,
-      assetClass: f.assetClass || autoClass,
-    }));
-  };
-
-  const effectiveCostPerShare = (() => {
-    const fees = parseFloat(form.fees || "0") || 0;
-    if (form.inputMode === "totalCost") {
-      const sh = parseFloat(form.totalShares) || 0;
-      const tc = parseFloat(form.totalCost) || 0;
-      return sh > 0 ? (tc + fees) / sh : null;
-    }
-    const sh = parseFloat(form.shares) || 0;
-    const cpp = parseFloat(form.costPricePerShare) || 0;
-    return sh > 0 ? cpp + fees / sh : null;
-  })();
-
   // ── Portfolio snapshot history (localStorage) — must be above early return ──
   const SNAPSHOT_KEY = "ft-portfolio-snapshots";
   useEffect(() => {
@@ -1771,128 +1746,6 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     return <div className="space-y-4"><Skeleton className="h-6 w-48" /><Skeleton className="h-8 w-full" /><Skeleton className="h-64 w-full" /></div>;
   }
 
-  const INP: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 12 };
-
-  const FormFields = (
-    <div className="space-y-4">
-      {/* Row 1: Ticker + Date */}
-      <div className="ft-two-col grid grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="inv-ticker">Ticker Symbol</Label>
-          <Input id="inv-ticker" placeholder="e.g. VOO or 0700.HK" style={INP}
-            value={form.ticker} onChange={(e) => handleTickerChange(e.target.value)} required />
-          {form.ticker && (() => {
-            const ex = detectExchange(form.ticker);
-            return ex ? (
-              <Text as="div" mono size={10} color="var(--ft-muted)">
-                {ex.label} · {ex.currency}
-              </Text>
-            ) : (
-              <Text as="div" mono size={10} color="var(--ft-muted)">
-                US market · {form.nativeCurrency}
-              </Text>
-            );
-          })()}
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="inv-date">Buy Date</Label>
-          <Input id="inv-date" type="date" value={form.buyDate} onChange={(e) => setField("buyDate", e.target.value)} required />
-        </div>
-      </div>
-
-      {/* Company name */}
-      <div className="space-y-1.5">
-        <Label htmlFor="inv-name">Company / Fund Name</Label>
-        <Input id="inv-name" placeholder="e.g. Vanguard S&P 500 ETF" value={form.name} onChange={(e) => setField("name", e.target.value)} required />
-      </div>
-
-      {/* Asset class */}
-      <div className="space-y-1.5">
-        <Label>Asset Class</Label>
-        <Select value={form.assetClass || (form.ticker ? detectAssetClass(form.ticker) : "Stock")}
-          onValueChange={(v) => setField("assetClass", v as AssetClass)}>
-          <SelectTrigger style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {ASSET_CLASSES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        {form.ticker && !form.assetClass && (
-          <Text as="div" mono size={10} color="var(--ft-blue)">
-            Auto-detected: {detectAssetClass(form.ticker)}
-          </Text>
-        )}
-      </div>
-
-      {/* Input mode toggle */}
-      <div className="space-y-1.5">
-        <Label>Input Method</Label>
-        <div style={{ display: "flex", gap: 0, border: "1px solid var(--ft-border2)", borderRadius: 2, overflow: "hidden" }}>
-          {(["perShare", "totalCost"] as InputMode[]).map((mode) => (
-            <button key={mode} type="button"
-              onClick={() => setField("inputMode", mode)}
-              style={{
-                flex: 1, padding: "6px 10px", fontSize: 10, fontWeight: 600,
-                fontFamily: "var(--font-mono)", letterSpacing: "0.06em",
-                border: "none", cursor: "pointer", transition: "background 0.1s",
-                background: form.inputMode === mode ? "var(--ft-accent)" : "var(--ft-raised)",
-                color: form.inputMode === mode ? "var(--ft-base)" : "var(--ft-muted)",
-              }}
-            >
-              {mode === "perShare" ? "Per Share" : "Total Cost"}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Dynamic price inputs */}
-      {form.inputMode === "perShare" ? (
-        <div className="ft-two-col grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="inv-shares">Number of Shares</Label>
-            <Input id="inv-shares" type="number" step="0.0001" min="0" placeholder="10" style={INP}
-              value={form.shares} onChange={(e) => setField("shares", e.target.value)} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="inv-cost">Cost per Share ({form.nativeCurrency})</Label>
-            <Input id="inv-cost" type="number" step="0.0001" min="0" placeholder="420.50" style={INP}
-              value={form.costPricePerShare} onChange={(e) => setField("costPricePerShare", e.target.value)} required />
-          </div>
-        </div>
-      ) : (
-        <div className="ft-two-col grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="inv-total-shares">Number of Shares</Label>
-            <Input id="inv-total-shares" type="number" step="0.0001" min="0" placeholder="10" style={INP}
-              value={form.totalShares} onChange={(e) => setField("totalShares", e.target.value)} required />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="inv-total-cost">Total Amount Paid ({form.nativeCurrency})</Label>
-            <Input id="inv-total-cost" type="number" step="0.01" min="0" placeholder="4205.00" style={INP}
-              value={form.totalCost} onChange={(e) => setField("totalCost", e.target.value)} required />
-          </div>
-        </div>
-      )}
-
-      {/* Transaction fees */}
-      <div className="space-y-1.5">
-        <Label htmlFor="inv-fees">Transaction Fees ({form.nativeCurrency}) <Text as="span" weight={400} color="var(--ft-muted)">— optional</Text></Label>
-        <Input id="inv-fees" type="number" step="0.01" min="0" placeholder="0.00" style={INP}
-          value={form.fees} onChange={(e) => setField("fees", e.target.value)} />
-      </div>
-
-      {/* Effective cost summary */}
-      {effectiveCostPerShare !== null && effectiveCostPerShare > 0 && (
-        <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <MonoLabel as="span" size={10} color="var(--ft-muted)" letterSpacing="0.06em">Effective Cost / Share</MonoLabel>
-          <Text as="span" mono size={13} weight={700} color="var(--ft-accent)">
-            {effectiveCostPerShare.toFixed(4)} {form.nativeCurrency}
-          </Text>
-        </div>
-      )}
-    </div>
-  );
 
   const hasPositions = (investments?.length ?? 0) > 0;
 
@@ -2118,7 +1971,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Add Investment Position</DialogTitle></DialogHeader>
-          <form onSubmit={handleAdd}>{FormFields}
+          <form onSubmit={handleAdd}><InvestmentFormFields form={form} setForm={setForm} idPrefix="inv-add" />
             <DialogFooter className="mt-6">
               <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
               <Button type="submit" disabled={submitting}>{submitting ? "Adding…" : "Add Position"}</Button>
@@ -2129,7 +1982,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
       <Dialog open={editId !== null} onOpenChange={(o) => !o && setEditId(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Edit Investment Position</DialogTitle></DialogHeader>
-          <form onSubmit={handleEdit}>{FormFields}
+          <form onSubmit={handleEdit}><InvestmentFormFields form={form} setForm={setForm} idPrefix="inv-edit" />
             <DialogFooter className="mt-6">
               <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
               <Button type="submit" disabled={submitting}>{submitting ? "Saving…" : "Save Changes"}</Button>

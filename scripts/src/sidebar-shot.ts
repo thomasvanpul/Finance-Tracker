@@ -9,10 +9,8 @@
 // rather than asserted.
 
 import { chromium } from "playwright";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
+import { FRONTEND, API, signInSeedUser, openAccountPrefs, assertTheme } from "./account-prefs.js";
 
-const FRONTEND = "http://localhost:4321";
-const API = "http://localhost:3001";
 
 const browser = await chromium.launch();
 
@@ -44,20 +42,15 @@ async function proxy(ctx: import("playwright").BrowserContext): Promise<void> {
   });
 }
 
-async function login(ctx: import("playwright").BrowserContext): Promise<void> {
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { "Content-Type": "application/json", Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) { console.error("sign-in failed", res.status(), await res.text()); process.exit(1); }
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map((c) => ({ ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const })));
-}
-
 async function shot(theme: "void" | "arctic", hover: boolean, collapsed = false): Promise<void> {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 2 });
-  await login(ctx);
+  const cookie = await signInSeedUser(ctx);
+  // The account theme wins over the localStorage seed once theme-sync
+  // hydrates. This replaces a post-load data-theme poke, which themed
+  // the CSS but left the React state on the stored theme — so anything
+  // reading useFintrackTheme() rendered the wrong one. See account-prefs.ts.
+  const prefs = await openAccountPrefs(ctx, cookie);
+  await prefs.setTheme(theme);
   await proxy(ctx);
   const page = await ctx.newPage();
   await page.addInitScript(`try {
@@ -68,11 +61,8 @@ async function shot(theme: "void" | "arctic", hover: boolean, collapsed = false)
   } catch (e) {}`);
 
   await page.goto(`${FRONTEND}/transactions`, { waitUntil: "networkidle" });
-  await page.evaluate((t) => {
-    if (t === "void") document.documentElement.removeAttribute("data-theme");
-    else document.documentElement.setAttribute("data-theme", t);
-  }, theme);
   await page.waitForTimeout(500);
+  await assertTheme(page, theme);
 
   const aside = page.locator("aside.ft-sidebar");
   if (hover && !collapsed) {
@@ -86,6 +76,7 @@ async function shot(theme: "void" | "arctic", hover: boolean, collapsed = false)
   console.log(theme, hover ? "hover" : "rest", `${Math.round(box!.width)}x${Math.round(box!.height)}`, "→", out);
   await page.unrouteAll({ behavior: "ignoreErrors" });
   await page.close();
+  await prefs.restore();
   await ctx.close();
 }
 
