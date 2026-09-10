@@ -191,6 +191,11 @@ export interface AllocationResult {
   driftGapBase: number | null;
   driftPerDay: number | null;
   driftDays: number;
+  // The floor itself, echoed back. A client showing "4 of 7 days of history"
+  // must not carry its own copy of MIN_DRIFT_DAYS — two constants that can
+  // disagree is how a screen ends up promising a date the engine will not
+  // honour. Same reason horizonDays is in the result.
+  minDriftDays: number;
 }
 
 function round2(n: number): number {
@@ -404,5 +409,6 @@ export async function computeAllocation(input: AllocationInput): Promise<Allocat
     driftGapBase: drift.gapBase == null ? null : round2(drift.gapBase),
     driftPerDay: driftPerDay == null ? null : round2(driftPerDay),
     driftDays: drift.days,
+    minDriftDays: MIN_DRIFT_DAYS,
   };
 }

@@ -421,6 +421,8 @@ export interface AllocationResult {
   driftPerDay: number | null;
   /** Days the gap was measured over */
   driftDays: number;
+  /** The shortest observed period the drift term will extrapolate from (MIN_DRIFT_DAYS). Published for the same reason horizonDays is: a client that must say "4 of 7 days of history, your allowance appears on the 14th" needs the 7, and the alternative is a second copy of the constant in the client that can silently disagree with the engine's. It is a stated policy, not a measurement. */
+  minDriftDays: number;
 }
 
 export type ReconciliationReportStatus = typeof ReconciliationReportStatus[keyof typeof ReconciliationReportStatus];

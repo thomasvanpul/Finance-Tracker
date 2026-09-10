@@ -446,6 +446,17 @@ describe("MIN_DRIFT_DAYS floor", () => {
     expect(MIN_DRIFT_DAYS).toBe(7);
   });
 
+  it("echoes the floor in the response, so no client carries its own copy", async () => {
+    // The blocker state says "N of M days of history". M is this constant.
+    // A client that hardcodes it can promise a date the engine will not
+    // honour the moment the floor moves, and nothing would fail.
+    const r = await computeAllocation({
+      ...base,
+      drift: { status: "ok", gapBase: -40, days: 4, periodFrom: "2026-09-07" },
+    });
+    expect(r.minDriftDays).toBe(MIN_DRIFT_DAYS);
+  });
+
   it("withholds the whole figure below the floor — no drift-free allowance", async () => {
     // The tempting wrong answer is to drop the drift term and hand back the
     // other four legs. That is a partial figure presented as a total, and it

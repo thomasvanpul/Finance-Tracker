@@ -1830,7 +1830,7 @@ components:
           enum: [deadline, monthly-contribution]
     AllocationResult:
       type: object
-      required: [status, blockers, baseCurrency, today, horizonDays, windowEnd, dailyAllowance, availableNow, expectedIncome, committedOut, goalClaim, driftReduction, goalClaims, goalsWithoutClaim, cashAccountsCounted, cashAccountsUnconvertible, upcomingCounted, upcomingUnconvertible, driftGapBase, driftPerDay, driftDays]
+      required: [status, blockers, baseCurrency, today, horizonDays, windowEnd, dailyAllowance, availableNow, expectedIncome, committedOut, goalClaim, driftReduction, goalClaims, goalsWithoutClaim, cashAccountsCounted, cashAccountsUnconvertible, upcomingCounted, upcomingUnconvertible, driftGapBase, driftPerDay, driftDays, minDriftDays]
       properties:
         status:
           type: string
@@ -1894,6 +1894,15 @@ components:
         driftDays:
           type: integer
           description: Days the gap was measured over
+        minDriftDays:
+          type: integer
+          description: >-
+            The shortest observed period the drift term will extrapolate from
+            (MIN_DRIFT_DAYS). Published for the same reason horizonDays is: a
+            client that must say "4 of 7 days of history, your allowance
+            appears on the 14th" needs the 7, and the alternative is a second
+            copy of the constant in the client that can silently disagree with
+            the engine's. It is a stated policy, not a measurement.
     ReconciliationReport:
       type: object
       required: [status, baseCurrency, periodRule, periodFrom, periodTo, days, dataAvailableSince, gapBase, accounts, unconvertibleAccounts]
