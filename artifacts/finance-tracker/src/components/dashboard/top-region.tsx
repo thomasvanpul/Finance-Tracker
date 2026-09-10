@@ -35,14 +35,16 @@
 // other five arrangements out of the same vocabulary. Six arrangements of one
 // treatment was the brief; sharing the treatment is what makes that true.
 
+import { Fragment, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { useGetAccountsChangeAttribution } from "@workspace/api-client-react";
 import { Text, HStack, VStack } from "@/components/primitives";
-import { Drill, DrillTarget } from "@/components/drill";
+import { Drill, DrillButton, DrillTarget } from "@/components/drill";
+import { AttributionWorkings } from "@/components/change-attribution";
 import { LayoutGrid } from "lucide-react";
 import { formatMoney } from "@/lib/utils";
 import { splitInsight } from "@/lib/insight-split";
-import { attributionView, type AttributionView } from "@/lib/change-attribution-view";
+import { attributionView, causeSegments, type AttributionRow, type AttributionView } from "@/lib/change-attribution-view";
 
 export const RULE = "1px solid var(--ft-border)";
 
@@ -294,6 +296,118 @@ export function PageLabel({ label }: { label: string }) {
   return <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.10em" nowrap>{label}</Text>;
 }
 
+/**
+ * The causes, as a running clause rather than a row of chips.
+ *
+ * They used to be `LABEL £x  LABEL £y` — two uppercase mono links pushed to
+ * the far right of the line by a spacer, with the finding stranded on the
+ * left. Three facts at three x positions, and nothing said they were about
+ * each other. Thomas read it exactly that way: "confusing right now."
+ *
+ * The row labels were always written to be the SUBJECT of a sentence — "you
+ * spent", "the rate moved", "nothing explains it" — see KIND_NOUN and its
+ * note in change-attribution-view.ts. Nothing had ever used them as one.
+ * Setting them in prose and joining them with "and" is what turns the
+ * decomposition into the second half of the finding's sentence.
+ *
+ * §14 moves with them: the DRILL is on the figure, not on the label. A
+ * figure computed from rows is the button; an uppercase label that happened
+ * to be underlined was reading as navigation.
+ */
+function Causes({ rows, currency }: { rows: AttributionRow[]; currency: string }) {
+  if (rows.length === 0) return null;
+  return (
+    <Text as="span" size={12} color="var(--ft-muted)" lineHeight={1.35}>
+      {"— "}
+      {causeSegments(rows).map(({ row, lead }) => (
+        <Fragment key={row.kind}>
+          {lead}
+          {row.label}{" "}
+          {/* `Drill`, not `DrillTarget`: .ft-drill-target is display:block, and
+              a block inside a clause breaks the sentence onto two lines. Here
+              the figure IS the target, so the inline drill is also the right
+              §14 shape. */}
+          <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`}>
+            <Text as="span" numeric size={12} weight={600} color={signColour(row.amountBase)} nowrap>
+              {signed(row.amountBase, currency)}
+            </Text>
+          </Drill>
+        </Fragment>
+      ))}
+    </Text>
+  );
+}
+
+/**
+ * WHAT CHANGED: one sentence, and the workings behind a disclosure.
+ *
+ * `top-1-flat` bought its shortness by dropping the per-account breakdown —
+ * which account moved, at which rate, by how much — and that detail was the
+ * only thing on the surface that made the finding checkable. The line stays
+ * one line; the breakdown comes back as a disclosure rather than as a second
+ * band, so the density the arrangement was chosen for survives and the
+ * evidence is one press away instead of gone.
+ *
+ * `warning` is NOT behind the disclosure. "These do not add up" is a claim
+ * about the arithmetic of every figure on the line above it, and a surface
+ * whose whole rule is that it must sum cannot hide the one sentence saying
+ * it did not.
+ */
+function WhatChanged({ ok, currency, emptyReason }: {
+  ok: Extract<AttributionView, { status: "ok" }> | null;
+  currency: string;
+  emptyReason: string | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const hasWorkings = ok !== null && ok.rows.some((row) => row.breakdown.length > 0 || row.detail !== "");
+
+  return (
+    <VStack>
+      <HStack align="baseline" gap={10} wide wrap padding="8px 12px">
+        <Key>WHAT CHANGED</Key>
+        {ok === null ? (
+          <Text as="span" mono size={10} color="var(--ft-dim)">{emptyReason ?? "—"}</Text>
+        ) : (
+          <>
+            {/* The claim and its decomposition sit adjacent, in that order,
+                with no spacer between them. The spacer that used to stand
+                here is what made them read as unrelated; it now sits AFTER
+                both, where its job is to push the window to the right edge
+                rather than to split a sentence in half. */}
+            <Text as="span" size={12} weight={500} color="var(--ft-text)" lineHeight={1.35}>
+              {ok.finding.headline}
+            </Text>
+            <Causes rows={ok.rows} currency={currency} />
+            <HStack grow minWidth0 />
+            {ok.warning !== null && (
+              <Text as="span" mono size={9} color="var(--ft-amber)" letterSpacing="0.04em" nowrap>
+                {ok.warning}
+              </Text>
+            )}
+            {hasWorkings && (
+              <DrillButton onClick={() => setOpen(!open)}
+                title={open ? "Hide the accounts behind these figures" : "Show the accounts behind these figures"}>
+                <Text as="span" mono size={8} upper letterSpacing="0.14em" color="var(--ft-muted)" nowrap>
+                  {open ? "Hide workings" : "Workings"}
+                </Text>
+              </DrillButton>
+            )}
+            <Key>{ok.windowLabel}</Key>
+          </>
+        )}
+      </HStack>
+
+      {/* Same marks as the desktop band's right column — one implementation,
+          so the two surfaces cannot drift into two claims about one number. */}
+      {open && ok !== null && (
+        <VStack gap={4} padding="2px 12px 10px" maxWidth={560}>
+          <AttributionWorkings rows={ok.rows} currency={currency} warning={null} />
+        </VStack>
+      )}
+    </VStack>
+  );
+}
+
 // ── The region ──────────────────────────────────────────────────────────────
 
 export function DashboardTopRegion({ cells, dashboardLabel, isCustomizing, onCustomize, insights }: TopRegionProps) {
@@ -310,30 +424,7 @@ export function DashboardTopRegion({ cells, dashboardLabel, isCustomizing, onCus
         <Divided first={false}><EditLayout register="cell" isCustomizing={isCustomizing} onCustomize={onCustomize} /></Divided>
       </Strip>
 
-      {/* WHAT CHANGED as ONE ROW. Everything the older band said — the
-          finding, the causes, their amounts, the window — on a single line,
-          because a page with no hierarchy cannot afford a two-column block
-          for it either. */}
-      <HStack align="baseline" gap={16} wide wrap padding="8px 12px">
-        <Key>WHAT CHANGED</Key>
-        {ok === null ? (
-          <Text as="span" mono size={10} color="var(--ft-dim)">{emptyReason ?? "—"}</Text>
-        ) : (
-          <>
-            <Text as="span" size={12} color="var(--ft-text)" lineHeight={1.35}>{ok.finding.headline}</Text>
-            <HStack grow minWidth0 />
-            {ok.rows.map((row) => (
-              <HStack key={row.kind} align="baseline" gap={5} shrink={false}>
-                <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`} style={{ fontSize: 9 }}>
-                  <Text as="span" mono size={9} upper letterSpacing="0.10em" color="var(--ft-muted)" nowrap>{row.label}</Text>
-                </Drill>
-                <Text as="span" mono size={11} numeric weight={600} color={signColour(row.amountBase)} nowrap>{signed(row.amountBase, currency)}</Text>
-              </HStack>
-            ))}
-            <Key>{ok.windowLabel}</Key>
-          </>
-        )}
-      </HStack>
+      <WhatChanged ok={ok} currency={currency} emptyReason={emptyReason} />
 
       {insights}
     </VStack>

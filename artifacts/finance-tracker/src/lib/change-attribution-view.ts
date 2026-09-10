@@ -283,6 +283,28 @@ function findingFor(parts: ChangeAttributionPart[], base: string): AttributionFi
   return { headline, support: `${magnitudes}${tail}` };
 }
 
+/**
+ * The causes, joined into the second half of the finding's sentence.
+ *
+ * The row labels were written as sentence subjects — "you spent", "the rate
+ * moved", "nothing explains it" — and until 2026-09-10 nothing had ever used
+ * them as one: the adopted top region set them as uppercase mono links in a
+ * row, which read as navigation rather than as a clause. Thomas: "confusing
+ * right now."
+ *
+ * The join lives here rather than in the component because it is grammar, not
+ * layout, and because it is the one part of that line a test can hold: a
+ * three-cause month must read "a, b and c" and not "a, b, c" or "a and b and
+ * c". The Oxford comma is deliberately absent — the surrounding line is
+ * British and the rest of the app's prose is too.
+ */
+export function causeSegments(rows: AttributionRow[]): { row: AttributionRow; lead: string }[] {
+  return rows.map((row, i) => ({
+    row,
+    lead: i === 0 ? "" : i === rows.length - 1 ? " and " : ", ",
+  }));
+}
+
 export function attributionView(report: ChangeAttributionReport | undefined): AttributionView | null {
   if (report == null) return null;
 

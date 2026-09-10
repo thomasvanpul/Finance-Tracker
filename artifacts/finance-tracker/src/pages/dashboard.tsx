@@ -54,7 +54,7 @@ import { useActivePersona } from "@/lib/persona-hook";
 import { useLocation } from "wouter";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
 import { Zap, RefreshCw, X, LayoutGrid } from "lucide-react";
-import { useState, useMemo, useEffect, useRef, memo } from "react";
+import { useState, useMemo, useEffect, useLayoutEffect, useRef, memo } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
@@ -1299,10 +1299,89 @@ function WidgetModal({ id, onClose }: { id: WidgetId; onClose: () => void }) {
   );
 }
 
+// ── The expand affordance ─────────────────────────────────────────────────────
+//
+// The hover-revealed ⤢ used to be pinned at top:7 right:8 with zIndex 5 —
+// straight on top of whatever the widget's own header had put in that corner.
+// Measured on 2026-09-10 across every widget with the layout switched on:
+// 12 of 20 panel headers collided, each by 15px, which clipped "→ Manage" to
+// "→ Mana" the moment the pointer entered the panel. Second time a
+// hover-revealed control has done this (the customize drag handle was first),
+// and the shared cause both times is that a control appearing under the
+// pointer was given a position instead of a place.
+//
+// So it takes a place: it measures the header's right-hand slot and seats
+// itself to the LEFT of it. Layout decides, not stacking order. Measured in a
+// layout effect so the offset is applied before the frame the button first
+// appears in — a button that paints at right:8 and then jumps left would be
+// the same defect with a delay.
+//
+// Widgets whose header has no right slot are unchanged: EXPAND_DEFAULT_RIGHT
+// is the old position, which was never wrong on its own.
+
+const EXPAND_DEFAULT_RIGHT = 8;
+const EXPAND_GAP = 8;
+
+function useExpandOffset(wrapRef: React.RefObject<HTMLDivElement | null>, active: boolean): number {
+  const [right, setRight] = useState(EXPAND_DEFAULT_RIGHT);
+  useLayoutEffect(() => {
+    if (!active) return;
+    const wrap = wrapRef.current;
+    const header = wrap?.querySelector(".ft-panelrule");
+    if (!wrap || !header) { setRight(EXPAND_DEFAULT_RIGHT); return; }
+    // PanelHeader renders its right slot as the last child and its label as
+    // the first; a header with no controls has only the label.
+    const slot = header.lastElementChild;
+    if (!slot || slot.classList.contains("ft-panel-label")) { setRight(EXPAND_DEFAULT_RIGHT); return; }
+    const gap = Math.round(wrap.getBoundingClientRect().right - slot.getBoundingClientRect().left) + EXPAND_GAP;
+    setRight(Math.max(EXPAND_DEFAULT_RIGHT, gap));
+  }, [wrapRef, active]);
+  return right;
+}
+
+function ExpandButton({ onExpand, right, onPointerDown }: {
+  onExpand: () => void;
+  right: number;
+  onPointerDown?: (e: React.PointerEvent) => void;
+}) {
+  return (
+    <button
+      onPointerDown={onPointerDown}
+      onClick={onExpand}
+      title="Expand widget"
+      style={{
+        position: "absolute",
+        top: 7,
+        right,
+        zIndex: 5,
+        background: "var(--ft-raised)",
+        border: "1px solid var(--ft-border)",
+        color: "var(--ft-dim)",
+        cursor: "pointer",
+        fontFamily: "var(--font-mono)",
+        fontSize: 11,
+        width: 20,
+        height: 20,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        lineHeight: 1,
+        flexShrink: 0,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-accent)"; }}
+      onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
+    >
+      ⤢
+    </button>
+  );
+}
+
 // ── View-mode widget (read-only, no DnD, just expand on hover) ────────────────
 
 function ViewModeWidget({ id, onExpand }: { id: WidgetId; onExpand: () => void }) {
   const [hovered, setHovered] = useState(false);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const expandRight = useExpandOffset(wrapRef, hovered);
   const isMobile = useIsMobile();
 
   // On mobile use compact tiles — purpose-built for ~183px columns
@@ -1316,40 +1395,13 @@ function ViewModeWidget({ id, onExpand }: { id: WidgetId; onExpand: () => void }
 
   return (
     <div
+      ref={wrapRef}
       style={{ position: "relative" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <Component />
-      {hovered && (
-        <button
-          onClick={onExpand}
-          title="Expand widget"
-          style={{
-            position: "absolute",
-            top: 7,
-            right: 8,
-            zIndex: 5,
-            background: "var(--ft-raised)",
-            border: "1px solid var(--ft-border)",
-            color: "var(--ft-dim)",
-            cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            width: 20,
-            height: 20,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-accent)"; }}
-          onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
-        >
-          ⤢
-        </button>
-      )}
+      {hovered && <ExpandButton onExpand={onExpand} right={expandRight} />}
     </div>
   );
 }
@@ -1361,6 +1413,8 @@ function LongPressDraggableWidget({ id, anyDragging, onExpand }: { id: WidgetId;
   const [hovered, setHovered] = useState(false);
   const [holding, setHolding] = useState(false);
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  const expandRight = useExpandOffset(wrapRef, hovered && !isDragging && !anyDragging);
 
   const Component = WIDGET_COMPONENTS[id];
   if (!Component) return null;
@@ -1402,7 +1456,9 @@ function LongPressDraggableWidget({ id, anyDragging, onExpand }: { id: WidgetId;
 
   return (
     <div
-      ref={setNodeRef}
+      // dnd-kit owns the node ref, so the measurement keeps its own handle on
+      // the same element rather than taking one away.
+      ref={(node) => { setNodeRef(node); wrapRef.current = node; }}
       style={outerStyle}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => { setHovered(false); clearHold(); }}
@@ -1438,34 +1494,7 @@ function LongPressDraggableWidget({ id, anyDragging, onExpand }: { id: WidgetId;
         </div>
       )}
       {hovered && !isDragging && !anyDragging && (
-        <button
-          onPointerDown={e => e.stopPropagation()}
-          onClick={onExpand}
-          title="Expand widget"
-          style={{
-            position: "absolute",
-            top: 7,
-            right: 8,
-            zIndex: 5,
-            background: "var(--ft-raised)",
-            border: "1px solid var(--ft-border)",
-            color: "var(--ft-dim)",
-            cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            width: 20,
-            height: 20,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            lineHeight: 1,
-            flexShrink: 0,
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = "var(--ft-accent)"; }}
-          onMouseLeave={e => { e.currentTarget.style.color = "var(--ft-dim)"; }}
-        >
-          ⤢
-        </button>
+        <ExpandButton onExpand={onExpand} right={expandRight} onPointerDown={e => e.stopPropagation()} />
       )}
     </div>
   );

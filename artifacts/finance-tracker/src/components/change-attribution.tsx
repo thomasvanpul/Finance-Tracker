@@ -173,18 +173,40 @@ export function ChangeAttributionBand() {
               rate lines carry "GBP/MYR 5.4700 → 5.5039", which must not be
               cropped. */}
           <VStack gap={4} grow minWidth={340} maxWidth={520} marginTop={2}>
-            {view.rows.map((row) => (
-              <AttributionLine key={row.kind} row={row} currency={data.baseCurrency} />
-            ))}
-            {view.warning != null && (
-              <Text as="div" mono size={9} mt={3} color="var(--ft-amber)" letterSpacing="0.04em">
-                {view.warning}
-              </Text>
-            )}
+            <AttributionWorkings rows={view.rows} currency={data.baseCurrency} warning={view.warning} />
           </VStack>
         </HStack>
       )}
     </VStack>
+  );
+}
+
+/**
+ * The decomposition: one line per cause, each with the accounts behind it,
+ * and the warning when the parts do not add up.
+ *
+ * Exported because the adopted dashboard top region states the same finding
+ * on ONE line and needs somewhere to put the workings that line cannot hold.
+ * Two implementations of this would be two claims about one number — the
+ * mistake DESIGN.md's §14 rule and this file's header both exist to stop —
+ * so the band and the top region's disclosure render the same marks.
+ */
+export function AttributionWorkings({ rows, currency, warning }: {
+  rows: AttributionRow[];
+  currency: string;
+  warning: string | null;
+}) {
+  return (
+    <>
+      {rows.map((row) => (
+        <AttributionLine key={row.kind} row={row} currency={currency} />
+      ))}
+      {warning != null && (
+        <Text as="div" mono size={9} mt={3} color="var(--ft-amber)" letterSpacing="0.04em">
+          {warning}
+        </Text>
+      )}
+    </>
   );
 }
 
