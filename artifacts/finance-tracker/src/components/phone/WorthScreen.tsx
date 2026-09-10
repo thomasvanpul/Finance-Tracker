@@ -1,5 +1,7 @@
-import { useMemo, useState } from "react";
-import { entityHref } from "@/lib/entity-href";
+import type { ReactNode } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useLocation } from "wouter";
+import { ENTITY_PARAM, entityHref } from "@/lib/entity-href";
 import {
   useGetDashboard,
   useListInvestments,
@@ -22,7 +24,7 @@ import { loadDismissedIds, dismissInsight, rankInsights } from "@/lib/spending-i
 import { QuickAddTransaction } from "@/components/quick-add-transaction";
 import { MobileEmptyState } from "@/components/mobile/mobile-ui";
 import { PhoneSectionError } from "@/components/mobile/mobile-ui";
-import { MobileSheet } from "@/components/mobile-sheet";
+import { DetailSurface } from "@/components/detail-surface";
 import {
   computeHoldings,
   ViewMode,
@@ -117,10 +119,6 @@ interface Position {
   plBase: number | null;
   plPercent: number | null;
 }
-
-type DetailSubject =
-  | { kind: "account"; account: Account }
-  | { kind: "position"; position: Position };
 
 // Section subtotal — null when ANY contributing row has a null
 // baseEquivalent. Same null-propagation shape as the SPENDING month
@@ -276,10 +274,46 @@ export function WorthScreen() {
     orderedIds.forEach((id, i) => m.set(id, tones[i]));
     return m;
   }, [cashAccounts, holdingAccounts, positions]);
+  // Keyed by String(id) because that is what a URL carries.
+  const accountsById = useMemo(() => {
+    const m = new Map<string, Account>();
+    for (const a of accounts) m.set(String(a.id), a);
+    return m;
+  }, [accounts]);
+  const positionsById = useMemo(() => {
+    const m = new Map<string, Position>();
+    for (const p of positions) m.set(String(p.id), p);
+    return m;
+  }, [positions]);
+
   const unconvertibleAccounts = dashboard?.unconvertibleAccounts ?? 0;
 
-  const [detailSubject, setDetailSubject] = useState<DetailSubject | null>(null);
   const [chartView, setChartView] = useState<ViewMode>("ring");
+
+  // The open detail is the URL, not a useState. Pressing a row here and
+  // arriving from a drill elsewhere are the same event, and they were not:
+  // this screen absorbs /accounts, /net-worth, /portfolio and /investments,
+  // so every `entityHref("account", id)` in the app lands on it — from the
+  // WHAT CHANGED rows on HOME, from the fx-drift and reconciliation
+  // insights, from a transaction's ACCOUNT row on SPENDING. All of them
+  // carried `?account=<id>`, and a local `detailSubject` could not read it,
+  // so the tab rendered and the account the user asked for was dropped in
+  // silence. Measured on a 390x844 phone: `/accounts?account=132` opened
+  // zero dialogs and zero drawers.
+  //
+  // DetailSurface is the app's answer and already renders on MobileSheet,
+  // which is a drawer at this width — so this is adopting the shared
+  // convention, not adding a second one. The hardware back gesture now
+  // closes the sheet, which a local boolean could never do.
+  const [location, navigate] = useLocation();
+  const openDetail = useCallback((kind: "account" | "investment", id: string | number) => {
+    const next = new URLSearchParams(window.location.search);
+    // One detail at a time — opening a position closes an open account.
+    next.delete(ENTITY_PARAM.account);
+    next.delete(ENTITY_PARAM.investment);
+    next.set(ENTITY_PARAM[kind], String(id));
+    navigate(`${location}?${next.toString()}`);
+  }, [location, navigate]);
 
   // Two WORTH candidates, both balance-sheet facts: money that moved with
   // no transaction to explain it, and movement in base value that was the
@@ -419,7 +453,7 @@ export function WorthScreen() {
                 accounts={cashAccounts}
                 baseCurrency={baseCurrency}
                 tonesById={tonesById}
-                onTap={(a) => setDetailSubject({ kind: "account", account: a })}
+                onTap={(a) => openDetail("account", a.id)}
               />
             )
           ) : (
@@ -431,21 +465,47 @@ export function WorthScreen() {
                 positions={positions}
                 baseCurrency={baseCurrency}
                 tonesById={tonesById}
-                onTapAccount={(a) => setDetailSubject({ kind: "account", account: a })}
-                onTapPosition={(p) => setDetailSubject({ kind: "position", position: p })}
+                onTapAccount={(a) => openDetail("account", a.id)}
+                onTapPosition={(p) => openDetail("investment", p.id)}
               />
             )
           ),
         )}
       </div>
 
-      {detailSubject && (
-        <DetailSheet
-          subject={detailSubject}
-          baseCurrency={baseCurrency}
-          onClose={() => setDetailSubject(null)}
-        />
-      )}
+      {/* Both surfaces are mounted; each renders only while its own
+          parameter is present, so the closed cost is one hook. Reached
+          here, `dashboard` is non-null and the lists are known — an id
+          that matches nothing is genuinely absent, not still loading,
+          and says so rather than opening an empty sheet. */}
+      <DetailSurface
+        kind="account"
+        title={(id) => accountsById.get(id)?.name ?? "Account"}
+      >
+        {(id) => {
+          const account = accountsById.get(id);
+          if (!account) return <DetailNotFound what="account" />;
+          return (
+            <DetailBody>
+              <AccountDetail account={account} baseCurrency={baseCurrency} />
+            </DetailBody>
+          );
+        }}
+      </DetailSurface>
+      <DetailSurface
+        kind="investment"
+        title={(id) => positionsById.get(id)?.ticker ?? "Position"}
+      >
+        {(id) => {
+          const position = positionsById.get(id);
+          if (!position) return <DetailNotFound what="holding" />;
+          return (
+            <DetailBody>
+              <PositionDetail position={position} baseCurrency={baseCurrency} />
+            </DetailBody>
+          );
+        }}
+      </DetailSurface>
       <QuickAddTransaction open={addOpen} onClose={() => setAddOpen(false)} />
     </div>
   );
@@ -819,28 +879,20 @@ function PositionRow({
 
 // ── detail sheet ────────────────────────────────────────────────────
 
-function DetailSheet({
-  subject,
-  baseCurrency,
-  onClose,
-}: {
-  subject: DetailSubject;
-  baseCurrency: string | null;
-  onClose: () => void;
-}) {
-  const title = subject.kind === "account" ? "Account" : "Position";
+// MobileSheet supplies the padding; this supplies the rhythm between the
+// stacked blocks each detail body returns.
+function DetailBody({ children }: { children: ReactNode }) {
+  return <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{children}</div>;
+}
+
+// A link can name something this balance sheet no longer carries — a closed
+// account, a sold holding, a stale bookmark. Say that, rather than opening a
+// sheet with nothing in it.
+function DetailNotFound({ what }: { what: string }) {
   return (
-    <MobileSheet
-      open={true}
-      onOpenChange={(open) => { if (!open) onClose(); }}
-      title={title}
-    >
-      <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
-        {subject.kind === "account"
-          ? <AccountDetail account={subject.account} baseCurrency={baseCurrency} />
-          : <PositionDetail position={subject.position} baseCurrency={baseCurrency} />}
-      </div>
-    </MobileSheet>
+    <div style={{ fontSize: 13, lineHeight: "18px", color: "var(--ft-muted)" }}>
+      That {what} isn't on your balance sheet any more.
+    </div>
   );
 }
 
