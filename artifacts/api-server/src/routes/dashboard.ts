@@ -316,6 +316,21 @@ async function processMyPayerExpenses(
 //      "unknown / dotted / —", NEVER a fabricated 0. The pnum invariant
 //      applied to a monthly total, per CLAUDE.md — "a number the API did
 //      not supply" is the exact defect this null is preventing.
+// Net worth, as a pure function of its four terms. Extracted for the same
+// reason as foldMonthlyConverted below: the handler it lives in needs a
+// live DB and Yahoo Finance to run, so without this the owing term would
+// be asserted only by a comment. See the call site for why the term is
+// there and what invariant it buys.
+export interface NetWorthTerms {
+  totalCash: number;
+  portfolioValueBase: number;
+  totalOwedToMe: number;
+  totalIOwe: number;
+}
+export function computeNetWorth(t: NetWorthTerms): number {
+  return t.totalCash + t.portfolioValueBase + t.totalOwedToMe - t.totalIOwe;
+}
+
 export interface MonthlyConvertedBucket { month: string; type: string; gbp: number | null }
 export type MonthlyFolded = Map<string, { income: number; expenses: number } | null>;
 export function foldMonthlyConverted(converted: readonly MonthlyConvertedBucket[]): MonthlyFolded {
@@ -586,7 +601,36 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // they saved nothing, which is a different and worse claim.
   const savingsRate: number | null = monthIncome > 0 ? (monthNet / monthIncome) * 100 : null;
   const netLiquidity = totalCash - committedOut + expectedIn;
-  const netWorth = totalCash + portfolioValueBase;
+  // Net worth = assets − liabilities. `owing.netBase` is the third term:
+  // pending debts (debts.ts) plus outstanding shared-expense shares in
+  // BOTH directions, already combined into totalOwedToMe / totalIOwe
+  // above. Leaving it out meant a user who owed £2,000 was told they
+  // were £2,000 richer than they are, on a figure labelled *net* worth
+  // in the sidebar footer, the phone shell and every KPI bar.
+  //
+  // The sign convention follows netLiquidity directly above, which is
+  // the model the rest of the app already uses: an account balance is
+  // cash as of today, and a pending claim is a movement that has not
+  // happened to it yet. Creating a debt does not touch a balance;
+  // settling one does (debts.ts:227, mirroring upcoming.ts:222). So the
+  // invariant this term buys is:
+  //
+  //   settling a pending debt that carries an accountId must not move
+  //   net worth.
+  //
+  // Measured on the seed account, 10-Sep: create i_owe_them £100 against
+  // Monzo → net worth 230,134.93 → 230,034.93; settle → 230,034.93 flat,
+  // cash −100. Do not remove one half of this without the other.
+  //
+  // The accountId condition is real, not decoration. debts.ts:227 guards
+  // the balance adjustment on `if (existing.accountId)`, so settling a
+  // debt with a null accountId credits nothing and net worth jumps by
+  // the full amount (measured: 229,934.93 → 230,034.93). That is a gap
+  // in the settle path — the app does not know which account paid — and
+  // it is not an argument against this term: before this change the same
+  // debt was never counted at all, which is wrong in both phases rather
+  // than one.
+  const netWorth = computeNetWorth({ totalCash, portfolioValueBase, totalOwedToMe, totalIOwe });
   const portfolioPlBase = portfolioValueBase - portfolioCostBase;
   // No cost basis (empty portfolio) → no return to compute. Null, not 0
   // — a "+0.00%" render for a user who holds nothing is a fabricated

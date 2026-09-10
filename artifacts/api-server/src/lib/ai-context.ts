@@ -278,6 +278,7 @@ async function computeNetPosition(
   accounts: Array<typeof accountsTable.$inferSelect>,
   investments: Array<typeof investmentsTable.$inferSelect>,
   baseCurrency: string,
+  debts: DebtsSummary,
 ): Promise<NetPosition> {
   let totalCashBase = 0;
   let unconvertibleAccounts = 0;
@@ -313,19 +314,27 @@ async function computeNetPosition(
     }
   }
 
+  // Owing net — the liabilities-and-receivables term. Same third term
+  // the dashboard adds (routes/dashboard.ts, `const netWorth`), kept in
+  // step with it deliberately: this string is read aloud to the user by
+  // the assistant, and an assistant quoting a different net worth from
+  // the one on screen is worse than either figure alone.
+  const owingNet = debts.owedToMeTotal - debts.iOweTotal;
+
   let netWorthBase: number | null;
   let netWorthUnknownCause: string | null = null;
-  if (portfolioValueBase === null || unconvertibleAccounts > 0) {
+  // Any leg unknown makes the total unknown, per this file's own rule —
+  // an unconvertible debt is no more guessable than an unconvertible
+  // account, and `debts.fxFailures` is already counted upstream.
+  const causes: string[] = [];
+  if (portfolioValueBase === null && portfolioUnknownReason) causes.push(portfolioUnknownReason);
+  if (unconvertibleAccounts > 0) causes.push(`${unconvertibleAccounts} account(s) unconvertible`);
+  if (debts.fxFailures > 0) causes.push(`${debts.fxFailures} debt(s) unconvertible`);
+  if (causes.length > 0) {
     netWorthBase = null;
-    if (portfolioValueBase === null && unconvertibleAccounts > 0) {
-      netWorthUnknownCause = `${portfolioUnknownReason} + ${unconvertibleAccounts} account(s) unconvertible`;
-    } else if (portfolioValueBase === null) {
-      netWorthUnknownCause = portfolioUnknownReason;
-    } else {
-      netWorthUnknownCause = `${unconvertibleAccounts} account(s) unconvertible`;
-    }
+    netWorthUnknownCause = causes.join(" + ");
   } else {
-    netWorthBase = totalCashBase + portfolioValueBase;
+    netWorthBase = (totalCashBase + (portfolioValueBase as number)) + owingNet;
   }
 
   return { totalCashBase, portfolioValueBase, netWorthBase, unconvertibleAccounts, netWorthUnknownCause };
@@ -711,7 +720,7 @@ export interface ChatContextRaw {
 export async function assembleChatContext(raw: ChatContextRaw): Promise<AiContext> {
   const generatedAt = new Date().toISOString();
   const [np, month, categoryRollup, currencyExposure, upcomingSummary, subsSection] = await Promise.all([
-    computeNetPosition(raw.accounts, raw.investments, raw.baseCurrency),
+    computeNetPosition(raw.accounts, raw.investments, raw.baseCurrency, raw.debts),
     computeMonthTotals(raw.monthTxs, raw.baseCurrency),
     computeCategoryRollup(raw.monthTxs, raw.baseCurrency),
     buildCurrencyExposure(raw.accounts, raw.upcoming, raw.baseCurrency),
