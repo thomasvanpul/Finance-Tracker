@@ -138,13 +138,9 @@ A request goes to the first of these that answers:
    independent controller, not a processor, and its data processing agreement
    does not apply. The operator is an individual. This line cannot name a
    safeguard until that is resolved.]`
-3. **OpenRouter** (US), which passes the request to a model host of its
-   choosing. `[BLOCKED: the models Numeris uses on OpenRouter are free
-   endpoints. Two run on NVIDIA's trial service, which logs every prompt,
-   trains on it, and forbids personal data and production use. The third runs
-   on Google's unpaid tier, whose terms allow human review and forbid offering
-   it to users in the UK and EU. No honest sentence describes this as
-   acceptable, so none is written here. The chain has to change first.]`
+
+If neither answers, the feature shows an error. The request is not sent
+anywhere else.
 
 Transfers to the US rely on `[TO CONFIRM: the mechanism for each provider —
 Groq offers EU Standard Contractual Clauses and the UK Addendum in its
@@ -169,7 +165,7 @@ What AI features produce can be wrong. They are not financial advice.
 | **Render** | Runs the server; processes everything; keeps logs about 7 days | Frankfurt region; Render's primary processing is in the US | Render's data processing agreement, part of its terms; EU-US Data Privacy Framework and Standard Contractual Clauses |
 | **Neon** | The database | London (AWS eu-west-2) | `[TO CONFIRM: in writing from Neon, that its data processing agreement covers the Free plan]` |
 | **Resend** | Password reset: your email address and a reset link. Weekly digest, sent when you press send: your name, email, and the week's income, spending, top categories and transaction count | Stored in the US | Resend's data processing agreement; Standard Contractual Clauses, UK Addendum, Data Privacy Framework |
-| **Groq, Cerebras, OpenRouter** | Section 5 | US | Section 5.2 |
+| **Groq, Cerebras** | Section 5 | US | Section 5.2 |
 | **Market data providers** — Yahoo Finance, Alpaca, Polygon, Twelve Data | Ticker symbols, including those of investments users hold. Never who holds them | — | No personal data sent |
 | **Frankfurter** (European Central Bank rates) | Currency codes | — | No personal data sent |
 

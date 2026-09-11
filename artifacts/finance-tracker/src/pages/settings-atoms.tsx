@@ -119,14 +119,16 @@ export function SettingsInfoRow({ label, value, accent = "var(--ft-text)" }: { l
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       style={{
-        display: "flex", justifyContent: "space-between", alignItems: "center",
+        display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
         padding: "8px 14px", borderBottom: "1px solid var(--ft-border)",
         fontFamily: "var(--font-mono)", fontSize: 10,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
       }}
     >
-      <span style={{ color: "var(--ft-muted)", fontSize: 10 }}>{label}</span>
+      {/* flexShrink 0: a wrapping value used to squeeze the label narrower
+          than a single word ("Categorise") and draw over it at 390px. */}
+      <span style={{ color: "var(--ft-muted)", fontSize: 10, flexShrink: 0 }}>{label}</span>
       <span style={{ color: accent, fontSize: 10 }}>{value}</span>
     </div>
   );

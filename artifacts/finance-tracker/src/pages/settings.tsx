@@ -1514,16 +1514,29 @@ function AiSettingsPanel() {
       )}
 
       <div style={PANEL_STYLE}>
-        <PanelHeader>Contextual Awareness</PanelHeader>
+        <PanelHeader>What the AI is sent</PanelHeader>
         <div style={{ padding: "12px 14px" }}>
+          {/* Until 2026-09-11 this said "Current page name sent with every
+              message", which described a fraction of it. What follows is what
+              the server's context builder (api-server lib/ai-context.ts) and
+              the AI routes actually put in a request. */}
           <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.7 }}>
-            The AI automatically knows which page you're on and tailors its responses accordingly.
-            On the Accounts page it knows you're managing balances; on Investments it focuses on portfolios, etc.
+            Every chat message carries a summary of your finances, read from your account on the server:
+            net worth, assets and liabilities, portfolio value, this month's income, spending and savings rate,
+            holdings by currency with exchange rates, budgets, your goals by name with progress and deadlines,
+            debt totals, what is due in the next 30 days, your top five spending categories and your subscriptions.
+            It also carries the page you are on and the conversation so far. The summary does not include account
+            names, per-account balances, transaction descriptions, other people's names, or your name or email.
           </div>
           <div style={{ marginTop: 10 }}>
-            <SettingsInfoRow label="Page awareness" value="Current page name sent with every message" />
-            <SettingsInfoRow label="Financial context" value="Responses tailored to the active section" />
-            <SettingsInfoRow label="Powered by" value="Groq → Cerebras → OpenRouter (chain fallback)" accent="var(--ft-accent)" />
+            <SettingsInfoRow label="Chat and AI Coach" value="Summary, current page, conversation" />
+            <SettingsInfoRow label="Insight panels" value="Summary, when Dashboard, Budget, Goals or Investments loads" />
+            <SettingsInfoRow label="Markets AI TLDR" value="Summary and the headline, when pressed" />
+            <SettingsInfoRow label="Categorise" value="Each transaction's description, amount and type; your categories" />
+            <SettingsInfoRow label="Receipt scan" value="The photo, your categories, base currency" />
+            <SettingsInfoRow label="Receipt split" value="The photo and the names you enter" />
+            <SettingsInfoRow label="Sent to" value="Groq, then Cerebras if Groq fails · US" accent="var(--ft-accent)" />
+            <SettingsInfoRow label="If both fail" value="The feature shows an error; nothing is sent elsewhere" />
           </div>
         </div>
       </div>

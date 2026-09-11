@@ -161,7 +161,7 @@ Render stores logs is not established.
     `A/lib/balance.ts:84`, `A/lib/account-snapshots.ts:76`,
     `A/lib/subscription-upcoming.ts:90`);
   - up to 200 characters of a model's reply when a receipt parse fails
-    (`A/routes/receipt.ts:100`), and up to 200–1,000 characters of a malformed
+    (`A/routes/receipt.ts:101`), and up to 200–1,000 characters of a malformed
     stream chunk or provider error body
     (`A/lib/ai-providers/openai-compat.ts:191,240,343`).
 - **Request log:** request id, method and path without query string
@@ -181,7 +181,7 @@ Lost on restart.
 ### 3.3 Files
 
 Receipt images and CSV imports are processed in memory and **not stored**
-(`A/routes/receipt.ts:24-63`, `A/routes/import.ts:19-116`). Imported rows become
+(`A/routes/receipt.ts:25-64`, `A/routes/import.ts:19-116`). Imported rows become
 transactions. Goal photos are the exception and are stored (§2.3).
 
 AI chat messages and responses are **not stored on the server**: there is no
@@ -210,18 +210,22 @@ This is the most significant disclosure in the policy.
 
 ### 4.1 Who receives it
 
-Three providers, tried in order until one answers (`A/lib/ai-providers/chain.ts:52`):
+Two providers, tried in order until one answers (`A/lib/ai-providers/chain.ts:54`).
+If neither answers, the request fails and the feature shows an error; nothing
+else is tried (`A/lib/ai-providers/chain.test.ts`, "Groq and Cerebras both fail").
 
 | Order | Provider | Host | Models (defaults) |
 | --- | --- | --- | --- |
 | 1 | Groq | `api.groq.com/openai/v1` (`groq.ts:24`) | `openai/gpt-oss-120b` chat, `openai/gpt-oss-20b` categorise, `qwen/qwen3.6-27b` vision (`groq.ts:31-39`) |
 | 2 | Cerebras | `api.cerebras.ai/v1` (`cerebras.ts:26`) | `gpt-oss-120b` chat and categorise, `gemma-4-31b` vision (`cerebras.ts:33-37`) |
-| 3 | OpenRouter | `openrouter.ai/api/v1` (`openrouter.ts:43`) | `nvidia/nemotron-3-super-120b-a12b:free` chat, `nvidia/nemotron-nano-9b-v2:free` categorise, `google/gemma-4-31b-it:free` vision (`openrouter.ts:50-58`) |
 
 - Every model can be overridden by an environment variable; production values
   live in the Render dashboard, not the repo.
-- OpenRouter forwards each request to a model host of its choosing. The code
-  does not show which host serves a request.
+- Free-tier models are refused in code. `A/lib/ai-providers/model-policy.ts`
+  rejects any model id ending `:free`, and the `openrouter/free` router, before
+  a request is sent and at boot verification.
+  `model-policy.lock.test.ts` fails if such an id appears anywhere in the
+  server source.
 - Calls are server-side only. The web and phone apps never contact a model
   provider directly.
 - Keys are Numeris's own. No user supplies a key.
@@ -236,25 +240,37 @@ page before the policy relies on them.
 | --- | --- | --- | --- | --- |
 | Groq | Up to 30 days, for reliability and abuse monitoring only. A self-serve Zero Data Retention switch exists in Data Controls | No (Services Agreement, updated 22 Jun 2026) | Stored in the US (GCP) | Yes, built into the Services Agreement; Groq is processor. EU SCCs and UK Addendum |
 | Cerebras | States it does not retain inputs or outputs; its Inference Terms and DPA word this differently | No | US "and other applicable countries" | **Not for personal-capacity use**: its Inference Terms say Cerebras then acts as an independent controller |
-| OpenRouter itself | No, unless the account opts in to logging; keeps metadata | No | US; EU routing needs a Business plan | Not established for an individual |
-| **OpenRouter free: NVIDIA** (both Nemotron models in the chain) | **Yes — all prompts and outputs logged** | **Yes**, to improve NVIDIA's models | Not established | None. NVIDIA's API Trial Terms §2.6(a) forbid sending personal data and §1.2 forbid production use |
-| **OpenRouter free: Google AI Studio** (Gemma vision) | Human reviewers may read input and output | **Yes** under Google's Unpaid Services terms | Not established | None. Google's terms say only Paid Services may be offered to users in the EEA, Switzerland or the UK |
+| OpenRouter itself (removed 2026-09-11) | No, unless the account opts in to logging; keeps metadata | No | US; EU routing needs a Business plan | Not established for an individual |
+| **OpenRouter free: NVIDIA** (both Nemotron models formerly in the chain) | **Yes — all prompts and outputs logged** | **Yes**, to improve NVIDIA's models | Not established | None. NVIDIA's API Trial Terms §2.6(a) forbid sending personal data and §1.2 forbid production use |
+| **OpenRouter free: Google AI Studio** (Gemma vision, formerly in the chain) | Human reviewers may read input and output | **Yes** under Google's Unpaid Services terms | Not established | None. Google's terms say only Paid Services may be offered to users in the EEA, Switzerland or the UK |
 
-**Consequence.** The third provider in the chain, as configured by default,
-sends users' financial data and receipt photos to endpoints whose own terms
-forbid it. If Groq and Cerebras both fail, this is where a request goes. No
-privacy policy sentence can make that compliant; only a change to the chain can.
-Whether the production OpenRouter account has free-endpoint logging enabled —
-which the free models require — was not checked.
+**Consequence, and the change of 2026-09-11.** Until that date a third lane,
+OpenRouter, followed Cerebras. It used the free models:
+- `nvidia/nemotron-3-super-120b-a12b:free` for chat;
+- `nvidia/nemotron-nano-9b-v2:free` for categorising;
+- `google/gemma-4-31b-it:free` for vision.
+
+Whenever Groq and Cerebras both failed, users' financial data and receipt photos
+went to endpoints whose own terms forbid it. A configured key was enough for
+that lane to serve. The chain's health check reads the key and the circuit
+breaker, not whether the models passed boot verification.
+
+The lane was removed on 2026-09-11. A leftover `OPENROUTER_API_KEY` is now
+ignored. The OpenRouter rows above are kept as the record of why.
+
+Two things were not checked:
+- whether the production OpenRouter account had free-endpoint logging enabled,
+  which the free models require;
+- whether any production request reached it.
 
 ### 4.2 What is sent, per feature
 
 | Feature | Route | Sent to the provider |
 | --- | --- | --- |
-| Chat and page insights | `POST /api/ai/chat` (`A/routes/ai.ts:141`) | A system prompt with a **context block rebuilt from the database on every message** (`ai.ts:192`), capped at 10,000 characters (`A/lib/ai-context.ts:76`), plus the whole conversation so far — up to 20 messages of up to 4,000 characters each (`lib/api-zod/src/ai-chat.ts:37-51`) |
-| Categorise transactions | `POST /api/ai/batch-categorize` (`ai.ts:511-553`) | **Each transaction's description (merchant), amount and type**, plus the user's category names |
-| Receipt scan | `POST /api/ai/receipt-scan` (`ai.ts:407`), `POST /api/receipt/parse` (`A/routes/receipt.ts:23`) | **The receipt photo**, the user's category names, base currency |
-| Receipt split | `POST /api/ai/receipt-split` (`ai.ts:275-300`) | **The receipt photo and the names of up to 20 people** the bill is split between |
+| Chat and page insights | `POST /api/ai/chat` (`A/routes/ai.ts:144`) | A system prompt with a **context block rebuilt from the database on every message** (`ai.ts:195`), capped at 10,000 characters (`A/lib/ai-context.ts:76`), plus the whole conversation so far — up to 20 messages of up to 4,000 characters each (`lib/api-zod/src/ai-chat.ts:37-51`) |
+| Categorise transactions | `POST /api/ai/batch-categorize` (`ai.ts:514-556`) | **Each transaction's description (merchant), amount and type**, plus the user's category names |
+| Receipt scan | `POST /api/ai/receipt-scan` (`ai.ts:410`), `POST /api/receipt/parse` (`A/routes/receipt.ts:24`) | **The receipt photo**, the user's category names, base currency |
+| Receipt split | `POST /api/ai/receipt-split` (`ai.ts:278-303`) | **The receipt photo and the names of up to 20 people** the bill is split between |
 
 The chat context block (`A/lib/ai-context.ts:242-773`) contains:
 
@@ -282,25 +298,31 @@ names is that the debt data passed in carries no name field
 No request carries a user identifier, and none sets a no-storage or
 zero-retention option: the body is model, messages, max tokens, temperature,
 and optionally stream and response format; headers are content type,
-authorization and accept (`A/lib/ai-providers/openai-compat.ts:136-143,165-169,284-307`).
+authorization and accept (`callOpenAICompat` and `callOpenAICompatStream` in `A/lib/ai-providers/openai-compat.ts`).
 
 ### 4.3 Whether the user chose it
 
 - **There is no opt-in.** AI is available to every signed-in user whenever a
-  provider key is configured on the server (`ai.ts:76-78,142-145`).
-- **The dashboard sends the context without being asked**: it requests insights
-  500 ms after loading when none are cached (`F/pages/dashboard.tsx:921-927`).
-  Goals and budget pages check a cache first; whether they also fire on load
-  was not confirmed.
+  provider key is configured on the server (`ai.ts:79-81,145-148`).
+- **Four pages send the context without being asked**, each only when nothing
+  is cached for the session:
+  - the dashboard, 500 ms after loading (`F/pages/dashboard.tsx:942`);
+  - budget and goals, after 300 ms (`F/pages/budget.tsx:503`, `F/pages/goals.tsx:907`);
+  - investments, after 400 ms (`F/pages/investments.tsx:885`).
 - What the user is told today:
-  - Settings: "Page awareness — Current page name sent with every message"
-    (`F/pages/settings.tsx:1524`) — which understates what is sent;
+  - Settings, "What the AI is sent" (`F/pages/settings.tsx:1517-1539`), says:
+    - what the summary contains;
+    - what each feature sends;
+    - that Groq, then Cerebras, receives it.
+
+    Until 2026-09-11 it said only "Current page name sent with every
+    message", which understated what is sent;
   - chat panel: "I read your accounts, budgets and goals server-side."
     (`F/components/ai-agent.tsx:370`);
-  - coach page: names Groq, Cerebras and OpenRouter
+  - coach page: names Groq and Cerebras
     (`F/pages/ai-coach.tsx:893`);
   - the batch-categorise confirmation does not mention a third party
-    (`F/pages/transactions.tsx:1897-1920`).
+    (`F/pages/transactions.tsx:1908-1931`).
 - Rate limit: 30 requests a minute per user on `/api/ai/*` (`A/app.ts:131-145`).
   `/api/receipt/parse` sits outside that path and gets only the per-IP limit.
 
@@ -317,7 +339,7 @@ phone shows that host the user's IP address.
 | **Render** | Runs the API; processes everything; holds logs (§3.1) | Yes | — | Service region Frankfurt. Render's DPA, part of its terms on every plan, says its primary processing is in the US; it does not promise EU residency. DPF and SCCs | `render.yaml:6` |
 | **Neon** | The database | Yes | Server | AWS eu-west-2, London. Neon (now Databricks) DPA appears to cover the Free plan but no document says so outright; ask Neon. Free-plan restore window 6 hours | `CLAUDE.md`; region in the `DATABASE_URL` host |
 | **Resend** | Password reset: the email address and a reset link. Weekly digest, sent only when the user presses send in settings (`F/pages/settings.tsx:1773`): **name, email, the week's income, expenses, top categories and transaction count** | Yes, including financial | Server | **US**, whatever sending region is chosen. DPA binding on accepting its terms; SCCs, UK Addendum, DPF. The digest's sender is hard-coded as `digest@numeris.app` (`A/routes/digest.ts:156`), a domain not among those held | `A/lib/better-auth.ts:70-103`, `A/routes/digest.ts:85-163` |
-| **Groq, Cerebras, OpenRouter** and OpenRouter's upstream hosts | §4 | Yes, including financial and other people's names | Server | US; see §4.1 for each provider's terms | §4 |
+| **Groq, Cerebras** | §4 | Yes, including financial and other people's names | Server | US; see §4.1 for each provider's terms | §4 |
 | **Google, Apple, GitHub** sign-in | That the user is signing in to Numeris; returns name, email, avatar and tokens | Yes | Browser redirect | — | `A/lib/better-auth.ts:112-141` |
 | **Enable Banking** | The user's bank and country, a consent request. Returns account names, **IBANs**, balances, and transactions including counterparty names and payment references | Yes | Server, and a browser redirect to Enable Banking and the bank | `[TO CONFIRM]` | `A/adapters/enable-banking.ts:48-330`. No `ENABLE_BANKING_*` variable is declared in `render.yaml`, so whether it is live in production is unknown |
 | **Wise** | The user's own API token. Returns profile, balances, statements | Yes | Server | — | `A/adapters/wise.ts:18-115` |
@@ -339,7 +361,7 @@ all on-device.
 
 **Configuration the repo cannot show:** which of the optional integrations
 above have keys set in the Render dashboard. `render.yaml` declares none of
-the Groq, Cerebras, OpenRouter, Twelve Data, Enable Banking, Apple or GitHub
+the Groq, Cerebras, Twelve Data, Enable Banking, Apple or GitHub
 variables, and still declares an unused `GEMINI_API_KEY` (`render.yaml:71`).
 
 ---
