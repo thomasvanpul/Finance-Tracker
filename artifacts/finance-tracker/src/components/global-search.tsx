@@ -10,6 +10,7 @@ import {
   useListInvestments,
 } from "@workspace/api-client-react";
 import { formatBaseMoney, formatDate } from "@/lib/utils";
+import { signedAccountAmount } from "@/lib/account-sign";
 
 type ResultKind = "transaction" | "account" | "investment" | "iou" | "goal";
 
@@ -121,7 +122,15 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
             kind: "account" as ResultKind,
             primary: a.name,
             secondary: a.currency,
-            tertiary: formatBaseMoney(a.balance),
+            // Was formatBaseMoney(a.balance): `balance` is the NATIVE figure,
+            // so a MYR 50,000 account rendered as "£50,000.00" — a real
+            // number under the wrong currency, which reads as a different
+            // amount entirely. baseEquivalent is the base-currency figure,
+            // signed by type, and "—" when FX is unavailable. Same shape as
+            // command-palette.tsx.
+            tertiary: a.baseEquivalent == null
+              ? "—"
+              : formatBaseMoney(signedAccountAmount(a.type, a.baseEquivalent)),
             navigateTo: entityHref("account", a.id),
           }))),
         ...((investments ?? [])

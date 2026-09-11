@@ -34,6 +34,7 @@ import {
   Pie,
 } from "recharts";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { netAccountsTotal } from "@/lib/account-sign";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -1010,7 +1011,7 @@ function MemberCard({
   onDelete,
 }: {
   member: FamilyMember;
-  accounts: { id: number; name: string; currency: string; balance: number; baseEquivalent: number | null }[];
+  accounts: { id: number; name: string; currency: string; type: string; balance: number; baseEquivalent: number | null }[];
   monthlyIncome: number | null;
   onEdit: () => void;
   onDelete: () => void;
@@ -1018,7 +1019,7 @@ function MemberCard({
   const [hovered, setHovered] = useState<boolean>(false);
   const linkedAccounts = accounts.filter((a) => member.accountIds.includes(String(a.id)));
   const memberIncome = monthlyIncome != null ? (member.incomeShare / 100) * monthlyIncome : null;
-  const linkedBalance = linkedAccounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+  const linkedBalance = netAccountsTotal(linkedAccounts);
   const accentHex = roleCssVar(member.color);
 
   const statRow = (label: string, value: React.ReactNode) => (

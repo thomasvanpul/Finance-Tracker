@@ -3,6 +3,7 @@ import { Drill } from "@/components/drill";
 import { useListAccounts, useListTransactions } from "@workspace/api-client-react";
 import { WidgetShell } from "./widget-shell";
 import { formatBaseMoney } from "@/lib/utils";
+import { netAccountsTotal } from "@/lib/account-sign";
 
 function monthsAgo(n: number): string {
   const d = new Date();
@@ -40,7 +41,12 @@ export function CashRunwayWidget({ isExpanded: _ie }: { isExpanded?: boolean }) 
     const txs = (txData ?? []) as Tx[];
     const accs = accounts ?? [];
 
-    const totalCash = accs.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+    // Runway divides this by the monthly burn, so a liability summed as a
+    // positive extended the runway by the size of the debt — the reading that
+    // is wrong in the most dangerous direction a runway figure can be wrong.
+    // The type carries the sign; an overdraft is already negative and is left
+    // alone.
+    const totalCash = netAccountsTotal(accs);
 
     // Monthly expense totals for last 3 full months
     const monthExpenses: number[] = [];

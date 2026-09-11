@@ -7,6 +7,7 @@ import { getBaseCurrency } from "../lib/app-settings-db";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
 import { trailingMonthRanges, forwardWindow } from "../lib/date-ranges";
 import { captureAccountSnapshots } from "../lib/account-snapshots";
+import { isLiabilityType } from "../lib/account-sign";
 
 const router: IRouter = Router();
 
@@ -126,7 +127,7 @@ export function assetAccountsTotal(
   breakdown: readonly { type: string; baseEquivalent: number | null }[],
 ): number {
   return breakdown.reduce<number>(
-    (sum, a) => (a.type === "liability" ? sum : sum + (a.baseEquivalent ?? 0)), 0);
+    (sum, a) => (isLiabilityType(a.type) ? sum : sum + (a.baseEquivalent ?? 0)), 0);
 }
 
 // Returns a POSITIVE magnitude. The caller subtracts it. Returning it
@@ -143,7 +144,7 @@ export function liabilityAccountsTotal(
   breakdown: readonly { type: string; baseEquivalent: number | null }[],
 ): number {
   return breakdown.reduce<number>(
-    (sum, a) => (a.type === "liability" ? sum + (a.baseEquivalent ?? 0) : sum), 0);
+    (sum, a) => (isLiabilityType(a.type) ? sum + (a.baseEquivalent ?? 0) : sum), 0);
 }
 
 async function processAccounts(accounts: Account[], baseCurrency: string) {
@@ -616,7 +617,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     { cash: 0, investment: 0, pension: 0, property: 0, other: 0 };
   for (const a of accountBreakdown) {
     if (a.baseEquivalent == null) continue;
-    if (a.type === "liability") continue;
+    if (isLiabilityType(a.type)) continue;
     liveComposition[a.type as AssetBucket] += a.baseEquivalent;
   }
   liveComposition.investment += portfolioValueBase;

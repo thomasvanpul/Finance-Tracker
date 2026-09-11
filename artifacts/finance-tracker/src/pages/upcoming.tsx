@@ -54,6 +54,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { netAccountsTotal } from "@/lib/account-sign";
 
 type UpType = "income" | "expense";
 type Freq = "one-time" | "weekly" | "monthly" | "quarterly" | "yearly";
@@ -456,7 +457,7 @@ export default function Upcoming() {
   }, [rawSubs]);
 
   const totalBalance = useMemo(
-    () => accounts?.reduce((sum, a) => sum + (a.baseEquivalent ?? 0), 0) ?? 0,
+    () => netAccountsTotal(accounts ?? []),
     [accounts]
   );
 

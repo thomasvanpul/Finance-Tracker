@@ -83,6 +83,7 @@ import {
 } from "recharts";
 import { HStack, MonoLabel, Panel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { ReconciliationPanel } from "@/components/widgets/reconciliation-panel";
+import { isLiabilityType, netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
 
 type Currency =
   | "GBP"
@@ -1315,6 +1316,9 @@ interface AccountRowProps {
     id: number;
     name: string;
     currency: string;
+    // Required. A row that cannot see the type cannot print the sign, and
+    // this row is the one that showed a season-ticket loan as +£6,800.
+    type: string;
     balance: number;
     baseEquivalent: number | null;
     isWiseLinked: boolean;
@@ -1492,9 +1496,9 @@ function AccountTableRow({
             figure in the account's own currency. */}
         <div
           className="pnum"
-          style={{ width: isMobile ? undefined : 130, minWidth: isMobile ? undefined : 130, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.baseEquivalent == null ? "var(--ft-dim)" : account.baseEquivalent < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", ...privacyStyle }}
+          style={{ width: isMobile ? undefined : 130, minWidth: isMobile ? undefined : 130, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.baseEquivalent == null ? "var(--ft-dim)" : signedAccountAmount(account.type, account.baseEquivalent) < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", ...privacyStyle }}
         >
-          {account.baseEquivalent == null ? "—" : formatBaseMoney(account.baseEquivalent)}
+          {account.baseEquivalent == null ? "—" : formatBaseMoney(signedAccountAmount(account.type, account.baseEquivalent))}
         </div>
 
         {/* Health */}
@@ -1806,8 +1810,8 @@ export default function Accounts() {
     // Sort by GBP equivalent — unconvertible accounts sink to the
     // bottom of a descending sort, top of an ascending one, so a
     // rate-outage doesn't shuffle real balances.
-    if (accountSort === "balance-high") list = [...list].sort((a, b) => (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity));
-    else if (accountSort === "balance-low") list = [...list].sort((a, b) => (a.baseEquivalent ?? Infinity) - (b.baseEquivalent ?? Infinity));
+    if (accountSort === "balance-high") list = [...list].sort((a, b) => (signedAccountAmount(b.type, b.baseEquivalent) ?? -Infinity) - (signedAccountAmount(a.type, a.baseEquivalent) ?? -Infinity));
+    else if (accountSort === "balance-low") list = [...list].sort((a, b) => (signedAccountAmount(a.type, a.baseEquivalent) ?? Infinity) - (signedAccountAmount(b.type, b.baseEquivalent) ?? Infinity));
     else if (accountSort === "name-az") list = [...list].sort((a, b) => a.name.localeCompare(b.name));
     else if (accountSort === "name-za") list = [...list].sort((a, b) => b.name.localeCompare(a.name));
     else if (accountSort === "currency") list = [...list].sort((a, b) => a.currency.localeCompare(b.currency));
@@ -2175,12 +2179,10 @@ export default function Accounts() {
         // £214,490.91 against a real £11,375.18. Spendable cash is
         // `type === "cash"`, the same filter GET /allocation
         // (routes/allocation.ts) and computeReconciliation already apply.
-        const spendableCash = (accounts ?? [])
-          .filter(a => a.type === "cash")
-          .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
-        const accountAssets = (accounts ?? [])
-          .filter(a => a.type !== "liability")
-          .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+        const spendableCash = netAccountsTotal(
+          (accounts ?? []).filter(a => a.type === "cash"));
+        const accountAssets = netAccountsTotal(
+          (accounts ?? []).filter(a => !isLiabilityType(a.type)));
         const portfolio = (dashData as { portfolio?: { totalValueBase?: number } } | undefined)?.portfolio?.totalValueBase ?? 0;
         const msgs: Record<string, string | null> = {
           market:  spendableCash > 0 ? `${formatBaseMoney(spendableCash)} cash available — allocate surplus to investment positions via Portfolio.` : null,
@@ -2288,11 +2290,14 @@ export default function Accounts() {
         // added rather than subtracted, the same defect 4d0aa9a fixed on the
         // dashboard. And it called the result "Total Cash" while counting a
         // Kuala Lumpur flat, a SIPP and an ISA.
-        const assetsTotal = accounts!
-          .filter(a => a.type !== "liability")
-          .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+        const assetsTotal = netAccountsTotal(
+          accounts!.filter(a => !isLiabilityType(a.type)));
+        // Liabilities as a POSITIVE magnitude, to be labelled and subtracted
+        // explicitly below — the same two-term split routes/dashboard.ts
+        // keeps, so the figures here and in the API response agree term for
+        // term rather than only in the net.
         const liabilitiesTotal = accounts!
-          .filter(a => a.type === "liability")
+          .filter(a => isLiabilityType(a.type))
           .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
         const totalCash = assetsTotal - liabilitiesTotal;
         const unconvertibleCount = accounts!.filter(a => a.baseEquivalent == null).length;
@@ -2342,7 +2347,10 @@ export default function Accounts() {
         const currencyTotals = currencies.map(c => {
           const rows = accounts!.filter(a => a.currency === c);
           const allNull = rows.length > 0 && rows.every(a => a.baseEquivalent == null);
-          const total = allNull ? null : rows.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+          // Signed: a sterling loan reduces sterling exposure rather than
+          // adding to it, so a currency whose only holding is a liability
+          // shows a negative segment rather than a large positive one.
+          const total = allNull ? null : netAccountsTotal(rows);
           return { currency: c, total };
         }).sort((a, b) => (b.total ?? -Infinity) - (a.total ?? -Infinity));
 
@@ -2509,12 +2517,16 @@ export default function Accounts() {
                         a rate for. The KPI cell above surfaces the count. */}
                     <div style={{ display: "flex", height: 4, borderRadius: 0, overflow: "hidden", gap: 1, marginBottom: 5 }}>
                       {[...accounts!]
-                        .filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null)
+                        .filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null && !isLiabilityType(a.type))
                         .sort((a, b) => b.baseEquivalent - a.baseEquivalent)
                         .map((a, i) => {
                           // Allocation share is undefined when there is no
                           // positive cash base to take a share of.
-                          const pct: number | null = totalCash > 0 ? (a.baseEquivalent / totalCash) * 100 : null;
+                          // Denominator is the ASSET total, not the net one.
+                          // The rows above exclude liabilities, so dividing by
+                          // a total that has them subtracted out made the
+                          // visible shares add up to more than 100%.
+                          const pct: number | null = assetsTotal > 0 ? (a.baseEquivalent / assetsTotal) * 100 : null;
                           return (
                             <div key={a.id} style={{ width: `${pct ?? 0}%`, background: ACCT_ALLOC_COLORS[i % ACCT_ALLOC_COLORS.length], minWidth: (pct ?? 0) > 0.5 ? 2 : 0 }} title={`${a.name}: ${pct == null ? "—" : `${pct.toFixed(1)}%`}`} />
                           );
@@ -2522,11 +2534,15 @@ export default function Accounts() {
                     </div>
                     <VStack gap={2}>
                       {[...accounts!]
-                        .filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null)
+                        .filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null && !isLiabilityType(a.type))
                         .sort((a, b) => b.baseEquivalent - a.baseEquivalent)
                         .slice(0, 5)
                         .map((a, i) => {
-                          const pct: number | null = totalCash > 0 ? (a.baseEquivalent / totalCash) * 100 : null;
+                          // Denominator is the ASSET total, not the net one.
+                          // The rows above exclude liabilities, so dividing by
+                          // a total that has them subtracted out made the
+                          // visible shares add up to more than 100%.
+                          const pct: number | null = assetsTotal > 0 ? (a.baseEquivalent / assetsTotal) * 100 : null;
                           return (
                             <AccountAllocationRow
                               key={a.id}
@@ -2928,9 +2944,11 @@ export default function Accounts() {
                   ...privacyStyle,
                 }}
               >
-                {/* Table footer total: skips unconvertible entries. */}
+                {/* Table footer total: the signed sum of the rows above it,
+                    so a liability subtracts here exactly as its own row
+                    prints it. Skips unconvertible entries. */}
                 {formatBaseMoney(
-                  filteredAccounts.reduce((sum, a) => sum + (a.baseEquivalent ?? 0), 0)
+                  netAccountsTotal(filteredAccounts)
                 )}
               </div>
               <div
@@ -2954,12 +2972,22 @@ export default function Accounts() {
       {/* ── Net Owing Strip ─────────────────────────────────────── */}
       {(accounts?.length ?? 0) > 0 && (() => {
         // Balance sheet: sign requires a GBP value, so unconvertible
-        // accounts fall into neither the overdraft nor the assets side
-        // of this strip. The KPI cell above surfaces the count.
-        const overdraftAccounts = accounts!.filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null && a.baseEquivalent < 0);
-        const positiveAccounts = accounts!.filter((a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null && a.baseEquivalent >= 0);
-        const totalOwed = overdraftAccounts.reduce((s, a) => s + Math.abs(a.baseEquivalent), 0);
-        const totalAssets = positiveAccounts.reduce((s, a) => s + a.baseEquivalent, 0);
+        // accounts fall into neither side of this strip. The KPI cell above
+        // surfaces the count.
+        //
+        // This split used to be made on the SIGN OF THE BALANCE, which put
+        // every liability on the assets side: a liability stores a POSITIVE
+        // balance and the type carries the sign, so a £6,800 season-ticket
+        // loan was drawn as £6,800 of green. Splitting on the signed value
+        // instead puts a loan and a genuine overdraft both on the owed side,
+        // which is what a balance sheet means, without collapsing the two —
+        // the type still distinguishes them everywhere else.
+        const withBase = accounts!.filter(
+          (a): a is typeof a & { baseEquivalent: number } => a.baseEquivalent != null);
+        const owedAccounts = withBase.filter(a => signedAccountAmount(a.type, a.baseEquivalent) < 0);
+        const positiveAccounts = withBase.filter(a => signedAccountAmount(a.type, a.baseEquivalent) >= 0);
+        const totalOwed = owedAccounts.reduce((s, a) => s + Math.abs(signedAccountAmount(a.type, a.baseEquivalent)), 0);
+        const totalAssets = positiveAccounts.reduce((s, a) => s + signedAccountAmount(a.type, a.baseEquivalent), 0);
         return (
           <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "8px 16px", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
             <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
@@ -2985,7 +3013,12 @@ export default function Accounts() {
                       -{formatBaseMoney(totalOwed)}
                     </span>
                     <Text as="span" mono size={9} color="var(--ft-dim)">
-                      {overdraftAccounts.length} overdraft acct{overdraftAccounts.length !== 1 ? "s" : ""}
+                      {/* "overdraft" was the wrong word once the split stopped
+                          being made on the sign of the balance: this side now
+                          holds loans as well as overdrawn cash accounts, and
+                          calling a season-ticket loan an overdraft would be a
+                          second, smaller version of the same error. */}
+                      {owedAccounts.length} owed acct{owedAccounts.length !== 1 ? "s" : ""}
                     </Text>
                   </HStack>
                   <HStack gap={5} align="center">

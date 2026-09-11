@@ -20,6 +20,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { netAccountsTotal } from "@/lib/account-sign";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -40,7 +41,12 @@ interface UpcomingItem {
 }
 
 interface Account {
-  baseEquivalent: number;
+  // `type` is not optional here. A local account shape that omits it makes
+  // the sign rule unreachable — the compiler cannot ask for a signed total
+  // from a value that has no type — and that omission is precisely why the
+  // raw sum below survived this long.
+  type: string;
+  baseEquivalent: number | null;
 }
 
 interface SubForCashflow {
@@ -494,8 +500,12 @@ export default function CashflowPage() {
     [rawSubs]
   );
 
+  // The projection starts from what the accounts are actually worth. Summing
+  // raw added a liability's positive balance to the opening figure, so every
+  // point on the curve carried the loan twice — once as an asset here and
+  // again as the repayment leaving.
   const startingBalance = useMemo(
-    () => accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0),
+    () => netAccountsTotal(accounts),
     [accounts]
   );
 

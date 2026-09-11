@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { formatBaseMoney } from "@/lib/utils";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { netAccountsTotal } from "@/lib/account-sign";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -554,8 +555,12 @@ export default function NetWorthHistory() {
   const { data: rawDebts = [] } = useListDebts();
 
   const liveAssets = useMemo(() => {
-    const accountTotal = (rawAccounts as Array<{ baseEquivalent?: number }>)
-      .reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+    // Liability ACCOUNTS were being added here while liveLiabilities below
+    // counts only the `debts` table — so a season-ticket loan was auto-filled
+    // onto the assets side of a net-worth snapshot and omitted from the
+    // liabilities side, moving the recorded figure by twice the loan.
+    const accountTotal = netAccountsTotal(
+      rawAccounts as Array<{ type: string; baseEquivalent: number | null }>);
     const investTotal = (invSummary as { totalValueBase?: number } | undefined)?.totalValueBase ?? 0;
     return Math.round((accountTotal + investTotal) * 100) / 100;
   }, [rawAccounts, invSummary]);

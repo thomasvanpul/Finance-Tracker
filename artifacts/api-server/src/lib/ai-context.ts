@@ -68,6 +68,7 @@ import {
 import { getBaseCurrency } from "./app-settings-db";
 import { toBase, txToBase, getFxRates, getStockPrices } from "./market";
 import { monthRange, localDateString, forwardWindow } from "./date-ranges";
+import { signedAccountAmount } from "./account-sign";
 
 // Roughly 2.5k tokens at ~4 chars/token. Well under Groq's 131k window
 // and small enough that per-message quota cost stays predictable as a
@@ -195,7 +196,14 @@ async function buildCurrencyExposure(
   const byCcy = new Map<string, { native: number; upcomingOut: number }>();
   for (const a of accounts) {
     const row = byCcy.get(a.currency) ?? { native: 0, upcomingOut: 0 };
-    row.native += parseFloat(a.balance);
+    // A liability is denominated in a currency too, and it REDUCES exposure
+    // to that currency rather than adding to it: a £6,800 sterling loan
+    // against £11,375 of sterling cash is £4,575 of sterling, not £18,175.
+    // The balance is stored positive and the type carries the sign.
+    // WorthScreen.tsx fixed the identical defect on the client; this copy
+    // fed the same overstatement into the model's context instead of onto a
+    // screen, which is why it survived longer.
+    row.native += signedAccountAmount(a.type, parseFloat(a.balance));
     byCcy.set(a.currency, row);
   }
   for (const u of upcoming) {

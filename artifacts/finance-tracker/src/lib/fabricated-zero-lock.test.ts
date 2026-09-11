@@ -129,9 +129,7 @@ const BASELINE_FILES: ReadonlySet<string> = new Set([
   // business.tsx removed 31-Aug — sign-bug fix pass (six sites incl.
   // two VAT calcs).
   // calendar.tsx removed 31-Aug — sign-bug fix pass.
-  "artifacts/finance-tracker/src/pages/cashflow.tsx",
   "artifacts/finance-tracker/src/pages/dashboard.tsx",
-  "artifacts/finance-tracker/src/pages/decisions.tsx",
   "artifacts/finance-tracker/src/pages/family-finance.tsx",
   // fire.tsx removed 31-Aug — sign-bug fix pass (defaultMonthlyExpenses).
   "artifacts/finance-tracker/src/pages/health-score.tsx",
@@ -139,7 +137,6 @@ const BASELINE_FILES: ReadonlySet<string> = new Set([
   "artifacts/finance-tracker/src/pages/net-worth-history.tsx",
   // projection.tsx removed 31-Aug — sign-bug fix pass (avgMonthlySavings).
   "artifacts/finance-tracker/src/pages/tax.tsx",
-  "artifacts/finance-tracker/src/pages/upcoming.tsx",
   "artifacts/finance-tracker/src/pages/whatif.tsx",
 ]);
 

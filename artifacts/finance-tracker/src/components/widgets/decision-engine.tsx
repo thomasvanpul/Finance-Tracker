@@ -42,6 +42,7 @@ interface MiniDecision {
 // portfolio decisions AND balance alerts, not one or the other.
 import type { PersonaId } from "@/lib/persona";
 import { PanelHeader } from "@/components/primitives";
+import { netAccountsTotal } from "@/lib/account-sign";
 export function decisionKindsForPersona(persona: PersonaId): Set<DecisionKind> {
   switch (persona) {
     case "market": return new Set(["cash", "portfolio"]);
@@ -86,7 +87,7 @@ function buildMiniDecisions(
   debts: Debt[],
 ): MiniDecision[] {
   const out: MiniDecision[] = [];
-  const totalCashGbp = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+  const totalCashGbp = netAccountsTotal(accounts);
   // Same argument as pages/decisions.tsx: if summary hasn't loaded,
   // treating portfolio as £0 spuriously fires the idle-cash decision on
   // partial data. Gate cash-vs-portfolio decisions on knowing both sides.

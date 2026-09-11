@@ -4,6 +4,7 @@ import { formatBaseMoney } from "@/lib/utils";
 import { TrendingUp, TrendingDown, ChevronRight } from "lucide-react";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { Skeleton } from "@/components/skeleton";
+import { signedAccountAmount } from "@/lib/account-sign";
 
 function today() { return new Date().toISOString().slice(0, 10); }
 function firstOfMonth() {
@@ -147,7 +148,7 @@ export function AccountsWidget() {
           }}>
             <div style={{ fontSize: 11, color: "var(--ft-dim)", marginBottom: 8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{acc.name}</div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: acc.baseEquivalent == null ? "var(--ft-dim)" : "var(--ft-text)" }}>
-              {privacy ? "••••" : acc.baseEquivalent == null ? "—" : formatBaseMoney(acc.baseEquivalent)}
+              {privacy ? "••••" : acc.baseEquivalent == null ? "—" : formatBaseMoney(signedAccountAmount(acc.type, acc.baseEquivalent))}
             </div>
             {acc.currency !== "GBP" && (
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", marginTop: 2 }}>

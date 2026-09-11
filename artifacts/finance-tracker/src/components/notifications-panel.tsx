@@ -48,6 +48,7 @@ export function saveBalanceAlertRules(rules: BalanceAlertRule[]): void {
 // existing callers.
 export type { AlertKind } from "@/lib/notification-kinds";
 import type { AlertKind } from "@/lib/notification-kinds";
+import { signedAccountAmount } from "@/lib/account-sign";
 
 export interface Alert {
   id: string;
@@ -959,7 +960,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                   <option value="">— select account —</option>
                   {(accounts ?? []).map((a) => (
                     <option key={a.id} value={String(a.id)}>
-                      {a.name} ({a.baseEquivalent == null ? "—" : formatBaseMoney(a.baseEquivalent)})
+                      {a.name} ({a.baseEquivalent == null ? "—" : formatBaseMoney(signedAccountAmount(a.type, a.baseEquivalent))})
                     </option>
                   ))}
                 </select>

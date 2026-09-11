@@ -16,6 +16,7 @@ import {
   merchantTransactionsHref, monthTransactionsHref, thisMonthRange,
 } from "@/lib/entity-href";
 import type { WidgetId } from "@/contexts/widgets-context";
+import { netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
 
 // ── Shared style constants ────────────────────────────────────────────────────
 
@@ -440,8 +441,15 @@ export function CompactNetWorth() {
 // accounts-summary: FULL WIDTH — account list card
 export function CompactAccountsSummary() {
   const { data: accounts = [] } = useListAccounts({});
-  const total = useMemo(() => accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0), [accounts]);
-  const sorted = useMemo(() => [...accounts].sort((a, b) => (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity)).slice(0, 5), [accounts]);
+  // Footer total and row order both take the signed figure: a liability
+  // stores a positive balance and the type carries the sign, so the raw
+  // versions added a loan to the total and ranked it among the assets.
+  const total = useMemo(() => netAccountsTotal(accounts), [accounts]);
+  const sorted = useMemo(() => [...accounts]
+    .sort((a, b) =>
+      (signedAccountAmount(b.type, b.baseEquivalent) ?? -Infinity) -
+      (signedAccountAmount(a.type, a.baseEquivalent) ?? -Infinity))
+    .slice(0, 5), [accounts]);
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 4, height: 34 }}>
@@ -472,7 +480,7 @@ export function CompactAccountsSummary() {
               <div style={{ ...MONO, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: 2 }}>{acc.currency}</div>
             </div>
             <span className="pnum" style={{ ...MONO, fontSize: 16, fontWeight: 700, color: acc.baseEquivalent == null ? "var(--ft-dim)" : acc.baseEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)", letterSpacing: "-0.02em", flexShrink: 0 }}>
-              {acc.baseEquivalent == null ? "—" : formatBaseMoney(acc.baseEquivalent)}
+              {acc.baseEquivalent == null ? "—" : formatBaseMoney(signedAccountAmount(acc.type, acc.baseEquivalent))}
             </span>
           </div>
         </DrillTarget>
@@ -900,7 +908,7 @@ export function CompactTopMerchants() {
 export function CompactCashFlowPreview() {
   const { data: accounts = [] } = useListAccounts({});
   const { data: upcoming = [] } = useListUpcoming();
-  const balance = useMemo(() => accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0), [accounts]);
+  const balance = useMemo(() => netAccountsTotal(accounts), [accounts]);
   const now = useMemo(() => new Date(), []);
   const in30 = useMemo(() => new Date(now.getTime() + 30 * 86400000), [now]);
   const { inflows, outflows } = useMemo(() => {
@@ -970,7 +978,7 @@ export function CompactEmergencyFund() {
   const { data: accounts = [] } = useListAccounts({});
   const { data: allTxs = [] } = useListTransactions({});
   const { months, color } = useMemo(() => {
-    const liquid = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+    const liquid = netAccountsTotal(accounts);
     const now = new Date();
     const expenses: number[] = [];
     for (let i = 1; i <= 3; i++) {
@@ -1039,7 +1047,7 @@ export function CompactDecisionEngine() {
   const { data: goals = [] } = useListGoals();
   const { count } = useMemo(() => {
     let count = 0;
-    const totalCash = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+    const totalCash = netAccountsTotal(accounts);
     if (totalCash > 5000) count++;
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;

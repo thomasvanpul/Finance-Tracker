@@ -26,6 +26,7 @@ import { PageHeader } from "@/components/page-header";
 import { formatBaseMoney } from "@/lib/utils";
 import { Zap, X, ChevronRight, RefreshCw } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { isLiabilityType, netAccountsTotal } from "@/lib/account-sign";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ function buildDecisions(
   // yet, treating portfolio as £0 makes cashRatio look 100% cash and
   // fires the idle-cash decision on partial data. Skip the whole
   // cash-vs-portfolio decision when the portfolio side is not known.
-  const totalCashGbp = accounts.reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+  const totalCashGbp = netAccountsTotal(accounts);
   const portfolioGbp = summary?.totalValueBase ?? null;
   const totalWealth = portfolioGbp != null ? totalCashGbp + portfolioGbp : null;
   const cashRatio = totalWealth != null && totalWealth > 0 ? totalCashGbp / totalWealth : null;
@@ -135,7 +136,12 @@ function buildDecisions(
   accounts.forEach((a) => {
     // Idle-cash alert needs a GBP figure; skip accounts whose FX
     // conversion is unavailable rather than risk a fabricated £0 trip.
-    if (a.baseEquivalent != null && a.baseEquivalent > 10000) {
+    //
+    // And it is about IDLE CASH, so a liability is not a candidate: a
+    // liability stores a positive balance, so an unfiltered `> 10000` read a
+    // £11,000 loan as a large idle balance and advised moving it into a
+    // high-yield savings account.
+    if (!isLiabilityType(a.type) && a.baseEquivalent != null && a.baseEquivalent > 10000) {
       const annualCost = a.baseEquivalent * 0.045;
       out.push({
         id: `idle-account-${a.id}`,

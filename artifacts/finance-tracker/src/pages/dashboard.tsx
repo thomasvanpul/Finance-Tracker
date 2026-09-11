@@ -71,6 +71,7 @@ import { topRegionVariant } from "@/lib/proto-design";
 import { ProtoDashboard } from "@/components/proto";
 import { ProtoTopRegion } from "@/components/proto/top-region";
 import { DashboardTopRegion, Insights } from "@/components/dashboard/top-region";
+import { netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -197,12 +198,14 @@ function EmergencyFundWidget() {
   const { data: allTxs } = useListTransactions({});
   const isCustomizing = useDashboardCustomize();
 
-  // Sum all accounts as liquid savings (the Account schema has no type
-  // field). Unconvertible accounts fall out — the dashboard's own
-  // netWorth already reports the honest total; this local sum drives
-  // secondary widgets that consume liquidSavings as an input.
+  // The Account schema DOES have a `type` field — it was added 2026-09-11 and
+  // this comment claimed otherwise, which is how the raw sum survived here.
+  // A `liability` stores a positive balance and the type carries the sign, so
+  // summing raw fed a season-ticket loan to every widget downstream as though
+  // it were savings. Unconvertible accounts still fall out; the dashboard's
+  // own netWorth remains the authoritative total.
   const liquidSavings = useMemo(() => {
-    return (accounts ?? []).reduce((s, a) => s + (a.baseEquivalent ?? 0), 0);
+    return netAccountsTotal(accounts ?? []);
   }, [accounts]);
 
   const avgMonthlyExpenses = useMemo(() => {
@@ -467,7 +470,7 @@ function CashFlowPreviewPanel() {
   const { data: upcoming } = useListUpcoming();
 
   const startingBalance = useMemo(
-    () => (accounts ?? []).reduce((sum, a) => sum + (a.baseEquivalent ?? 0), 0),
+    () => netAccountsTotal(accounts ?? []),
     [accounts]
   );
 
@@ -2901,11 +2904,17 @@ function DashboardOverview() {
   const net = income - expenses;
   const netColor = net > 0 ? "var(--ft-green)" : net < 0 ? "var(--ft-red)" : "var(--ft-muted)";
 
-  // Unconvertible accounts sort to the bottom (-Infinity) of the desc
-  // sort — the top-6 slice still surfaces the largest real holdings,
-  // without shuffling.
+  // Sort on the SIGNED figure, the one the row actually prints. Sorting the
+  // stored magnitude put a £6,800 loan between £8,100 and £2,450 in a column
+  // that is supposed to descend. Unconvertible accounts still sort to the
+  // bottom (-Infinity), so the top-6 slice surfaces the largest real
+  // holdings without a rate outage shuffling them.
   const sortedAccounts = useMemo(
-    () => [...accounts].sort((a, b) => (b.baseEquivalent ?? -Infinity) - (a.baseEquivalent ?? -Infinity)).slice(0, 6),
+    () => [...accounts]
+      .sort((a, b) =>
+        (signedAccountAmount(b.type, b.baseEquivalent) ?? -Infinity) -
+        (signedAccountAmount(a.type, a.baseEquivalent) ?? -Infinity))
+      .slice(0, 6),
     [accounts]
   );
   const txRows = useMemo(
@@ -3002,7 +3011,7 @@ function DashboardOverview() {
               <span className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 16 : 11, fontWeight: 700, letterSpacing: "-0.02em", ...C(acc.baseEquivalent == null ? "var(--ft-dim)" : acc.baseEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)"), flexShrink: 0 }}>
                 {/* "—" for unconvertible accounts; the currency label
                     above still names the account's own currency. */}
-                {acc.baseEquivalent == null ? "—" : formatBaseMoney(acc.baseEquivalent)}
+                {acc.baseEquivalent == null ? "—" : formatBaseMoney(signedAccountAmount(acc.type, acc.baseEquivalent))}
               </span>
             </div>
           ))}

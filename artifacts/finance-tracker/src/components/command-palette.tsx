@@ -7,6 +7,7 @@ import { parseCurrencyQuery, convertVia, formatConverted, formatUnitRate, PIVOT 
 import { formatBaseMoney } from "@/lib/utils";
 import { applyPersonas, loadPersonaIds, PERSONAS, PERSONA_GLYPHS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
+import { signedAccountAmount } from "@/lib/account-sign";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -264,7 +265,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
         section: "accounts" as CommandSection,
         icon: "▣",
         title: acct.name,
-        shortcut: acct.baseEquivalent == null ? "—" : formatBaseMoney(acct.baseEquivalent),
+        shortcut: acct.baseEquivalent == null ? "—" : formatBaseMoney(signedAccountAmount(acct.type, acct.baseEquivalent)),
         action: navTo("/accounts"),
       });
     }

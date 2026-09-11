@@ -12,6 +12,7 @@ import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/compon
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
 import { oneShotInsight } from "@/lib/ai-chat-client";
+import { netAccountsTotal } from "@/lib/account-sign";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -438,8 +439,11 @@ export default function Briefing() {
     ? Math.round((Date.now() - new Date(briefing.generatedAt).getTime()) / 60000)
     : null;
 
+  // A liability stores a positive balance and the type carries the sign, so
+  // summing raw offered a season-ticket loan as liquidity. netAccountsTotal
+  // subtracts it; an overdraft is already negative and is left alone.
   const totalLiquid = useMemo(() =>
-    ((accountsRaw ?? []) as Array<{ baseEquivalent: number }>).reduce((s, a) => s + a.baseEquivalent, 0),
+    netAccountsTotal((accountsRaw ?? []) as Array<{ type: string; baseEquivalent: number | null }>),
     [accountsRaw]);
 
   const overBudgetCount = useMemo(() => {

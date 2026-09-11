@@ -136,8 +136,8 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // Preview-mode UI state — theme-swatch preview, widget-carousel preview.
   // Not a data fabrication; the "preview" here is a controlled UI state
   // toggled by the user, and no financial value is invented.
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1848, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1850, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1851, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1853, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
   { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 773, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
   { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 774, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
@@ -150,17 +150,17 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/components/investments/portfolio-tables.tsx", line: 148, reason: "ratio for weighting bar; 1 = fully weighted when live price is missing (chart geometry, not currency)" },
   { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 591, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
   { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 159, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
-  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 549, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
+  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 550, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1511, reason: "chart max denominator: empty merchants → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1580, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
-  { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 465, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
-  { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 237, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
+  { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 469, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
+  { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 243, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
   { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 766, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
   { path: "artifacts/finance-tracker/src/pages/year-review.tsx", line: 1263, reason: "chart max denominator: empty topCats → 1 to avoid /0" },
 
   // Percentage caps — `... ? Math.min(100, real) : 100` returns 100 as the
   // "already at cap" branch. Non-money literal (percentage points).
-  { path: "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx", line: 1020, reason: "milestone progress cap: no next milestone → 100% (all reached)" },
+  { path: "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx", line: 1028, reason: "milestone progress cap: no next milestone → 100% (all reached)" },
   { path: "artifacts/finance-tracker/src/pages/analytics-helpers.ts", line: 36, reason: "pct-change fallback: curr === 0 branch returns 0; else 100 (∞ growth from 0 baseline)" },
   { path: "artifacts/finance-tracker/src/pages/fire.tsx", line: 374, reason: "coast-FIRE progress cap: coastNeeded <= 0 → 100% (already coasted)" },
   // pension.tsx:285 and :389 were the "100% bar when target undefined"
@@ -187,13 +187,13 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/components/widgets/cash-flow.tsx", line: 149, reason: "chart height in px (220 expanded or 150 collapsed)" },
   { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", line: 158, reason: "row cap: 30 expanded or 15 collapsed" },
   { path: "artifacts/finance-tracker/src/components/widgets/top-merchants.tsx", line: 143, reason: "row cap: 8 expanded or 5 collapsed" },
-  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1574, reason: "border thickness (2px hi-value, 4px normal)" },
+  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1578, reason: "border thickness (2px hi-value, 4px normal)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1248, reason: "chart bar width in px (38 mobile / 44 desktop)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1249, reason: "chart bar height in px (34 mobile / 40 desktop)" },
   { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 439, reason: "popup position fallback: no anchor rect → 100px default" },
   { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 443, reason: "popup position fallback: no anchor rect → 100px default" },
   { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 848, reason: "chart bar min height in px (4px)" },
-  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 513, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
+  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 515, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
   { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 514, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
 
   // Formatting / config defaults — decimal counts, period lengths.
@@ -201,7 +201,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/lib/currency-query.ts", line: 105, reason: "decimal-place count for the palette conversion result: 2dp at |value| >= 1, 4dp below a unit where 2dp would round a real difference to nothing. A precision setting, not a figure — the value itself comes from convertVia, which returns null rather than a fallback when a leg is unpriced." },
   { path: "artifacts/finance-tracker/src/lib/currency-query.ts", line: 114, reason: "decimal-place count for the unit rate, mirroring FxRateCell in accounts.tsx: 2dp at >= 100, else 4dp. A precision setting, not a figure." },
   { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 46, reason: "default decimals count (2) for local nfmt fallback" },
-  { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", line: 236, reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
+  { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", line: 242, reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
 
   // Streaks, thresholds — non-money integers.
   { path: "artifacts/finance-tracker/src/pages/health-score.tsx", line: 751, reason: "savings-rate percentile threshold selector (10% or 20%), not a currency value" },

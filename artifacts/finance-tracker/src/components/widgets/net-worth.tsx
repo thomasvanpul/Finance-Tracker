@@ -9,6 +9,7 @@ import { WidgetShell } from "./widget-shell";
 import { useCountUp } from "@/hooks/use-count-up";
 import { CurrencyMark } from "@/components/currency-mark";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { signedAccountAmount } from "@/lib/account-sign";
 
 const HISTORY_KEY = "ft-nw-history";
 const MAX_ENTRIES = 365;
@@ -322,7 +323,9 @@ function BreakdownCell({ label, value, color, href, isLast }: BreakdownCellProps
 }
 
 type AccountTableRowProps = {
-  acct: { id: number | string; name: string; currency: string; balance: number; baseEquivalent: number | null };
+  // `type` is required, not optional: without it this row cannot ask for the
+  // signed figure, and a liability prints as a positive holding.
+  acct: { id: number | string; name: string; type: string; currency: string; balance: number; baseEquivalent: number | null };
   isFirst: boolean;
 };
 
@@ -351,7 +354,7 @@ function AccountTableRow({ acct, isFirst }: AccountTableRowProps) {
         <span className="pnum">{acct.currency !== "GBP" ? acct.balance.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}</span>
       </td>
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: acct.baseEquivalent == null ? "var(--ft-dim)" : "var(--ft-accent)", textAlign: "right", padding: "7px 0" }}>
-        {acct.baseEquivalent == null ? "—" : <span className="pnum">{formatBaseMoney(acct.baseEquivalent)}</span>}
+        {acct.baseEquivalent == null ? "—" : <span className="pnum">{formatBaseMoney(signedAccountAmount(acct.type, acct.baseEquivalent))}</span>}
       </td>
     </tr>
   );
