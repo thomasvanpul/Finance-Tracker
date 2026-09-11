@@ -1,5 +1,5 @@
 // Chain-dispatch invariants — the load-bearing correctness of the whole
-// Groq → Cerebras → OpenRouter architecture.
+// Groq → Cerebras architecture.
 //
 // The rules that carry weight and must not silently regress:
 //
@@ -12,12 +12,16 @@
 //      already forbids.
 //   3. All providers throw → ok=false, servingProvider=null. The
 //      route surfaces CLIENT_FAILURE; the chain does not fabricate.
-//   4. Attempts happen in order (groq, cerebras, openrouter) and stop
-//      at the first success — subsequent providers are not called.
+//   4. Attempts happen in order (groq, cerebras) and stop at the first
+//      success — subsequent providers are not called.
 //   5. triedProviders reports the exact walk for logging.
+//   6. When Groq and Cerebras both fail, nothing else is tried. The
+//      OpenRouter free-model lane was removed 2026-09-11 because its
+//      endpoints' terms forbid the data sent; a request reaching
+//      openrouter.ai is the regression this file must catch.
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { chainChat } from "./chain";
+import { chainChat, chainChatStream, chainCategorize, chainVision } from "./chain";
 import { registerProvider, __resetProviderHealthForTesting } from "../provider-health";
 
 // Track fetch calls so we can assert on which providers were invoked.
@@ -43,8 +47,8 @@ function stubProviderFetch(byUrl: Record<string, { status: number; body: string 
   });
 }
 
-// All three providers speak the OpenAI chat-completions shape now that
-// Gemini has been removed — one response builder covers every lane.
+// Both providers speak the OpenAI chat-completions shape — one response
+// builder covers every lane.
 function openAi200(text: string): string {
   return JSON.stringify({
     choices: [{ message: { content: text }, finish_reason: "stop" }],
@@ -54,6 +58,7 @@ function openAi200(text: string): string {
 const KEYS = {
   GROQ_API_KEY: "gsk_TEST_KEY_ABC",
   CEREBRAS_API_KEY: "csk_TEST_KEY_ABC",
+  // Still set: a key left in the environment must not bring the lane back.
   OPENROUTER_API_KEY: "sk-or-v1-TEST_KEY_ABC",
 };
 
@@ -65,7 +70,6 @@ beforeEach(() => {
   __resetProviderHealthForTesting();
   registerProvider({ name: "groq", configured: true });
   registerProvider({ name: "cerebras", configured: true });
-  registerProvider({ name: "openrouter", configured: true });
   vi.unstubAllGlobals();
 });
 
@@ -82,7 +86,7 @@ describe("chainChat · primary success", () => {
     expect(result.servingProvider).toBe("groq");
     expect(result.reducedCapacity).toBe(false);
     expect(result.triedProviders).toEqual(["groq"]);
-    // Only groq was called — no wasted attempts on the fallback lanes.
+    // Only groq was called — no wasted attempts on the fallback lane.
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toContain("api.groq.com");
   });
@@ -103,8 +107,6 @@ describe("chainChat · fallthrough to secondary (reducedCapacity=true)", () => {
     // the exact defect this whole architecture prevents.
     expect(result.reducedCapacity).toBe(true);
     expect(result.triedProviders).toEqual(["groq", "cerebras"]);
-    // OpenRouter was NOT called — chain stopped at first success.
-    expect(calls.filter((c) => c.url.includes("openrouter.ai"))).toHaveLength(0);
   });
 
   it("Groq returns non-2xx → Cerebras answers → reducedCapacity=true", async () => {
@@ -121,39 +123,55 @@ describe("chainChat · fallthrough to secondary (reducedCapacity=true)", () => {
   });
 });
 
-describe("chainChat · fallthrough to tertiary (reducedCapacity=true)", () => {
-  it("Groq + Cerebras both throw → OpenRouter answers → reducedCapacity=true", async () => {
-    stubProviderFetch({
-      "api.groq.com":     { throws: "ECONNRESET" },
-      "api.cerebras.ai":  { throws: "ECONNRESET" },
-      "openrouter.ai":    { status: 200, body: openAi200("from openrouter") },
-    });
-    const result = await chainChat({ messages: [MSG], route: "test" });
-    expect(result.ok).toBe(true);
-    expect(result.text).toBe("from openrouter");
-    expect(result.servingProvider).toBe("openrouter");
-    expect(result.reducedCapacity).toBe(true);
-    expect(result.triedProviders).toEqual(["groq", "cerebras", "openrouter"]);
-  });
-});
+describe("chain · Groq and Cerebras both fail → exhausted, no third lane", () => {
+  // openrouter.ai is stubbed to answer 200 in every case below: if any
+  // code path still reached it, the chain would serve that text and the
+  // assertions would fail. That is the leak this block exists to catch.
+  const BOTH_DOWN = {
+    "api.groq.com":     { throws: "ECONNRESET" },
+    "api.cerebras.ai":  { throws: "ECONNRESET" },
+    "openrouter.ai":    { status: 200, body: openAi200("from openrouter") },
+  };
 
-describe("chainChat · all providers fail", () => {
-  it("every provider throws → ok=false, servingProvider=null, no fabricated text", async () => {
-    stubProviderFetch({
-      "api.groq.com":     { throws: "ECONNRESET" },
-      "api.cerebras.ai":  { throws: "ECONNRESET" },
-      "openrouter.ai":    { throws: "ECONNRESET" },
-    });
+  it("chat: ok=false, servingProvider=null, no fabricated text, openrouter.ai never called", async () => {
+    stubProviderFetch(BOTH_DOWN);
     const result = await chainChat({ messages: [MSG], route: "test" });
     expect(result.ok).toBe(false);
     expect(result.text).toBe("");
     expect(result.servingProvider).toBeNull();
     // Every provider was attempted — chain didn't give up early.
-    expect(result.triedProviders).toEqual(["groq", "cerebras", "openrouter"]);
+    expect(result.triedProviders).toEqual(["groq", "cerebras"]);
     // reducedCapacity false when nothing served — there's no capacity
     // to report as reduced. The route reads ok=false and returns the
     // generic CLIENT_FAILURE.
     expect(result.reducedCapacity).toBe(false);
+    expect(calls.filter((c) => c.url.includes("openrouter.ai"))).toHaveLength(0);
+  });
+
+  it("categorise: exhausted after cerebras, openrouter.ai never called", async () => {
+    stubProviderFetch(BOTH_DOWN);
+    const result = await chainCategorize({ prompt: "Coffee 3.50", route: "test" });
+    expect(result.ok).toBe(false);
+    expect(result.triedProviders).toEqual(["groq", "cerebras"]);
+    expect(calls.filter((c) => c.url.includes("openrouter.ai"))).toHaveLength(0);
+  });
+
+  it("vision (receipt photo): exhausted after cerebras, openrouter.ai never called", async () => {
+    stubProviderFetch(BOTH_DOWN);
+    const result = await chainVision({ imageBase64: "aGVsbG8=", mimeType: "image/jpeg", prompt: "read", route: "test" });
+    expect(result.ok).toBe(false);
+    expect(result.triedProviders).toEqual(["groq", "cerebras"]);
+    expect(calls.filter((c) => c.url.includes("openrouter.ai"))).toHaveLength(0);
+  });
+
+  it("streaming chat: yields exhausted after cerebras, openrouter.ai never called", async () => {
+    stubProviderFetch(BOTH_DOWN);
+    const events = [];
+    for await (const ev of chainChatStream({ messages: [MSG], route: "test" })) events.push(ev);
+    const last = events[events.length - 1];
+    expect(last).toEqual({ kind: "exhausted", triedProviders: ["groq", "cerebras"] });
+    expect(events.some((e) => e.kind === "token")).toBe(false);
+    expect(calls.filter((c) => c.url.includes("openrouter.ai"))).toHaveLength(0);
   });
 
   it("empty-content 200 counts as failure (chain continues past a blank response)", async () => {
@@ -175,10 +193,10 @@ describe("chainChat · per-provider timeout (12s AbortController)", () => {
   it("hanging Groq gets aborted at 12s and chain falls through to Cerebras", async () => {
     // Load-bearing property: a chain built for redundancy MUST NOT
     // become slower than a single provider under failure. Without
-    // the AbortController each hang stacked its full wait (60s+) →
-    // 3× hang could exceed 3 minutes and blow past Render's socket
-    // timeout — the client saw "Failed to fetch" while Node was
-    // still waiting on the first provider.
+    // the AbortController each hang stacked its full wait (60s+) and
+    // could blow past Render's socket timeout — the client saw
+    // "Failed to fetch" while Node was still waiting on the first
+    // provider.
     //
     // Use fake timers to advance past PROVIDER_TIMEOUT_MS without
     // actually sleeping. The fetch mock returns a promise that
@@ -229,14 +247,12 @@ describe("chainChat · per-provider timeout (12s AbortController)", () => {
 describe("chainChat · unconfigured providers are skipped", () => {
   it("no GROQ key → skips groq, tries cerebras first, serving=cerebras, reducedCapacity=true", async () => {
     // The reducedCapacity flip when a provider is unconfigured is
-    // important: even if we THINK we're only running on Cerebras +
-    // OpenRouter today, we're still not on the primary chain. Same
-    // signal to the UI as a runtime fallthrough.
+    // important: running on Cerebras alone is still not the primary
+    // chain. Same signal to the UI as a runtime fallthrough.
     delete process.env.GROQ_API_KEY;
     __resetProviderHealthForTesting();
     registerProvider({ name: "groq", configured: false });
     registerProvider({ name: "cerebras", configured: true });
-    registerProvider({ name: "openrouter", configured: true });
     stubProviderFetch({
       "api.cerebras.ai": { status: 200, body: openAi200("from cerebras") },
     });

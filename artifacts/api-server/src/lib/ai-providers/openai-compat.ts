@@ -9,12 +9,12 @@
 // ── Per-fetch timeout ────────────────────────────────────────────────────
 // PROVIDER_TIMEOUT_MS caps each fetch (connection + body read) with an
 // AbortController. Without it, a hung provider silently stacks its full
-// wait across every lane in the chain: Groq 60s + Cerebras 60s + OpenRouter
-// 60s = 180s of dead air before we serve the client failure, while
+// wait across every lane in the chain: Groq 60s + Cerebras 60s = 120s of
+// dead air before we serve the client failure, while
 // Render's edge (and every browser's patience) closes the socket long
 // before that. A chain built for redundancy shouldn't become slower than
 // a single provider under failure — this cap enforces that. 12s is
-// generous for a first token AND leaves room for two fallthroughs
+// generous for a first token AND leaves room for the fallthrough
 // inside a sensible total.
 //
 // Wrapped in withProvider() from provider-health.ts so the shared
@@ -39,10 +39,11 @@
 
 import { withProvider } from "../provider-health";
 import { logger } from "../logger";
-import type { AiCallResult } from "./types";
+import { refusedModelReason } from "./model-policy";
+import type { AiCallResult, AiProviderName } from "./types";
 
-// 12s per provider fetch. Chain of three providers gives a worst-case
-// upper bound of 36s (12s × 3) plus context assembly + serving overhead.
+// 12s per provider fetch. Chain of two providers gives a worst-case
+// upper bound of 24s (12s × 2) plus context assembly + serving overhead.
 // Well under Render's socket idle timeout (~100s free / 300s paid) so
 // even the worst case surfaces as an honest "AI temporarily unavailable"
 // response rather than a browser-side "Failed to fetch".
@@ -63,11 +64,10 @@ export interface OpenAiMessage {
 export interface CallOpenAiCompatOpts {
   // Provider name registered via registerProvider() so withProvider can
   // find its breaker state. Must match exactly.
-  providerName: "groq" | "cerebras" | "openrouter";
+  providerName: AiProviderName;
   // Base URL WITHOUT trailing slash, WITHOUT /chat/completions.
   //   Groq:       https://api.groq.com/openai/v1
   //   Cerebras:   https://api.cerebras.ai/v1
-  //   OpenRouter: https://openrouter.ai/api/v1
   baseUrl: string;
   apiKey: string;
   model: string;
@@ -102,7 +102,7 @@ interface ChatCompletion {
 }
 
 // ── Streaming variant ────────────────────────────────────────────────────
-// Groq, Cerebras, and OpenRouter all implement OpenAI's SSE-format
+// Groq and Cerebras both implement OpenAI's SSE-format
 // chat completions stream. Each delta arrives as one `data: {...}` line
 // terminated by an empty line, and the stream ends with `data: [DONE]`.
 // We yield {kind: "token"} for each content chunk and {kind: "done"} on
@@ -131,7 +131,23 @@ interface StreamedDelta {
   error?: { message?: string };
 }
 
+// Refuse a policy-forbidden model (model-policy.ts) before any network
+// work, and outside withProvider so the breaker does not count a refusal
+// as the provider failing. The throw is caught by chain.ts like any other
+// lane failure, so a refused lane is skipped and, if it was the last one,
+// the chain is exhausted and the user sees the error.
+function assertModelAllowed(opts: CallOpenAiCompatOpts): void {
+  const reason = refusedModelReason(opts.model);
+  if (reason === null) return;
+  logger.error(
+    { provider: opts.providerName, route: opts.route, model: opts.model },
+    `AI model refused by policy, no request sent: ${reason}`,
+  );
+  throw new Error(`model refused by policy: ${reason}`);
+}
+
 export async function* callOpenAICompatStream(opts: CallOpenAiCompatOpts): AsyncGenerator<OpenAiStreamChunk> {
+  assertModelAllowed(opts);
   const url = `${opts.baseUrl}/chat/completions`;
   const body = {
     model: opts.model,
@@ -280,6 +296,7 @@ export async function* callOpenAICompatStream(opts: CallOpenAiCompatOpts): Async
 }
 
 export async function callOpenAICompat(opts: CallOpenAiCompatOpts): Promise<AiCallResult> {
+  assertModelAllowed(opts);
   const url = `${opts.baseUrl}/chat/completions`;
   const body = {
     model: opts.model,

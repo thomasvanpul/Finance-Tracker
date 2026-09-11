@@ -4,13 +4,11 @@
 // gemini-2.0-flash was shut down 1 June 2026 and the app kept calling it
 // for nearly three months. Groq killed llama-3.3-70b-versatile and
 // llama-3.1-8b-instant on 16 Aug 2026. Cerebras pruned its catalogue in
-// May. OpenRouter's free lineup rotates on a monthly cadence and has at
-// least one model already scheduled to sunset. Every provider retires
-// models on a cadence of months to a year — hardcoding a model anywhere
-// is a bug waiting to trip.
+// May. Every provider retires models on a cadence of months to a year —
+// hardcoding a model anywhere is a bug waiting to trip.
 //
-// This module gives all three providers (Groq, Cerebras, OpenRouter)
-// the same permanent shape:
+// This module gives both providers (Groq, Cerebras) the same permanent
+// shape:
 //
 //   1. Per-provider env vars for each task's model (default to a sane
 //      current name). The next retirement is a Render env change, not
@@ -21,19 +19,22 @@
 //      log with a provider-specific fix-me sentence naming that
 //      provider's live alternatives — a Groq retirement gets Groq's
 //      current models, not a generic list. The log alone tells an
-//      operator how to recover without opening any other tab.
+//      operator how to recover without opening any other tab. A
+//      configured model that ai-providers/model-policy.ts refuses (a
+//      free-tier model) is reported the same way, without a fetch.
 //
 //   3. getAiHealth() reports every provider: { name, keyConfigured,
 //      models, modelsVerified, verifiedAt, lastError }. /api/ai/status
 //      exposes this so the operator can `curl` production and see
 //      every provider's state.
 //
-// The Gemini lane was removed 2026-08-23. Google's AI Studio issues
-// this account AQ.-prefixed keys and the Generative Language REST
-// API only accepts AIza — the lane was permanently red, verifyGemini
-// always emitted the fix-me, /api/ai/status always reported one dead
-// provider. Replaced with OpenRouter, which uses genuinely working
-// keys and 18 free models to pick from.
+// The Gemini lane was removed 2026-08-23: Google's AI Studio issued this
+// account AQ.-prefixed keys and the Generative Language REST API only
+// accepts AIza, so the lane was permanently red. Its replacement,
+// OpenRouter on free models, was removed 2026-09-11: the free endpoints'
+// terms forbid the financial data and receipt photos the chain sends
+// (docs/DATA-INVENTORY.md §4.1). An OPENROUTER_API_KEY left in the
+// environment is now ignored.
 //
 // The circuit breaker + call-counting + per-provider registry come
 // from lib/provider-health.ts — same machinery the market chain uses.
@@ -43,29 +44,29 @@ import { logger } from "./logger";
 import { registerProvider } from "./provider-health";
 import { groqAllModels, groqApiKey } from "./ai-providers/groq";
 import { cerebrasAllModels, cerebrasApiKey } from "./ai-providers/cerebras";
-import { openrouterAllModels, openrouterApiKey } from "./ai-providers/openrouter";
+import { refusedModelReason } from "./ai-providers/model-policy";
 
-// Per-provider model list endpoints. All three follow the same pattern
-// (GET /models with bearer auth) and all three return the same shape
+// Per-provider model list endpoints. Both follow the same pattern
+// (GET /models with bearer auth) and return the same shape
 // ({ data: [{ id }] }) — verifyOneProvider handles each with the same
-// parser. Kept as separate functions so provider-specific fix-me
+// parser. Kept as separate entries so provider-specific fix-me
 // sentences can name that provider's alternatives.
 const GROQ_MODELS_URL = "https://api.groq.com/openai/v1/models";
 const CEREBRAS_MODELS_URL = "https://api.cerebras.ai/v1/models";
-const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
 
-export type AiProviderName = "groq" | "cerebras" | "openrouter";
+export type AiProviderName = "groq" | "cerebras";
 
 export interface AiProviderHealth {
   name: AiProviderName;
   keyConfigured: boolean;
   // Every model this provider is CONFIGURED to use, across all tasks.
   // For Groq that's chat + categorize + vision; for Cerebras chat +
-  // vision; for OpenRouter chat + categorize + vision.
+  // vision.
   models: string[];
   // true → every configured model appeared in the provider's models
   //        list at last check.
-  // false → at least one was missing (the AI-IS-BROKEN condition).
+  // false → at least one was missing, or is refused by model policy
+  //        (the AI-IS-BROKEN condition).
   // null → check hasn't run or errored (verdict unknown — treated as
   //        unavailable to be safe).
   modelsVerified: boolean | null;
@@ -106,14 +107,6 @@ function initState(): void {
     verifiedAt: null,
     lastError: !cerebrasApiKey() ? "CEREBRAS_API_KEY not set" : "verification pending",
   });
-  state.set("openrouter", {
-    name: "openrouter",
-    keyConfigured: !!openrouterApiKey(),
-    models: openrouterAllModels(),
-    modelsVerified: null,
-    verifiedAt: null,
-    lastError: !openrouterApiKey() ? "OPENROUTER_API_KEY not set" : "verification pending",
-  });
 }
 initState();
 
@@ -122,7 +115,6 @@ initState();
 // this the first call throws "not registered".
 registerProvider({ name: "groq", configured: !!groqApiKey() });
 registerProvider({ name: "cerebras", configured: !!cerebrasApiKey() });
-registerProvider({ name: "openrouter", configured: !!openrouterApiKey() });
 
 export function getAiHealth(): AiHealth {
   // Refresh keyConfigured live per call — Render pins env for the
@@ -138,15 +130,14 @@ export function getAiHealth(): AiHealth {
 
 function providerKeyConfigured(name: AiProviderName): boolean {
   if (name === "groq") return !!groqApiKey();
-  if (name === "cerebras") return !!cerebrasApiKey();
-  return !!openrouterApiKey();
+  return !!cerebrasApiKey();
 }
 
 // ── Provider-specific verification ────────────────────────────────────────
 
-// All three providers return the same OpenAI-shape { data: [{ id }] }
-// from their /models endpoint. Groq additionally carries an `active`
-// flag we filter on; the others just list what's callable.
+// Both providers return the same OpenAI-shape { data: [{ id }] } from
+// their /models endpoint. Groq additionally carries an `active` flag we
+// filter on; Cerebras just lists what's callable.
 interface ModelsResponse {
   data?: Array<{ id: string; active?: boolean }>;
   error?: { message?: string };
@@ -167,9 +158,9 @@ function shortlistCandidates(names: string[]): string[] {
   return names
     .filter((n) => {
       // Drop obvious non-chat outputs. Groq's list includes whisper +
-      // embedding + guard; Cerebras is smaller; OpenRouter's full
-      // catalogue is massive — the filter cuts image/audio/embedding
-      // variants so the operator sees text-model candidates.
+      // embedding + guard; Cerebras is smaller — the filter cuts
+      // image/audio/embedding variants so the operator sees text-model
+      // candidates.
       if (/whisper|embedding|guard|orpheus|tts|imagen|veo|image-|tuning|dall-e|stable-diffusion/i.test(n)) return false;
       return true;
     })
@@ -220,8 +211,8 @@ function emitFixMe(opts: {
 }
 
 // Generic verify-one-provider — parametrised on URL / key / configured
-// models / env vars for the fix-me sentence. All three providers speak
-// the same models-list shape so one implementation covers them.
+// models / env vars for the fix-me sentence. Both providers speak the
+// same models-list shape so one implementation covers them.
 // Boot-time verify runs once per provider — capped shorter than the
 // runtime chain timeout because a slow /models list at boot shouldn't
 // block the process from serving traffic. If a provider takes >8s just
@@ -240,6 +231,19 @@ async function verifyOneProvider(opts: {
   const { provider, url, apiKey, keyEnvVar, configuredModels, modelEnvVars } = opts;
   if (!apiKey) {
     writeOutcome(provider, { verified: null, lastError: `${keyEnvVar} not set — verification skipped` });
+    return;
+  }
+  // A refused model is never called (openai-compat.ts throws before the
+  // fetch), so the lane cannot serve. Report it as unverified rather than
+  // letting the models list say it exists.
+  const refused = configuredModels.filter((m) => refusedModelReason(m) !== null);
+  if (refused.length > 0) {
+    const fixMe =
+      `CONFIGURED AI MODEL IS REFUSED (${provider}). Free-tier model(s): ${refused.join(", ")}. ` +
+      `Free endpoints' terms forbid the data Numeris sends. Set ${modelEnvVars.join(" / ")} ` +
+      `to a paid model and redeploy.`;
+    logger.error({ provider, refused, envVars: modelEnvVars }, fixMe);
+    writeOutcome(provider, { verified: false, lastError: fixMe });
     return;
   }
   const controller = new AbortController();
@@ -279,8 +283,8 @@ async function verifyOneProvider(opts: {
     return;
   }
   const available = (data.data ?? [])
-    // Groq marks retired models with active:false; Cerebras and
-    // OpenRouter omit the field, which passes this filter as expected.
+    // Groq marks retired models with active:false; Cerebras omits the
+    // field, which passes this filter as expected.
     .filter((m) => m.active !== false)
     .map((m) => m.id)
     .filter((n): n is string => typeof n === "string" && n.length > 0);
@@ -301,8 +305,8 @@ async function verifyOneProvider(opts: {
 
 /**
  * Verifies every configured AI provider's models against its live models
- * list. Called from index.ts after the server binds. Non-blocking — all
- * three run in parallel and never throw out (errors go into state).
+ * list. Called from index.ts after the server binds. Non-blocking — both
+ * run in parallel and never throw out (errors go into state).
  */
 export async function verifyProvidersAtBoot(): Promise<void> {
   await Promise.all([
@@ -322,21 +326,12 @@ export async function verifyProvidersAtBoot(): Promise<void> {
       configuredModels: cerebrasAllModels(),
       modelEnvVars: ["CEREBRAS_CHAT_MODEL", "CEREBRAS_VISION_MODEL"],
     }),
-    verifyOneProvider({
-      provider: "openrouter",
-      url: OPENROUTER_MODELS_URL,
-      apiKey: openrouterApiKey(),
-      keyEnvVar: "OPENROUTER_API_KEY",
-      configuredModels: openrouterAllModels(),
-      modelEnvVars: ["OPENROUTER_CHAT_MODEL", "OPENROUTER_CATEGORIZE_MODEL", "OPENROUTER_VISION_MODEL"],
-    }),
   ]);
   // Re-register with the current keyConfigured state, in case env
   // was set between module load and the boot verify call. Belt-and-
   // braces: initState reads env, but so does this.
   registerProvider({ name: "groq", configured: !!groqApiKey() });
   registerProvider({ name: "cerebras", configured: !!cerebrasApiKey() });
-  registerProvider({ name: "openrouter", configured: !!openrouterApiKey() });
 }
 
 // ── Test helpers ──────────────────────────────────────────────────────────

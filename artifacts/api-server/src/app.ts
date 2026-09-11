@@ -198,7 +198,7 @@ app.use("/api", authProvidersRouter);
 // and no key value is returned — see routes/market-providers.ts.
 app.use("/api", marketProvidersRouter);
 // PUBLIC: /api/ai/status reports per-provider health for the whole
-// chain (Groq, Cerebras, OpenRouter). Same "diagnosable without shell"
+// chain (Groq, Cerebras). Same "diagnosable without shell"
 // surface as the two above — so the operator can `curl` production and
 // see which providers are configured + verified + which env vars to
 // set for retirements. No user data, no key value. See

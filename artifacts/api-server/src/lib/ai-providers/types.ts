@@ -1,20 +1,20 @@
-// Unified interface every AI provider (Groq, Cerebras, OpenRouter)
-// exposes so the chain in chain.ts can walk them without caring about
-// per-provider defaults. All three are OpenAI-compatible today, so the
-// shared callOpenAICompat helper covers every lane — no adapter needed
-// per provider beyond model + baseUrl + key. The Gemini lane was
-// removed 2026-08-23: this account's key is AQ.-prefixed and the
-// Generative Language REST API only accepts AIza, so it was
-// permanently red. OpenRouter replaces it — same shape, working keys.
+// Unified interface every AI provider (Groq, Cerebras) exposes so the
+// chain in chain.ts can walk them without caring about per-provider
+// defaults. Both are OpenAI-compatible, so the shared callOpenAICompat
+// helper covers every lane — no adapter needed per provider beyond
+// model + baseUrl + key. The Gemini lane was removed 2026-08-23 (its key
+// could never authenticate) and the OpenRouter free-model lane on
+// 2026-09-11 (free endpoints' terms forbid the data sent; see
+// model-policy.ts).
 //
 // Both callChat-shape helpers and callVision-shape helpers return the
 // same AiCallResult — text out, ok/diagnostic for error handling. The
 // chain wraps the successful text with servingProvider + reducedCapacity
 // so the route layer can pass a UI signal down to the client.
 
-// The three provider identifiers, registered in provider-health. Keeping
-// this as a string-literal union so a typo in a chain doesn't compile.
-export type AiProviderName = "groq" | "cerebras" | "openrouter";
+// The provider identifiers, registered in provider-health. Keeping this
+// as a string-literal union so a typo in a chain doesn't compile.
+export type AiProviderName = "groq" | "cerebras";
 
 // A single provider call outcome. ok=false includes ProviderUnavailable
 // (breaker open / no key), network errors, non-2xx responses, and

@@ -617,7 +617,7 @@ export default function AiCoach() {
         <div style={{ marginBottom: 12, padding: "10px 14px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", display: "flex", alignItems: "baseline", gap: 8 }}>
           <MonoLabel as="span" size={9} color="var(--ft-red)" letterSpacing="0.14em">AI OFFLINE</MonoLabel>
           <span style={{ fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.5 }}>
-            No AI provider is currently configured or verified. Check /api/ai/status for the per-provider health (Groq, Cerebras, OpenRouter).
+            No AI provider is currently configured or verified. Check /api/ai/status for the per-provider health (Groq, Cerebras).
           </span>
         </div>
       )}
@@ -890,7 +890,7 @@ export default function AiCoach() {
           </button>
         </div>
         <div style={{ marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
-          Streamed from Groq / Cerebras / OpenRouter · Context assembled server-side, never posted from this page
+          Streamed from Groq / Cerebras · Context assembled server-side, never posted from this page
         </div>
       </div>
 

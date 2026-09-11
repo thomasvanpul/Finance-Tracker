@@ -1,8 +1,8 @@
 // AI insights card, driven by model-shaped output.
 //
 // §2 of the 2026-09-06 review task asked for this card to be run
-// against a live model. It cannot be: no GROQ_API_KEY, CEREBRAS_API_KEY
-// or OPENROUTER_API_KEY exists locally, /api/ai/status reports
+// against a live model. It cannot be: no GROQ_API_KEY or CEREBRAS_API_KEY
+// exists locally, /api/ai/status reports
 // available:false, and both numeris-api.onrender.com and
 // financetracker.work answer a Cloudflare challenge to a non-browser
 // client. So this drives the SAME transport (POST /api/ai/chat,

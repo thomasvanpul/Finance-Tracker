@@ -39,7 +39,6 @@ async function proxy(ctx: import("playwright").BrowserContext): Promise<void> {
           body: JSON.stringify({ available: true, providers: [
             { name: "groq",       keyConfigured: true, models: [], modelsVerified: true, verifiedAt: new Date().toISOString(), lastError: null },
             { name: "cerebras",   keyConfigured: true, models: [], modelsVerified: true, verifiedAt: new Date().toISOString(), lastError: null },
-            { name: "openrouter", keyConfigured: true, models: [], modelsVerified: true, verifiedAt: new Date().toISOString(), lastError: null },
           ]}),
         });
       }

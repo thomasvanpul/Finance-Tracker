@@ -16,7 +16,7 @@
 //   • The completion: a real model, not a canned string.
 //
 // What is NOT the production path, stated plainly: the model. This machine has
-// no GROQ_API_KEY, CEREBRAS_API_KEY or OPENROUTER_API_KEY, so the three lanes
+// no GROQ_API_KEY or CEREBRAS_API_KEY, so the two lanes
 // the product actually walks cannot be reached from here. The completion below
 // comes from a locally hosted model over Ollama's OpenAI-compatible endpoint.
 // That is enough to answer the question the prompt change asks — does the

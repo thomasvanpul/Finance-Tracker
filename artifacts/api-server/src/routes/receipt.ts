@@ -6,8 +6,9 @@
 // model, no boot verify" defect that ai-config.ts was written to
 // prevent — the /api/ai/* endpoints went through chainVision, this
 // one didn't. Routed through chainVision 2026-08-23 so every
-// vision-taking route now walks Groq → Cerebras → OpenRouter with
-// the shared circuit breaker and reduced-capacity signal.
+// vision-taking route now walks Groq → Cerebras with the shared
+// circuit breaker and reduced-capacity signal. (OpenRouter was a third
+// lane until 2026-09-11; see lib/ai-providers/model-policy.ts.)
 
 import { Router, type Request, type Response } from "express";
 import { chainVision } from "../lib/ai-providers/chain";

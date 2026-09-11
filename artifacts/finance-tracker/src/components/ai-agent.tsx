@@ -258,7 +258,7 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
           {"AI Coach"}
         </MonoLabel>
         <MonoLabel size={9} color="var(--ft-muted)" letterSpacing="0.1em">
-          · {"GROQ · CEREBRAS · OPENROUTER"}
+          · {"GROQ · CEREBRAS"}
         </MonoLabel>
         <button
           onClick={onClose}

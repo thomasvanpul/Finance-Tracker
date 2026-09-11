@@ -307,7 +307,7 @@ describe("AI leak lock · Rule 4 — no stale Gemini labels or retired model IDs
     }
     if (hits.length > 0) {
       throw new Error(
-        `Client references Gemini after its removal (2026-08-23). The chain is Groq → Cerebras → OpenRouter; labels and model IDs must reflect that. Offenders:\n  ${hits.join("\n  ")}`,
+        `Client references Gemini after its removal (2026-08-23). The chain is Groq → Cerebras; labels and model IDs must reflect that. Offenders:\n  ${hits.join("\n  ")}`,
       );
     }
     expect(hits).toEqual([]);

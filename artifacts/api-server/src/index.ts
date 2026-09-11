@@ -90,7 +90,7 @@ app.listen(port, (err) => {
     24 * 60 * 60 * 1000,
   ).unref(); // .unref() so this interval doesn't keep the process alive on shutdown
   // Verify every AI provider's configured models against its live
-  // models list — Groq, Cerebras, OpenRouter in parallel. Non-blocking:
+  // models list — Groq and Cerebras in parallel. Non-blocking:
   // server is already accepting requests. If any provider's model is
   // dead, an error-level log fires with the provider-specific fix-me
   // sentence and /api/ai/status flips that provider to

@@ -195,7 +195,6 @@ Generated from `artifacts/api-server/src/lib/service-facts.ts`. Total monthly sp
 | Frankfurter (ECB) | Free, open data | £0 | — | Rate limit — none published | 2026-09-06 |
 | Groq | Free | £0 | Developer (pay-as-you-go) ≈ £0 | Requests 30 per minute | 2026-09-06 |
 | Cerebras | Free | £0 | — | Requests 30 per minute | 2026-09-06 |
-| OpenRouter | Free tier models | £0 | Credits (pay-as-you-go) ≈ £0 | Requests 50 per day (free models) | 2026-09-06 |
 
 **Cannot ship to public users as configured:**
 
