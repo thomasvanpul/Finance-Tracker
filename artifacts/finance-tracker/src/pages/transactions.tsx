@@ -1340,6 +1340,10 @@ export default function Transactions() {
     const CHUNK = 50;
     let categorized = 0;
     let failed = 0;
+    // Why the last batch failed, in the server's words when it gave any —
+    // "The AI service is temporarily unavailable" when both providers are
+    // down. Shown in the toast so "12 failed" says why.
+    let failureReason: string | null = null;
 
     try {
       for (let i = 0; i < uncategorizedTxs.length; i += CHUNK) {
@@ -1361,10 +1365,13 @@ export default function Transactions() {
             const data = (await res.json()) as { suggestions?: Array<{ id: number; category: string }> };
             suggestions = data.suggestions ?? [];
           } else {
+            const body = (await res.json().catch(() => null)) as { error?: string } | null;
+            failureReason = body?.error || `The server answered ${res.status}.`;
             failed += batch.length;
             continue;
           }
         } catch {
+          failureReason = "Could not reach the server.";
           failed += batch.length;
           continue;
         }
@@ -1398,7 +1405,11 @@ export default function Transactions() {
       if (failed === 0) {
         toast({ title: `${categorized} transaction${categorized !== 1 ? "s" : ""} categorized` });
       } else {
-        toast({ title: `${categorized} categorized, ${failed} failed`, variant: "destructive" });
+        toast({
+          title: `${categorized} categorized, ${failed} failed`,
+          description: failureReason ?? undefined,
+          variant: "destructive",
+        });
       }
     } catch {
       toast({ title: "AI categorize failed", variant: "destructive" });

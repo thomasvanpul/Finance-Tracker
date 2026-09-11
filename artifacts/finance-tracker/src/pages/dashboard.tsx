@@ -70,7 +70,7 @@ import { useProtoDesign } from "@/lib/use-proto-design";
 import { topRegionVariant } from "@/lib/proto-design";
 import { ProtoDashboard } from "@/components/proto";
 import { ProtoTopRegion } from "@/components/proto/top-region";
-import { DashboardTopRegion, Insights } from "@/components/dashboard/top-region";
+import { DashboardTopRegion, Insights, RULE } from "@/components/dashboard/top-region";
 import { netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
@@ -864,6 +864,11 @@ type AiInsightsRegister = "float" | "dense";
 function AiInsightsPanel({ register = "float", ..._props }: AiInsightsPanelProps & { register?: AiInsightsRegister }) {
   const [insights, setInsights] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(false);
+  // Set when the insights cannot be produced — the AI status says no
+  // provider is answering, or the request itself failed. Rendered in place
+  // of the cells. This panel used to stay hidden in both cases, so a user
+  // whose AI was down saw the same dashboard as one who had never had it.
+  const [error, setError] = useState<string | null>(null);
   // Ephemeral (DESIGN.md §6): the card pops in and can be sent away for the
   // session. A reload brings it back, which is what "temporary" means here.
   const [dismissed, setDismissed] = useState<boolean>(() => {
@@ -872,11 +877,20 @@ function AiInsightsPanel({ register = "float", ..._props }: AiInsightsPanelProps
   const fetchedRef = useRef(false);
 
   const fetchInsights = async () => {
+    setError(null);
     try {
+      // No skeleton flash on either early return — the error replaces the
+      // cells directly.
       const statusRes = await apiFetch("/api/ai/status", { credentials: "include" });
-      if (!statusRes.ok) return; // no skeleton flash — AI unavailable
+      if (!statusRes.ok) {
+        setError("AI insights are unavailable: the server could not report whether AI is working.");
+        return;
+      }
       const { available } = await statusRes.json() as { available: boolean };
-      if (!available) return; // confirmed unavailable — stay hidden, no flash
+      if (!available) {
+        setError("AI insights are unavailable: no AI provider is answering right now.");
+        return;
+      }
 
       setLoading(true); // only show skeleton after confirming AI is reachable
       const result = await oneShotInsight({
@@ -911,9 +925,11 @@ function AiInsightsPanel({ register = "float", ..._props }: AiInsightsPanelProps
       if (lines.length > 0) {
         saveCachedInsights(lines);
         setInsights(lines);
+      } else {
+        setError("The AI answered, but with nothing that could be shown as an insight.");
       }
-    } catch {
-      // silently hide on error
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : "AI insights could not be loaded.");
     }
     setLoading(false);
   };
@@ -935,33 +951,44 @@ function AiInsightsPanel({ register = "float", ..._props }: AiInsightsPanelProps
     void fetchInsights();
   };
 
-  // Don't render anything until we know the result (avoids layout shift)
+  // Don't render anything until we know the result (avoids layout shift).
+  // A failure is a result: it renders, in words, instead of the band
+  // vanishing as though there were nothing to say.
   if (dismissed) return null;
-  if (!loading && insights === null) return null;
+  if (!loading && insights === null && error === null) return null;
+  const failed = !loading && insights === null && error !== null;
 
   if (register === "dense") {
     // Same lines, same splitInsight, same three parts — only the surface
     // differs. `Insights` is the mark the top region is built out of, so this
     // band cannot drift out of register with the two above it.
-    return (
-      <Insights
-        lines={insights ?? []}
-        register="dense"
-        trailing={
-          <HStack align="center" shrink={false} padding="0 8px" gap={2}>
-            <DenseIconButton onClick={handleRefresh} disabled={loading}
-              title="Refresh AI insights" label="Refresh AI insights">
-              <RefreshCw size={10} />
-            </DenseIconButton>
-            <DenseIconButton
-              onClick={() => { setDismissed(true); try { sessionStorage.setItem(AI_INSIGHTS_DISMISSED_KEY, "1"); } catch {} }}
-              title="Dismiss for this session" label="Dismiss AI insights">
-              <X size={11} />
-            </DenseIconButton>
-          </HStack>
-        }
-      />
+    const controls = (
+      <HStack align="center" shrink={false} padding="0 8px" gap={2}>
+        <DenseIconButton onClick={handleRefresh} disabled={loading}
+          title="Refresh AI insights" label="Refresh AI insights">
+          <RefreshCw size={10} />
+        </DenseIconButton>
+        <DenseIconButton
+          onClick={() => { setDismissed(true); try { sessionStorage.setItem(AI_INSIGHTS_DISMISSED_KEY, "1"); } catch {} }}
+          title="Dismiss for this session" label="Dismiss AI insights">
+          <X size={11} />
+        </DenseIconButton>
+      </HStack>
     );
+    if (failed) {
+      // `Insights` draws nothing for zero lines, so a failure gets its own
+      // row in the same frame: the reason where the findings would be, the
+      // same controls beside it.
+      return (
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", borderTop: RULE, borderBottom: RULE }}>
+          <div style={{ padding: "7px 12px" }}>
+            <Text as="div" size={11} color="var(--ft-red)" lineHeight={1.35}>{error}</Text>
+          </div>
+          <div style={{ borderLeft: RULE, display: "flex", alignItems: "center" }}>{controls}</div>
+        </div>
+      );
+    }
+    return <Insights lines={insights ?? []} register="dense" trailing={controls} />;
   }
 
   return (
@@ -1058,6 +1085,13 @@ function AiInsightsPanel({ register = "float", ..._props }: AiInsightsPanelProps
           has always carried, so at 1440 this is three across, at ~900 two,
           and on a phone one. A cell that drops to one column is still the
           same three parts. */}
+      {failed && (
+        <div style={{ padding: "2px 12px 0" }}>
+          <span className="ft-float-body" style={{ color: "var(--ft-red)", lineHeight: 1.4 }}>
+            {error}
+          </span>
+        </div>
+      )}
       <div className="ft-dashboard-insights" style={{ padding: "2px 12px 12px" }}>
         {loading && insights === null
           ? [0, 1, 2].map(i => (

@@ -555,6 +555,7 @@ export function MarketsTab() {
   const newsAbortRef = useRef<AbortController | null>(null);
   const [tldrMap, setTldrMap] = useState<Record<string, string>>({});
   const [tldrLoading, setTldrLoading] = useState<Record<string, boolean>>({});
+  const [tldrError, setTldrError] = useState<Record<string, string>>({});
   const [lastQuoteTime, setLastQuoteTime] = useState<Date | null>(null);
 
   // Track when the selected quote last updated so we can show an "as of" timestamp
@@ -591,6 +592,7 @@ export function MarketsTab() {
   const fetchTldr = async (link: string, title: string) => {
     if (tldrMap[link] || tldrLoading[link]) return;
     setTldrLoading((p) => ({ ...p, [link]: true }));
+    setTldrError((p) => { const { [link]: _cleared, ...rest } = p; return rest; });
     try {
       // Server frames the response for the /investments page via
       // buildChatContext. The ticker context lives in a plain-text
@@ -602,7 +604,10 @@ export function MarketsTab() {
         prompt: `In exactly one sentence, give a concise investment angle on this news headline about ticker ${ticker}. Be direct, mention if it's positive or negative for investors, and why. Headline: "${title}"`,
       });
       setTldrMap((p) => ({ ...p, [link]: result.text.trim() }));
-    } catch { /* silently ignore */ }
+    } catch (err) {
+      const message = err instanceof Error && err.message ? err.message : "The AI summary could not be loaded.";
+      setTldrError((p) => ({ ...p, [link]: message }));
+    }
     finally { setTldrLoading((p) => ({ ...p, [link]: false })); }
   };
   useEffect(() => {
@@ -1479,6 +1484,11 @@ export function MarketsTab() {
                             >
                               {loadingTldr ? "…" : "AI TLDR →"}
                             </button>
+                          )}
+                          {!tldr && !loadingTldr && tldrError[item.link] && (
+                            <Text as="span" mono size={8} color="var(--ft-red)">
+                              {tldrError[item.link]}
+                            </Text>
                           )}
                         </HStack>
                       </div>

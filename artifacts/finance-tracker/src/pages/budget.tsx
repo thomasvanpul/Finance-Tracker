@@ -464,6 +464,10 @@ interface AiBudgetInsightProps {
 
 function AiBudgetInsight(_props: AiBudgetInsightProps) {
   const [insight, setInsight] = useState<string | null>(null);
+  // Set when the request fails — both AI providers down, rate limited, or
+  // offline. Shown in the panel rather than hiding it: a panel that
+  // silently vanishes reads as "nothing to say", which is not what happened.
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const fetchedRef = useRef(false);
 
@@ -477,6 +481,7 @@ function AiBudgetInsight(_props: AiBudgetInsightProps) {
       }
     }
     setLoading(true);
+    setError(null);
     try {
       const result = await oneShotInsight({
         path: "/budget",
@@ -484,8 +489,9 @@ function AiBudgetInsight(_props: AiBudgetInsightProps) {
       });
       sessionStorage.setItem(BUDGET_AI_CACHE_KEY, result.text);
       setInsight(result.text);
-    } catch {
+    } catch (err) {
       setInsight(null);
+      setError(err instanceof Error && err.message ? err.message : "The AI analysis could not be loaded.");
     } finally {
       setLoading(false);
     }
@@ -499,7 +505,8 @@ function AiBudgetInsight(_props: AiBudgetInsightProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!loading && insight === null) return null;
+  // A failed request renders its reason; only "never asked" renders nothing.
+  if (!loading && insight === null && error === null) return null;
 
   return (
     <div
@@ -543,6 +550,10 @@ function AiBudgetInsight(_props: AiBudgetInsightProps) {
               opacity: 0.7,
             }}
           />
+        ) : insight === null && error !== null ? (
+          <Text as="div" mono size={11} color="var(--ft-red)" lineHeight={1.6}>
+            {error}
+          </Text>
         ) : (
           <div
             style={{

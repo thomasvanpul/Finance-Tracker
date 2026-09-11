@@ -829,7 +829,9 @@ const PORTFOLIO_COMMENTARY_PROMPT =
 function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentaryProps) {
   const [commentary, setCommentary] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [visible, setVisible] = useState(true);
+  // Set when the request fails. The panel used to hide itself here, which
+  // made "the AI is down" look like "there is no analysis to give".
+  const [error, setError] = useState<string | null>(null);
 
   // Local UI-only stats for the chip row below the commentary. These
   // stay client-side because they're rendered locally, never sent
@@ -847,6 +849,7 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
   const fetchCommentary = async () => {
     if (investments.length === 0 || totalValue <= 0) return;
     setLoading(true);
+    setError(null);
     try {
       const result = await oneShotInsight({
         path: "/investments",
@@ -859,9 +862,8 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
           JSON.stringify({ text: result.text, ts: Date.now() }),
         );
       } catch { /* storage quota — silently ignore */ }
-    } catch {
-      // Silently hide on error
-      setVisible(false);
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : "The portfolio analysis could not be loaded.");
     } finally {
       setLoading(false);
     }
@@ -885,7 +887,7 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [investments.length, totalValue]);
 
-  if (!visible || investments.length === 0 || totalValue <= 0) return null;
+  if (investments.length === 0 || totalValue <= 0) return null;
 
   return (
     <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
@@ -920,6 +922,14 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
         <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.75, margin: 0, letterSpacing: "0.01em" }}>
           {commentary}
         </p>
+      )}
+      {/* The request failed — both AI providers down, or the server
+          unreachable. Said in words rather than hiding the panel, which is
+          what this did until 2026-09-11. */}
+      {error && !commentary && !loading && (
+        <Text as="div" mono size={12} color="var(--ft-red)" letterSpacing="0.01em" lineHeight={1.75}>
+          {error}
+        </Text>
       )}
 
       {/* Stat chips */}

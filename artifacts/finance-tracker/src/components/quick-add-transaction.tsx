@@ -88,6 +88,10 @@ export function QuickAddTransaction({ open, onClose }: Props) {
   const [form, setForm] = useState(buildInitialState);
   const [autoCatFilled, setAutoCatFilled] = useState(false);
   const [scanState, setScanState] = useState<"idle" | "scanning" | "error">("idle");
+  // What went wrong, in the server's words when it gave any: "AI service is
+  // temporarily unavailable" and "could not parse this image" need different
+  // actions from the user, and both used to read "Could not read receipt".
+  const [scanError, setScanError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
   const prevFocusRef = useRef<Element | null>(null);
@@ -129,6 +133,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
 
   const handleImageFile = useCallback(async (file: File) => {
     setScanState("scanning");
+    setScanError("");
     try {
       const imageBase64 = await readFileAsBase64(file);
       const response = await apiFetch("/api/receipt/parse", {
@@ -138,6 +143,8 @@ export function QuickAddTransaction({ open, onClose }: Props) {
       });
 
       if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        setScanError(body?.error || "The receipt could not be read.");
         setScanState("error");
         return;
       }
@@ -160,6 +167,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
       }));
       setScanState("idle");
     } catch {
+      setScanError("Could not reach the server to read the receipt.");
       setScanState("error");
     }
   }, []);
@@ -351,7 +359,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
                   letterSpacing: "0.04em",
                 }}
               >
-                Could not read receipt
+                {scanError}
               </span>
             )}
           </div>

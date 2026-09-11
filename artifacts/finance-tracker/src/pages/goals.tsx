@@ -845,6 +845,8 @@ const GOALS_AI_CACHE_KEY = "ft-goals-ai-coach";
 
 function AiGoalCoach({ goalItems }: AiGoalCoachProps) {
   const [insights, setInsights] = useState<string[] | null>(null);
+  // Set when the request fails. Shown, not hidden — see AiBudgetInsight.
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const fetchedRef = useRef(false);
 
@@ -880,6 +882,7 @@ function AiGoalCoach({ goalItems }: AiGoalCoachProps) {
       }
     }
     setLoading(true);
+    setError(null);
     try {
       // Server reads goals + their progress via buildChatContext(userId, "/goals").
       // Prompt describes WHAT we want; server has WHAT'S TRUE.
@@ -890,8 +893,9 @@ function AiGoalCoach({ goalItems }: AiGoalCoachProps) {
       const parsed = parseInsights(result.text);
       sessionStorage.setItem(GOALS_AI_CACHE_KEY, JSON.stringify(parsed));
       setInsights(parsed);
-    } catch {
+    } catch (err) {
       setInsights(null);
+      setError(err instanceof Error && err.message ? err.message : "The AI coach could not be loaded.");
     } finally {
       setLoading(false);
     }
@@ -904,6 +908,36 @@ function AiGoalCoach({ goalItems }: AiGoalCoachProps) {
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // A failed request says why, in place of the two cards, rather than the
+  // coach vanishing as though it had nothing to say.
+  if (!loading && insights === null && error !== null) {
+    return (
+      <div style={{ marginBottom: 6 }}>
+        <Panel
+          title="AI Coach"
+          padding="12px 14px"
+          right={
+            <button
+              onClick={() => { void fetchInsights(true); }}
+              style={{
+                background: "none", border: "none", cursor: "pointer", padding: 2,
+                fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em",
+                color: "var(--ft-dim)",
+              }}
+              title="Ask the AI coach again"
+            >
+              RETRY
+            </button>
+          }
+        >
+          <Text as="div" mono size={11} color="var(--ft-red)" lineHeight={1.6}>
+            {error}
+          </Text>
+        </Panel>
+      </div>
+    );
+  }
 
   if (!loading && (insights === null || insights.every((s) => !s))) return null;
 
