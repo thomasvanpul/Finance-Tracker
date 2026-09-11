@@ -765,6 +765,12 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/StockPrice"
+        "451":
+          description: Every requested ticker is a market index. Index levels are licensed by the index owner and are not shown. A request mixing indices with securities gets 200 with the securities only.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndexLevelRefused"
 
   /market/quotes:
     get:
@@ -787,6 +793,12 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/StockQuote"
+        "451":
+          description: Every requested ticker is a market index. Index levels are licensed by the index owner and are not shown. A request mixing indices with securities gets 200 with the securities only.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndexLevelRefused"
 
   # ── WISE ───────────────────────────────────────────────────────────────────
   /wise/status:
@@ -1687,6 +1699,21 @@ components:
       properties:
         error:
           type: string
+
+    IndexLevelRefused:
+      type: object
+      required: [error, code, refused]
+      properties:
+        error:
+          type: string
+          description: Why the level is not shown, written to be displayed as it stands.
+        code:
+          type: string
+          enum: [index_level_unlicensed]
+        refused:
+          type: array
+          items:
+            type: string
 
     Connection:
       type: object

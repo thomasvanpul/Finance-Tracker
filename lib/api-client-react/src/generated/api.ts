@@ -59,6 +59,7 @@ import type {
   HealthStatus,
   ImportCsvInput,
   ImportCsvParams,
+  IndexLevelRefused,
   InstallmentInput,
   Investment,
   InvestmentInput,
@@ -2913,7 +2914,7 @@ export const getGetMarketPricesQueryKey = (params?: GetMarketPricesParams,) => {
     }
 
 
-export const getGetMarketPricesQueryOptions = <TData = Awaited<ReturnType<typeof getMarketPrices>>, TError = ErrorType<unknown>>(params: GetMarketPricesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketPrices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetMarketPricesQueryOptions = <TData = Awaited<ReturnType<typeof getMarketPrices>>, TError = ErrorType<IndexLevelRefused>>(params: GetMarketPricesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketPrices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2932,14 +2933,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetMarketPricesQueryResult = NonNullable<Awaited<ReturnType<typeof getMarketPrices>>>
-export type GetMarketPricesQueryError = ErrorType<unknown>
+export type GetMarketPricesQueryError = ErrorType<IndexLevelRefused>
 
 
 /**
  * @summary Get live stock prices for given tickers
  */
 
-export function useGetMarketPrices<TData = Awaited<ReturnType<typeof getMarketPrices>>, TError = ErrorType<unknown>>(
+export function useGetMarketPrices<TData = Awaited<ReturnType<typeof getMarketPrices>>, TError = ErrorType<IndexLevelRefused>>(
  params: GetMarketPricesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketPrices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -2997,7 +2998,7 @@ export const getGetMarketQuotesQueryKey = (params?: GetMarketQuotesParams,) => {
     }
 
 
-export const getGetMarketQuotesQueryOptions = <TData = Awaited<ReturnType<typeof getMarketQuotes>>, TError = ErrorType<unknown>>(params: GetMarketQuotesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketQuotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetMarketQuotesQueryOptions = <TData = Awaited<ReturnType<typeof getMarketQuotes>>, TError = ErrorType<IndexLevelRefused>>(params: GetMarketQuotesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketQuotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -3016,14 +3017,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetMarketQuotesQueryResult = NonNullable<Awaited<ReturnType<typeof getMarketQuotes>>>
-export type GetMarketQuotesQueryError = ErrorType<unknown>
+export type GetMarketQuotesQueryError = ErrorType<IndexLevelRefused>
 
 
 /**
  * @summary Get rich fundamental data for given tickers
  */
 
-export function useGetMarketQuotes<TData = Awaited<ReturnType<typeof getMarketQuotes>>, TError = ErrorType<unknown>>(
+export function useGetMarketQuotes<TData = Awaited<ReturnType<typeof getMarketQuotes>>, TError = ErrorType<IndexLevelRefused>>(
  params: GetMarketQuotesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketQuotes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {

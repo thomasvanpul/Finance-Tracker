@@ -6,16 +6,22 @@ export interface TickerSlot {
 }
 
 const DEFAULTS: TickerSlot[] = [
-  { ticker: "^FTSE",   label: "FTSE" },
-  { ticker: "^GSPC",   label: "SPX" },
   { ticker: "BTC-USD", label: "BTC" },
   { ticker: "GBPUSD=X", label: "GBP" },
 ];
 
+// FTSE and SPX were the first two defaults until 2026-09-11. They are index
+// levels, which the index owners license separately and the app does not
+// show, and the server now refuses them. A bar saved before then still holds
+// both slots, and each would render as an empty tile, so they are dropped on
+// load. This names the two retired defaults; it is not a symbol rule, which
+// lives on the server.
+const RETIRED_DEFAULTS = new Set(["^FTSE", "^GSPC"]);
+
 function load(): TickerSlot[] {
   try {
     const raw = localStorage.getItem("ft-tickers");
-    if (raw) return JSON.parse(raw);
+    if (raw) return (JSON.parse(raw) as TickerSlot[]).filter((slot) => !RETIRED_DEFAULTS.has(slot.ticker));
   } catch {}
   return DEFAULTS;
 }

@@ -113,6 +113,8 @@ export * from './healthStatus';
 export * from './importCsvInput';
 export * from './importCsvParams';
 export * from './importCsvProvider';
+export * from './indexLevelRefused';
+export * from './indexLevelRefusedCode';
 export * from './installmentInput';
 export * from './installmentInputCurrency';
 export * from './investment';

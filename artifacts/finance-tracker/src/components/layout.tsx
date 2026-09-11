@@ -623,7 +623,7 @@ function LiveTickerBar() {
   const tickerStr = tickers.map(t => t.ticker).filter(Boolean).join(",");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: quotes } = useGetMarketQuotes(
-    { tickers: tickerStr || "^GSPC" },
+    { tickers: tickerStr },
     { query: { enabled: tickerStr.length > 0, refetchInterval: 60000 } } as any
   );
 
@@ -731,7 +731,7 @@ function LiveTickerBar() {
                     )}
                     {/* A slot served by the Frankfurter forex lane is an
                         ECB daily reference fixing. Unmarked here it sits
-                        beside FTSE and SPX reading as the same kind of
+                        beside a live crypto price reading as the same kind of
                         number, which is the claim it cannot make. */}
                     {(q as any).provider === "frankfurter" && (q as any).updatedAt != null && (
                       <FixingTag updatedAt={(q as any).updatedAt as string} />

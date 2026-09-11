@@ -64,7 +64,15 @@ export function __setYahooForTesting(stub: any): void {
 // against the same import path.
 export type { FxRatesData, StockPriceData, StockQuoteData } from "./market-types";
 import type { FxRatesData, StockPriceData, StockQuoteData } from "./market-types";
-import { classifyTicker, providersFor, orphanReason, type ProviderName } from "./market-classifier";
+import {
+  classifyTicker,
+  providersFor,
+  orphanReason,
+  isIndexSymbol,
+  isIndexInstrumentType,
+  IndexLevelRefusedError,
+  type ProviderName,
+} from "./market-classifier";
 import { alpacaFetchPrices, polygonFetchPrices, twelveDataFetchPrices, frankfurterFetchPrices, priceToQuote } from "./market-adapters";
 
 // Cache entries
@@ -475,7 +483,18 @@ const STALE_MAX_MS = 30 * 60 * 1000; // 30 minutes
 // withProvider inside withProvider would double-count a single failure
 // against the breaker and, worse, the inner call would be refused by the
 // half-open single-probe gate while the outer call held the probe slot.
-async function yahooChartPrice(ticker: string): Promise<StockPriceData> {
+//
+// Both Yahoo reads return the instrument type Yahoo reported alongside the
+// data, and the caller throws IndexLevelRefusedError only AFTER withProvider
+// has settled. The breaker then records what happened: Yahoo answered.
+// Thrown inside withProvider, a refusal would count as a Yahoo failure, and
+// three index symbols in a row would open the breaker on every stock quote.
+interface YahooRead<T> {
+  data: T;
+  isIndex: boolean;
+}
+
+async function yahooChartPrice(ticker: string): Promise<YahooRead<StockPriceData>> {
   // A 5-day window is the smallest that reliably contains a previous
   // close across a weekend or a public holiday. We read `meta` only; the
   // quote rows are not requested for a price lookup.
@@ -498,17 +517,22 @@ async function yahooChartPrice(ticker: string): Promise<StockPriceData> {
         ? meta.previousClose
         : null;
   return {
-    ticker,
-    price,
-    currency: meta?.currency ?? "USD",
-    previousClose,
-    updatedAt: new Date().toISOString(),
-    provider: "yahoo",
+    data: {
+      ticker,
+      price,
+      currency: meta?.currency ?? "USD",
+      previousClose,
+      updatedAt: new Date().toISOString(),
+      provider: "yahoo",
+    },
+    isIndex: isIndexInstrumentType(meta?.instrumentType),
   };
 }
 
 async function yahooFetchPrice(ticker: string): Promise<StockPriceData> {
-  return withProvider("yahoo", () => yahooChartPrice(ticker));
+  const read = await withProvider("yahoo", () => yahooChartPrice(ticker));
+  if (read.isIndex) throw new IndexLevelRefusedError(ticker);
+  return read.data;
 }
 
 // ── Rich-quote degradation ──────────────────────────────────────────────────
@@ -541,7 +565,7 @@ export function getYahooRichQuoteStatus(): {
 
 // Yahoo full-quote shape → StockQuoteData
 async function yahooFetchQuote(ticker: string): Promise<StockQuoteData> {
-  return withProvider("yahoo", async () => {
+  const read = await withProvider("yahoo", async (): Promise<YahooRead<StockQuoteData>> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let q: any;
     try {
@@ -557,14 +581,14 @@ async function yahooFetchQuote(ticker: string): Promise<StockQuoteData> {
         { ticker, err: richQuoteLastError },
         "yahoo rich quote unavailable, degrading to chart price",
       );
-      const chartPrice = await yahooChartPrice(ticker);
-      return priceToQuote(chartPrice);
+      const chartRead = await yahooChartPrice(ticker);
+      return { data: priceToQuote(chartRead.data), isIndex: chartRead.isIndex };
     }
     const price = typeof q?.regularMarketPrice === "number" ? q.regularMarketPrice : null;
     if (typeof price !== "number" || price <= 0) {
       throw new Error(`yahoo returned no quote for ${ticker}`);
     }
-    return {
+    const data: StockQuoteData = {
       ticker,
       price,
       currency: q?.currency ?? "USD",
@@ -597,7 +621,10 @@ async function yahooFetchQuote(ticker: string): Promise<StockQuoteData> {
       preMarketPrice: typeof q?.preMarketPrice === "number" ? Math.round(q.preMarketPrice * 100) / 100 : null,
       preMarketChangePercent: typeof q?.preMarketChangePercent === "number" ? Math.round(q.preMarketChangePercent * 100) / 100 : null,
     };
+    return { data, isIndex: isIndexInstrumentType(q?.quoteType) };
   });
+  if (read.isIndex) throw new IndexLevelRefusedError(ticker);
+  return read.data;
 }
 
 // ── Cadence-per-asset-class refresh budgeter ────────────────────────────────
@@ -640,7 +667,11 @@ function freshWindowFor(ticker: string): number {
 // a breaker-trip signal. A partial result (some tickers returned, some
 // missing) counts as success but the caller re-tries the missing ones on
 // the next provider.
-async function chainFetchPrices(tickers: string[]): Promise<Map<string, StockPriceData>> {
+//
+// `refused` collects tickers Yahoo reported as an index. They leave the chain
+// at Yahoo, because no later provider reports an instrument type and any of
+// them would go on to serve the level Yahoo has just identified.
+async function chainFetchPrices(tickers: string[], refused: Set<string>): Promise<Map<string, StockPriceData>> {
   const out = new Map<string, StockPriceData>();
   if (tickers.length === 0) return out;
 
@@ -672,11 +703,15 @@ async function chainFetchPrices(tickers: string[]): Promise<Map<string, StockPri
         // as the failure case worth escalating.
         const results = await Promise.allSettled(eligible.map((t) => yahooFetchPrice(t)));
         let successes = 0;
-        for (const r of results) {
+        for (let i = 0; i < results.length; i += 1) {
+          const r = results[i]!;
           if (r.status === "fulfilled") {
             out.set(r.value.ticker, r.value);
             remaining.delete(r.value.ticker);
             successes += 1;
+          } else if (r.reason instanceof IndexLevelRefusedError) {
+            refused.add(eligible[i]!);
+            remaining.delete(eligible[i]!);
           }
         }
         // Zero across a >0 batch is the "yahoo is dark" signal we want
@@ -736,7 +771,38 @@ async function chainFetchPrices(tickers: string[]): Promise<Map<string, StockPri
   return out;
 }
 
+// The quote and price reads say which tickers were refused as index levels,
+// so the routes can answer 451 with a reason rather than an empty array that
+// reads as "no data yet". getStockQuotes / getStockPrices keep their shape
+// for callers that only want rows (holdings valuation, the dashboard, the AI
+// context), where a refused ticker is simply absent, as an orphan already is.
+export interface MarketRead<T> {
+  rows: T[];
+  refused: string[];
+}
+
+// A ticker refused on Yahoo's reported type may have been stale-served from a
+// cache filled before the refusal existed. Drop it from the response and the
+// cache, and log the refusals once per read.
+function settleRefusals<T extends { ticker: string }>(
+  rows: T[],
+  refused: Set<string>,
+  cache: Map<string, unknown>,
+): MarketRead<T> {
+  if (refused.size === 0) return { rows, refused: [] };
+  for (const t of refused) cache.delete(t);
+  logger.info({ tickers: [...refused] }, "index levels refused");
+  return { rows: rows.filter((r) => !refused.has(r.ticker)), refused: [...refused] };
+}
+
 export async function getStockQuotes(tickers: string[]): Promise<StockQuoteData[]> {
+  return (await readStockQuotes(tickers)).rows;
+}
+
+export async function readStockQuotes(requested: string[]): Promise<MarketRead<StockQuoteData>> {
+  // Refused by shape before the cache or any provider is touched.
+  const refused = new Set(requested.filter(isIndexSymbol));
+  const tickers = requested.filter((t) => !refused.has(t));
   const now = Date.now();
   const results: StockQuoteData[] = [];
   const toFetch: string[] = [];
@@ -781,10 +847,11 @@ export async function getStockQuotes(tickers: string[]): Promise<StockQuoteData[
     const r = yahooResults[i]!;
     const t = toFetch[i]!;
     if (r.status === "fulfilled") yahooOk.set(t, r.value);
+    else if (r.reason instanceof IndexLevelRefusedError) refused.add(t);
     else yahooMiss.push(t);
   }
   // Fill misses via the price chain (Alpaca → Polygon → Twelve Data).
-  const priceFillers = yahooMiss.length > 0 ? await chainFetchPrices(yahooMiss) : new Map<string, StockPriceData>();
+  const priceFillers = yahooMiss.length > 0 ? await chainFetchPrices(yahooMiss, refused) : new Map<string, StockPriceData>();
   for (const t of toFetch) {
     const yr = yahooOk.get(t);
     if (yr) {
@@ -803,10 +870,17 @@ export async function getStockQuotes(tickers: string[]): Promise<StockQuoteData[
     // else: orphan, already logged in chainFetchPrices; omit from
     // response (never fabricate).
   }
-  return results;
+  return settleRefusals(results, refused, quoteCache);
 }
 
 export async function getStockPrices(tickers: string[]): Promise<StockPriceData[]> {
+  return (await readStockPrices(tickers)).rows;
+}
+
+export async function readStockPrices(requested: string[]): Promise<MarketRead<StockPriceData>> {
+  // Refused by shape before the cache or any provider is touched.
+  const refused = new Set(requested.filter(isIndexSymbol));
+  const tickers = requested.filter((t) => !refused.has(t));
   const now = Date.now();
   const results: StockPriceData[] = [];
   const toFetch: string[] = [];
@@ -831,7 +905,7 @@ export async function getStockPrices(tickers: string[]): Promise<StockPriceData[
     logger.info({ count: staleServed.length, tickers: staleServed }, "served stale prices");
   }
 
-  const fresh = toFetch.length > 0 ? await chainFetchPrices(toFetch) : new Map<string, StockPriceData>();
+  const fresh = toFetch.length > 0 ? await chainFetchPrices(toFetch, refused) : new Map<string, StockPriceData>();
   for (const t of toFetch) {
     const data = fresh.get(t);
     if (data) {
@@ -839,7 +913,7 @@ export async function getStockPrices(tickers: string[]): Promise<StockPriceData[
       if (!staleServed.includes(t)) results.push(data);
     }
   }
-  return results;
+  return settleRefusals(results, refused, stockCache);
 }
 
 // ── History ───────────────────────────────────────────────────────────────────
@@ -941,6 +1015,7 @@ async function fetchPolygonAggs(
 }
 
 export async function getStockHistory(ticker: string, period: string): Promise<HistoryPoint[]> {
+  if (isIndexSymbol(ticker)) throw new IndexLevelRefusedError(ticker);
   const cacheKey = `${ticker}:${period}`;
   const now = Date.now();
   const ttl = period === "1min" ? MICRO_TTL_MS
@@ -959,10 +1034,14 @@ export async function getStockHistory(ticker: string, period: string): Promise<H
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any = await yahooFinance.chart(ticker, { period1, interval: cfg.interval });
+    if (isIndexInstrumentType(result?.meta?.instrumentType)) throw new IndexLevelRefusedError(ticker);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rows: any[] = result?.quotes ?? [];
     data = parseHistoryRows(rows, cfg.intraday);
   } catch (chartErr) {
+    // Rethrown before the fallbacks: historical() and Polygon report no
+    // instrument type, so either would serve the level chart() identified.
+    if (chartErr instanceof IndexLevelRefusedError) throw chartErr;
     logger.warn({ chartErr, ticker, period }, "chart() failed, trying historical()");
     if (!cfg.intraday) {
       try {
@@ -1233,6 +1312,10 @@ const detailCache = new Map<string, { data: StockDetail; ts: number }>();
 const DETAIL_TTL_MS = 15 * 60 * 1000;
 
 export async function getStockDetail(ticker: string): Promise<StockDetail> {
+  // Shape only. The modules requested below do not include quoteType, so a
+  // no-caret index is not caught here; its fiftyTwoWeekChange would be the
+  // one figure derived from the level.
+  if (isIndexSymbol(ticker)) throw new IndexLevelRefusedError(ticker);
   const now = Date.now();
   const cached = detailCache.get(ticker);
   if (cached && now - cached.ts < DETAIL_TTL_MS) return cached.data;
@@ -1396,7 +1479,9 @@ const optionsCache = new Map<string, { data: OptionsChain; ts: number }>();
 const OPTIONS_TTL_MS = 10 * 60 * 1000;
 
 export async function getOptionsChain(ticker: string, expiry?: string): Promise<OptionsChain> {
-  const key = `${ticker}:${expiry ?? "first"}`;
+  // An index option chain carries the index level as its underlyingPrice.
+  if (isIndexSymbol(ticker)) throw new IndexLevelRefusedError(ticker);
+  const key =`${ticker}:${expiry ?? "first"}`;
   const now = Date.now();
   const cached = optionsCache.get(key);
   if (cached && now - cached.ts < OPTIONS_TTL_MS) return cached.data;
@@ -1409,6 +1494,7 @@ export async function getOptionsChain(ticker: string, expiry?: string): Promise<
       ? yahooFinance.options(ticker, { date: new Date(expiry) })
       : yahooFinance.options(ticker));
 
+    if (isIndexInstrumentType(opts?.quote?.quoteType)) throw new IndexLevelRefusedError(ticker);
     const underlyingPrice: number = opts?.quote?.regularMarketPrice ?? 0;
     const expiryDates: string[] = (opts?.expirationDates ?? []).map((d: Date | string) =>
       d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10)
@@ -1436,6 +1522,7 @@ export async function getOptionsChain(ticker: string, expiry?: string): Promise<
     optionsCache.set(key, { data, ts: now });
     return data;
   } catch (err) {
+    if (err instanceof IndexLevelRefusedError) throw err;
     logger.warn({ err, ticker, expiry }, "Options chain fetch failed");
     return empty;
   }

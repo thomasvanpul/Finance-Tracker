@@ -222,6 +222,20 @@ export interface ErrorResponse {
   error: string;
 }
 
+export type IndexLevelRefusedCode = typeof IndexLevelRefusedCode[keyof typeof IndexLevelRefusedCode];
+
+
+export const IndexLevelRefusedCode = {
+  index_level_unlicensed: 'index_level_unlicensed',
+} as const;
+
+export interface IndexLevelRefused {
+  /** Why the level is not shown, written to be displayed as it stands. */
+  error: string;
+  code: IndexLevelRefusedCode;
+  refused: string[];
+}
+
 export type ConnectionStatus = typeof ConnectionStatus[keyof typeof ConnectionStatus];
 
 

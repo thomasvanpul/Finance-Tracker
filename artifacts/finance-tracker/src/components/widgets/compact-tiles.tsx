@@ -660,7 +660,10 @@ export function CompactSubscriptionTracker() {
 }
 
 // market-snapshot: FULL WIDTH
-const MARKET_TICKERS_STR = "^FTSE,^GSPC,BTC-GBP,GBP=X";
+// Crypto and FX. The FTSE 100 and S&P 500 rows were index levels, which the
+// index owners license separately and the app does not show; the server
+// refuses them. The card keeps two rows rather than gaining a substitute.
+const MARKET_TICKERS_STR = "BTC-GBP,GBP=X";
 
 // "ECB 4 SEPT" — the compact form of the FixingMark disclosure, for the
 // one-line row this card uses. Kept local because it folds into the row's
@@ -672,8 +675,6 @@ function fixingLabel(updatedAt: string): string {
 }
 
 const TICKER_LABELS: Record<string, { sym: string; name: string }> = {
-  "^FTSE":   { sym: "FTSE", name: "FTSE 100" },
-  "^GSPC":   { sym: "S&P",  name: "S&P 500"  },
   "BTC-GBP": { sym: "BTC",  name: "Bitcoin"   },
   "GBP=X":   { sym: "GBP",  name: "GBP/USD"  },
 };

@@ -45,7 +45,7 @@ export const WIDGET_REGISTRY: WidgetDef[] = [
   { id: "budget-tracker",       label: "Budget Tracker",      description: "Spending limits with progress bars",       defaultEnabled: false, defaultSpan: "full" },
   { id: "savings-goals",        label: "Savings Goals",       description: "Goal cards with completion progress",      defaultEnabled: false, defaultSpan: "full" },
   { id: "subscription-tracker", label: "Subscriptions",       description: "Detected recurring monthly charges",       defaultEnabled: false, defaultSpan: "half" },
-  { id: "market-snapshot",      label: "Market Snapshot",     description: "Live indices: FTSE, SPX, BTC, GBP/USD",   defaultEnabled: false, defaultSpan: "half" },
+  { id: "market-snapshot",      label: "Market Snapshot",     description: "Crypto and FX: BTC, ETH, GBP/USD",        defaultEnabled: false, defaultSpan: "half" },
   { id: "recurring-detector",   label: "Recurring Detector",  description: "Auto-detected recurring monthly charges",  defaultEnabled: false, defaultSpan: "full" },
   { id: "financial-health",     label: "Financial Health",    description: "Composite health score across savings, liquidity, portfolio, and cash buffer", defaultEnabled: false, defaultSpan: "half" },
   { id: "transaction-calendar", label: "Calendar",            description: "Monthly calendar with per-day income and expense indicators", defaultEnabled: false, defaultSpan: "full" },

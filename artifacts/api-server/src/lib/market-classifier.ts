@@ -59,7 +59,8 @@ export function classifyTicker(ticker: string): TickerKind {
   const t = ticker.trim().toUpperCase();
   if (t.endsWith("=F")) return "futures";
   if (t.endsWith("=X")) return "forex";
-  if (t.startsWith("^")) return "index";
+  // `^` is Yahoo's index notation; `I:` is Polygon's.
+  if (t.startsWith("^") || t.startsWith("I:")) return "index";
   // Crypto pairs on Yahoo carry a quote-currency suffix. -USDT / -EUR are
   // rare in the current OVERVIEW_TICKERS but supported for completeness.
   if (/-(USD|USDT|EUR|GBP|BTC|ETH)$/.test(t)) return "crypto";
@@ -69,6 +70,63 @@ export function classifyTicker(ticker: string): TickerKind {
   // dot, so this test does not match it.
   if (/\.[A-Z]{1,3}$/.test(t)) return "non_us_equity";
   return "us_equity";
+}
+
+// ── Index levels are refused, not merely unquoted ───────────────────────────
+// An index level (S&P 500, FTSE 100, Nikkei …) is a proprietary benchmark.
+// The index owner licenses the number itself, separately from whoever sells
+// the feed, and none of the 17 sources checked on 2026-09-06 licenses it for
+// free. So "index" is not a lane with a missing provider the way futures or
+// LSE quotes are; it is a class the app does not display. market.ts refuses
+// it before any provider is called, and routes/market.ts answers 451.
+//
+// The symbol shape is NOT sufficient on its own. Yahoo's quoteType and chart
+// instrumentType were probed on 2026-09-11 and report INDEX for symbols with
+// no caret at all: 000001.SS (SSE Composite), 000300.SS (CSI 300), DX-Y.NYB
+// (ICE US Dollar Index), IMOEX.ME (MOEX Russia). Those are caught on the
+// provider's own answer by isIndexInstrumentType. Alpaca, Polygon and Twelve
+// Data rows carry no instrument type, so a no-caret index reaching one of
+// them — only possible when Yahoo did not answer for it — cannot be caught
+// this way.
+//
+// Stock and ETF prices are a different problem and are not refused here.
+// SPY and VUSA.L track the S&P 500 but are ETFs (Yahoo: ETF), and stay.
+export const INDEX_LEVEL_REFUSED = "index_level_unlicensed";
+
+export function isIndexSymbol(ticker: string): boolean {
+  return classifyTicker(ticker) === "index";
+}
+
+export function isIndexInstrumentType(type: unknown): boolean {
+  return typeof type === "string" && type.trim().toUpperCase() === "INDEX";
+}
+
+export function indexRefusalReason(tickers: readonly string[]): string {
+  const subject = tickers.length === 1
+    ? `${tickers[0]} is a market index`
+    : `${tickers.join(", ")} are market indices`;
+  return `${subject}. Index levels are licensed by the index owner, and this app does not hold that licence, so it does not show them.`;
+}
+
+// The 451 body. `error` is written to be shown to the user as it stands.
+export interface IndexRefusalBody {
+  error: string;
+  code: typeof INDEX_LEVEL_REFUSED;
+  refused: string[];
+}
+
+export function indexRefusalBody(refused: string[]): IndexRefusalBody {
+  return { error: indexRefusalReason(refused), code: INDEX_LEVEL_REFUSED, refused };
+}
+
+export class IndexLevelRefusedError extends Error {
+  readonly code = INDEX_LEVEL_REFUSED;
+  readonly ticker: string;
+  constructor(ticker: string) {
+    super(indexRefusalReason([ticker]));
+    this.name = "IndexLevelRefusedError";
+    this.ticker = ticker;
+  }
 }
 
 // Which providers can serve which kind on their free tier. This is the

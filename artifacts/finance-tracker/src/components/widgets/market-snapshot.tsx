@@ -4,13 +4,12 @@ import { WidgetShell } from "./widget-shell";
 import { FixingMark } from "../FixingMark";
 import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 
-const DEFAULT_TICKERS = "^GSPC,^FTSE,BTC-USD,GBPUSD=X,ETH-USD,^DJI";
+// Crypto and FX only. The equities group was four index levels (S&P 500,
+// FTSE 100, Dow Jones, Nasdaq), which the index owners license separately
+// and the app does not show; the server refuses them. Nothing replaces them.
+const DEFAULT_TICKERS = "BTC-USD,GBPUSD=X,ETH-USD";
 
-const TICKER_META: Record<string, { name: string; group: "equity" | "crypto" | "fx" }> = {
-  "^GSPC":    { name: "S&P 500",    group: "equity" },
-  "^FTSE":    { name: "FTSE 100",   group: "equity" },
-  "^DJI":     { name: "Dow Jones",  group: "equity" },
-  "^IXIC":    { name: "Nasdaq",     group: "equity" },
+const TICKER_META: Record<string, { name: string; group: "crypto" | "fx" }> = {
   "BTC-USD":  { name: "Bitcoin",    group: "crypto" },
   "ETH-USD":  { name: "Ethereum",   group: "crypto" },
   "GBPUSD=X": { name: "GBP/USD",   group: "fx" },
@@ -18,7 +17,6 @@ const TICKER_META: Record<string, { name: string; group: "equity" | "crypto" | "
 };
 
 const GROUP_LABEL: Record<string, string> = {
-  equity: "EQUITIES",
   crypto: "CRYPTO",
   fx: "FX",
 };
@@ -31,8 +29,6 @@ function formatPrice(ticker: string, price: number): string {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(price);
   if (ticker.endsWith("-USD"))
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price);
-  if (ticker === "^FTSE")
-    return new Intl.NumberFormat("en-GB", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(price);
   return new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price);
 }
 
@@ -223,9 +219,12 @@ function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
   );
 }
 
-export function MarketSnapshotWidget({ isExpanded }: { isExpanded?: boolean }) {
+// isExpanded used to add the Nasdaq Composite, an index level. Expanded and
+// default now read the same three tickers; the prop stays because the
+// dashboard passes it to every widget.
+export function MarketSnapshotWidget(_props: { isExpanded?: boolean }) {
   const [showSparklines, setShowSparklines] = useState(false);
-  const tickers = isExpanded ? `${DEFAULT_TICKERS},^IXIC` : DEFAULT_TICKERS;
+  const tickers = DEFAULT_TICKERS;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, isLoading, isError } = useGetMarketQuotes({ tickers }, { query: { refetchInterval: 5 * 60 * 1000 } as any });
 
@@ -242,25 +241,10 @@ export function MarketSnapshotWidget({ isExpanded }: { isExpanded?: boolean }) {
     ? new Date(quotes[0].updatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
     : null;
 
-  const marketSummary = quotes.length > 0 ? (() => {
-    const equities = quotes.filter(q => TICKER_META[q.ticker]?.group === "equity");
-    const upCount = equities.filter(q => ((q as { changePercent?: number }).changePercent ?? 0) >= 0).length;
-    const downCount = equities.length - upCount;
-    return { upCount, downCount, total: equities.length };
-  })() : null;
-
+  // The ▲/▼ advancers count that sat here counted the equities group only,
+  // which was four index levels. With those gone it had nothing to count.
   const headerRight = (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      {marketSummary && marketSummary.total > 0 && (
-        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", fontWeight: 600 }}>
-            ▲{marketSummary.upCount}
-          </span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", fontWeight: 600 }}>
-            ▼{marketSummary.downCount}
-          </span>
-        </div>
-      )}
       <button
         onClick={() => setShowSparklines(s => !s)}
         style={{

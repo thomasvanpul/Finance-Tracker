@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { alpacaStream, type CandlePoint } from "../lib/alpaca-stream.js";
+import { indexRefusalBody, isIndexSymbol } from "../lib/market-classifier.js";
 
 const router = Router();
 
@@ -8,6 +9,14 @@ const router = Router();
 //   event: init   — the current buffer (array of CandlePoint)
 //   event: candle — each newly closed candle (single CandlePoint)
 router.get("/api/market/live/:ticker", (req, res) => {
+  // Refused before the streaming check: an index level is not shown whether
+  // or not streaming is configured (lib/market-classifier.ts).
+  const requested = (req.params.ticker as string).toUpperCase();
+  if (isIndexSymbol(requested)) {
+    res.status(451).json(indexRefusalBody([requested]));
+    return;
+  }
+
   if (!alpacaStream.isEnabled()) {
     res.status(503).json({ error: "Live tick streaming requires ALPACA_KEY_ID and ALPACA_SECRET_KEY" });
     return;

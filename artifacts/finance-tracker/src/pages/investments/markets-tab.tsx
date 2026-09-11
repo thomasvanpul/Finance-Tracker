@@ -29,14 +29,24 @@ import { StatDrillModal } from "@/components/investments/stat-drill-modal";
 import { grahamNumber, dcfValue } from "@/components/investments/black-scholes";
 import {
   POPULAR_TICKERS, INDEX_TICKERS, CRYPTO_MARKET_TICKERS,
-  FOREX_TICKERS_STR, COMMODITY_TICKERS_STR, GLOBAL_INDEX_TICKERS,
+  FOREX_TICKERS_STR, COMMODITY_TICKERS_STR,
   SECTOR_TICKERS, OVERVIEW_TICKERS,
   INDEX_LABELS, SECTOR_LABELS, POPULAR_NAMES, CRYPTO_NAMES,
-  FOREX_NAMES, COMMODITY_NAMES, GLOBAL_INDEX_NAMES,
+  FOREX_NAMES, COMMODITY_NAMES,
   CHART_PERIODS, INTRADAY_PERIODS_SET, MULTIDAY_PERIODS_SET,
   TICK_PERIODS_SET, TICK_INTERVAL_MAP, isUSTicker,
   newsScore, timeAgo, fmtCap, fmtNum,
 } from "@/components/investments/markets-data";
+
+// The server answers 451 for an index symbol (api-server
+// lib/market-classifier.ts). Its stated reason replaces "Failed to load
+// chart data", whose Retry button invites a retry that cannot succeed.
+function indexRefusalReason(err: unknown): string | null {
+  const e = err as { status?: number; data?: { code?: string; error?: string } } | null;
+  return e?.status === 451 && e.data?.code === "index_level_unlicensed" && typeof e.data.error === "string"
+    ? e.data.error
+    : null;
+}
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 import { FixingMark } from "@/components/FixingMark";
 import {
@@ -523,7 +533,7 @@ export function MarketsTab() {
   }, [selectedTicker, chartPeriod]);
 
   // Chart, detail, news — only when a ticker is selected and not using live tick data
-  const { data: history, isFetching: histFetching, isError: histError, refetch: refetchHistory } = useGetMarketHistory(
+  const { data: history, isFetching: histFetching, isError: histError, error: histErrorBody, refetch: refetchHistory } = useGetMarketHistory(
     { ticker: selectedTicker ?? "", period: chartPeriod },
     { query: { enabled: !!selectedTicker && !isTickPeriod, retry: 2 } }
   );
@@ -1007,6 +1017,10 @@ export function MarketsTab() {
             </div>
           ) : histFetching ? (
             <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-sans)", fontSize: 12 }}>Loading chart…</div>
+          ) : histError && indexRefusalReason(histErrorBody) ? (
+            <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 24px", textAlign: "center", color: "var(--ft-dim)", fontFamily: "var(--font-sans)", fontSize: 12 }}>
+              {indexRefusalReason(histErrorBody)}
+            </div>
           ) : histError ? (
             <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--ft-red)", fontFamily: "var(--font-sans)", fontSize: 12 }}>
               <span>⚠ Failed to load chart data</span>
@@ -1515,7 +1529,7 @@ export function MarketsTab() {
 
       {/* ── Scrolling ticker strip (Yahoo Finance style) ── */}
       {(() => {
-        const STRIP_TICKERS = ["SPY","QQQ","DIA","BTC-USD","GC=F","GBPUSD=X","^N225","^GDAXI","XLK","AAPL","NVDA","TSLA","MSFT","META","AMZN"];
+        const STRIP_TICKERS = ["SPY","QQQ","DIA","BTC-USD","GC=F","GBPUSD=X","XLK","AAPL","NVDA","TSLA","MSFT","META","AMZN"];
         // Only tickers with a real live price AND changePercent scroll.
         // A fabricated "0.00%" on the marquee would be the loudest kind
         // of lie we could tell (moving, coloured, front-and-centre).
@@ -1688,7 +1702,7 @@ export function MarketsTab() {
         const sorted = [...allQ].sort((a, b) => b.pct - a.pct);
         const gainers = sorted.slice(0, 5);
         const losers = sorted.slice(-5).reverse();
-        const nameOf = (t: string) => POPULAR_NAMES[t] ?? INDEX_LABELS[t] ?? SECTOR_LABELS[t] ?? CRYPTO_NAMES[t] ?? FOREX_NAMES[t] ?? COMMODITY_NAMES[t] ?? GLOBAL_INDEX_NAMES[t] ?? t;
+        const nameOf = (t: string) => POPULAR_NAMES[t] ?? INDEX_LABELS[t] ?? SECTOR_LABELS[t] ?? CRYPTO_NAMES[t] ?? FOREX_NAMES[t] ?? COMMODITY_NAMES[t] ?? t;
         const renderRow = (ticker: string, pct: number, up: boolean) => (
           <button
             key={ticker}
@@ -2031,39 +2045,6 @@ export function MarketsTab() {
                 <Text as="div" mono size={18} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>{q ? `$${q.price.toFixed(2)}` : "—"}</Text>
                 {q && <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 2 }}>{pctLabel(chg)}</div>}
                 {q?.low52w != null && q?.high52w != null && <div style={{ marginTop: 6 }}><RangeBar low52w={q.low52w} high52w={q.high52w} price={q.price} /></div>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Global Indices */}
-      <div>
-        <MonoLabel as="div" size={9} letterSpacing="0.1em" mb={8}>
-          Global Indices
-        </MonoLabel>
-        <div className="ft-five-col" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 6 }}>
-          {GLOBAL_INDEX_TICKERS.split(",").map((ticker) => {
-            const q = qMap.get(ticker);
-            const chg = q?.changePercent ?? null;
-            const chgColor = pctColor(chg);
-            return (
-              <button key={ticker} onClick={() => setSelectedTicker(ticker)}
-                style={{ background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.12)", padding: "10px 12px", cursor: "pointer", textAlign: "left", transition: "border-color 0.1s" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ft-cyan)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(34,211,238,0.12)"; }}
-                onTouchStart={e => { e.currentTarget.style.borderColor = "var(--ft-cyan)"; }}
-                onTouchEnd={e => { e.currentTarget.style.borderColor = "rgba(34,211,238,0.12)"; }}
-                onTouchCancel={e => { e.currentTarget.style.borderColor = "rgba(34,211,238,0.12)"; }}>
-                <Text as="div" mono size={10} weight={700} color="var(--ft-cyan)" mb={2}>{GLOBAL_INDEX_NAMES[ticker] ?? ticker}</Text>
-                <Text as="div" mono size={8} color="var(--ft-dim)" mb={4}>{ticker}</Text>
-                <Text as="div" mono size={15} weight={700} color={q ? "var(--ft-text)" : "var(--ft-dim)"}>
-                  {q ? q.price.toLocaleString("en", { maximumFractionDigits: 0 }) : "—"}
-                </Text>
-                {q && (chg == null
-                  ? <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-dim)", marginTop: 2 }}>—</div>
-                  : <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: chgColor, marginTop: 2 }}>{chg >= 0 ? "▲" : "▼"} {Math.abs(chg).toFixed(2)}%</div>
-                )}
               </button>
             );
           })}

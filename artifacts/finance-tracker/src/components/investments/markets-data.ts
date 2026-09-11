@@ -6,11 +6,14 @@ export const INDEX_TICKERS = "SPY,QQQ,DIA,IWM,VEA,EEM";
 export const CRYPTO_MARKET_TICKERS = "BTC-USD,ETH-USD,SOL-USD,BNB-USD,XRP-USD,DOGE-USD";
 export const FOREX_TICKERS_STR = "GBPUSD=X,EURUSD=X,USDJPY=X,AUDUSD=X,USDCAD=X,GBPEUR=X";
 export const COMMODITY_TICKERS_STR = "GC=F,SI=F,CL=F,NG=F";
-export const GLOBAL_INDEX_TICKERS = "^N225,^HSI,^GDAXI,^FCHI,^AXJO";
+// No global index levels (Nikkei, Hang Seng, DAX …). The index owner licenses
+// the number itself and the app holds no such licence, so the server refuses
+// index symbols (api-server lib/market-classifier.ts, isIndexSymbol).
+// INDEX_TICKERS above are ETFs, which are ordinary securities, and stay.
 export const SECTOR_TICKERS = "XLK,XLV,XLF,XLE,XLY,XLP,XLRE,XLU,XLI,XLB,XLC";
 export const OVERVIEW_TICKERS = [
   POPULAR_TICKERS, INDEX_TICKERS, SECTOR_TICKERS, CRYPTO_MARKET_TICKERS,
-  FOREX_TICKERS_STR, COMMODITY_TICKERS_STR, GLOBAL_INDEX_TICKERS,
+  FOREX_TICKERS_STR, COMMODITY_TICKERS_STR,
 ].join(",");
 
 export const INDEX_LABELS: Record<string, string> = {
@@ -38,9 +41,6 @@ export const FOREX_NAMES: Record<string, string> = {
 };
 export const COMMODITY_NAMES: Record<string, string> = {
   "GC=F": "Gold ($/oz)", "SI=F": "Silver ($/oz)", "CL=F": "Crude Oil ($/bbl)", "NG=F": "Natural Gas ($/MMBtu)",
-};
-export const GLOBAL_INDEX_NAMES: Record<string, string> = {
-  "^N225": "Nikkei 225", "^HSI": "Hang Seng", "^GDAXI": "DAX 40", "^FCHI": "CAC 40", "^AXJO": "ASX 200",
 };
 
 export const CHART_PERIODS = ["5s", "15s", "30s", "1min", "2min", "5min", "15min", "30min", "1h", "1d", "3d", "5d", "1w", "1m", "3m", "6m", "1y", "2y", "5y"];
