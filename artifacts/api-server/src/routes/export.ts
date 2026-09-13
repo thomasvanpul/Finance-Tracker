@@ -4,15 +4,17 @@ import { db, accountsTable, transactionsTable } from "@workspace/db";
 import { txToBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { localDateString } from "../lib/date-ranges";
-import { buildUserExport } from "../lib/data-export";
 
 const router: IRouter = Router();
 
 // Everything the user's account holds, less credentials. What is in it and
 // what is withheld is declared in lib/data-export.ts and locked against
-// the schema by data-export.lock.test.ts.
+// the schema by data-export.lock.test.ts. Loaded on first use: the module
+// reads every table off @workspace/db when it loads, and the app-level tests
+// mock that package with only the tables their routes touch.
 router.get("/export/backup", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
+  const { buildUserExport } = await import("../lib/data-export");
   const backup = await buildUserExport(userId);
 
   res.setHeader("Content-Type", "application/json");
