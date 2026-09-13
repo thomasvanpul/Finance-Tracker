@@ -6,11 +6,12 @@
 // when the user row goes. Two tables reach the user without a cascade
 // and are handled explicitly here:
 //
-//   verification    better-auth's token store. No FK — rows are keyed by
-//                   `identifier` (the email for email flows; a random
-//                   trust id for the 2FA "trust this device" flow) and
-//                   `value` (the user id for password resets). Deleted by
-//                   either match.
+//   verification    better-auth's token store. No FK. Every row this
+//                   app's auth config writes that belongs to a user carries
+//                   the user id as its whole `value` (password reset, 2FA
+//                   challenge, trust-this-device, delete-account token).
+//                   A row keyed by the bare email is matched too. Both are
+//                   EXACT matches — see verificationRowsFor.
 //   request_metrics user_id is deliberately not a foreign key (see the
 //                   schema comment: the p95 series must not be rewritten
 //                   when a user leaves). The timing rows stay; the link to
@@ -25,7 +26,7 @@
 // stays inside these three shapes, so a new table that references the
 // user without a cascade fails the gate instead of surviving a deletion.
 
-import { eq, or, like, sql } from "drizzle-orm";
+import { eq, or, sql, type SQL } from "drizzle-orm";
 import { getTableConfig, PgTable, type PgColumn } from "drizzle-orm/pg-core";
 import { is } from "drizzle-orm";
 import * as schema from "@workspace/db";
@@ -68,6 +69,24 @@ export function userOwnedTables(): UserOwnedTable[] {
   return out;
 }
 
+// Which verification rows belong to this user. Exact matches only.
+//
+// This was `identifier LIKE '%<email>'` and `value LIKE '<userId>!%'`
+// until 2026-09-13. The email one was a suffix match: deleting a@b.com
+// also deleted rows for xa@b.com, and `_` in an address is a LIKE
+// wildcard, so a_b@c.com matched axb@c.com — another user's rows removed
+// during a deletion nobody watches. Neither pattern matched anything this
+// app writes: `<type>-otp-<email>` is the email-otp plugin (not
+// installed), and `<userId>!…` is the 2FA OTP identifier and the
+// trust-device cookie, never a stored value (better-auth 1.6.23,
+// plugins/two-factor). An over-match with no under-match to buy.
+export function verificationRowsFor(user: { id: string; email: string }): SQL {
+  return or(
+    eq(verificationTable.identifier, user.email),
+    eq(verificationTable.value, user.id),
+  )!;
+}
+
 export interface DeletionResult {
   deletedRows: number;
   tables: Record<string, number>;
@@ -102,14 +121,7 @@ export async function deleteUserAccount(userId: string): Promise<DeletionResult 
 
     const verifications = await tx
       .delete(verificationTable)
-      .where(
-        or(
-          eq(verificationTable.identifier, user.email),
-          like(verificationTable.identifier, `%${user.email}`),
-          eq(verificationTable.value, userId),
-          like(verificationTable.value, `${userId}!%`),
-        ),
-      );
+      .where(verificationRowsFor(user));
     tables.verification = rowCount(verifications);
 
     await tx.delete(userTable).where(eq(userTable.id, userId));

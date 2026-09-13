@@ -67,6 +67,9 @@ describe.skipIf(!enabled)("account deletion · nothing survives (real database)"
     await db.insert(s.verificationTable).values([
       { id: `ver-a-${stamp}`, identifier: victimEmail, value: "code", expiresAt: new Date(Date.now() + 60_000) },
       { id: `ver-b-${stamp}`, identifier: `reset-password:${stamp}`, value: victim, expiresAt: new Date(Date.now() + 60_000) },
+      // The other user's address ends with the victim's. A suffix match
+      // (the old LIKE '%<email>') deleted this row.
+      { id: `ver-c-${stamp}`, identifier: `x${victimEmail}`, value: "code", expiresAt: new Date(Date.now() + 60_000) },
     ]);
     const [metric] = await db.insert(s.requestMetricsTable).values({ route: "/api/del-test", method: "GET", statusCode: 200, durationMs: 1, userId: victim }).returning({ id: s.requestMetricsTable.id });
     metricId = metric.id;
@@ -86,6 +89,7 @@ describe.skipIf(!enabled)("account deletion · nothing survives (real database)"
     const { eq } = await import("drizzle-orm");
     await schema.db.delete(schema.userTable).where(eq(schema.userTable.id, other));
     await schema.db.delete(schema.userTable).where(eq(schema.userTable.id, victim));
+    await schema.db.delete(schema.verificationTable).where(eq(schema.verificationTable.id, `ver-c-${stamp}`));
     if (metricId) await schema.db.delete(schema.requestMetricsTable).where(eq(schema.requestMetricsTable.id, metricId));
     await schema.pool.end();
   }, NEON_TIMEOUT_MS);
@@ -116,6 +120,8 @@ describe.skipIf(!enabled)("account deletion · nothing survives (real database)"
     expect(verifications).toEqual([]);
     const byEmail = await schema.db.select().from(schema.verificationTable).where(eq(schema.verificationTable.identifier, victimEmail));
     expect(byEmail).toEqual([]);
+    const suffixed = await schema.db.select().from(schema.verificationTable).where(eq(schema.verificationTable.identifier, `x${victimEmail}`));
+    expect(suffixed).toHaveLength(1);
 
     const [metric] = await schema.db.select().from(schema.requestMetricsTable).where(eq(schema.requestMetricsTable.id, metricId));
     expect(metric).toBeDefined();
