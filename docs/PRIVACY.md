@@ -44,8 +44,8 @@ and Google Play. It is built for people in the UK and the European Union.
 - **There is no advertising, and no analytics or tracking tool** in the web or
   phone app.
 - **You can delete your account.** Some things survive it; section 8 lists them.
-- **Your backup does not yet include everything** Numeris holds about you;
-  section 8 lists what is missing.
+- **You can download everything your account holds**, less the credentials
+  that would let someone act as you; section 8 lists what is left out.
 
 ## 3. What Numeris holds
 
