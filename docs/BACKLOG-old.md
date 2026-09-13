@@ -1,4 +1,10 @@
-# Backlog
+# Backlog (old — wholly superseded)
+
+> **Superseded by `docs/BACKLOG.md` as of 13 Sep 2026. Do not add to this file
+> or work from it.** Sections 1–5 and 7 map onto BACKLOG A, D, E, F6 and G. The
+> two items that had no counterpart and were not finished are now BACKLOG
+> **E10** (extend motion, from §5) and **F16** ("since you last looked" strip,
+> from 6.7). Kept for the record, not deleted.
 
 Outstanding work on Numeris. Analysis lives in `STYLE-INVENTORY.md` and
 `MOBILE-INVENTORY.md`; this file is the running list of what is left to do.

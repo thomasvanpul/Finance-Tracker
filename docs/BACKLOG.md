@@ -14,7 +14,207 @@ described observation, it is not ready to be picked up.
   improvise a substitute.
 - Read `CLAUDE.md` first; it carries the constraints.
 
-Status: `TODO` · `IN PROGRESS` · `DONE` · `BLOCKED` · `PARKED`
+Status: `TODO` · `IN PROGRESS` · `PARTIAL` · `DONE` · `DECIDE` (needs Thomas) ·
+`PROPOSED` · `IDEA` (not yet agreed) · `PARKED` · `DEFERRED` (threshold recorded) ·
+closed: `DONE` · `SUPERSEDED` · `DROPPED` · `ADOPTED` (a principle, not a build).
+
+Priority tier, taken from the vault roadmap (`Efforts/Numeris-Roadmap.md`):
+`NOW` blocks public signup and is capped at ten — a new NOW item displaces one ·
+`NEXT` starts the day signup opens · `NOT YET` is dated by the blocking step
+(`.review/BLOCKER.md`), not rejected. Items the roadmap does not name default to
+`NOT YET`. Closed items carry no tier.
+
+**This file is the one backlog.** Merged 13 Sep 2026 with the vault register
+(`Atlas/Projects/Numeris-Register.md`), the roadmap, and commitments from
+`PLAN-Q3.md`, `TARGET-PRODUCT.md`, `MOBILE-CONCEPT.md`, `LOCAL-FIRST.md` and
+`BACKLOG-old.md`. The vault keeps narrative and points here; the planning docs
+keep reasoning. Do not start a second list — add a row here and an entry in its
+section. Every status in the index was checked against source at `788463c` on
+13 Sep 2026; the evidence is in each entry.
+
+## Index
+
+174 items · 123 open · 51 closed. Open by tier: NOW 10 · NEXT 8 · NOT YET 105.
+Update the counts when a row changes.
+
+| id | item | status | tier |
+| --- | --- | --- | --- |
+| A1 | Split dev from production | DONE | — |
+| A2 | Rotate the neondb_owner password | DONE | — |
+| A3 | Real migrations | DONE | — |
+| A4 | dev@bypass.local removed from production | DONE | — |
+| A5 | Account ownership checked on every money write | DONE | — |
+| B1 | Rehost the API server on Render | DONE | — |
+| B2 | Point the frontend at the new API | DONE | — |
+| B3 | Remove NODE_ENV=production from the shell profile | DONE | — |
+| B4 | Hosting payment, and the free tier that sleeps | DECIDE | NOW |
+| B5 | core.hooksPath is global; pre-push hook does not run | TODO | NOT YET |
+| B6 | Cost efficiency audit | TODO | NOT YET |
+| B7 | Measure authenticated endpoints and record it | PARTIAL | NOT YET |
+| C1 | account.type column | DONE | — |
+| C2 | Gaps the mobile home cannot fill (LIVE indicator) | PARTIAL | NOT YET |
+| C3 | Net worth subtracts what you owe | DONE | — |
+| C4 | liability account type | DONE | — |
+| C5 | Subscriptions as a recurrence rule | DONE | — |
+| C6 | netLiquidity is cash; one today; drift floor | DONE | — |
+| C7 | Account-sign sweep and lock | DONE | — |
+| D1 | Swipe-delete on /transactions for phone | DONE | — |
+| D2 | Remaining mobile screens in the new design | SUPERSEDED | — |
+| D3 | Dead config cleanup | DONE | — |
+| D4 | Full iPhone-native mobile redesign | IN PROGRESS | NOT YET |
+| D5 | Lock: phone routes resolve to a screen | DONE | — |
+| D6 | Delete the twelve unreachable Mobile* screens | TODO | NOT YET |
+| D7 | Native integration for guideline 4.2 | TODO | NOT YET |
+| D8 | Store releases: App Store and Google Play | TODO | NOT YET |
+| D9 | Tauri desktop shell | TODO | NOT YET |
+| D10 | Clipped-figure render test at 390 and 1440 | TODO | NOT YET |
+| D11 | Geometry previews on home panes | TODO | NOT YET |
+| E1 | index.css font-size hack | DONE | — |
+| E2 | Flex-container primitive | DONE | — |
+| E3 | Migrate pages to the primitives | DONE | — |
+| E4 | Break up the oversized pages | PARTIAL | NOT YET |
+| E5 | /transactions structural rebuild, A-C | DONE | — |
+| E5-D | /transactions server-side filtering | DEFERRED | NOT YET |
+| E6 | Drawn currency icons replace flag emoji | DONE | — |
+| E7 | Re-derive the midnight theme accent | TODO | NOT YET |
+| E8 | BlockField desktop width | TODO | NOT YET |
+| E9 | Settings info marks | PARTIAL | NOT YET |
+| E10 | Extend motion | PARTIAL | NOT YET |
+| F1 | Onboarding questionnaire to persona | DONE | — |
+| F2 | Open banking | PARKED | NOT YET |
+| F3 | Market, FX and news | DONE | — |
+| F4 | Social split and owing | DONE | — |
+| F5 | Progression | DROPPED | — |
+| F6 | Avatars as 3D models | DROPPED | — |
+| F7 | D1 allocation engine | DONE | — |
+| F8 | Allocation UI | DONE | — |
+| F9 | Safe to Spend visual weight | DECIDE | NEXT |
+| F10 | Completeness figure | TODO | NEXT |
+| F11 | DCC detection | IDEA | NOT YET |
+| F12 | Materiality threshold | IDEA | NOT YET |
+| F13 | /net-worth still asks for a snapshot | PARTIAL | NOT YET |
+| F14 | Audit pages for derivable input | TODO | NOT YET |
+| F15 | Scheduled digest | TODO | NOT YET |
+| F16 | Since-you-last-looked strip | PARTIAL | NOT YET |
+| F17 | Charging money | TODO | NOT YET |
+| F18 | Watch non-technical users use it | TODO | NOT YET |
+| G1 | Motion tokens vs the 150ms cap | DECIDE | NOT YET |
+| G2 | Recharts MonoTooltip | DONE | — |
+| G3 | Dead root vercel.json | TODO | NOT YET |
+| G4 | CORS rejections return 403 | DONE | — |
+| G5 | mockup-sandbox framer-motion | DONE | — |
+| G6 | sslmode=require does not verify certificates | TODO | NOT YET |
+| G7 | Neon cold start on CI | PARKED | NOT YET |
+| G8 | PERSONA_ACCENT map | DONE | — |
+| G9 | DesktopEmptyState primitive | PROPOSED | NOT YET |
+| G10 | api-server suite flake | PARTIAL | NOT YET |
+| G11 | Pension growth-rate disclosure | DONE | — |
+| G12 | Sign-in screen and App Review demo account | TODO | NOT YET |
+| G13 | Native auth, device checklist unrecorded | PARTIAL | NOT YET |
+| G14 | Alert rules key | DONE | — |
+| G15 | Print blur does not survive a reload | TODO | NOT YET |
+| G16 | learn-xp.ts dead code | DONE | — |
+| G17 | Five alert thresholds unread | DONE | — |
+| G18 | first-run-flow-shot leaked users | DONE | — |
+| G19 | Calculators unification, desktop | TODO | NOT YET |
+| G20 | localStorage to user_preferences, offline queue | DONE | — |
+| G21 | Context filter for business/family/trading | TODO | NOT YET |
+| G22.1 | Logo cap overlap | DONE | — |
+| G22.2 | Logo optical centring | DECIDE | NOT YET |
+| G22.3 | Favicon and PWA icons diverged from the mark | TODO | NOT YET |
+| G22.4 | iOS app icon small-size legibility | TODO | NOT YET |
+| G23 | getFxRates has no short-timeout path | PARTIAL | NOT YET |
+| G24 | MarketPane GBP-as-base | TODO | NOT YET |
+| G25 | Dashboard: eight defects found by looking | TODO | NOW |
+| G26 | Transactions written with accountId 0 | TODO | NOT YET |
+| G27 | upcoming.ts debits accounts[0] by position | TODO | NOT YET |
+| G28 | Settling a null-account debt jumps net worth | TODO | NOT YET |
+| G29 | Dashboard drops unconvertible debts silently | TODO | NOT YET |
+| G30 | Two FX helpers total the month differently | TODO | NOT YET |
+| G31 | accounts.id 1 has no user_id | TODO | NOT YET |
+| G32 | Unconvertible cash counts 0 in netLiquidity | TODO | NOT YET |
+| G33 | /market/detail refuses indices by shape only | TODO | NOT YET |
+| G34 | No-caret index caught only while Yahoo answers | TODO | NOT YET |
+| G35 | Mixed quote request drops index rows silently | TODO | NOT YET |
+| G36 | Markets TLDR and scan error states unseen | TODO | NOT YET |
+| G37 | components/proto prints unsigned figures | TODO | NOT YET |
+| G38 | kpi-bar and MobileAccounts ship to nobody | DECIDE | NOT YET |
+| G39 | compact-tiles sums every asset type | DECIDE | NOT YET |
+| G40 | Owed label merges loans and overdrafts | TODO | NOT YET |
+| G41 | ETF cards carry index trademarks | DECIDE | NOT YET |
+| G42 | ai-coach invites index comparisons | TODO | NOT YET |
+| G43 | nw_snapshots has no liability bucket | DECIDE | NOT YET |
+| G44 | recurring_patterns has no consumer | DECIDE | NOT YET |
+| G45 | /api/ai/status never tests a completion | TODO | NOT YET |
+| G46 | Credential key boot refusal claimed, not real | TODO | NOT YET |
+| G47 | Receipt scan AI budget economics | DECIDE | NOT YET |
+| G48 | Offline wipe unverified in iOS WebView | TODO | NOT YET |
+| G49 | Unsendable queued writes discarded at sign-out | DECIDE | NOT YET |
+| G50 | 2fa-attempts row survives deletion | TODO | NOT YET |
+| G51 | Settings "all local state" copy | TODO | NOT YET |
+| G52 | Export built in memory per request | TODO | NOT YET |
+| G53 | Offline replay has no idempotency key | TODO | NOT YET |
+| G54 | Dedup import unreachable; CSV path drops real duplicates | TODO | NOT YET |
+| G55 | Settings still asks for WISE_API_TOKEN | TODO | NOT YET |
+| G56 | DATA-INVENTORY offline-wipe text stale | TODO | NOT YET |
+| G57 | first-run-flow-shot can still leak accounts | TODO | NOT YET |
+| G58 | Local-first as LOCAL-FIRST.md describes | TODO | NOT YET |
+| G59 | CLAUDE.md misstates phone tabs and theme count | TODO | NOT YET |
+| G60 | Consolidate onboarding-flag lookalikes | TODO | NOT YET |
+| G61 | drizzle meta missing snapshots 0015-0017 | TODO | NOT YET |
+| H1 | Connection model and encrypted credentials | DONE | — |
+| H2 | Wise adapter, per user | DONE | — |
+| H3 | Alpaca and Kraken adapters | DONE | — |
+| H4 | Open banking adapter | PARKED | NOT YET |
+| H5 | File import as a connection | PARTIAL | NOT YET |
+| I1 | No admin role that can read user data | DECIDE | NOT YET |
+| I2 | Privacy policy and terms | IN PROGRESS | NOW |
+| I3 | Account deletion that actually deletes | DONE | — |
+| I4 | Breach process | TODO | NOT YET |
+| I5 | Data minimisation review | IN PROGRESS | NOT YET |
+| I6 | Email address cannot be changed | TODO | NOW |
+| I7 | No AI on/off switch | TODO | NOW |
+| I8 | Digest unsubscribe link is dead | TODO | NOW |
+| I9 | Non-users have no data-rights route | DECIDE | NOW |
+| I10 | Neon dev clone never reached by deletion | DECIDE | NOW |
+| I11 | Vercel Hobby: no DPA, proxies /api | DECIDE | NOW |
+| I12 | Google Fonts from Google's CDN | TODO | NOT YET |
+| I13 | Cerebras controller position | TODO | NOT YET |
+| I14 | Export covers the whole account | DONE | — |
+| I15 | Settings states what the AI is sent | DONE | — |
+| I16 | Consent captured at sign-up | TODO | NOT YET |
+| J1 | Market data vendor decision | DECIDE | NOW |
+| J2 | Alpaca licensing, revisit Mar 2027 | PARKED | NOT YET |
+| J3 | Index levels refused server-side | DONE | — |
+| J4 | Attribution: market, currency, money added | TODO | NEXT |
+| J5 | Dividends as dated income into D1 | TODO | NEXT |
+| J6 | Cost of ownership measured | TODO | NOT YET |
+| J7 | While you slept | TODO | NEXT |
+| J8 | Timing vs holding | TODO | NOT YET |
+| J9 | Dividends meeting goals | TODO | NEXT |
+| J10 | Per-holding FX split | TODO | NOT YET |
+| J11 | Provenance on prices | TODO | NOT YET |
+| J12 | Balances are ground truth | TODO | NOT YET |
+| J13 | Confidence on every figure | TODO | NEXT |
+| J14 | You stopped logging on the 3rd | TODO | NEXT |
+| J15 | Quiet mode | TODO | NOT YET |
+| J16 | Inferred transactions | IDEA | NOT YET |
+| J17 | One question a day | IDEA | NOT YET |
+| J18 | Decision journal | IDEA | NOT YET |
+| J19 | What breaks first | IDEA | NOT YET |
+| J20 | Household as a first-class unit | IDEA | NOT YET |
+| J21 | Local inference for categorisation | IDEA | NOT YET |
+| J22 | The app grades its own predictions | IDEA | NOT YET |
+| J23 | Double-entry substrate | IDEA | NOT YET |
+| J24 | Currency as a life position | IDEA | NOT YET |
+| J25 | Permission instead of restriction | ADOPTED | — |
+| K1 | AI chain Groq to Cerebras, failures visible | DONE | — |
+| K2 | Receipt scan counts against the AI limit | DONE | — |
+| K3 | Per-user daily AI budget | TODO | NOT YET |
+| K4 | Operator alert when a provider lane dies | TODO | NOT YET |
+| K5 | Consistent AI quality across providers | PARTIAL | NOT YET |
+
+---
 
 ---
 
@@ -33,7 +233,11 @@ connects — verified out-of-band, no repo evidence.
 
 ### A3 · Real migrations — DONE
 `lib/db/package.json` scripts are `generate` and `migrate`; `push` and
-`push-force` both retired. Baseline migration `0000_light_caretaker.sql`
+`push-force` both retired. **Verified 13 Sep 2026:** the production caveat below
+is stale — `e1ade15` (23 Aug) applies migrations and verifies the schema at
+boot, refusing to serve on mismatch, and records production as baselined by
+hand; production is serving. Separate defect: `lib/db/drizzle/meta` has no
+snapshots for 0015–0017 (G61). Baseline migration `0000_light_caretaker.sql`
 lives at `lib/db/drizzle/` with its snapshot and journal, and dev's
 `drizzle.__drizzle_migrations` carries the baseline mark so `migrate`
 skips 0000 and applies from 0001 onward. Verified end-to-end on dev:
@@ -47,7 +251,10 @@ the natural moment to touch production.
 Deleted by Thomas; verified absent by read-only query. It had 319 live session
 rows. **The safety list is now clear.**
 
-### A4-old · superseded
+### A5 · Account ownership checked on every money write — DONE (`b46bce3`, 10 Sep 2026)
+Seven call sites and ten route gates. Merged from the vault register (A2).
+
+### A4-old · superseded — not an item, kept as the record of A4
 Verified 16 Aug 2026 by read-only query against production: the row exists,
 created 2026-07-19. Production has 3 users; one of them is this.
 
@@ -83,6 +290,8 @@ Four failures on the way, worth recording so they are not rediscovered:
 
 Free tier caveats: spins down after ~15 min idle (measured 62s cold start), and
 bandwidth is billable above 5 GB/month at $0.15/GB even on free.
+*The rest of this entry is the pre-migration task text, kept for the record;
+Railway no longer exists.*
 Railway runs `artifacts/api-server` only. The database is Neon and is
 unaffected. The API has `ws` for the Alpaca stream, so it needs a long-lived
 process — serverless platforms cannot hold the socket open.
@@ -94,12 +303,22 @@ process — serverless platforms cannot hold the socket open.
 - **Verify:** `curl` the new API host and get a 401 with `ratelimit-limit`
   headers on `/api/accounts`, matching current Railway behaviour.
 
-### B2 · Point the frontend at the new API — TODO · Blocked by B1
-`VITE_API_URL` in the Vercel project and in
+### B2 · Point the frontend at the new API — DONE (`d1ef48a`, 18 Aug 2026)
+**Corrected 13 Sep 2026 from TODO.** Done by a different route than the one
+written: `artifacts/finance-tracker/vercel.json` rewrites `/api/*` to
+`numeris-api.onrender.com`, and `VITE_API_URL` is deliberately unset in
+production (`auth-client.ts:14`, `main.tsx:31`). `curl -D-
+https://financetracker.work/api/auth/get-session` → 200 with `server: Vercel`
+and `x-render-origin-server: Render`. The console-CORS check was not run.
+
+Original text: `VITE_API_URL` in the Vercel project and in
 `artifacts/finance-tracker/.env.local`.
 - **Verify:** the deployed site loads data; no CORS errors in console.
 
-### B3 · Remove `NODE_ENV=production` from the shell profile — TODO
+### B3 · Remove `NODE_ENV=production` from the shell profile — DONE
+**Corrected 13 Sep 2026 from TODO.** No `NODE_ENV` in `~/.zshrc`, `~/.zprofile`,
+`~/.zshenv`, `~/.profile` or `~/.bash_profile`; a fresh login shell reports it
+empty. Files sourced from elsewhere (e.g. `~/.config`) were not searched.
 It is set globally in the user's shell, which is why `pnpm dev` built in
 production mode and pointed the app at Railway instead of the Vite proxy. The
 `dev` script now forces it, but the global value will keep surprising other
@@ -107,11 +326,28 @@ tools.
 - **Do:** find it in `~/.zshrc` / `~/.zprofile` / `~/.zshenv` and remove it.
 - **Verify:** a new terminal reports an empty `NODE_ENV`.
 
+### B4–B7 · merged 13 Sep 2026
+
+- **B4 · Hosting payment, and the free tier that sleeps — DECIDE (Thomas) · NOW.**
+  Render free sleeps and the app is found down by email; the Wise card declined
+  a $7 Render charge. Revolut into Render, or Hetzner (~€4/mo, SEPA, no Stripe)
+  if it declines. `BLOCKER.md` falsifier 1 notes a card already cleared Apple's
+  enrolment. Register H1 + H2, roadmap N1.
+- **B5 · `core.hooksPath` is global, so this repo's `.git/hooks` pre-push hook
+  does not run — TODO · NOT YET.** Register H7. `CLAUDE.md` describes a pre-push
+  typecheck+build that therefore may never fire.
+- **B6 · Cost efficiency audit against measured usage — TODO · NOT YET.**
+  `PLAN-Q3.md:159`. Only meaningful once there are users.
+- **B7 · Measure the authenticated endpoints and record it — PARTIAL · NOT YET.**
+  `PLAN-Q3.md:28`. `cb3aa80` parallelised the dashboard and `OPERATIONS.md`
+  carries p95 thresholds; no measurement report exists.
+
 ---
 
 ## C. Data model — unblocks honest UI
 
 ### C1 · `account.type` column — DONE (`0cc7113`)
+*13 Sep 2026: six values now — `liability` was added (C4).*
 `accounts` now carries `type text NOT NULL DEFAULT 'cash'` — 5 values
 (cash / investment / pension / property / other). Migration `0001_spooky_salo`
 backfills every existing row to `cash` (Wise-linked and manually-entered
@@ -121,7 +357,11 @@ subtracting a residual. `BlocksView` renders PROPERTY as the top block and
 CASH / INVESTED / PENSION / OTHER along the bottom row. Six tests replace
 the residual-guard cases with per-bucket coverage.
 
-### C2 · Gaps the mobile home cannot fill — DONE
+### C2 · Gaps the mobile home cannot fill — PARTIAL · NOT YET
+**Corrected 13 Sep 2026 from DONE.** Snapshots, pension, upcoming income and
+split detail are wired. The `LIVE` indicator is still literal text beside an
+account count at `components/mobile/MobileHome.tsx:269`, not connection status.
+Moves when it reads connection state or is removed.
 Three of four were already satisfiable from existing data and needed wiring only:
 pension, upcoming income, split detail. Only asset-composition history needed a
 table (nw_snapshots); past months without a snapshot render dotted rather than
@@ -133,11 +373,22 @@ income, so `COMING` can show salary; split-request detail (counterparty and
 amount, not just `pendingCount`); FX moves; Wise connectivity status for the
 `LIVE` indicator, currently hardcoded.
 
+### C3–C7 · merged 13 Sep 2026 from the vault register (shipped 10–11 Sep)
+
+- **C3 · Net worth subtracts what you owe, both computation sites — DONE (`c29c366`).** Register A1.
+- **C4 · `liability` account type, balance positive, type negates — DONE (`4d0aa9a`, with `2697c1b`, `9941b6d`).** Register A6.
+- **C5 · Subscriptions became a recurrence rule generating upcoming rows — DONE (`04c84e5`).** Register A3.
+- **C6 · `netLiquidity` narrowed to cash; one "today" across 11 sites; drift floor of 7 days — DONE (`95c1b68`, `34860fe`, `c5c42c2`).** Register A5.
+- **C7 · Account-sign sweep, 23 sites, lock with allowlist — DONE (`bcba259`).** Register A8.
+
 ---
 
 ## D. Mobile
 
 ### D1 · Port delete to `MobileTransactions`, then cover `/transactions` — DONE
+*Re-verified 13 Sep 2026: status holds, location moved.* Phone swipe-delete now
+lives in `components/phone/SpendingScreen.tsx:922` on `useDeleteTransaction`;
+`pages/transactions.tsx` no longer loads on a phone (comment at `:581`).
 The `MobileTransactions.tsx` screen was deleted in an earlier orphan
 cleanup, so /transactions now falls through to `pages/transactions.tsx`.
 That page already implements swipe-to-delete for phone viewports:
@@ -147,7 +398,12 @@ and the DELETE reveal button + swipe transform are gated on `isMobile`
 route change required; `/transactions` reaches phone users through the
 desktop page's mobile branches.
 
-### D2 · Remaining mobile screens in the new design — DONE (12 ports + normalise + fixes)
+### D2 · Remaining mobile screens in the new design — SUPERSEDED (was DONE)
+**Corrected 13 Sep 2026.** The work landed, then D4's `PhoneShell` (`6dfafd9`)
+replaced it. Twelve of these screens plus `widgets.tsx` — 3,735 lines —
+now have no importer outside tests: Accounts, Analytics, Budget, Charts, Goals,
+Investments, NetWorth, Owing, Reports, Settings, Subscriptions, UpcomingFull.
+Only `MobileHome`, `MarketPane` and `NewsPane` are reachable. Deleting them is D6.
 All 12 numbered mobile ports landed:
 `ca7bee9` (UpcomingFull) · `9535f09` (Budget) · `b509cbe` (Subscriptions) ·
 `5bfd41c` (Owing) · `04bc379` (Goals) · `bb9a649` (Investments) ·
@@ -163,7 +419,17 @@ shared in `mobile-format.ts`.
 and `useWidgetVisibility` all deleted; every consumer was another
 dead file in the same cluster.
 
-### D4 · Full iPhone-native mobile redesign — SCOPING (26 Aug 2026)
+### D4 · Full iPhone-native mobile redesign — IN PROGRESS · NOT YET (was SCOPING)
+**Corrected 13 Sep 2026.** The tab structure was agreed and largely built from
+27 Aug: `PhoneShell` (`6dfafd9`) owns phone routing (`App.tsx:214`), `MobileApp`
+removed (`f05fcab`), screens DIRECTORY `0da3067`, SPENDING `f24d2ea`, WORTH
+`e176bf8`, UPCOMING `842070f`, server-persisted tab slot `c3dca7b`. The shape is
+four positions — HOME · WORTH · one chosen slot (SPENDING / MARKETS / UPCOMING)
+· DIRECTORY (`lib/tab-slot.ts:88-94`) — not the five fixed tabs `CLAUDE.md`
+states (G59). **Moves when** `WRAPPED_ROUTES` reaches zero or an agreed floor,
+and the not-yet-available Owing and Watchlist slot choices ship or are dropped.
+The scoping text below is the 26 Aug record.
+
 Thomas dropped the mid-September App Store date on 26 Aug 2026 with
 "ship it right rather than ship it soon" and chose a full iPhone-
 native mobile redesign. The earlier phased plan (ship the current
@@ -189,7 +455,10 @@ adding safe-area-top to three root containers:
 Verified: typecheck clean, 160/160 tests green. Onboarding-wizard
 (centered modal, not top chrome) intentionally not touched.
 
-### D5 · Lock: every mobile-nav route resolves to a `Mobile*` component — PROPOSED
+### D5 · Lock: every mobile-nav route resolves to a `Mobile*` component — DONE (`8020514`, 27 Aug 2026)
+**Corrected 13 Sep 2026 from PROPOSED.** Built as
+`components/phone/wrapped-routes.lock.test.ts` ("Lock #18 · D5 ratchet") against
+`PhoneShell`'s route lists; `MOBILE_ROUTES` no longer exists.
 Class of bug this prevents: adding a route to `MOBILE_ROUTES` (in
 `components/mobile/MobileApp.tsx`) without adding the matching
 `AppScreen` render branch, or removing a `Mobile*` render branch
@@ -197,6 +466,29 @@ without dropping the path from `MOBILE_ROUTES` — either produces a
 route that resolves to the fallback `screen === "home"` and silently
 serves MobileHome under a wrong URL. See D5 in the session note for
 the AST design and the honest "what it can't catch" section.
+
+### D6–D11 · added 13 Sep 2026
+
+- **D6 · Delete the twelve unreachable `components/mobile/Mobile*` screens and
+  `widgets.tsx` — TODO · NOT YET.** Found verifying D2. Two locks still name
+  some of them (`lib/fabricated-zero-lock.test.ts:101,109`,
+  `lib/account-sign.lock.test.ts:308`), so the locks change in the same commit.
+- **D7 · Native integration for App Store guideline 4.2 — TODO · NOT YET.**
+  `PLAN-Q3.md:185-188`: biometric unlock (passkeys are hidden on native, `c4d2d7e`,
+  so "largely there" is false), push notifications for shared-expense requests,
+  home-screen widgets. `lib/local-notifications.ts` exists with no importer.
+  `BLOCKER.md` falsifier 3.
+- **D8 · Store releases: App Store and Google Play — TODO · NOT YET.** The goal
+  in `BLOCKER.md`. No Android target exists in any plan (`PLAN-Q3.md:170` lists
+  web, iOS, Mac/Windows only). Apple enrolment paid 10 Sep 2026; Google Play
+  $25 not yet. Depends on G12 and D7.
+- **D9 · Tauri desktop shell — TODO · NOT YET.** `PLAN-Q3.md:174`. Only the
+  Jul/Aug scaffold exists.
+- **D10 · Clipped-figure render test at 390px and 1440px — TODO · NOT YET.**
+  `MOBILE-CONCEPT.md:392`. No test renders at 1440.
+- **D11 · Geometry previews on home panes — TODO · NOT YET.**
+  `TARGET-PRODUCT.md:58`, `MOBILE-CONCEPT.md:194-213`. Probably overtaken by D4;
+  drop it or keep it deliberately.
 
 ---
 
@@ -280,7 +572,11 @@ Stack owns layout, PanelBox owns surface, Text/MonoLabel own typography,
 one-offs stay inline, and a prop that's neither layout nor surface nor
 typography goes on no primitive at all.
 
-### E4 · Break up the oversized pages — PARTIAL
+### E4 · Break up the oversized pages — PARTIAL · NOT YET
+*Re-measured 13 Sep 2026 (`wc -l`):* investments 2,578 · analytics 3,616 ·
+transactions 2,616 · settings 2,979 (grew 198 since this entry) ·
+`investments/markets-tab.tsx` 2,066. **Moves when** a target line count is agreed
+so PARTIAL has an end, then analytics and settings get the real refactor.
 investments.tsx 4,874 -> 2,743 via the MarketsTab extraction. The other three
 (analytics, transactions, settings) had only pure-extraction passes; their large
 components share closures and need real refactoring, not moves.
@@ -329,6 +625,26 @@ could both be true at once (`4bb1ea3`).
 
 **D stays deferred** with its threshold recorded: server-side filtering earns
 its complexity somewhere around 2,000 rows. The dev dataset is 46.
+Tracked as **E5-D · DEFERRED · NOT YET** — moves when a real account passes
+~2,000 rows. Re-verified 13 Sep: `LedgerFilters`, `patchFilters` and the DAY
+default lens exist.
+
+### E6 · Replace flag emoji with drawn currency icons — DONE (`568bb63`)
+Renumbered 13 Sep 2026: this shipped as "D4", which collided with the redesign.
+Full entry under **Superseded** below; `components/currency-mark.tsx` and
+`lib/no-emoji.test.ts` exist.
+
+### E7–E10 · added 13 Sep 2026 from the planning docs
+
+- **E7 · Re-derive the `midnight` theme accent against a contrast target — TODO · NOT YET.**
+  `PLAN-Q3.md:71`. Still `#4D9FFF` (`index.css:728`, `theme-context.tsx:29`);
+  `105291f` changed only its `--ft-blue`.
+- **E8 · `BlockField` desktop width — TODO · NOT YET.** `MOBILE-CONCEPT.md:353`;
+  `block-field.tsx:34` still fixes 354.
+- **E9 · Settings rows carry the Markets-style info mark — PARTIAL · NOT YET.**
+  `PLAN-Q3.md:102`. Rows have subtitles, not the info mark.
+- **E10 · Extend motion beyond phone tab transitions — PARTIAL · NOT YET.**
+  `BACKLOG-old.md:106`; only `bf4cbd8` landed. Bound by G1's motion cap.
 
 ---
 
@@ -338,6 +654,8 @@ See `docs/TARGET-PRODUCT.md`. Design and rationale are settled; these are build
 tasks. None are blocked on design.
 
 ### F1 · Onboarding questionnaire → persona — DONE
+*Re-verified 13 Sep 2026: holds. `MobileNav.tsx` cited in item 10 and below no
+longer exists (phone nav is `PhoneTabBar.tsx`).*
 Server-side persistence in `66f72e9` (F1a: `app_settings.persona`
 column + `/settings/persona` route + tests). Three-question
 inferring questionnaire in `9bbe0c2` (F1b: `inferPersona`
@@ -387,6 +705,8 @@ Superseded by the H series: connection model + Wise/Alpaca/Kraken
 adapters. H4 (Enable Banking) is code-complete and parked because
 Restricted Production only covers accounts the developer personally
 links; see `docs/OPEN-BANKING.md` and `docs/H4-ENABLE-BANKING.md`.
+**Moves with H4** — Enable Banking access covering accounts other than the
+developer's own.
 
 ### F3 · Market, FX and news — DONE (`57091ab`, news commit)
 MarketPane ships position-relevant prices and FX. News built and filtered to held
@@ -396,8 +716,10 @@ is near-worthless once it is applied, and per-ticker fetching is already 100%
 relevant by construction. Ringgit-anchored news needs a Malaysian source
 (Bernama, The Star, Bank Negara) — not built.
 Mobile home MarketPane ships live prices for tickers the user
-already holds and FX pairs for held foreign currencies. News feed
-is not built.
+already holds and FX pairs for held foreign currencies. ~~News feed
+is not built.~~ **Corrected 13 Sep 2026:** that sentence was the false half.
+News is built — `/market/news` and `/market/news/for-user` (`routes/market.ts:99,110`),
+rendered by `NewsPane` in `MarketScreen` and `MobileHome`.
 
 ### F4 · Social split and owing — DONE
 Shared expense as a first-class object landed across five commits:
@@ -417,7 +739,13 @@ Bank-payment initiation (TrueLayer, F4's "one level under moving
 money") is deliberately NOT built here. That is a separate decision
 gated on FCA-related work; see `docs/TARGET-PRODUCT.md` § Payments.
 
-### F5 · Progression — DONE
+### F5 · Progression — DROPPED (was DONE)
+**Corrected 13 Sep 2026.** The code does not exist. `334d5ba` "Remove · XP
+mechanic" (30 Aug) and `9537ef3` (7 Sep) deleted `lib/learn-xp.ts` and the
+35-assertion lock `lib/f5-refusals.test.ts`; `XP_` now appears only in this
+file. `docs/F5-PROGRESSION.md:3` already says "NOT BUILT. Code removed 7 Sep
+2026". The refusals below remain the constraint if progression is ever revived.
+The text below is the pre-removal record.
 Four earning events, all maintenance or position. Locked by 35 assertions that grep
 the XP module for banned concepts and require every amount to be a named XP_*
 constant. Refusals: never spending, never frequency, never debt, no streaks, no
@@ -425,12 +753,49 @@ feature or data gating, cosmetic unlocks only.
 `lib/learn-xp.ts` and `lib/bot-skins.ts` still decoration; no
 event stream wires user actions to XP.
 
-### F6 · Avatars as 3D models — PARKED
+### F6 · Avatars as 3D models — DROPPED (was PARKED)
+**Corrected 13 Sep 2026.** What it would redesign is gone: `lib/bot-skins.ts`
+and `components/ai-wanderer.tsx` deleted in `0715b8f` (7 Sep), `WardrobePanel`
+has zero matches and `settings.tsx` now carries `CompanionPanel`. Only
+`ai-agent.tsx` remains. Revive only as a new item written against
+`CompanionPanel`. Original text:
 Redesign in Claude Design, swappable. Files: `lib/bot-skins.ts`,
 `WardrobePanel` in `settings.tsx` (labels at 1471, 1477, 1483), render sites in
 `ai-wanderer.tsx` and `ai-agent.tsx`. Decide the format first — sprite sheets,
 glTF with a small WebGL renderer, or pre-rendered turnarounds — since a WebGL
 renderer for a decorative avatar is real battery and bundle cost.
+
+### F7–F18 · merged 13 Sep 2026
+
+From the vault register and roadmap:
+
+- **F7 · D1 allocation engine — `GET /api/allocation`, drift term proved on real rows — DONE (`8d1b90c`, `57fd3d4`).** Register A4 / D1.
+- **F8 · Allocation UI, blocker state first; "Accounts" label fix; OWED section — DONE (`968fb1f`).** Register A7.
+- **F9 · Safe to Spend gets the visual weight of the product's main number — DECIDE (Thomas, design) · NEXT.**
+  Register B3, roadmap NEXT 1. Renders as the fourth band of the dashboard top
+  region (`components/dashboard/top-region.tsx:425`) and on the phone in
+  `phone/SpendingScreen.tsx:609`.
+- **F10 · Completeness figure — TODO · NEXT.** Register D5, roadmap NEXT 2.
+  Unblocked by C5. Nothing named completeness exists in source.
+- **F11 · DCC detection — IDEA · NOT YET.** Register D2.
+- **F12 · Materiality threshold — IDEA · NOT YET.** Register D3.
+
+From the planning docs:
+
+- **F13 · `/net-worth` page still asks for a snapshot when it could compute — PARTIAL · NOT YET.**
+  `PLAN-Q3.md:87`. The dashboard computes (`dashboard.ts:773`); the page still
+  shows "No snapshots yet… Record First Snapshot" when assets ≤ 0.
+- **F14 · Audit every page for input the app could derive — TODO · NOT YET.**
+  `PLAN-Q3.md:92`. "Report before changing"; no report exists.
+- **F15 · Scheduled digest — TODO · NOT YET.** `TARGET-PRODUCT.md:64`. The
+  digest sends only on a button press (`digest.ts:84`). Its dead unsubscribe
+  link is I8.
+- **F16 · "Since you last looked" strip — PARTIAL · NOT YET.**
+  `BACKLOG-old.md:145` (6.7). Partly covered by WHAT CHANGED (`5c71776`).
+- **F17 · Charging money — TODO · NOT YET.** `PLAN-Q3.md:212`. Deliberately
+  last: "not before there are users who would miss the product".
+- **F18 · Watch non-technical users use it — TODO · NOT YET.**
+  `TARGET-PRODUCT.md:79`. Needs the blocking step closed first.
 
 ---
 
@@ -459,7 +824,11 @@ renderer for a decorative avatar is real battery and bundle cost.
   **Needs a decision, not a rename:** aligning the key would silently activate
   every rule a user has already saved. Either migrate deliberately, or delete
   the panel.
-- **G16 · `lib/learn-xp.ts` is dead, and its keys say so — CONFIRMED 7 Sep 2026.**
+- **G16 · `lib/learn-xp.ts` is dead, and its keys say so — DONE (`9537ef3`, 7 Sep 2026).**
+  **Corrected 13 Sep 2026 from CONFIRMED:** the module and its test were deleted
+  (the commit message does not say so, which is why it was missed; recorded in
+  `docs/F5-PROGRESSION.md`). `docs/MOBILE-CONCEPT.md:119` still cites it.
+  Original finding:
   Found by `lib/storage-key-lock.test.ts`, which flags `nr-learn-progress` and
   `nr-cat-rules` as read by nothing that writes them. Both reads are in
   `learn-xp.ts`. `nr-learn-progress` (`:147`) is written nowhere at all;
@@ -472,8 +841,11 @@ renderer for a decorative avatar is real battery and bundle cost.
   exist. One decision — wire it up or delete the module, its tests and both
   keys — not two key fixes. Both keys are allowlisted in the lock test until
   it is made.
-- **G17 · Five of the seven alert thresholds still reach nothing — CONFIRMED
-  7 Sep 2026.** After the G14 migration the two alert engines read
+- **G17 · Five of the seven alert thresholds still reach nothing — DONE (`9537ef3`).**
+  **Corrected 13 Sep 2026 from CONFIRMED:** both engines now read
+  `budgetHardStop` and `billReminderDays` (`notifications-panel.tsx:178,218`,
+  `smart-alerts.tsx:241,279`); the other three fields were removed. Original
+  finding: After the G14 migration the two alert engines read
   `largeTxThreshold` and `budgetWarningPct` and nothing else. `savingsRateMin`,
   `categorySpikeAlertPct`, `budgetHardStop`, `goalBehindMonths` and
   `billReminderDays` are still entered, saved and unread — `DESIGN.md` §16
@@ -484,6 +856,7 @@ renderer for a decorative avatar is real battery and bundle cost.
   overspend, goal pace and bill dates, so the thresholds have somewhere
   obvious to land. Deleting the five controls is the other honest ending.
 - **G18 · `first-run-flow-shot.ts` leaked a user per pass — FIXED 7 Sep 2026.**
+  *13 Sep 2026: one leak path remains — see G57.*
   The screenshot harness signs up four fresh accounts per run (tags a, b, c, m)
   and had no cleanup of any kind. Thirty-three `firstrun-*@numeris.local`
   accounts were found on the Neon dev branch from runs on 6 Sep between 17:22
@@ -494,7 +867,9 @@ renderer for a decorative avatar is real battery and bundle cost.
   so an auth failure no longer skips cleanup. Note for the record: the
   account-deletion integration test was suspected and is not the cause — it
   cleans up correctly and left no rows.
-- **G15 · Print blur does not survive a reload — CONFIRMED 7 Sep 2026.**
+- **G15 · Print blur does not survive a reload — CONFIRMED 7 Sep 2026 · TODO · NOT YET.**
+  *Re-verified 13 Sep 2026, and worse:* `nr-hide-from-print` now syncs across
+  devices (G20/B), so a second device shows the toggle ON without blurring either.
   "Hide amounts when printing" injects `<style id="nr-print-style">` inside its
   click handler only (`pages/settings.tsx:1105`, `pages/profile.tsx:775`).
   `nr-hide-from-print` is read on mount to set the toggle's *appearance*
@@ -508,6 +883,9 @@ renderer for a decorative avatar is real battery and bundle cost.
   `--ft-motion-slow` is 320ms, both live on the five primitives. Either bring
   them under the cap or amend the constitution deliberately. Do not resolve it
   by leaving both in place.
+  *13 Sep 2026:* `--ft-motion-slow` is now unused; `--ft-motion-base` (200ms)
+  drives the theme-change colour fade on the primitives; a new
+  `--ft-motion-screen` (240ms) was added. Still undecided.
 - **G2 · Recharts tooltips — DONE (`2fde41e`).** `MonoTooltip` extracted from
   `analytics.tsx` into `components/mono-tooltip.tsx`; `accounts.tsx:2892` and
   `year-review.tsx` 614 / 711 now consume it through `<Tooltip content={…}>`
@@ -516,6 +894,10 @@ renderer for a decorative avatar is real battery and bundle cost.
 - **G3 · Dead root `vercel.json`.** Vercel's project root is
   `artifacts/finance-tracker`, so the repo-root file is never read. Confirm no
   second Vercel project points at the repo root before deleting it.
+  **TODO · NOT YET.** *13 Sep 2026:* still present, still pointing at Railway.
+  The check is not a formality — gitignored `.vercel/project.json` files at the
+  repo root and in `artifacts/finance-tracker` both link a project named
+  `finance-tracker-api-server`.
 - **G4 · CORS rejections return 500 — DONE (`f194d74`).** Already fixed in the
   cited commit: `class CorsError extends Error` sentinel plus an error middleware
   right after `cors()` maps it to 403 JSON with no stack. Backlog was stale;
@@ -534,6 +916,8 @@ renderer for a decorative avatar is real battery and bundle cost.
   into the dev branch (migration checks, spec generation, integration tests)
   needs a per-step timeout above two minutes, or a warm-up ping to
   `SELECT 1` before the real command, or it will fail spuriously.
+  **PARKED (13 Sep 2026).** No CI job touches the database; the only workflow is
+  the deprecated `keep-alive.yml`. Moves when one is added.
 - **G8 · Refactor PERSONA_COLORS into an Accent-keyed map — DONE (`e214506`).**
   `PERSONA_ACCENT` (persona → accent slug) and `ACCENTS` (closed
   enum) landed; `PERSONA_COLORS` derives from both so persona
@@ -632,6 +1016,8 @@ renderer for a decorative avatar is real battery and bundle cost.
   in a second pass; the 800-line file cap keeps each migration commit
   reviewable.
 
+  *(Misfiled note belonging to E4, not a G item. Line counts are stale: 2,578
+  and 2,066 on 13 Sep 2026.)*
   **E4 · MarketsTab extraction — DONE (`a88f5d0`).** The
   MOCK_QUOTES blocker was resolved (the constant no longer exists;
   only a stale comment reference remains in
@@ -641,7 +1027,10 @@ renderer for a decorative avatar is real battery and bundle cost.
   `markets-tab.tsx` is 2,047 lines.
 
 - **G10 · api-server suite intermittently loses ~5 tests — INVESTIGATE
-  after mobile.** Observed once in ~8 runs: 5 failed / 294 passed for
+  after mobile.** **PARTIAL (13 Sep 2026):** `675dcaf` raised the HTTP test
+  timeouts and `605016c` fixed `ERR_ERL_KEY_GEN_IPV6` in the real limiter;
+  `app.ai-limiter.test.ts:65` still keys on bare `req.ip`, and no reproduction
+  of the flake is recorded, so the done-when below is unmet. Observed once in ~8 runs: 5 failed / 294 passed for
   `pnpm --filter @workspace/api-server test --run`, all from a single
   test file whose name I could not identify in that run because the
   output scrolled. Every run prints
@@ -686,7 +1075,12 @@ renderer for a decorative avatar is real battery and bundle cost.
   know whether native auth uses bearer tokens or session cookies,
   because the fixtures differ.
 
-- **G13 · Native auth architecture — DONE (26 Aug 2026).** Device
+- **G13 · Native auth architecture — PARTIAL · NOT YET (was DONE).**
+  **Corrected 13 Sep 2026.** Implemented, but this entry's own close condition
+  ("every checkbox ticks … recorded in a session note with commit SHA") is not
+  met in the repo: all 15 boxes below are unticked and no such note exists in
+  the repo or `.review/` (the vault was not searched). Moves when the device
+  walk is recorded. Device
   test passed on real iPhone; sign-in, session persistence, and
   authenticated calls all wire the bearer token as designed.
   Historical context below is retained because the checklist is the
@@ -820,7 +1214,9 @@ renderer for a decorative avatar is real battery and bundle cost.
   not "is it a number we made up", it is "are we presenting it as the
   user's data or as our assumption".
 
-- **G18 · MarketPane's GBP-as-base assumption — LOGGED, not fixed.**
+- **G24 · MarketPane's GBP-as-base assumption — TODO · NOT YET.**
+  *Renumbered 13 Sep 2026 from a second "G18". Re-verified: the GBP sites are
+  still in `MarketPane.tsx`, now at :41-51, :92, :368.*
   The FX disagreement on MobileHome (defect #1, 27 Aug session) was
   fixed in commit `af8c785` by routing the FX rate through
   `useGetFxRates` instead of `useGetMarketQuotes`. That fixed the
@@ -884,7 +1280,13 @@ renderer for a decorative avatar is real battery and bundle cost.
   update the sub-picker's Calculators list and re-run Lock #18.
 
 - **G20 · localStorage: 26 account-level keys migrate to a
-  user_preferences table (27 Aug).** Two-migration sequence, ordered
+  user_preferences table (27 Aug) — DONE, differently from planned.**
+  **Corrected 13 Sep 2026.** A shipped as `19bddb7` — a Dexie outbox
+  (`lib/outbox-db.ts`), not the TanStack mutation cache below, covering
+  transaction writes only. B shipped as `71a1142` (table, migration 0018),
+  `4ba1998` (GET/PATCH `/settings/preferences`), `dc3a0a7` (client sync), syncing
+  ~70 keys, not 26. Residue: the onboarding-flag consolidation was deliberately
+  excluded (G60), and replay has no idempotency key (G53). Plan text: Two-migration sequence, ordered
   per the report from the 27 Aug session:
 
   **A — Offline write queue.** TanStack Query mutation cache + IndexedDB
@@ -927,7 +1329,8 @@ renderer for a decorative avatar is real battery and bundle cost.
   preference (`nr-active-context`) under Migration B. `accounts.context`
   and `transactions.context` columns; every list-based screen filters
   by active context; three mini-apps collapse into per-context lenses.
-  Deletes ~6,400 lines. **NOT built.** Depends on G20/B shipping so the
+  Deletes ~6,400 lines. **NOT built. TODO · NOT YET — unblocked 13 Sep 2026,**
+  G20/B has shipped; no `context` column or `nr-active-context` key exists. Depends on G20/B shipping so the
   context preference has a home; also unblocks the localStorage
   persistence-fix side effect on the three mini-apps.
 
@@ -983,6 +1386,8 @@ renderer for a decorative avatar is real battery and bundle cost.
   of coordinate maths on the current SVG makes these sharp; the fix
   is a purpose-built SVG per small size, with heavier strokes and
   simpler geometry (drop the baseline at 16 px).
+  **Path correction 13 Sep 2026:** the sources are in `static/` (Vite's
+  publicDir). `public/` is the build outDir; edits there are overwritten.
   **Existing static-SVG assets, all in `artifacts/finance-tracker/public/`:**
     - `favicon.svg` (viewBox 32×32, stroke 2.6, colours #CDD6F4 / #F4A21E / #08090B)
     - `icons/apple-touch-icon.svg` (viewBox 180×180, stroke 13, #E6EDF3 / #F4A21E / #0D1117)
@@ -1023,7 +1428,10 @@ renderer for a decorative avatar is real battery and bundle cost.
   needs a purpose-built SVG at ~20 px with heavier strokes.
 
   **G22.4 · iOS AppIcon.appiconset is one PNG — App Store rejection
-  bait.** Confirmed inventory:
+  bait.** **Corrected 13 Sep 2026: the rejection claim is overstated.** A single
+  opaque 1024×1024 PNG is Xcode 14+'s standard single-size app icon format;
+  Xcode derives the rest. What remains is design (legibility at small sizes).
+  Path is `artifacts/finance-tracker/ios/...`, not a root `ios/`. Confirmed inventory:
     ios/App/App/Assets.xcassets/AppIcon.appiconset/
       AppIcon-512@2x.png  (single 1024×1024 asset)
       Contents.json       (218 bytes)
@@ -1043,7 +1451,12 @@ renderer for a decorative avatar is real battery and bundle cost.
   scheduled here; blocking App Store review whenever it's attempted.
 
 - **G23 · `getFxRates()` blocks up to 12s offline — write path cannot
-  wait this long.** Discovered while wiring FX-at-write (30 Aug 2026).
+  wait this long.** **PARTIAL · NOT YET (13 Sep 2026).** Mostly moot: the
+  shipped outbox stores writes without an FX rate and replays online, so an
+  offline device never waits. Remaining: no short-timeout or serve-stale path on
+  the server, and the "6s + 6s" below is wrong — the Yahoo FX call
+  (`market.ts:102-108`) has no timeout of its own, only a circuit breaker;
+  Frankfurter has 6s (`:149`). Discovered while wiring FX-at-write (30 Aug 2026).
   Under complete network failure, `getFxRates()` in
   `artifacts/api-server/src/lib/market.ts:146` tries Yahoo first
   (6s `AbortSignal.timeout`), catches, then tries Frankfurter
@@ -1079,6 +1492,82 @@ renderer for a decorative avatar is real battery and bundle cost.
   timeout on the write path" is a design requirement for the
   offline queue, not a note the queue's author might find.
 
+### G25–G61 · merged 13 Sep 2026
+
+**From the vault register and roadmap.** Register ids are kept in brackets
+because they collided with existing G ids. Every claim below was re-checked
+against source at `788463c` on 13 Sep; none was found fixed. "Unverifiable"
+means it needs a database query, a browser, or infra access. Line numbers are as
+of that check.
+
+- **G25 · Dashboard: eight defects found by looking — TODO (staged) · NOW.** [B2, roadmap N4]
+  One desktop screenshot of `/` at 1440, void theme: (1) currency bars sum to
+  103%; (2) EUR reads 0% while holding €540.75; (3) savings rate shown twice,
+  once as a currency amount; (4) net-worth history x-axis out of order;
+  (5) "Recent transactions" shows June–July on 13 Sep; (6) the Net Worth card
+  repeats ACCOUNTS/PORTFOLIO; (7) half the Portfolio Overview strip is dead;
+  (8) "the rate moved -£985.41". Full task text in the vault at
+  `Dev/staged-dashboard-defects-2026-09-13.md`. Verification is a before/after
+  screenshot, not a test.
+- **G26 · Transactions written with `accountId: 0` — TODO · NOT YET.** [G1] `split.tsx:2451`, and a second site at `components/csv-import.tsx:185`.
+- **G27 · `upcoming.ts:220` debits `accounts[0]` by position when nothing is linked — TODO · NOT YET.** [G2]
+- **G28 · Settling a null-`accountId` debt jumps net worth by the full amount — TODO · NOT YET.** [G3]
+- **G29 · Dashboard silently drops FX-unconvertible debts; accounts have a counter, debts do not — TODO · NOT YET.** [G4]
+- **G30 · Two FX helpers total the current month differently (`txToBase` vs `toBase`) — TODO · NOT YET.** [G5]
+- **G31 · `accounts.id = 1` has `user_id IS NULL` — TODO, unverifiable from source · NOT YET.** [G6] The schema permits it: `user_id` is nullable on accounts, debts, goals, budgets, transactions, investments, upcoming and subscriptions since migration 0000.
+- **G32 · Unconvertible cash contributes 0 to `netLiquidity` instead of unknown — TODO · NOT YET.** [G7]
+- **G33 · `/market/detail` refuses index symbols by shape only — TODO · NOT YET.** [G8]
+- **G34 · A no-caret index is caught only while Yahoo answers — TODO · NOT YET.** [G9]
+- **G35 · A mixed quote request drops index rows with no notice in the body — TODO · NOT YET.** [G10]
+- **G36 · Markets TLDR and quick-add scan error states never seen rendered — TODO, needs a browser · NOT YET.** [G11] Code exists at `markets-tab.tsx:558-609,1488` and `quick-add-transaction.tsx:90-171,353`.
+- **G37 · `components/proto/` prints unsigned figures — TODO · NOT YET.** [G12] Not shipped (screenshot harness only); sites found were not exactly five.
+- **G38 · `kpi-bar.tsx` and `MobileAccounts.tsx` ship to nobody — DECIDE (delete?) · NOT YET.** [G13] Overlaps D6.
+- **G39 · `compact-tiles` "emergency fund" and "total cash" sum every asset type — DECIDE (semantics) · NOT YET.** [G14]
+- **G40 · Balance sheet "owed" side merges loans and overdrafts in its label — TODO · NOT YET.** [G15] A comment at `accounts.tsx:3015-3020` says the merge was deliberate; the label is the defect.
+- **G41 · ETF cards labelled "S&P 500", "NASDAQ 100", "Dow Jones" — index trademarks — DECIDE · NOT YET.** [G16]
+- **G42 · `ai-coach` prompt copy invites comparisons against an index it can no longer source — TODO · NOT YET.** [G17]
+- **G43 · `nw_snapshots` has no liability bucket — DECIDE (design) · NOT YET.** [G18]
+- **G44 · `recurring_patterns` has no client consumer — DECIDE (retire, or Confirm/Dismiss) · NOT YET.** [G19]
+- **G45 · `/api/ai/status` reports available without testing a completion — TODO · NOT YET.** [G20]
+- **G46 · `docs/CREDENTIAL-ENCRYPTION.md` claims a boot refusal that does not happen — TODO · NOT YET.** [G21] Same false claim in the comment at `lib/crypto.ts:7`: the key is read on first use, so the server boots without `CREDENTIAL_ENCRYPTION_KEY`.
+- **G47 · Receipt photo spends the same 30/min AI budget as a one-line chat message — DECIDE · NOT YET.** [G23] Kept deliberately in `cc64e4d`; economics unmeasured.
+- **G48 · Offline wipe verified in Chromium only, not the iOS WebView — TODO · NOT YET.** [G24] `7ed1426` says Chromium; no iOS evidence in the repo.
+- **G49 · Queued offline writes unsendable at sign-out are discarded — DECIDE · NOT YET.** [G25] Already disclosed at `docs/PRIVACY.md:295-297`; the decision is whether to tell the user in the moment.
+- **G50 · `2fa-attempts-*` counter row survives account deletion — TODO · NOT YET.** [G26]
+- **G51 · Settings copy "Includes all local state stored by this app" is loosely worded — TODO · NOT YET.** [G27]
+- **G52 · The export file is built in memory per request (busiest user 18,019 request-metric rows) — TODO · NOT YET.** [G28]
+
+*Register G22 (I3 shown as TODO though shipped) is resolved by this edit — see I3 — and is not carried as an item.*
+
+**Found while verifying, or carried from the planning docs:**
+
+- **G53 · Offline replay has no idempotency key, and the conflict rules were never written — TODO · NOT YET.**
+  `LOCAL-FIRST.md:82-93` claims "idempotent replay" is solved. The outbox id is
+  a local auto-increment (`outbox-db.ts:29`) and replay sends no key (`:82-86`),
+  so a retried replay can duplicate a transaction.
+- **G54 · H5's dedup import is reachable by no screen, and the CSV path that is used drops real duplicates — TODO · NOT YET.**
+  `/connections/:id/import` is absent from `openapi.yaml` and has no frontend
+  caller. `/import` (`import.tsx:1551-1580`) creates rows with no dedup;
+  `CsvImportModal` uses legacy `/import/csv` (`routes/import.ts:31,93`), whose dedup
+  silently drops a second identical same-day purchase — the case H5 was built for.
+- **G55 · Settings tells users to "Add WISE_API_TOKEN to your server environment" — TODO · NOT YET.**
+  `settings.tsx:1661` and `openapi.yaml:3255`. No server code reads it since H2.
+- **G56 · `docs/DATA-INVENTORY.md:194-195` says nothing deletes the offline cache or outbox — TODO · NOT YET.** Stale since `7ed1426`.
+- **G57 · `first-run-flow-shot.ts` can still leak accounts — TODO · NOT YET.**
+  `scripts/src/first-run-flow-shot.ts:356` calls `process.exit(1)` on a failed
+  mobile sign-up, skipping cleanup; the summary always reports "deleted N of N"
+  because the list is cleared before counting.
+- **G58 · Local-first as described in `LOCAL-FIRST.md` — TODO · NOT YET.**
+  `LOCAL-FIRST.md:16,43,47`: full dataset on device, delta sync, client-side
+  computation. What shipped is a persisted response cache (`7d24d55`) plus the
+  outbox; the server still computes. Build it or rewrite the doc's claim.
+- **G59 · `CLAUDE.md` misstates the phone tabs and the theme count — TODO · NOT YET.**
+  Four positions, not five fixed tabs (`lib/tab-slot.ts:88-94`); 14 themes, not 11.
+- **G60 · Consolidate the four onboarding-flag lookalikes — TODO · NOT YET.**
+  Deliberately left out of G20/B.
+- **G61 · `lib/db/drizzle/meta` has no snapshots for migrations 0015–0017 — TODO · NOT YET.**
+  The next `generate` diffs against a stale snapshot.
+
 ---
 
 ## Superseded
@@ -1087,7 +1576,7 @@ renderer for a decorative avatar is real battery and bundle cost.
 persona-driven mobile home) was superseded by the design work recorded in
 `docs/MOBILE-CONCEPT.md`; its useful parts are now F1 and D2.
 
-### D4 · Replace flag emoji with drawn currency icons — DONE (`568bb63`)
+### E6 (shipped as "D4") · Replace flag emoji with drawn currency icons — DONE (`568bb63`)
 Shared `<CurrencyMark>` / `<CountryMark>` inline-SVG components under
 `components/currency-mark.tsx`, sized to the type ladder and using
 `currentColor` so they inherit the active theme (all 11, `arctic`
@@ -1156,8 +1645,15 @@ pay for KYB. Revive this when public signup has a reason to exist — the adapte
 will be waiting, though it will need testing against the live API at that point
 since it has only ever run against a stub.
 Enable Banking behind the same interface. See `docs/OPEN-BANKING.md`.
+**Moves when** public signup has a business reason to pay for KYB and full
+production, then testing against the live API. *13 Sep 2026: the adapter and its
+routes are live server-side; no screen uses them.*
 
-### H5 · File import as a first-class connection — DONE (`836faf2`)
+### H5 · File import as a first-class connection — PARTIAL · NOT YET (was DONE)
+**Corrected 13 Sep 2026.** The server side is built and tested; no screen calls
+it, and both import paths users actually reach bypass it. Detail and the
+data-loss consequence in G54. Moves when the UI imports through
+`/connections/:id/import`.
 Dedup is sha256 over userId|accountId|date|description|signedAmount|ordinal, where
 ordinal is the position within the group of otherwise-identical rows in that
 import. Four reissue cases tested including row-removal, which leaves one stale
@@ -1172,7 +1668,13 @@ for Malaysia, so it is permanent, not a stopgap.
 Unwritten as of 20 Aug 2026. These are not optional extras: the app stores
 other people's bank balances, salaries, debts and counterparties.
 
-### I1 · No admin role that can read user financial data — DECIDED
+### I1 · No admin role that can read user financial data — DECIDE (was DECIDED) · NOT YET
+**Corrected 13 Sep 2026.** Source now contradicts the decision in part:
+`routes/admin.ts` (`f2112cd`, 6 Sep) is allowlist-gated and fails closed, and
+returns every user's email plus per-table row counts. Not balances or
+transactions, but personal data, not "aggregate metrics with no personal data".
+**Moves when** the overview is reduced to aggregates, or this entry records the
+exception and `PRIVACY.md` discloses it.
 An admin who can browse any user's finances is a privacy problem, not a feature.
 Access is defensible only if it is necessary, minimal, logged and disclosed, and
 "I want to look around" is none of those.
@@ -1188,20 +1690,126 @@ Nothing in the app is gated by role today: every persona sees every widget, XP
 unlocks only cosmetics, and the F5 refusals forbid gating features or data. So
 an admin role would unlock nothing that is currently locked.
 
-### I2 · Privacy policy and terms — TODO, blocks public signup
+### I2 · Privacy policy and terms — IN PROGRESS (was TODO) · NOW, blocks public signup
+**Corrected 13 Sep 2026.** Drafted from source: `docs/PRIVACY.md`,
+`docs/TERMS.md`, `docs/DATA-INVENTORY.md` (`8407256` 11 Sep, `a68ee72`, `b2b9dbe`).
+Not publishable: **35 `[TO CONFIRM` markers** (PRIVACY 21, TERMS 12,
+DATA-INVENTORY 2) and 10 `[BLOCKED` in PRIVACY. The register and roadmap say "26
+questions" (register C12, roadmap N2) — on 11 Sep that was the subset of 33
+markers only Thomas can answer; the marker count has since moved, so recount
+before treating 26 as current. No privacy or terms page in the app yet.
+The processor list below is incomplete: Groq, Cerebras, Resend, Frankfurter,
+Polygon and Twelve Data are missing.
+**Moves when** Thomas answers the questions (legal name, address, lawful basis,
+minimum age, governing law) and the pages are served.
 Needs: what is collected, lawful basis under UK GDPR, retention period, who it
 is shared with (Neon, Render, Vercel, Yahoo, Alpaca, and any open-banking
 provider), and the subject access and deletion routes.
 
-### I3 · Account deletion that actually deletes — TODO
-Every table cascades from `user.id`, so the mechanism exists. Needs a
+### I3 · Account deletion that actually deletes — DONE (was TODO; shipped 5 Sep 2026)
+**Corrected 13 Sep 2026 — stale for eight days.** `POST /account/delete`
+(`1e490d6`, 5 Sep); typed-email confirmation in `pages/profile.tsx` on desktop and
+phone (`064def6`); follow-ups `d1b4ce6` (verification rows by exact match, not
+`LIKE` — it over-matched other users), `7ed1426` (sign-out and deletion wipe the
+device's IndexedDB cache and outbox), `e5f3ace`. Merged register C2, C3 here.
+Residue, tracked elsewhere: backup retention is unstated on the screen
+(PRIVACY `[TO CONFIRM]`, I2); deletion never reaches the Neon `dev` clone (I10);
+`2fa-attempts-*` survives (G50); iOS WebView wipe unverified (G48).
+Original text: Every table cascades from `user.id`, so the mechanism exists. Needs a
 user-facing route, a confirmation, and a stated retention window.
 
-### I4 · Breach process — TODO
+### I4 · Breach process — TODO · NOT YET
+*Re-verified 13 Sep 2026: nothing in `docs/`; DATA-INVENTORY and PRIVACY both
+say there is none. The roadmap does not name it, so it defaults to NOT YET —
+which conflicts with this section being signup prerequisites. Needs a call.*
 UK GDPR requires notifying the ICO within 72 hours of becoming aware of a
 qualifying breach. Write down who does what before it is needed.
 
-### I5 · Data minimisation review — TODO
+### I5 · Data minimisation review — IN PROGRESS (was TODO) · NOT YET
+**Corrected 13 Sep 2026.** `docs/DATA-INVENTORY.md` records what is held, why,
+and for how long per class — the input to the review. No keep-or-drop decisions
+are recorded; that is what moves it.
 Currently stored: balances, transactions with merchant strings, debts naming
 counterparties, and encrypted provider credentials. Review whether each is
 needed, and how long it is kept.
+
+### I6–I16 · merged 13 Sep 2026
+
+From the vault register (section C) and roadmap. Re-checked against source on
+13 Sep; none fixed.
+
+- **I6 · Email address cannot be changed at all — TODO · NOW.** [C5, N5]
+- **I7 · No AI on/off switch — TODO · NOW.** [C6, N6]
+- **I8 · Digest unsubscribe link is `href="#"` — TODO · NOW.** [C7, N7] `digest.ts:78`.
+- **I9 · People who are not users, named in debts, shared expenses and receipts, have no route to access, correction or erasure — DECIDE (product) · NOW.** [C8, N8]
+- **I10 · Neon `dev` branch is a live clone of production that deletion never reaches — DECIDE (Thomas, infra) · NOW.** [C4, N9] Infra, unverifiable from source; `DATA-INVENTORY.md:58-59` lists it, no decision recorded.
+- **I11 · Vercel Hobby has no DPA and is non-commercial, yet proxies every `/api` request — DECIDE (cost) · NOW.** [C9, N10] The rewrite is in `artifacts/finance-tracker/vercel.json`; the plan tier is stated only in PRIVACY:164.
+- **I12 · Google Fonts loaded from Google's CDN (LG München I, 3 O 17493/20) — TODO · NOT YET.** [C10] Also cached by the service worker (`vite.config.ts:54`). The roadmap puts it "just below the line".
+- **I13 · Cerebras treats a personal-capacity customer as an independent controller — TODO · NOT YET.** [C11] Just below the line, as I12.
+- **I14 · Export covers the whole account, less credentials — DONE (`e5f3ace`, `788463c`).** [C1] 25 of 26 tables, 10 credential fields withheld with reasons.
+- **I15 · Settings states what the AI is actually sent — DONE (`a68ee72`).** [A12]
+- **I16 · Consent captured at sign-up, documents linked — TODO · NOT YET.**
+  `PLAN-Q3.md:124`. Nothing in `auth-gate.tsx` links terms or privacy, and no
+  consent column exists. Not named in the roadmap, so NOT YET by default — but it
+  is the step that makes I2 bind anyone. Needs a call.
+
+---
+
+## J. Markets, portfolio and the thesis
+
+Merged 13 Sep 2026 from the vault register (sections E, F, H) and roadmap.
+Reasoning, including the regulatory perimeter on recommendations, lives in the
+vault at `Atlas/Projects/Numeris-Markets-Ideas.md` and is not copied here.
+**Perimeter:** everything here describes money the user already holds; ranking
+what they *should* hold is a regulated activity and is ruled out.
+
+**Data and licensing**
+
+- **J1 · Market data vendor decision — DECIDE (Thomas) · NOW.** [H3, H4, N3]
+  Twelve Data Venture from $149/mo with external display rights (less 20%
+  student, 17% annual). Ask the three numbered questions in writing before
+  paying. `BLOCKER.md` falsifier 2: Alpaca's terms are personal and
+  non-commercial.
+- **J2 · Alpaca commercial licensing — revisit ~Mar 2027 — PARKED · NOT YET.** [H5]
+- **J3 · Index levels refused server-side, by shape and provider type — DONE (`45d284b`).** [A9]
+
+**Markets features — approved by Thomas 13 Sep 2026**
+
+- **J4 · Attribution: market vs currency vs money added — TODO · NEXT.** [E1]
+- **J5 · Dividends as dated income into D1 — TODO · NEXT.** [E2]
+- **J6 · Cost of ownership measured: basis, FX spread, fees, dividends — TODO · NOT YET.** [E3]
+- **J7 · "While you slept" — the overnight US session summary — TODO · NEXT.** [E4]
+- **J8 · Timing vs holding — money-weighted against time-weighted — TODO · NOT YET.** [E5]
+- **J9 · Dividends meeting goals — TODO · NEXT.** [E6]
+- **J10 · Per-holding FX split — TODO · NOT YET.** [E7]
+- **J11 · Provenance on prices — "Friday's close, last known at…" — TODO · NOT YET.** [E8]
+
+**Thesis — honest under incomplete data**
+
+- **J12 · Balances are ground truth; transactions are a story about them — TODO · NOT YET.** [F1]
+- **J13 · Confidence as a property of every figure — TODO · NEXT.** [F2]
+- **J14 · "You stopped logging on the 3rd" — TODO · NEXT.** [F3] F10 with a voice.
+- **J15 · Quiet mode — works from balances alone, never nags — TODO · NOT YET.** [F4]
+- **J16 · Inferred transactions from balance deltas, labelled as inference — IDEA · NOT YET.** [F5]
+- **J17 · One question a day — IDEA · NOT YET.** [F6]
+- **J18 · Decision journal (not recommendations) — IDEA · NOT YET.** [F7]
+- **J19 · "What breaks first" — dated per-obligation stress — IDEA · NOT YET.** [F8]
+- **J20 · Household as a first-class unit — IDEA · NOT YET.** [F9] Same commitment as `TARGET-PRODUCT.md:34` (shared household accounts), merged here.
+- **J21 · Local inference for categorisation — IDEA · NOT YET.** [F10]
+- **J22 · The app grades its own predictions — IDEA · NOT YET.** [F11] Needs months of its own history first.
+- **J23 · Double-entry substrate plus incomplete-records technique — IDEA · NOT YET.** [F12] A substrate rewrite.
+- **J24 · Currency as a life position — IDEA · NOT YET.** [F13]
+- **J25 · Permission instead of restriction — ADOPTED as a copy principle, not a build item.** [F14] The roadmap says it governs every line of copy from now on. Counted, but has no tier.
+
+---
+
+## K. AI
+
+- **K1 · AI chain cut to Groq → Cerebras; `:free` models refused in code; every feature fails visibly — DONE (`f923471`, `17564bc`).** [register A10]
+- **K2 · Receipt scan counts against the AI rate limit — DONE (`cc64e4d`).** [register B1] The economics question is G47.
+- **K3 · Per-user daily AI budget — TODO · NOT YET.** `PLAN-Q3.md:282`. Only 30/min per user exists (`app.ts:131-134`).
+- **K4 · Operator alert when a provider lane dies — TODO · NOT YET.** `PLAN-Q3.md:285`. Users see a reduced-capacity state; nobody is alerted.
+- **K5 · Consistent AI quality across providers — PARTIAL · NOT YET.** `PLAN-Q3.md:152`. Per-task Groq models exist (`lib/ai-providers/groq.ts:31-39`); the chain order is the same for every task (`chain.ts:13`).
+
+*Not merged: register H6 (`vault-backup.sh` reports writes it did not make) is
+machine-side, not Numeris, and stays in the vault.*
