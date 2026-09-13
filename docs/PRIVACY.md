@@ -216,16 +216,22 @@ or object to how it is used, and to complain. Write to
 `[TO CONFIRM: contact address]` for anything the app cannot do itself.
 `[TO CONFIRM: that requests will be answered within one month.]`
 
-**See and take away your data.** Settings → Export & Backup downloads a file of
-your accounts, transactions, investments, bills, debts, budgets, goals and
-subscriptions, and a tax-year file of transactions.
+**See and take away your data.** Settings → Export & Backup downloads one file
+of everything your account holds: your name, email and picture; your sessions
+with IP addresses and devices; your sign-in methods, passkeys and whether
+two-factor sign-in is set up; your connections; your accounts, transactions,
+investments, bills, debts, budgets, goals and subscriptions; both snapshot
+histories; your settings and notes (including family, tax, pension and mortgage
+entries); your shared expenses with their participants and settlements, and
+the settlement actions you took on other people's; detected recurring payments;
+and your request records. There is also a tax-year file of transactions.
 
-`[BLOCKED: the export leaves out your name and email, your sessions with IP
-addresses, your sign-in methods, your connections, both snapshot histories,
-your settings and notes (including family, tax, pension and mortgage entries),
-all shared expenses, and request records. A complete copy is only possible
-today by writing to the operator, who would have to assemble it by hand. Say
-so, or complete the export, before publishing.]`
+The file leaves out credentials, because anyone holding them could act as you:
+session tokens, tokens from Google, Apple and GitHub, your password (stored
+only as a hash, which is also left out), two-factor secrets and backup codes,
+the encrypted tokens for your connections, and one-time codes such as password
+reset links. The file lists what it left out and why. Records that other users
+keep about you are theirs and are not in your file (section 9).
 
 **Correct it.** You can change your name, picture, password and every financial
 record in the app.
