@@ -206,6 +206,19 @@ app.use("/api", marketProvidersRouter);
 // requireAuth (they take user prompts and cost money to serve).
 app.use("/api", aiStatusRouter);
 
+// Paths (relative to /api) that spend AI provider budget and so sit under
+// aiLimiter as well as apiLimiter. /receipt/* was outside it until
+// 2026-09-13: the receipt router is mounted at /receipt, not under /ai,
+// so the most expensive call in the app — a vision model on a photograph
+// — had only the per-IP limit. Widened here rather than moving the route
+// to /ai/receipt/parse, because installed phone builds carry the old path
+// in their bundled web assets and would 404 until they updated.
+const AI_METERED_PREFIXES = ["/ai", "/receipt"] as const;
+
+export function isAiMeteredPath(path: string): boolean {
+  return AI_METERED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
 // Middleware that reads the Better Auth session and puts userId on the request.
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -223,7 +236,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 }
 
 // Order matters. apiLimiter first (per-IP throttle across everything),
-// then requireAuth (sets req.userId), THEN aiLimiter gated on /ai/*
+// then requireAuth (sets req.userId), THEN aiLimiter gated on /ai/* and /receipt/*
 // paths — that gate has to sit inside the same mount as requireAuth or
 // aiLimiter would run before req.userId is populated. Then finally the
 // router.
@@ -232,7 +245,7 @@ app.use(
   apiLimiter,
   requireAuth,
   (req, res, next) => {
-    if (req.path.startsWith("/ai/")) return aiLimiter(req, res, next);
+    if (isAiMeteredPath(req.path)) return aiLimiter(req, res, next);
     return next();
   },
   router,
