@@ -1423,13 +1423,22 @@ export function Layout({ children }: LayoutProps) {
     // account-level keys so the next person here starts clean.
     const { clearAccountStorage } = await import("@/lib/account-storage");
     await clearAccountStorage();
-    await authClient.signOut();
-    // Clear the native bearer token if we have one. No-op on web.
-    // Without this a fresh sign-in on the same device inherits the
-    // previous session's token via the in-memory cache in native-auth.ts.
-    const { clearNativeAuthToken } = await import("@/lib/native-auth");
-    await clearNativeAuthToken();
-    queryClient.clear();
+    // Send queued offline writes while the session is still valid; the
+    // wipe below discards whatever could not be sent.
+    const { flushOutboxBeforeSignOut, wipeOfflineCopy } = await import("@/lib/offline-wipe");
+    await flushOutboxBeforeSignOut();
+    try {
+      await authClient.signOut();
+      // Clear the native bearer token if we have one. No-op on web.
+      // Without this a fresh sign-in on the same device inherits the
+      // previous session's token via the in-memory cache in native-auth.ts.
+      const { clearNativeAuthToken } = await import("@/lib/native-auth");
+      await clearNativeAuthToken();
+    } finally {
+      // Even if the server sign-out failed (offline), the next person at
+      // this device must not find the financial data. See offline-wipe.ts.
+      await wipeOfflineCopy(queryClient);
+    }
   };
 
   const isActive = (href: string) =>

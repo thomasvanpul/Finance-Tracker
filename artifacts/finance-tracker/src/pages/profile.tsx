@@ -652,11 +652,14 @@ export default function Profile() {
       for (const key of Object.keys(localStorage)) {
         if (/^(ft-|nr-|numeris|ix-companion)/.test(key)) localStorage.removeItem(key);
       }
-      queryClient.clear();
       toast({ title: "Account deleted", description: `${result.deletedRows} records removed.` });
       const { clearNativeAuthToken } = await import("@/lib/native-auth");
       await clearNativeAuthToken();
       await authClient.signOut().catch(() => undefined);
+      // The account is gone; so is this device's copy of it, queued offline
+      // writes included (there is no server to send them to).
+      const { wipeOfflineCopy } = await import("@/lib/offline-wipe");
+      await wipeOfflineCopy(queryClient);
       navigate("/");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : undefined;
@@ -667,14 +670,19 @@ export default function Profile() {
   async function handleSignOut() {
     const { clearAccountStorage } = await import("@/lib/account-storage");
     await clearAccountStorage();
-    authClient.signOut().then(async () => {
-      // Clear the native bearer token — no-op on web. See the same
-      // pattern in components/layout.tsx.
+    // Same order as components/layout.tsx: send queued writes, sign out,
+    // then remove this device's copy even if the sign-out call failed.
+    const { flushOutboxBeforeSignOut, wipeOfflineCopy } = await import("@/lib/offline-wipe");
+    await flushOutboxBeforeSignOut();
+    try {
+      await authClient.signOut();
+      // Clear the native bearer token — no-op on web.
       const { clearNativeAuthToken } = await import("@/lib/native-auth");
       await clearNativeAuthToken();
-      queryClient.clear();
+    } finally {
+      await wipeOfflineCopy(queryClient);
       navigate("/");
-    });
+    }
   }
 
   const { toast } = useToast();

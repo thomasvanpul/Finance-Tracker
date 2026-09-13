@@ -204,7 +204,7 @@ Nothing is sold. Nothing is shared with anyone not named in this section.
 | Sessions | Valid for 30 days; the record stays until your account is deleted |
 | Everything else you enter or that is imported for you, and every snapshot | Until you delete it or delete your account |
 | Database backups | `[TO CONFIRM: Neon's Free plan keeps a 6-hour restore window. Confirm the plan and the window.]` |
-| A copy on your device | Up to 30 days — section 10 |
+| A copy on your device | Until you sign out or delete your account, and at most 30 days — section 10 |
 
 `[TO CONFIRM: whether to set a retention limit for inactive accounts. None
 exists.]`
@@ -288,13 +288,23 @@ before publishing, and confirm the operator can actually do that search.]`
 
 To keep working offline, the web and phone app keep a copy of your recent data
 in the browser's or app's storage for up to 30 days, along with any changes
-waiting to be sent. Signing out removes your settings from the device once they
-have been saved to the server; if saving fails, they stay. A list of when, and
-on what kind of device, you signed in also stays on the device.
+waiting to be sent.
 
-`[BLOCKED: neither signing out nor deleting your account removes the offline
-copy of your financial data from the device. Until it does, the only honest
-instruction is to clear the site's data in your browser, or uninstall the app.]`
+Signing out and deleting your account both remove that copy from the device:
+the stored data, the changes waiting to be sent, and the AI commentary kept for
+the current visit. When you sign out, changes waiting to be sent are sent first
+if you are online; if you are offline, or sending fails, they are discarded
+rather than left for whoever signs in next. Deleting your account discards
+them, because there is no account left to send them to.
+
+Signing out also removes your settings from the device once they have been
+saved to the server; if saving fails, they stay. What stays on the device after
+signing out: display choices that belong to the device rather than to you
+(such as density, and whether figures are masked); your base currency, theme and
+chosen layout, kept so the app opens in the right shape before it has reached
+the server; whether this device has been through the first-run introduction;
+and a list of when, and on what kind of device, you signed in. None of these is
+a figure from your accounts.
 
 On iPhone, your sign-in token is kept in the app's preferences, not the
 Keychain.

@@ -52,7 +52,7 @@
 
 import { QueryClient } from "@tanstack/react-query";
 import { experimental_createQueryPersister } from "@tanstack/query-persist-client-core";
-import { get, set, del, entries } from "idb-keyval";
+import { get, set, del, entries, clear } from "idb-keyval";
 
 // Structural shape of a Query for our purposes — reading queryKey and
 // state.status/data is all we need. Local structural type sidesteps
@@ -191,6 +191,38 @@ function persistedDataIsBanned(serialised: string): boolean {
   }
 }
 
+// ── Wiped on sign-out and account deletion ──────────────────────────────────
+// Everything in idb-keyval's default store is this persister's: it is the
+// only user of idb-keyval in the app. clearPersistedQueries empties it
+// (lib/offline-wipe.ts calls it from both paths), and records when.
+//
+// Clearing is not enough on its own, because the persister writes AFTER a
+// fetch settles, on a notifyManager tick: a fetch that settled just before
+// the wipe has its write land just after, putting the previous user's data
+// straight back into a store just emptied. setItem refuses it, because its
+// dataUpdatedAt is not later than the wipe. A fetch still in flight is the
+// same case: cancelling it does NOT stop the persister writing when the
+// network call returns, but cancellation rolls the query back to its
+// pre-fetch state, whose dataUpdatedAt also predates the wipe, so setItem
+// refuses that write too. offline-wipe.test.ts covers both, and both fail
+// with this check removed.
+let wipedAt = 0;
+
+export async function clearPersistedQueries(now: number = Date.now()): Promise<void> {
+  wipedAt = Math.max(wipedAt, now);
+  await clear();
+}
+
+export function settledBeforeWipe(serialised: string): boolean {
+  if (wipedAt === 0) return false;
+  try {
+    const parsed = JSON.parse(serialised) as { state?: { dataUpdatedAt?: number } };
+    return (parsed?.state?.dataUpdatedAt ?? 0) <= wipedAt;
+  } catch {
+    return true;
+  }
+}
+
 const idbStorage = {
   getItem: async (key: string): Promise<string | null> => {
     const v = await get<string>(key);
@@ -208,6 +240,8 @@ const idbStorage = {
   setItem: async (key: string, value: string): Promise<void> => {
     // Never overwrite a good snapshot with a banned one. See header.
     if (persistedDataIsBanned(value)) return;
+    // Never write back data from before a sign-out or account deletion.
+    if (settledBeforeWipe(value)) return;
     await set(key, value);
   },
   removeItem: async (key: string): Promise<void> => {

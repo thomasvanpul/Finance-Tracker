@@ -31,6 +31,7 @@ const DYNAMIC_SITES: Record<string, readonly string[]> = {
   "components/persona-quick-start.tsx": ["dismissedKey", "doneKey"], // qsDismissedKey()/qsDoneKey() → ft-qs-* (onboarding)
   "lib/native-storage.ts": ["key"],            // unused wrapper (no callers)
   "lib/account-storage.ts": ["key", "k", "name"], // the sync engine itself
+  "lib/offline-wipe.ts": ["key"],              // removes only keys already classified local-cache
 };
 
 function walk(dir: string, out: string[] = []): string[] {
