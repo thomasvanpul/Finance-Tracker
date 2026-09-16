@@ -2,7 +2,8 @@ import { Router, type IRouter } from "express";
 import { and, eq, gte, lte, inArray, ne, sql } from "drizzle-orm";
 import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, debtsTable, nwSnapshotsTable, sharedExpensesTable, sharedExpenseParticipantsTable, userTable } from "@workspace/db";
 import { GetDashboardResponse } from "@workspace/api-zod";
-import { toBase, txToBase, getStockPrices } from "../lib/market";
+import { toBase, txToBase } from "../lib/market";
+import { getValuationPrices } from "../lib/market-eod";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
 import { trailingMonthRanges, forwardWindow } from "../lib/date-ranges";
@@ -187,13 +188,33 @@ async function processAccounts(accounts: Account[], baseCurrency: string) {
   return { accountBreakdown, totalCash, totalLiabilities, cashOnlyTotal, unconvertibleAccounts };
 }
 
+// ── How a portfolio is valued ───────────────────────────────────────────────
+//
+// Securities are valued from their last completed SESSION CLOSE, not from a
+// live quote (J26, and lib/market-eod.ts for the whole argument). Crypto and
+// forex stay live: neither has an exchange that owns the print.
+//
+// Two consequences the callers depend on:
+//
+//   · `unavailablePositions` — a position whose price could not be resolved
+//     contributes nothing AND is counted. Before 16 Sep 2026 it contributed
+//     nothing and was not counted, so a portfolio silently missing a holding
+//     rendered identically to a complete one. Same name and same meaning as
+//     GET /investments/summary, which has carried the count since it shipped;
+//     a parallel signal with a different name would be the actual mistake.
+//
+//   · `valuationAsOfSession` — the OLDEST session in the total, so the screen
+//     can date the figure. A total is only as current as its stalest leg.
 async function processInvestments(investments: Investment[], baseCurrency: string) {
   if (investments.length === 0) {
-    return { portfolioValueBase: 0, portfolioCostBase: 0, dayChangeBase: 0 as number | null, dayChangePrevValueBase: 0 as number | null };
+    return {
+      portfolioValueBase: 0, portfolioCostBase: 0,
+      dayChangeBase: 0 as number | null, dayChangePrevValueBase: 0 as number | null,
+      unavailablePositions: 0, valuationAsOfSession: null as string | null,
+    };
   }
   const tickers = [...new Set(investments.map((i) => i.ticker))];
-  const prices = await getStockPrices(tickers);
-  const priceMap = new Map(prices.map((p) => [p.ticker, p]));
+  const { prices: priceMap, asOfSession } = await getValuationPrices(tickers);
 
   // Per position: resolve value/cost/day-change contributions in parallel.
   // Each returns { valueBase, costBase, dayBase, dayPrevBase } with null for
@@ -241,8 +262,9 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
   let portfolioCostBase = 0;
   let dayChangeBase: number | null = 0;
   let dayChangePrevValueBase: number | null = 0;
+  let unavailablePositions = 0;
   for (const c of contributions) {
-    if (c.valueBase == null || c.costBase == null) continue;
+    if (c.valueBase == null || c.costBase == null) { unavailablePositions += 1; continue; }
     portfolioValueBase += c.valueBase;
     portfolioCostBase += c.costBase;
     // Day-change: null if the position that contributes to value has a
@@ -257,7 +279,13 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
       }
     }
   }
-  return { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase };
+  return {
+    portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase,
+    unavailablePositions,
+    // Null when nothing in the portfolio was EOD-valued (a crypto-only
+    // holder), which is the honest answer rather than today's date.
+    valuationAsOfSession: asOfSession,
+  };
 }
 
 async function processMonthTxs(txs: Transaction[], baseCurrency: string) {
@@ -572,7 +600,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // of each other, so Promise.all across domains.
   const [
     { accountBreakdown, totalCash, totalLiabilities, cashOnlyTotal, unconvertibleAccounts },
-    { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase },
+    { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase, unavailablePositions, valuationAsOfSession },
     { monthIncome, monthExpenses },
     { committedOut, expectedIn },
     debtsResult,
@@ -796,6 +824,12 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         totalPlPercent: portfolioPlPercent == null ? null : Math.round(portfolioPlPercent * 100) / 100,
         dayChangeBase: dayChangeBase == null ? null : Math.round(dayChangeBase * 100) / 100,
         dayChangePercent: dayChangePercent == null ? null : Math.round(dayChangePercent * 100) / 100,
+        // The roll-up is partial when this is non-zero: that many holdings
+        // had no resolvable price and are absent from every figure above.
+        unavailablePositions,
+        // The session the securities in this total closed on. The screen
+        // dates the figure by it, because the figure is explicitly not live.
+        valuationAsOfSession,
       },
       thisMonth: {
         income: Math.round(monthIncome * 100) / 100,

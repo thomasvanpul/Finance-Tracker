@@ -1132,6 +1132,8 @@ export interface InvestmentSummary {
   totalPlPercent: number | null;
   positions: number;
   unavailablePositions: number;
+  /** @nullable */
+  valuationAsOfSession: string | null;
 }
 
 export type DebtCurrency = typeof DebtCurrency[keyof typeof DebtCurrency];
@@ -1716,6 +1718,9 @@ export type DashboardSummaryPortfolio = {
   dayChangeBase: number | null;
   /** @nullable */
   dayChangePercent: number | null;
+  unavailablePositions: number;
+  /** @nullable */
+  valuationAsOfSession: string | null;
 };
 
 export type DashboardSummaryThisMonth = {

@@ -13,4 +13,6 @@ export interface InvestmentSummary {
   totalPlPercent: number | null;
   positions: number;
   unavailablePositions: number;
+  /** @nullable */
+  valuationAsOfSession: string | null;
 }

@@ -10,20 +10,27 @@ import {
   UpdateInvestmentResponse,
   GetInvestmentSummaryResponse,
 } from "@workspace/api-zod";
-import { getStockPrices, getFxRates } from "../lib/market";
+import { getFxRates } from "../lib/market";
+import { getValuationPrices } from "../lib/market-eod";
 import { enrichInvestment } from "../lib/enrich-investment";
 import { getBaseCurrency } from "../lib/app-settings-db";
 
 const router: IRouter = Router();
 
+// Prices for VALUING a position, not for displaying a market. Securities come
+// from their last completed session close; crypto and forex stay live. Same
+// helper the dashboard aggregate uses, so a row here and the total on the
+// dashboard cannot be computed from different prices - which they were until
+// 16 Sep 2026, when both were live but fetched at different moments.
 async function fetchPriceContext(investments: (typeof investmentsTable.$inferSelect)[]) {
   const tickers = [...new Set(investments.map((i) => i.ticker))];
-  const [prices, fx] = await Promise.all([
-    tickers.length > 0 ? getStockPrices(tickers) : Promise.resolve([]),
+  const [valuation, fx] = await Promise.all([
+    tickers.length > 0
+      ? getValuationPrices(tickers)
+      : Promise.resolve({ prices: new Map(), asOfSession: null, staleTickers: [] }),
     getFxRates(),
   ]);
-  const priceMap = new Map(prices.map((p) => [p.ticker, p]));
-  return { priceMap, fx };
+  return { priceMap: valuation.prices, fx, asOfSession: valuation.asOfSession };
 }
 
 router.get("/investments", async (req, res): Promise<void> => {
@@ -47,7 +54,7 @@ router.get("/investments/summary", async (req, res): Promise<void> => {
     .select()
     .from(investmentsTable)
     .where(eq(investmentsTable.userId, userId));
-  const [{ priceMap, fx }, baseCurrency] = await Promise.all([
+  const [{ priceMap, fx, asOfSession }, baseCurrency] = await Promise.all([
     fetchPriceContext(investments),
     getBaseCurrency(userId),
   ]);
@@ -71,6 +78,9 @@ router.get("/investments/summary", async (req, res): Promise<void> => {
       totalPlPercent: totalPlPercent == null ? null : Math.round(totalPlPercent * 100) / 100,
       positions: enriched.length,
       unavailablePositions: enriched.length - enriched.filter((e) => e.priceAvailable).length,
+      // The oldest session in the total. Null when nothing here is
+      // EOD-valued. The screen dates the figure by it.
+      valuationAsOfSession: asOfSession,
     })
   );
 });

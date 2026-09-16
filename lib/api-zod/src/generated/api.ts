@@ -179,7 +179,9 @@ export const GetDashboardResponse = zod.object({
   "totalPlBase": zod.number(),
   "totalPlPercent": zod.number().nullable(),
   "dayChangeBase": zod.number().nullable(),
-  "dayChangePercent": zod.number().nullable()
+  "dayChangePercent": zod.number().nullable(),
+  "unavailablePositions": zod.number(),
+  "valuationAsOfSession": zod.string().nullable()
 }),
   "thisMonth": zod.object({
   "income": zod.number(),
@@ -775,7 +777,8 @@ export const GetInvestmentSummaryResponse = zod.object({
   "totalPlBase": zod.number(),
   "totalPlPercent": zod.number().nullable(),
   "positions": zod.number(),
-  "unavailablePositions": zod.number()
+  "unavailablePositions": zod.number(),
+  "valuationAsOfSession": zod.string().nullable()
 })
 
 

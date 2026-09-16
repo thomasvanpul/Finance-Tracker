@@ -15,4 +15,7 @@ export type DashboardSummaryPortfolio = {
   dayChangeBase: number | null;
   /** @nullable */
   dayChangePercent: number | null;
+  unavailablePositions: number;
+  /** @nullable */
+  valuationAsOfSession: string | null;
 };

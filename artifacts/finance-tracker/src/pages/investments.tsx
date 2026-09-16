@@ -19,6 +19,7 @@ import {
   type OptionsChain,
 } from "@workspace/api-client-react";
 import { formatBaseMoney, formatPercent } from "@/lib/utils";
+import { closeTagText } from "@/components/FixingMark";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { getBaseCurrency } from "@/lib/currency-store";
 import { oneShotInsight } from "@/lib/ai-chat-client";
@@ -1801,11 +1802,18 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
       // Without this line the desktop user reads a value that
       // understates their holdings and has no signal that some
       // positions are missing. Mobile follows the same pattern.
-      delta: summary.unavailablePositions > 0
-        ? `${summary.unavailablePositions} unavailable — not in value`
-        : investments && investments.length > 0
-          ? `${investments.length} position${investments.length !== 1 ? "s" : ""}`
-          : undefined,
+      // The session line is appended rather than alternated: "how many
+      // positions" and "as of when" are two different facts and the second
+      // is the one J26 made true. Securities are the last completed close;
+      // crypto and FX in the same total are still live and carry no mark.
+      delta: [
+        summary.unavailablePositions > 0
+          ? `${summary.unavailablePositions} unavailable — not in value`
+          : investments && investments.length > 0
+            ? `${investments.length} position${investments.length !== 1 ? "s" : ""}`
+            : null,
+        closeTagText(summary.valuationAsOfSession),
+      ].filter(Boolean).join(" · ") || undefined,
       deltaPositive: summary.unavailablePositions > 0 ? false : null,
       primary: true,
     },

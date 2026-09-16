@@ -11,7 +11,7 @@ import {
 } from "@workspace/api-client-react";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { StaleAsOf } from "@/components/StaleAsOf";
-import { FixingMark } from "@/components/FixingMark";
+import { FixingMark, closeTagText } from "@/components/FixingMark";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
 import { formatMoney } from "@/lib/utils";
 import { getBaseCurrency } from "@/lib/currency-store";
@@ -214,6 +214,11 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
   }, [quotes]);
 
   const holdingsValueBase = dashboard?.portfolio.totalValueBase ?? null;
+  // The session the securities leg was valued at, and how many positions the
+  // total could not price. Both come straight from the dashboard payload —
+  // the screen states them rather than deriving anything of its own.
+  const closeText = closeTagText(dashboard?.portfolio.valuationAsOfSession);
+  const unpriced = dashboard?.portfolio.unavailablePositions ?? 0;
 
   // Nothing to show and no holdings → don't render the pane at all.
   // A first-run user with no accounts and no positions doesn't need a
@@ -297,7 +302,18 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
             </Text>
             <div style={{ gridColumn: "1 / -1" }}>
               <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
-                your {heldPositions.length} position{heldPositions.length === 1 ? "" : "s"}
+                {[
+                  `your ${heldPositions.length} position${heldPositions.length === 1 ? "" : "s"}`,
+                  // Not live, and said so. Crypto and FX stay live and carry
+                  // no mark — they have no close to be end-of-day against.
+                  closeText,
+                  // G10: a leg we could not price is named, never absorbed
+                  // into the total as a zero. Same wording as the desktop
+                  // INVESTMENTS KPI ("N unavailable — not in value").
+                  unpriced > 0 ? `${unpriced} unavailable — not in value` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
               </Text>
             </div>
           </div>

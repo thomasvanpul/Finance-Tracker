@@ -535,6 +535,75 @@ async function yahooFetchPrice(ticker: string): Promise<StockPriceData> {
   return read.data;
 }
 
+// ── Dated daily bars, for end-of-day valuation ──────────────────────────────
+//
+// Same chart endpoint as yahooChartPrice above, read for its `quotes` rows
+// rather than its `meta`. The distinction matters and is the reason this is a
+// separate function rather than another field on StockPriceData:
+//
+//   meta.chartPreviousClose  the close before the WINDOW'S FIRST BAR. Moves
+//                            when the window moves. Not the prior session.
+//   quotes[].{date, close}   dated session bars. What a close actually is.
+//
+// A 14-day window is the smallest that reliably contains two completed
+// sessions across a weekend plus a public holiday on either side of it.
+//
+// Index symbols are refused here as everywhere else — a daily bar of an index
+// is still an index level, and the licence position is identical.
+export interface DailyBar {
+  date: string;      // YYYY-MM-DD, UTC
+  close: number;
+  currency: string;
+}
+
+// ── Session dates ───────────────────────────────────────────────────────────
+// A trading session belongs to the exchange, not to the reader. VUSA.L's
+// 15 Sep close is the 15 Sep close whether it is looked at from London or
+// from Kuala Lumpur, so these two are deliberately UTC and live here rather
+// than in lib/date-ranges, which is local-only by design and says so.
+//
+// date-window-source.lock.test.ts allows rule A in this file for exactly
+// this reason ("exchange calendars, quote timestamps and earnings dates
+// belong to the exchange, not to the user's wall clock"). Keeping the
+// session-date arithmetic in the module that owns that argument is why
+// market-eod.ts imports these instead of re-deriving them.
+
+/** YYYY-MM-DD for an instant, in UTC. The frame DailyBar.date is already in. */
+export function sessionDateUtc(at: Date): string {
+  return at.toISOString().slice(0, 10);
+}
+
+/** The UTC calendar day before a YYYY-MM-DD. Calendar arithmetic through
+ *  Date.UTC rather than a subtracted 86_400_000, which is not a day twice a
+ *  year and is banned by rule B of the same lock. */
+export function utcDayBefore(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return sessionDateUtc(new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, (d ?? 1) - 1)));
+}
+
+export async function yahooDailyBars(ticker: string): Promise<DailyBar[]> {
+  if (isIndexSymbol(ticker)) throw new IndexLevelRefusedError(ticker);
+  const read = await withProvider("yahoo", async (): Promise<YahooRead<DailyBar[]>> => {
+    const period1 = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const chart: any = await yahooFinance.chart(ticker, { period1, interval: "1d" });
+    const currency: string = chart?.meta?.currency ?? "USD";
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows: any[] = Array.isArray(chart?.quotes) ? chart.quotes : [];
+    const bars: DailyBar[] = [];
+    for (const r of rows) {
+      if (typeof r?.close !== "number" || !Number.isFinite(r.close) || r.close <= 0) continue;
+      const d = r.date instanceof Date ? r.date : new Date(r.date as string | number);
+      if (Number.isNaN(d.getTime())) continue;
+      bars.push({ date: d.toISOString().slice(0, 10), close: r.close, currency });
+    }
+    if (bars.length === 0) throw new Error(`yahoo returned no usable daily bars for ${ticker}`);
+    return { data: bars, isIndex: isIndexInstrumentType(chart?.meta?.instrumentType) };
+  });
+  if (read.isIndex) throw new IndexLevelRefusedError(ticker);
+  return read.data;
+}
+
 // ── Rich-quote degradation ──────────────────────────────────────────────────
 // quote() is the crumb-requiring endpoint, so it is the one that actually
 // 429s. When it does, the honest answer is not "Yahoo is dark" — chart() is

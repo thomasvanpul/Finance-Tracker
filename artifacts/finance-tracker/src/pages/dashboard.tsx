@@ -73,6 +73,7 @@ import { ProtoTopRegion } from "@/components/proto/top-region";
 import { DashboardTopRegion, Insights, RULE } from "@/components/dashboard/top-region";
 import { netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
 import { samePointSpend, sameDayLabel } from "@/lib/same-point-spend";
+import { closeTagText } from "@/components/FixingMark";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -3505,6 +3506,13 @@ export default function Dashboard() {
     // fabricated zero would make the KPI read "no change today" when
     // the truth is "we don't know". G10: render "—".
     const dayChangeBase     = dashData.portfolio?.dayChangeBase ?? null;
+    // Securities are valued at the last COMPLETED session's close, not live
+    // (J26). The session is the OLDEST contributing one — a total is only as
+    // current as its stalest leg — and the cell says so rather than letting
+    // an end-of-day figure read as a tick. Same claim, same words and same
+    // date format as the phone's HOLDINGS row (components/FixingMark.tsx).
+    const portfolioCloseText = closeTagText(dashData.portfolio?.valuationAsOfSession);
+    const portfolioUnpriced  = dashData.portfolio?.unavailablePositions ?? 0;
     const dayChangePercent = dashData.portfolio?.dayChangePercent ?? null;
     const cash = dashData.totalCash ?? 0;
     const owedToMe = dashData.owing?.totalOwedToMe ?? 0;
@@ -3646,10 +3654,20 @@ export default function Dashboard() {
       // Delta is total P&L (return-since-inception). Kept as the
       // secondary line on this cell for continuity; the intraday
       // headline lives on PORTFOLIO_DAY (below) for the market persona.
-      delta: portfolioPl !== 0
-        ? `${portfolioPl >= 0 ? "+" : ""}${formatBaseMoney(portfolioPl)}`
-        : undefined,
-      deltaColor: portfolioPl >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+      delta: [
+        portfolioPl !== 0
+          ? `${portfolioPl >= 0 ? "+" : ""}${formatBaseMoney(portfolioPl)}`
+          : null,
+        portfolioCloseText,
+        portfolioUnpriced > 0 ? `${portfolioUnpriced} UNAVAILABLE` : null,
+      ].filter(Boolean).join(" · ") || undefined,
+      // The delta line is coloured by the P&L only while the P&L is all it
+      // says. Once the close mark shares the line, a green "AT CLOSE · 15 SEP"
+      // would be a sign colour on something that has no sign.
+      deltaColor:
+        portfolioCloseText || portfolioUnpriced > 0
+          ? "var(--ft-dim)"
+          : portfolioPl >= 0 ? "var(--ft-green)" : "var(--ft-red)",
       valueColor: "var(--ft-text)",
     };
     // Total return-since-inception percent. Not the market-persona

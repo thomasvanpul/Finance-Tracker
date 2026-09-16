@@ -117,6 +117,8 @@ export const EXPORT_SECTIONS: readonly ExportSection[] = [
 export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
   verification:
     "short-lived one-time tokens (password reset, 2FA challenge, trusted device); every row is a credential and none is content",
+  eod_prices:
+    "public closing prices keyed by (ticker, session date) with no user_id — market reference data shared by every account, not this user's content. What the user holds is exported from `investments`; the price VUSA.L closed at on 15 Sep is not theirs to take away",
 };
 
 function sectionColumns(section: ExportSection): Record<string, PgColumn> {

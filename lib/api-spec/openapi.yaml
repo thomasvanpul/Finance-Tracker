@@ -2504,7 +2504,7 @@ components:
       # counts positions whose price the market API could not supply; those are
       # excluded from every total. Consumers should surface the count so the
       # user understands the roll-up is partial.
-      required: [totalValueBase, totalPlBase, totalPlPercent, positions, unavailablePositions]
+      required: [totalValueBase, totalPlBase, totalPlPercent, positions, unavailablePositions, valuationAsOfSession]
       properties:
         totalValueBase:
           type: number
@@ -2520,6 +2520,19 @@ components:
           type: integer
         unavailablePositions:
           type: integer
+        # The trading session the securities in this total closed on,
+        # YYYY-MM-DD. Securities are valued end of day, never from a live
+        # quote (J26); crypto and FX stay live. Null when nothing in the
+        # portfolio is EOD-valued. It is the OLDEST contributing session, not
+        # the newest - a total is only as current as its stalest leg.
+        # YYYY-MM-DD, and deliberately NOT `format: date`: orval renders that
+        # as zod.coerce.date(), the route parses its own response through the
+        # schema, and the field leaves as "2026-09-14T00:00:00.000Z". The
+        # screen then printed "AT CLOSE NaN INVALID DATE" (caught in the 1440
+        # capture on 16 Sep 2026). Transaction.date is a plain string for the
+        # same reason.
+        valuationAsOfSession:
+          type: ["string", "null"]
 
     # ── DEBTS ─────────────────────────────────────────────────────────────────
     Debt:
@@ -3131,7 +3144,7 @@ components:
                 enum: [cash, investment, pension, property, other, liability]
         portfolio:
           type: object
-          required: [totalValueBase, totalPlBase, totalPlPercent, dayChangeBase, dayChangePercent]
+          required: [totalValueBase, totalPlBase, totalPlPercent, dayChangeBase, dayChangePercent, unavailablePositions, valuationAsOfSession]
           properties:
             totalValueBase:
               type: number
@@ -3145,12 +3158,31 @@ components:
             # converted to base. NULL when ANY contributing position lacks previousClose
             # or its FX leg — a half-computed delta is a lie on the headline that
             # decides whether the market persona has a reason to open the app tomorrow.
+            #
+            # Until 16 Sep 2026 this was an INTRADAY delta whose baseline was
+            # Yahoo's meta.chartPreviousClose - the close before the chart
+            # window's FIRST BAR, not the prior session, and it moved with the
+            # window. Measured 16 Sep 2026: AAPL read 326.57 (10 Sep) on a
+            # 5-day window and 313.45 (27 Aug) on a 20-day one, against a true
+            # prior-session close of 333.08. Both legs now come from dated
+            # daily bars, so this is a session-on-session delta.
             dayChangeBase:
               type: ["number", "null"]
             # Percent = dayChangeBase / sum(previousValueBase). Null when the delta
             # itself is null or previousValue sums to 0.
             dayChangePercent:
               type: ["number", "null"]
+            # Holdings whose price could not be resolved. They contribute to
+            # NOTHING above - not value, not cost, not the delta - so a
+            # non-zero count means every figure in this object is partial.
+            # Same name and meaning as InvestmentSummary.unavailablePositions;
+            # consumers must surface it rather than print a partial roll-up as
+            # if it were complete.
+            unavailablePositions:
+              type: integer
+            # See InvestmentSummary.valuationAsOfSession.
+            valuationAsOfSession:
+              type: ["string", "null"]
         thisMonth:
           type: object
           required: [income, expenses, netSavings, savingsRate]
