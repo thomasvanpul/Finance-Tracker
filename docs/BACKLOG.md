@@ -209,6 +209,7 @@ Update the counts when a row changes.
 | J24 | Currency as a life position | IDEA | NOT YET |
 | J25 | Permission instead of restriction | ADOPTED | — |
 | J26 | Valuation without display: EOD only, aggregate figures, never a per-security price | DECIDE | NOW |
+| J27 | Phone HOME shows per-security live prices (AAPL/BTC/MSFT/VUSA.L with % change, under a LIVE badge) — contradicts J26 and Alpaca's refusal | TODO | NOW |
 | K1 | AI chain Groq to Cerebras, failures visible | DONE | — |
 | K2 | Receipt scan counts against the AI limit | DONE | — |
 | K3 | Per-user daily AI budget | TODO | NOT YET |
