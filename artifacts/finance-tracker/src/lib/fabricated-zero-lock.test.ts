@@ -116,7 +116,14 @@ const BASELINE_FILES: ReadonlySet<string> = new Set([
   // replaced every ?? 0 reduce with explicit null-skip + Math.abs.
   "artifacts/finance-tracker/src/components/widgets/decision-engine.tsx",
   // month-comparison.tsx removed 31-Aug — same sign-bug fix pass.
-  "artifacts/finance-tracker/src/components/widgets/net-worth.tsx",
+  // net-worth.tsx removed 16-Sep — buildCurrencyGroups was the file's only
+  // fabrication site, and it was live on screen: an account with no FX rate
+  // contributed 0 to its currency's base total, so that currency's share of
+  // the strip shrank and every other currency's share grew to fill the gap.
+  // A bucket holding an unconvertible account is now null end to end —
+  // gbpTotal renders the dash and share renders one too — rather than being
+  // caveated by the badge while printing a figure that had silently dropped
+  // a row.
   "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx",
   "artifacts/finance-tracker/src/components/widgets/smart-alerts.tsx",
   // spending-breakdown.tsx removed 31-Aug — fixed in the earlier

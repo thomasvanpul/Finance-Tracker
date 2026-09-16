@@ -17,7 +17,12 @@ const MAX_ENTRIES = 365;
 type HistoryEntry = { date: string; netWorth: number; cash: number; portfolio: number };
 type Period = "7D" | "1M" | "3M" | "ALL";
 
-type CurrencyGroup = { currency: string; nativeTotal: number; gbpTotal: number; share: number | null };
+// `gbpTotal` and `share` are null when ANY account in the bucket has no FX
+// rate. Not zero: a currency whose rate is missing has an unknown base value,
+// and "£0" beside a real RM 851,980.00 is a fabricated number, which is the
+// one thing this app is not allowed to print. formatBaseMoney's own note says
+// it — "a row that reads RM 4,120.00 · — is honest, £0 is not".
+type CurrencyGroup = { currency: string; nativeTotal: number; gbpTotal: number | null; share: number | null };
 
 // The shares must sum to 100%, and until 2026-09-16 they summed to 103%.
 //
@@ -53,12 +58,21 @@ function buildCurrencyGroups(
   accountBreakdown: { currency: string; balance: number; baseEquivalent: number | null; type: string }[],
   netTotal: number
 ): CurrencyGroup[] {
-  const map = new Map<string, { native: number; gbp: number }>();
+  const map = new Map<string, { native: number; gbp: number | null }>();
   for (const acct of accountBreakdown) {
     const prev = map.get(acct.currency) ?? { native: 0, gbp: 0 };
+    // An unconvertible account POISONS its bucket's base total rather than
+    // adding zero to it. Coalescing a missing base equivalent to zero is the
+    // fabricated-zero defect
+    // the lock in lib/fabricated-zero-lock.test.ts exists to stop, and it was
+    // live here: an account with no rate silently shrank its own currency's
+    // share and every other currency's share grew to fill the gap. The count
+    // is already surfaced by UnconvertibleAccountsBadge on this same widget;
+    // this makes the figure it qualifies honest instead of merely caveated.
+    const base = signedAccountAmount(acct.type, acct.baseEquivalent);
     map.set(acct.currency, {
       native: prev.native + (signedAccountAmount(acct.type, acct.balance) ?? 0),
-      gbp: prev.gbp + (signedAccountAmount(acct.type, acct.baseEquivalent) ?? 0),
+      gbp: prev.gbp == null || base == null ? null : prev.gbp + base,
     });
   }
   return Array.from(map.entries())
@@ -66,10 +80,13 @@ function buildCurrencyGroups(
       currency,
       nativeTotal: native,
       gbpTotal: gbp,
-      // Share of a zero total is undefined, not 0% for every currency.
-      share: netTotal > 0 ? (gbp / netTotal) * 100 : null,
+      // Share of a zero total is undefined, not 0% for every currency — and
+      // so is the share of a bucket whose own base value is unknown.
+      share: gbp != null && netTotal > 0 ? (gbp / netTotal) * 100 : null,
     }))
-    .sort((a, b) => b.gbpTotal - a.gbpTotal);
+    // Unknown sorts last. It cannot be compared with a figure, and putting it
+    // at the top on a -Infinity would claim it is the largest holding.
+    .sort((a, b) => (b.gbpTotal ?? -Infinity) - (a.gbpTotal ?? -Infinity));
 }
 
 /**
@@ -495,7 +512,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   // Denominator: accounts NET of liabilities, so it is the same population the
   // buckets above are summed from. `d.totalCash` is the gross asset total and
   // was the wrong half of the division — see buildCurrencyGroups.
-  const currencyGroups = d ? buildCurrencyGroups(d.accountBreakdown, d.totalCash - (d.totalLiabilities ?? 0)) : [];
+  const currencyGroups = d ? buildCurrencyGroups(d.accountBreakdown, d.totalCash - d.totalLiabilities) : [];
 
   // "This month" here must sum the same window the ledger will show.
   const month = thisMonthRange();
@@ -564,7 +581,10 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   // it is the term the identity actually contains.
   const breakdownItems = d ? [
     { label: "Owed, net",  value: formatBaseMoney(d.owing.netBase),                color: d.owing.netBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", href: drillWhen(d.owing.pendingCount > 0, "/owing") },
-    { label: "Liabilities", value: formatBaseMoney(-(d.totalLiabilities ?? 0)),    color: (d.totalLiabilities ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-dim)", href: drillWhen((d.totalLiabilities ?? 0) !== 0, "/accounts") },
+    // Negated here and stated by the formatter, never by a "−" glyph in
+    // front of one — DESIGN.md §7 and the sign-glyph lock. totalLiabilities
+    // is a POSITIVE magnitude on the wire and non-nullable, so no coalesce.
+    { label: "Liabilities", value: formatBaseMoney(-d.totalLiabilities),         color: d.totalLiabilities > 0 ? "var(--ft-red)" : "var(--ft-dim)", href: drillWhen(d.totalLiabilities !== 0, "/accounts") },
   ] : [];
 
   const chartSection = (
