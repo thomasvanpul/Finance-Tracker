@@ -286,10 +286,18 @@ export function MobileHome(_props: MobileHomeProps) {
     >
         {/* Top bar (44px, JetBrains Mono, dim) */}
         <HStack justify="end" align="center" height={44} paddingX={18}>
+          {/* The count alone. This read "LIVE · 8 ACCOUNTS" until 16 Sep 2026
+              and claimed something the app cannot do: these balances are
+              maintained by hand, and nothing on this screen is a live feed
+              from a bank. "ACTIVE" was the other candidate and is untrue for
+              a second reason — `activeAccounts` is the whole of
+              accountBreakdown, with no active/dormant filter anywhere in it.
+              The count is the only part of the old label that was a fact,
+              and the drill title already says what the count is of. */}
           <DrillTarget href="/accounts" title="The accounts this counts">
             <span className="ft-drill">
               <Text as="span" mono size={11} color="var(--ft-dim)">
-                LIVE · {activeAccounts.length} {activeAccounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
+                {activeAccounts.length} {activeAccounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
               </Text>
             </span>
           </DrillTarget>
