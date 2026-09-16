@@ -19,6 +19,7 @@ import { loadPersonaIds, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { homeSectionOrder } from "@/lib/persona-emphasis";
 import { InsightSlot } from "@/components/phone/InsightSlot";
+import { sinceCloseLabel } from "@/components/FixingMark";
 import {
   computeHoldings,
   type Holdings,
@@ -304,7 +305,7 @@ export function MobileHome(_props: MobileHomeProps) {
         </HStack>
 
         {/* Headline (P2·9). Market persona gets PORTFOLIO VALUE +
-            24H delta, matching the same argument as the desktop
+            day delta, matching the same argument as the desktop
             KPI bar: a market user opens the app to see the market
             moved, and net worth doesn't tell them that. Every
             other persona keeps NET WORTH + since-1st-of-month
@@ -329,15 +330,17 @@ export function MobileHome(_props: MobileHomeProps) {
                     : "—"}
               </Text>
             </HStack>
-            {/* 24h delta. Uses dashData.portfolio.dayChange* from P1b.
-                Null → render "—", never a fabricated zero. */}
+            {/* Close-to-close delta, dated by the session it runs from
+                (not "24H" — a Monday spans the weekend). Null → render
+                "—", never a fabricated zero. */}
             {(() => {
+              const since = sinceCloseLabel(dashboard?.portfolio.dayChangeFromSession);
               const dGbp = dashboard?.portfolio.dayChangeBase ?? null;
               const dPct = dashboard?.portfolio.dayChangePercent ?? null;
               if (dGbp == null) {
                 return (
                   <Text as="div" mono size={12} mt={6} color="var(--ft-dim)">
-                    24H · —
+                    {since} · —
                   </Text>
                 );
               }
@@ -346,7 +349,7 @@ export function MobileHome(_props: MobileHomeProps) {
                 <Text as="div" mono size={12} mt={6} color={col} numeric>
                   {nfmt(dGbp, { sign: true, symbol: "£" })}
                   {dPct != null && ` · ${nfmt(dPct, { sign: true })}%`}
-                  {" · 24H"}
+                  {` · ${since}`}
                 </Text>
               );
             })()}

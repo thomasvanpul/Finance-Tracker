@@ -21,7 +21,7 @@ vi.hoisted(() => {
   process.env.DATABASE_URL = process.env.DATABASE_URL || "postgres://test:test@localhost/test";
 });
 
-import { isEodValued, lastCompletedSessions } from "./market-eod";
+import { isEodValued, lastCompletedSessions, oldestSessionDate } from "./market-eod";
 import type { DailyBar } from "./market";
 
 const bar = (date: string, close: number): DailyBar => ({ date, close, currency: "USD" });
@@ -83,5 +83,23 @@ describe("isEodValued", () => {
   it("leaves crypto and FX on the live path — a 24/7 market has no close", () => {
     expect(isEodValued("BTC-USD")).toBe(false);
     expect(isEodValued("MYRGBP=X")).toBe(false);
+  });
+});
+
+// The dashboard dates its day-change by the oldest previous close in it. A
+// close-to-close delta read on Monday runs from Friday, so the label is the
+// session and not "24H"; the stalest leg sets it, as it does for the total.
+describe("oldestSessionDate", () => {
+  it("returns the oldest session across legs", () => {
+    expect(oldestSessionDate(["2026-09-14", "2026-09-11", "2026-09-15"])).toBe("2026-09-11");
+  });
+
+  it("skips undated legs rather than treating them as oldest", () => {
+    expect(oldestSessionDate([null, "2026-09-14", undefined])).toBe("2026-09-14");
+  });
+
+  it("returns null when no leg is dated — never today's date", () => {
+    expect(oldestSessionDate([])).toBeNull();
+    expect(oldestSessionDate([null, undefined])).toBeNull();
   });
 });

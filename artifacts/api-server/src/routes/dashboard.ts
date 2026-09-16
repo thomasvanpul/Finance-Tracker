@@ -3,7 +3,7 @@ import { and, eq, gte, lte, inArray, ne, sql } from "drizzle-orm";
 import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, debtsTable, nwSnapshotsTable, sharedExpensesTable, sharedExpenseParticipantsTable, userTable } from "@workspace/db";
 import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, txToBase } from "../lib/market";
-import { getValuationPrices } from "../lib/market-eod";
+import { getValuationPrices, oldestSessionDate } from "../lib/market-eod";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
 import { trailingMonthRanges, forwardWindow } from "../lib/date-ranges";
@@ -211,6 +211,7 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
       portfolioValueBase: 0, portfolioCostBase: 0,
       dayChangeBase: 0 as number | null, dayChangePrevValueBase: 0 as number | null,
       unavailablePositions: 0, valuationAsOfSession: null as string | null,
+      dayChangeFromSession: null as string | null,
     };
   }
   const tickers = [...new Set(investments.map((i) => i.ticker))];
@@ -221,12 +222,12 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
   // any leg that couldn't convert. The reduce below preserves the G10
   // invariant: whole-portfolio day-change goes null if ANY contribution
   // has a null day leg. Order-independent, safe to parallelise.
-  interface Contribution { valueBase: number | null; costBase: number | null; dayBase: number | null; dayPrevBase: number | null; }
+  interface Contribution { valueBase: number | null; costBase: number | null; dayBase: number | null; dayPrevBase: number | null; dayFromSession: string | null; }
   const contributions: Contribution[] = await Promise.all(
     investments.map(async (inv): Promise<Contribution> => {
       const priceData = priceMap.get(inv.ticker);
       if (!priceData || typeof priceData.price !== "number" || !Number.isFinite(priceData.price)) {
-        return { valueBase: null, costBase: null, dayBase: null, dayPrevBase: null };
+        return { valueBase: null, costBase: null, dayBase: null, dayPrevBase: null, dayFromSession: null };
       }
       const shares = parseFloat(inv.shares);
       const costPrice = parseFloat(inv.costPricePerShare);
@@ -252,9 +253,9 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
       // wouldn't have been in the totals under the old sequential code
       // either — the `continue` on line 73 of the old handler).
       if (valueBase == null || costBase == null) {
-        return { valueBase: null, costBase: null, dayBase: null, dayPrevBase: null };
+        return { valueBase: null, costBase: null, dayBase: null, dayPrevBase: null, dayFromSession: null };
       }
-      return { valueBase, costBase, dayBase, dayPrevBase };
+      return { valueBase, costBase, dayBase, dayPrevBase, dayFromSession: priceData.previousSessionDate ?? null };
     }),
   );
 
@@ -263,6 +264,7 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
   let dayChangeBase: number | null = 0;
   let dayChangePrevValueBase: number | null = 0;
   let unavailablePositions = 0;
+  const dayFromSessions: Array<string | null> = [];
   for (const c of contributions) {
     if (c.valueBase == null || c.costBase == null) { unavailablePositions += 1; continue; }
     portfolioValueBase += c.valueBase;
@@ -276,6 +278,7 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
       } else {
         dayChangeBase += c.dayBase;
         (dayChangePrevValueBase as number) += c.dayPrevBase;
+        dayFromSessions.push(c.dayFromSession);
       }
     }
   }
@@ -285,6 +288,11 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
     // Null when nothing in the portfolio was EOD-valued (a crypto-only
     // holder), which is the honest answer rather than today's date.
     valuationAsOfSession: asOfSession,
+    // The session the delta is measured FROM: the oldest previous close among
+    // the EOD legs in it. Close-to-close spans a weekend on a Monday, so the
+    // screen dates the delta by this instead of calling it 24H. Null when the
+    // delta is null or has no EOD leg; a live leg's baseline carries no date.
+    dayChangeFromSession: dayChangeBase == null ? null : oldestSessionDate(dayFromSessions),
   };
 }
 
@@ -600,7 +608,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // of each other, so Promise.all across domains.
   const [
     { accountBreakdown, totalCash, totalLiabilities, cashOnlyTotal, unconvertibleAccounts },
-    { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase, unavailablePositions, valuationAsOfSession },
+    { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase, unavailablePositions, valuationAsOfSession, dayChangeFromSession },
     { monthIncome, monthExpenses },
     { committedOut, expectedIn },
     debtsResult,
@@ -830,6 +838,8 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         // The session the securities in this total closed on. The screen
         // dates the figure by it, because the figure is explicitly not live.
         valuationAsOfSession,
+        // The session dayChangeBase is measured from. See processInvestments.
+        dayChangeFromSession,
       },
       thisMonth: {
         income: Math.round(monthIncome * 100) / 100,

@@ -36,6 +36,7 @@ import type { ReactNode } from "react";
 import { Text } from "@/components/primitives";
 import { Drill } from "@/components/drill";
 import { formatBaseMoney, formatMoney, formatNative } from "@/lib/utils";
+import { sinceCloseLabel } from "@/components/FixingMark";
 import { useProtoData, shortDay, daysUntil, type ProtoData } from "@/components/proto/proto-data";
 import { accountTransactionsHref, categoryTransactionsHref, entityHref } from "@/lib/entity-href";
 
@@ -79,7 +80,7 @@ function StatusStrip({ data }: { data: ProtoData }) {
     { k: "CASH", v: data.totalCash === null ? "—" : formatBaseMoney(data.totalCash) },
     { k: "PORT", v: p === null ? "—" : formatBaseMoney(p.totalValueBase) },
     { k: "P/L", v: p === null ? "—" : `${p.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(p.totalPlBase)}`, color: p === null ? undefined : sign(p.totalPlBase) },
-    { k: "24H", v: p?.dayChangeBase == null ? "—" : `${p.dayChangeBase >= 0 ? "+" : ""}${formatBaseMoney(p.dayChangeBase)}`, color: p?.dayChangeBase == null ? "var(--ft-dim)" : sign(p.dayChangeBase) },
+    { k: sinceCloseLabel(p?.dayChangeFromSession), v: p?.dayChangeBase == null ? "—" : `${p.dayChangeBase >= 0 ? "+" : ""}${formatBaseMoney(p.dayChangeBase)}`, color: p?.dayChangeBase == null ? "var(--ft-dim)" : sign(p.dayChangeBase) },
     { k: "DELTA", v: attr === null ? "—" : `${attr.totalBase >= 0 ? "+" : ""}${formatMoney(attr.totalBase, data.baseCurrency)}`, color: attr === null ? undefined : sign(attr.totalBase) },
     { k: "MTD", v: data.thisMonth === null ? "—" : formatBaseMoney(data.thisMonth.expenses), color: "var(--ft-red)" },
     { k: "DUE", v: data.upcomingTotal === null ? "—" : formatBaseMoney(data.upcomingTotal), color: "var(--ft-amber)" },

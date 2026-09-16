@@ -3144,7 +3144,7 @@ components:
                 enum: [cash, investment, pension, property, other, liability]
         portfolio:
           type: object
-          required: [totalValueBase, totalPlBase, totalPlPercent, dayChangeBase, dayChangePercent, unavailablePositions, valuationAsOfSession]
+          required: [totalValueBase, totalPlBase, totalPlPercent, dayChangeBase, dayChangePercent, unavailablePositions, valuationAsOfSession, dayChangeFromSession]
           properties:
             totalValueBase:
               type: number
@@ -3182,6 +3182,16 @@ components:
               type: integer
             # See InvestmentSummary.valuationAsOfSession.
             valuationAsOfSession:
+              type: ["string", "null"]
+            # The session dayChangeBase is measured FROM, YYYY-MM-DD: the
+            # oldest previous close among the end-of-day legs in the delta.
+            # The delta is close-to-close, so it spans Friday to Monday on a
+            # Monday and longer across a holiday - a screen dates it by this
+            # rather than labelling it 24H. Null when dayChangeBase is null or
+            # no leg is valued end of day (a live leg's baseline is undated).
+            # Plain string, not `format: date`, for the reason given on
+            # InvestmentSummary.valuationAsOfSession.
+            dayChangeFromSession:
               type: ["string", "null"]
         thisMonth:
           type: object

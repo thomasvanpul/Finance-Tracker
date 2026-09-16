@@ -111,3 +111,11 @@ export function CloseMark({ sessionDate }: CloseMarkProps) {
 export function closeTagText(sessionDate: string | null | undefined): string | null {
   return sessionDate ? `AT CLOSE ${sameDayLabel(sessionDate)}` : null;
 }
+
+// The label for the portfolio's day-change. The delta is close-to-close, so
+// on a Monday it spans Friday to Monday and "24H" would be untrue; dating its
+// start ("SINCE 11 SEP") stays true across weekends and holidays. With no
+// dated leg (a crypto-only portfolio) it says what the baseline is and no more.
+export function sinceCloseLabel(fromSession: string | null | undefined): string {
+  return fromSession ? `SINCE ${sameDayLabel(fromSession)}` : "SINCE PREV CLOSE";
+}

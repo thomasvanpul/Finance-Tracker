@@ -21,6 +21,11 @@ export type StockPriceData = {
   price: number;
   currency: string;
   previousClose: number | null;
+  // The session `previousClose` closed on, YYYY-MM-DD. Set only on the EOD
+  // lane, where the bar is dated. Absent on a live quote: its baseline is
+  // Yahoo's chartPreviousClose, whose session depends on the chart window
+  // and is not reported, so no date can honestly be attached to it.
+  previousSessionDate?: string | null;
   updatedAt: string;
   // True when the data was served from cache past the fresh window.
   // Optional so existing consumers that construct StockPriceData without

@@ -79,6 +79,10 @@ export interface EodPrice {
   /** Close of the session before `sessionDate`, or null if we only have one.
    *  This is the honest previous close — the thing chartPreviousClose is not. */
   previousClose: number | null;
+  /** The session `previousClose` closed on, or null with it. A close-to-close
+   *  delta spans from this date to `sessionDate` — 72 hours across a weekend,
+   *  more across a holiday — so a screen must date it rather than call it 24H. */
+  previousSessionDate: string | null;
   provider: string;
   /** True when this row was served from storage because the fetch failed, so
    *  the caller can tell "yesterday's close, as designed" from "an older
@@ -164,6 +168,7 @@ function toEod(
     currency: latest.currency,
     sessionDate: latest.sessionDate,
     previousClose: Number.isFinite(prev) ? prev : null,
+    previousSessionDate: prevRow && Number.isFinite(prev) ? prevRow.sessionDate : null,
     provider: latest.provider,
     fromStaleStore,
   };
@@ -256,6 +261,7 @@ export async function getEodPrices(tickers: string[]): Promise<Map<string, EodPr
       currency,
       sessionDate: latest.date,
       previousClose: previous ? previous.close : null,
+      previousSessionDate: previous ? previous.date : null,
       provider: "yahoo",
       fromStaleStore: false,
     });
@@ -318,6 +324,16 @@ export interface ValuationPrices {
   staleTickers: string[];
 }
 
+/** The oldest of `dates`, or null when none is set. YYYY-MM-DD compares
+ *  correctly as a string. Used to date an aggregate from its stalest leg. */
+export function oldestSessionDate(dates: ReadonlyArray<string | null | undefined>): string | null {
+  let oldest: string | null = null;
+  for (const d of dates) {
+    if (d && (oldest == null || d < oldest)) oldest = d;
+  }
+  return oldest;
+}
+
 export async function getValuationPrices(tickers: string[]): Promise<ValuationPrices> {
   const unique = [...new Set(tickers)];
   const eodTickers = unique.filter(isEodValued);
@@ -338,6 +354,7 @@ export async function getValuationPrices(tickers: string[]): Promise<ValuationPr
       price: e.close,
       currency: e.currency,
       previousClose: e.previousClose,
+      previousSessionDate: e.previousSessionDate,
       // The instant we learned the close, not the instant of the close. The
       // SESSION is carried by asOfSession, which is what the screen dates the
       // figure by; re-stamping updatedAt to `now` is how a day-old number

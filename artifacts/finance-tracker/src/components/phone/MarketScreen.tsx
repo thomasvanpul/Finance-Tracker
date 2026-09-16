@@ -17,6 +17,7 @@ import { NewsPane } from "@/components/mobile/NewsPane";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
 import { nfmt } from "@/components/mobile/mobile-format";
 import { getBaseCurrency } from "@/lib/currency-store";
+import { sinceCloseLabel } from "@/components/FixingMark";
 import type { DashboardSummaryPortfolio } from "@workspace/api-client-react";
 
 function PortfolioHero({ portfolio }: { portfolio: DashboardSummaryPortfolio }) {
@@ -24,6 +25,7 @@ function PortfolioHero({ portfolio }: { portfolio: DashboardSummaryPortfolio }) 
   const sym = baseCcy === "GBP" ? "£" : baseCcy === "USD" ? "$" : `${baseCcy} `;
   const dBase = portfolio.dayChangeBase;
   const dPct = portfolio.dayChangePercent;
+  const since = sinceCloseLabel(portfolio.dayChangeFromSession);
   const col = dBase != null ? (dBase >= 0 ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-dim)";
 
   return (
@@ -44,8 +46,8 @@ function PortfolioHero({ portfolio }: { portfolio: DashboardSummaryPortfolio }) 
       </HStack>
       <Text as="div" mono size={12} mt={6} color={col} numeric>
         {dBase == null
-          ? "24H · —"
-          : `${nfmt(dBase, { sign: true, symbol: sym })}${dPct != null ? ` · ${nfmt(dPct, { sign: true })}%` : ""} · 24H`}
+          ? `${since} · —`
+          : `${nfmt(dBase, { sign: true, symbol: sym })}${dPct != null ? ` · ${nfmt(dPct, { sign: true })}%` : ""} · ${since}`}
       </Text>
     </VStack>
   );

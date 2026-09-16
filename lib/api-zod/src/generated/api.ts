@@ -181,7 +181,8 @@ export const GetDashboardResponse = zod.object({
   "dayChangeBase": zod.number().nullable(),
   "dayChangePercent": zod.number().nullable(),
   "unavailablePositions": zod.number(),
-  "valuationAsOfSession": zod.string().nullable()
+  "valuationAsOfSession": zod.string().nullable(),
+  "dayChangeFromSession": zod.string().nullable()
 }),
   "thisMonth": zod.object({
   "income": zod.number(),

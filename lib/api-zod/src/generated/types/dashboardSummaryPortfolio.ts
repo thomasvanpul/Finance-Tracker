@@ -18,4 +18,6 @@ export type DashboardSummaryPortfolio = {
   unavailablePositions: number;
   /** @nullable */
   valuationAsOfSession: string | null;
+  /** @nullable */
+  dayChangeFromSession: string | null;
 };

@@ -73,7 +73,7 @@ import { ProtoTopRegion } from "@/components/proto/top-region";
 import { DashboardTopRegion, Insights, RULE } from "@/components/dashboard/top-region";
 import { netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
 import { samePointSpend, sameDayLabel } from "@/lib/same-point-spend";
-import { closeTagText } from "@/components/FixingMark";
+import { closeTagText, sinceCloseLabel } from "@/components/FixingMark";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -3684,14 +3684,16 @@ export default function Dashboard() {
         ? "var(--ft-dim)"
         : portfolioPct >= 0 ? "var(--ft-green)" : "var(--ft-red)",
     };
-    // Intraday portfolio delta — the market persona's headline.
+    // Close-to-close portfolio delta — the market persona's headline.
+    // Labelled by the session it runs from, not "24H": on a Monday it
+    // spans Friday's close, which is 72 hours.
     // Renders "—" when the API returns null (any position missing
     // previousClose or FX leg). Percent shown as secondary; both
     // green/red only when the delta is present. If either is null,
     // colour goes to dim rather than defaulting to green (no fake
     // sign colour on an unknown value).
     const PORTFOLIO_DAY: KpiCellData = {
-      label: "24H",
+      label: sinceCloseLabel(dashData.portfolio?.dayChangeFromSession),
       value: dayChangeBase == null
         ? "—"
         : `${dayChangeBase >= 0 ? "+" : ""}${formatBaseMoney(dayChangeBase)}`,
@@ -3726,7 +3728,7 @@ export default function Dashboard() {
     // preserves the pre-item-4 six-cell layout so no existing user's
     // dashboard shifts.
     //
-    // Market: PORTFOLIO_DAY (intraday delta) is the hero — the whole
+    // Market: PORTFOLIO_DAY (close-to-close delta) is the hero — the whole
     // argument for the market persona is that the screen changes
     // overnight without the user touching anything, and a
     // return-since-inception figure does not. When the intraday
