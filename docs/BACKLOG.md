@@ -61,13 +61,13 @@ Update the counts when a row changes.
 | D1 | Swipe-delete on /transactions for phone | DONE | — |
 | D2 | Remaining mobile screens in the new design | SUPERSEDED | — |
 | D3 | Dead config cleanup | DONE | — |
-| D4 | Full iPhone-native mobile redesign | IN PROGRESS | NOT YET |
+| D4 | Full iPhone-native mobile redesign | IN PROGRESS | NOW |
 | D5 | Lock: phone routes resolve to a screen | DONE | — |
-| D6 | Delete the twelve unreachable Mobile* screens | TODO | NOT YET |
-| D7 | Native integration for guideline 4.2 | TODO | NOT YET |
-| D8 | Store releases: App Store and Google Play | TODO | NOT YET |
-| D9 | Tauri desktop shell | TODO | NOT YET |
-| D10 | Clipped-figure render test at 390 and 1440 | TODO | NOT YET |
+| D6 | Delete the twelve unreachable Mobile* screens | TODO | NOW |
+| D7 | Native integration for guideline 4.2 | TODO | NEXT |
+| D8 | Store releases: App Store and Google Play | TODO | NEXT |
+| D9 | Tauri desktop shell | TODO | NEXT |
+| D10 | Clipped-figure render test at 390 and 1440 | TODO | NOW |
 | D11 | Geometry previews on home panes | TODO | NOT YET |
 | E1 | index.css font-size hack | DONE | — |
 | E2 | Flex-container primitive | DONE | — |
@@ -110,7 +110,7 @@ Update the counts when a row changes.
 | G10 | api-server suite flake | PARTIAL | NOT YET |
 | G11 | Pension growth-rate disclosure | DONE | — |
 | G12 | Sign-in screen and App Review demo account | TODO | NOT YET |
-| G13 | Native auth, device checklist unrecorded | PARTIAL | NOT YET |
+| G13 | Native auth, device checklist unrecorded | PARTIAL | NEXT |
 | G14 | Alert rules key | DONE | — |
 | G15 | Print blur does not survive a reload | TODO | NOT YET |
 | G16 | learn-xp.ts dead code | DONE | — |
@@ -148,7 +148,7 @@ Update the counts when a row changes.
 | G45 | /api/ai/status never tests a completion | TODO | NOT YET |
 | G46 | Credential key boot refusal claimed, not real | TODO | NOT YET |
 | G47 | Receipt scan AI budget economics | DECIDE | NOT YET |
-| G48 | Offline wipe unverified in iOS WebView | TODO | NOT YET |
+| G48 | Offline wipe unverified in iOS WebView | TODO | NEXT |
 | G49 | Unsendable queued writes discarded at sign-out | DECIDE | NOT YET |
 | G50 | 2fa-attempts row survives deletion | TODO | NOT YET |
 | G51 | Settings "all local state" copy | TODO | NOT YET |
@@ -183,7 +183,7 @@ Update the counts when a row changes.
 | I14 | Export covers the whole account | DONE | — |
 | I15 | Settings states what the AI is sent | DONE | — |
 | I16 | Consent captured at sign-up | TODO | NOT YET |
-| J1 | Market data vendor decision | DECIDE | NOW |
+| J1 | Market data vendor decision | DECIDE | NOT YET |
 | J2 | Alpaca licensing, revisit Mar 2027 | PARKED | NOT YET |
 | J3 | Index levels refused server-side | DONE | — |
 | J4 | Attribution: market, currency, money added | TODO | NEXT |
@@ -208,6 +208,7 @@ Update the counts when a row changes.
 | J23 | Double-entry substrate | IDEA | NOT YET |
 | J24 | Currency as a life position | IDEA | NOT YET |
 | J25 | Permission instead of restriction | ADOPTED | — |
+| J26 | Valuation without display: EOD only, aggregate figures, never a per-security price | DECIDE | NOW |
 | K1 | AI chain Groq to Cerebras, failures visible | DONE | — |
 | K2 | Receipt scan counts against the AI limit | DONE | — |
 | K3 | Per-user daily AI budget | TODO | NOT YET |
