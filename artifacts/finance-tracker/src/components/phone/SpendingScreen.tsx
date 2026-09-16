@@ -23,6 +23,13 @@ import { useSwipeDelete } from "@/hooks/use-swipe-delete";
 import { Drill, DrillTarget } from "@/components/drill";
 import { categoryTransactionsHref, entityHref, ledgerHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
 import { isUnfiltered, matchesLedgerFilters, readLedgerFilters, type LedgerRowFilters } from "@/lib/ledger-query";
+import {
+  samePointSpend,
+  sameDayLabel,
+  startOfMonth,
+  startOfMonthNBack,
+  ymd,
+} from "@/lib/same-point-spend";
 import { PhoneEntityRow, deriveTone } from "./PhoneEntityRow";
 import { SectionHeader } from "./SectionHeader";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
@@ -78,34 +85,6 @@ import {
 // string (postgres date type, drizzle mode:"string"). Compare with
 // local Date construction to avoid UTC drift.
 
-function ymd(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function startOfMonth(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
-
-function startOfMonthNBack(d: Date, n: number): Date {
-  return new Date(d.getFullYear(), d.getMonth() - n, 1);
-}
-
-// Same day-of-month in the previous month, clamped to the last day
-// of the previous month when today is later than the prev month has
-// days (e.g. today = Mar 31 → prev = Feb 28/29). "Same point last
-// month" is the semantic the brief calls for; overflow to April
-// would compare Mar 31 with May 3, which is not the same point.
-function sameDayInPrevMonth(now: Date): Date {
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const d = now.getDate();
-  const lastDayOfPrev = new Date(y, m, 0).getDate();
-  return new Date(y, m - 1, Math.min(d, lastDayOfPrev));
-}
-
 function monthLabel(iso: string): string {
   // iso = "YYYY-MM-DD"; returns "AUGUST 2026" style.
   const [y, m] = iso.split("-").map(Number);
@@ -127,13 +106,6 @@ function dayHeaderLabel(iso: string): string {
   const dayNum = String(day).padStart(2, "0");
   const monShort = d.toLocaleString(undefined, { month: "short" }).toUpperCase();
   return `${weekday} ${dayNum} ${monShort}`;
-}
-
-function sameDayLabel(iso: string): string {
-  // "30 JUL" — used in the delta line for "more/less than by 30 Jul".
-  const [y, m, day] = iso.split("-").map(Number);
-  const d = new Date(y, (m ?? 1) - 1, day);
-  return `${day} ${d.toLocaleString(undefined, { month: "short" }).toUpperCase()}`;
 }
 
 function isFirstOfMonth(iso: string): boolean {
@@ -456,31 +428,13 @@ export function SpendingScreen() {
   // the query size.
 
   // Hero: MTD spend + delta vs same-point last month.
+  //
+  // The arithmetic moved to lib/same-point-spend on 16 Sep 2026 so the
+  // desktop MoM SPEND cell could call the same rule instead of growing a
+  // second copy of it. Behaviour here is unchanged.
   const hero = useMemo(() => {
     if (!transactions) return null;
-    const todayIso = ymd(now);
-    const startCurIso = ymd(startOfMonth(now));
-    const startLastIso = ymd(startOfMonthNBack(now, 1));
-    const sameDayLastIso = ymd(sameDayInPrevMonth(now));
-
-    let mtdSum = 0, mtdUnconv = false;
-    let lastSum = 0, lastUnconv = false;
-    for (const tx of transactions) {
-      if (pendingDeleteIds.has(tx.id)) continue;
-      if (tx.type !== "expense") continue;
-      if (tx.date >= startCurIso && tx.date <= todayIso) {
-        if (tx.baseEquivalent == null) mtdUnconv = true;
-        else mtdSum += Math.abs(tx.baseEquivalent);
-      } else if (tx.date >= startLastIso && tx.date <= sameDayLastIso) {
-        if (tx.baseEquivalent == null) lastUnconv = true;
-        else lastSum += Math.abs(tx.baseEquivalent);
-      }
-    }
-    return {
-      mtd: mtdUnconv ? null : mtdSum,
-      lastMonthSamePoint: lastUnconv ? null : lastSum,
-      sameDayLastIso,
-    };
+    return samePointSpend(transactions, now, (tx) => pendingDeleteIds.has(tx.id));
   }, [transactions, pendingDeleteIds, now]);
 
   // While a filter is on the hero must describe the rows under it. Left as

@@ -72,6 +72,7 @@ import { ProtoDashboard } from "@/components/proto";
 import { ProtoTopRegion } from "@/components/proto/top-region";
 import { DashboardTopRegion, Insights, RULE } from "@/components/dashboard/top-region";
 import { netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
+import { samePointSpend, sameDayLabel } from "@/lib/same-point-spend";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -3282,6 +3283,9 @@ export default function Dashboard() {
   const { data: dashData } = useGetDashboard();
   const monthStart = useMemo(() => getMonthStart(), []);
   const prevBounds = useMemo(() => getPrevMonthBounds(), []);
+  // One `now` for the whole render, so the same-point comparison below cannot
+  // straddle midnight between its two windows.
+  const now = useMemo(() => new Date(), []);
   const { data: monthTxs } = useListTransactions({ type: "expense", dateFrom: monthStart });
   const { data: prevMonthTxs } = useListTransactions({ type: "expense", dateFrom: prevBounds.from, dateTo: prevBounds.to });
   const [activeId, setActiveId] = useState<WidgetId | null>(null);
@@ -3533,11 +3537,32 @@ export default function Dashboard() {
     // and still silently understate the base — unchanged here, and the
     // honest fix for it is a nullable total, which is a larger change than
     // this cell.
-    const prevExpenses = (prevMonthTxs ?? []).reduce((s, t) => s + Math.abs(t.baseEquivalent ?? 0), 0);
-    const thisExpenses = Math.abs(expenses);
-    const momDelta = prevExpenses > 0 ? ((thisExpenses - prevExpenses) / prevExpenses) * 100 : 0;
-    const momSign = momDelta >= 0 ? "+" : "";
-    const momColor = momDelta > 5 ? "var(--ft-red)" : momDelta < -5 ? "var(--ft-green)" : "var(--ft-amber)";
+    // Both sides now come from lib/same-point-spend, the rule the phone's
+    // SPENDING hero has always used. Until 16 Sep 2026 this cell divided
+    // month-to-date by the WHOLE of last month: on the 16th that is 16 days
+    // against 31, labelled as a month-on-month change. On seed data it read
+    // -96.9% where the like-for-like answer is -95.9%.
+    //
+    // `prevMonthTxs` still spans all of last month and `monthTxs` everything
+    // from this month's 1st; samePointSpend bounds each window itself, so
+    // neither query changed and the two other getPrevMonthBounds callers on
+    // this page are untouched.
+    const mom = samePointSpend([...(monthTxs ?? []), ...(prevMonthTxs ?? [])], now);
+    const momSpanLabel = sameDayLabel(mom.sameDayLastIso);
+    // Null, zero and non-zero are three cases, not two (DESIGN.md §14).
+    // Null means a row in one window would not convert and the comparison is
+    // unknown; zero means nothing was spent by this point last month, which
+    // is a real fact with no percentage in it.
+    const momDelta =
+      mom.mtd != null && mom.lastMonthSamePoint != null && mom.lastMonthSamePoint > 0
+        ? ((mom.mtd - mom.lastMonthSamePoint) / mom.lastMonthSamePoint) * 100
+        : null;
+    const momSign = momDelta != null && momDelta >= 0 ? "+" : "";
+    const momColor =
+      momDelta == null ? "var(--ft-dim)"
+      : momDelta > 5 ? "var(--ft-red)"
+      : momDelta < -5 ? "var(--ft-green)"
+      : "var(--ft-amber)";
 
     // Individual cells. Keeping each as a const so the persona table
     // below reads like a table, not a tangle of inline object literals.
@@ -3602,10 +3627,18 @@ export default function Dashboard() {
         ? "var(--ft-red)"
         : "var(--ft-dim)",
     };
+    // The span is on the cell. An unlabelled "MoM SPEND -95.9%" does not say
+    // which two spans were compared, and that ambiguity is what let the
+    // month-against-part-month version sit here unnoticed.
     const MOM_SPEND: KpiCellData = {
       label: "MoM SPEND",
-      value: prevExpenses > 0 ? `${momSign}${momDelta.toFixed(1)}%` : "—",
-      valueColor: prevExpenses > 0 ? momColor : "var(--ft-dim)",
+      value: momDelta != null ? `${momSign}${momDelta.toFixed(1)}%` : "—",
+      delta:
+        momDelta != null ? `MTD vs BY ${momSpanLabel}`
+        : mom.lastMonthSamePoint === 0 ? `NOTHING BY ${momSpanLabel}`
+        : "NO COMPARISON",
+      deltaColor: "var(--ft-dim)",
+      valueColor: momColor,
     };
     const PORTFOLIO: KpiCellData = {
       label: "PORTFOLIO",
@@ -3694,7 +3727,7 @@ export default function Dashboard() {
       default:
         return [NET_WORTH, MONTHLY_INCOME, MONTHLY_SPEND, SAVINGS_RATE, MOM_SPEND, PORTFOLIO];
     }
-  }, [dashData, prevMonthTxs, activePersonaId]);
+  }, [dashData, monthTxs, prevMonthTxs, now, activePersonaId]);
 
   // ── AI Insights props ────────────────────────────────────────────────────────
   const aiInsightsProps = useMemo((): AiInsightsPanelProps => {
