@@ -6,8 +6,9 @@
 // compared month-to-date against the WHOLE of last month, so on 16 September
 // it divided 16 days of spending by 31 days of spending and printed the
 // result as a month-on-month change. On seed data that is the difference
-// between -95.9% and -96.9%: not a rounding difference, a different
-// question answered with the same label.
+// between -96.0% (40.45 against 1,008.18, being 1-16 August) and -96.9%
+// (40.45 against the whole month's 1,325.81): not a rounding difference, a
+// different question answered with the same label.
 //
 // The fix is not a second copy of the phone's arithmetic. Three copies of
 // the net-worth delta is how this repo learned that lesson, and the version

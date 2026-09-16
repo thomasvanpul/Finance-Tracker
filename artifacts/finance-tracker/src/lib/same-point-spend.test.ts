@@ -1,25 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { sameDayInPrevMonth, sameDayLabel, samePointSpend, ymd } from "./same-point-spend";
 
-// The seed account's real August expenses, as queried from the dev branch on
-// 2026-09-16: 14 rows, £1,325.81 in total against the stored
-// native_to_base_rate. The first seven fall on or before the 16th.
+// The seed account's real August expenses, read back from GET /api/transactions
+// on the dev branch on 2026-09-16: 14 rows, £1,325.81 in total. The first six
+// fall on or before the 16th and sum to £1,008.18.
+//
+// These dates are the API's, not a direct psql read. An earlier draft of this
+// fixture had every row one day EARLIER — a UTC-shifted query — which moved
+// the 17 Aug Starbucks row (£3.43) inside the 1-16 window and made the
+// expected figure 1,011.61. The phone rendered 967.73 and the fixture said
+// 971.16; the screen was right. Same defect class as the stale MoM comment in
+// pages/dashboard.tsx: a second derivation that quietly disagrees.
 const AUGUST = [
-  { type: "expense", date: "2026-08-04", baseEquivalent: -45.6 },
-  { type: "expense", date: "2026-08-07", baseEquivalent: -2.27175 },
-  { type: "expense", date: "2026-08-08", baseEquivalent: -3.85 },
-  { type: "expense", date: "2026-08-11", baseEquivalent: -15.2558 },
-  { type: "expense", date: "2026-08-12", baseEquivalent: -890 },
-  { type: "expense", date: "2026-08-15", baseEquivalent: -51.2 },
-  { type: "expense", date: "2026-08-16", baseEquivalent: -3.431106 },
+  { type: "expense", date: "2026-08-05", baseEquivalent: -45.6 },
+  { type: "expense", date: "2026-08-08", baseEquivalent: -2.27175 },
+  { type: "expense", date: "2026-08-09", baseEquivalent: -3.85 },
+  { type: "expense", date: "2026-08-12", baseEquivalent: -15.2558 },
+  { type: "expense", date: "2026-08-13", baseEquivalent: -890 },
+  { type: "expense", date: "2026-08-16", baseEquivalent: -51.2 },
   // ── after the 16th; excluded from a same-point comparison on the 16th ──
-  { type: "expense", date: "2026-08-17", baseEquivalent: -63.9 },
-  { type: "expense", date: "2026-08-17", baseEquivalent: -179 },
-  { type: "expense", date: "2026-08-19", baseEquivalent: -3.85 },
-  { type: "expense", date: "2026-08-22", baseEquivalent: -19.75 },
-  { type: "expense", date: "2026-08-23", baseEquivalent: -35.1 },
-  { type: "expense", date: "2026-08-27", baseEquivalent: -8.75 },
-  { type: "expense", date: "2026-08-30", baseEquivalent: -3.85 },
+  { type: "expense", date: "2026-08-17", baseEquivalent: -3.431106 },
+  { type: "expense", date: "2026-08-18", baseEquivalent: -63.9 },
+  { type: "expense", date: "2026-08-18", baseEquivalent: -179 },
+  { type: "expense", date: "2026-08-20", baseEquivalent: -3.85 },
+  { type: "expense", date: "2026-08-23", baseEquivalent: -19.75 },
+  { type: "expense", date: "2026-08-24", baseEquivalent: -35.1 },
+  { type: "expense", date: "2026-08-28", baseEquivalent: -8.75 },
+  { type: "expense", date: "2026-08-31", baseEquivalent: -3.85 },
 ];
 
 const SEPTEMBER = [
@@ -35,8 +42,9 @@ describe("samePointSpend", () => {
 
     expect(r.mtd).toBeCloseTo(40.45, 2);
     // 1-16 August only. The full month is 1,325.81; comparing against that is
-    // the defect this module exists to remove.
-    expect(r.lastMonthSamePoint).toBeCloseTo(1011.61, 2);
+    // the defect this module exists to remove. 40.45 against 1,008.18 is
+    // -96.0%; against 1,325.81 it is -96.9%.
+    expect(r.lastMonthSamePoint).toBeCloseTo(1008.18, 2);
     expect(r.sameDayLastIso).toBe("2026-08-16");
   });
 
@@ -50,7 +58,7 @@ describe("samePointSpend", () => {
     const r = samePointSpend(withJuly, now);
     // The 9.10 of 31 July is exactly what the old UTC-derived window folded
     // into "last month". It must not reach either side.
-    expect(r.lastMonthSamePoint).toBeCloseTo(1011.61, 2);
+    expect(r.lastMonthSamePoint).toBeCloseTo(1008.18, 2);
   });
 
   it("excludes rows dated later this month than today", () => {
@@ -75,7 +83,7 @@ describe("samePointSpend", () => {
     // one, which is the failure mode CLAUDE.md names first.
     expect(r.mtd).toBeNull();
     // The other window is unaffected — one bad row does not erase both sides.
-    expect(r.lastMonthSamePoint).toBeCloseTo(1011.61, 2);
+    expect(r.lastMonthSamePoint).toBeCloseTo(1008.18, 2);
   });
 
   it("honours the skip predicate (the phone's optimistic deletes)", () => {
