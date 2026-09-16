@@ -3,7 +3,8 @@ import { and, eq, gte, lte, inArray, ne, sql } from "drizzle-orm";
 import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, debtsTable, nwSnapshotsTable, sharedExpensesTable, sharedExpenseParticipantsTable, userTable } from "@workspace/db";
 import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, txToBase } from "../lib/market";
-import { getValuationPrices, oldestSessionDate } from "../lib/market-eod";
+import { getValuationPrices } from "../lib/market-eod";
+import { foldDayChange, type DayChangeLeg } from "../lib/portfolio-day-change";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
 import { trailingMonthRanges, forwardWindow } from "../lib/date-ranges";
@@ -261,38 +262,26 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
 
   let portfolioValueBase = 0;
   let portfolioCostBase = 0;
-  let dayChangeBase: number | null = 0;
-  let dayChangePrevValueBase: number | null = 0;
   let unavailablePositions = 0;
-  const dayFromSessions: Array<string | null> = [];
+  const dayLegs: DayChangeLeg[] = [];
   for (const c of contributions) {
     if (c.valueBase == null || c.costBase == null) { unavailablePositions += 1; continue; }
     portfolioValueBase += c.valueBase;
     portfolioCostBase += c.costBase;
-    // Day-change: null if the position that contributes to value has a
-    // null day leg. Matches the old invalidateDayChange() semantics.
-    if (dayChangeBase !== null) {
-      if (c.dayBase == null || c.dayPrevBase == null) {
-        dayChangeBase = null;
-        dayChangePrevValueBase = null;
-      } else {
-        dayChangeBase += c.dayBase;
-        (dayChangePrevValueBase as number) += c.dayPrevBase;
-        dayFromSessions.push(c.dayFromSession);
-      }
-    }
+    dayLegs.push({ dayBase: c.dayBase, dayPrevBase: c.dayPrevBase, dayFromSession: c.dayFromSession });
   }
+  // Day-change: null if any leg that contributes to value has a null delta,
+  // an undated baseline, or a baseline from a different session than the
+  // rest. The session is returned alongside so the screen dates the delta
+  // (close-to-close spans a weekend on a Monday) instead of calling it 24H.
+  const { dayChangeBase, dayChangePrevValueBase, dayChangeFromSession } = foldDayChange(dayLegs);
   return {
     portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase,
     unavailablePositions,
     // Null when nothing in the portfolio was EOD-valued (a crypto-only
     // holder), which is the honest answer rather than today's date.
     valuationAsOfSession: asOfSession,
-    // The session the delta is measured FROM: the oldest previous close among
-    // the EOD legs in it. Close-to-close spans a weekend on a Monday, so the
-    // screen dates the delta by this instead of calling it 24H. Null when the
-    // delta is null or has no EOD leg; a live leg's baseline carries no date.
-    dayChangeFromSession: dayChangeBase == null ? null : oldestSessionDate(dayFromSessions),
+    dayChangeFromSession,
   };
 }
 
