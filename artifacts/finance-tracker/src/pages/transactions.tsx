@@ -814,7 +814,17 @@ export default function Transactions() {
     if (sortBy === "date-asc") return [...base].sort((a, b) => a.date.localeCompare(b.date));
     if (sortBy === "amount-high") return [...base].sort((a, b) => Math.abs(b.baseEquivalent ?? -Infinity) - Math.abs(a.baseEquivalent ?? -Infinity));
     if (sortBy === "amount-low") return [...base].sort((a, b) => Math.abs(a.baseEquivalent ?? Infinity) - Math.abs(b.baseEquivalent ?? Infinity));
-    return base; // date-desc is server default
+    // date-desc sorted HERE, not inherited. The comment that used to sit on
+    // this line said "date-desc is server default" and it was false:
+    // GET /transactions orders by date ASCENDING
+    // (routes/transactions.ts:75). The ledger's DEFAULT view is "DATE ↓",
+    // so the main transaction list has been showing oldest-first under a
+    // label promising the opposite, while the other three sort options —
+    // each of which builds its own explicit sort — were correct.
+    //
+    // Ties break on id so the order is stable across renders instead of
+    // depending on the sort being stable for equal keys.
+    return [...base].sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)));
   }, [transactions, filterType, filterCategory, filterAccount, filterDateFrom, filterDateTo, amountMin, amountMax, search, filterTag, tags, sortBy]);
 
   // The amount slot reserves room for the widest figure the ledger is about to

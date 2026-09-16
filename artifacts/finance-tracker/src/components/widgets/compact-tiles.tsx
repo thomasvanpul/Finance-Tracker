@@ -499,7 +499,15 @@ export function CompactRecentTransactions() {
   const now = useMemo(() => new Date(), []);
   const monthStart = useMemo(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`, [now]);
   const { data: txs = [] } = useListTransactions({ dateFrom: monthStart, limit: 7 } as Parameters<typeof useListTransactions>[0]);
-  const rows = txs.slice(0, 7);
+  // Newest first. GET /transactions orders by date ASCENDING
+  // (routes/transactions.ts:75), so slicing the front of it gave a tile
+  // headed RECENT TRANSACTIONS the seven OLDEST rows of the month. The
+  // `limit: 7` in the query does not save it — a server-side limit on an
+  // ascending list is the oldest seven, which is the same defect one layer
+  // further down.
+  const rows = [...txs]
+    .sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)))
+    .slice(0, 7);
   return (
     <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: 12, paddingRight: 4, height: 34, flexShrink: 0 }}>
