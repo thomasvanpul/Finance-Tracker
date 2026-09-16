@@ -106,13 +106,36 @@ export function MobileHome(_props: MobileHomeProps) {
   // real zero (0). A `?? 0` coalesce would render an authoritative £0.00
   // during load that a user cannot distinguish from an actual zero.
   const netWorth = dashboard?.netWorth ?? null;
-  // MTD delta: uses thisMonth.netSavings as a proxy for month-to-date net worth
-  // change. Exact NW delta would need daily NW snapshots; the API does not carry
-  // them. Approximation is acceptable per the concept — the number rule still
-  // stands.
-  const mtdDelta = dashboard?.thisMonth.netSavings ?? null;
-  const priorNw = netWorth != null && mtdDelta != null ? netWorth - mtdDelta : null;
-  const mtdPct = priorNw != null && priorNw > 0 && mtdDelta != null ? (mtdDelta / priorNw) * 100 : null;
+  // NO delta under NET WORTH, deliberately. This slot used to render
+  // `thisMonth.netSavings` — month-to-date income minus expenses — as
+  // though it were the change in net worth, and then reconstructed a
+  // "net worth on the 1st" by subtracting it. Neither number was real.
+  // On seed data it printed "−£40.45 · −0.02% since 1 Sept" while the
+  // accounts had actually moved −£1,174.51, all of it FX revaluation,
+  // so the headline understated the move by a factor of 29 and named
+  // the wrong cause.
+  //
+  // A true delta needs a prior NET WORTH, and nothing in the schema
+  // carries one:
+  //   · nw_snapshots is keyed by MONTH and upserted from live values on
+  //     every dashboard read, so the current month's row is today's
+  //     number, not the 1st's. The seed user has exactly one row
+  //     (2026-09) and no prior month.
+  //   · account_balance_snapshots is daily and honest, but it starts
+  //     2026-09-07 (no backfill is possible — accounts.balance is a live
+  //     scalar) and it covers ACCOUNTS only. Investments are not
+  //     snapshotted at all, so the portfolio leg of net worth has no
+  //     history.
+  // An accounts-only delta under a NET WORTH figure is the same class of
+  // untruth as netSavings was: a number that is not the change in the
+  // thing above it. The repo's standing rule is that an unknown leg
+  // makes the total unknown, so this states nothing.
+  //
+  // The honest change figure the app DOES have — accounts, since the
+  // first snapshot, with its own date on it — is WHAT CHANGED on WORTH,
+  // fed by /api/accounts/change-attribution. That is where a user finds
+  // out what moved. Restoring a delta here needs the portfolio leg
+  // snapshotted server-side; until then this slot stays empty.
 
   const holdings = computeHoldings(dashboard);
   const totalCash = holdings.cash;
@@ -345,23 +368,6 @@ export function MobileHome(_props: MobileHomeProps) {
                 </span>
               </HStack>
             </DrillTarget>
-            {mtdDelta != null && mtdPct != null ? (
-              <Text
-                as="div"
-                mono
-                size={12}
-                mt={6}
-                color={mtdDelta >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-                numeric
-              >
-                {nfmt(mtdDelta, { sign: true, symbol: "£" })} ·{" "}
-                {nfmt(mtdPct, { sign: true })}% since 1 {monthShortMixed}
-              </Text>
-            ) : (
-              <Text as="div" mono size={12} mt={6} color="var(--ft-dim)">
-                {dashboardLoading ? "…" : "—"} since 1 {monthShortMixed}
-              </Text>
-            )}
             {unconvertibleAccounts > 0 && (
               <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
                 {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total

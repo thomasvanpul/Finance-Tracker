@@ -265,16 +265,20 @@ export function WorthScreen() {
   );
 
   const netWorth = dashboard?.netWorth ?? null;
-  // MTD delta as proxy for month-to-date net worth change. Same shape
-  // as HOME's headline — inherited pattern, not a new claim. Once the
-  // per-account snapshots table has 30+ days of history the NW delta
-  // can be computed exactly against the start-of-month snapshot rather
-  // than proxied via thisMonth.netSavings; today it is a proxy.
-  const mtdDelta = dashboard?.thisMonth.netSavings ?? null;
-  const priorNw = netWorth != null && mtdDelta != null ? netWorth - mtdDelta : null;
-  const mtdPct = priorNw != null && priorNw > 0 && mtdDelta != null
-    ? (mtdDelta / priorNw) * 100
-    : null;
+  // The "proxy" MTD delta is gone. It read thisMonth.netSavings — income
+  // minus expenses — and presented it as the change in net worth, then
+  // derived a percentage from a prior value reconstructed out of the same
+  // wrong term. It printed "−£40.45 · −0.02% since 1 Sep" on seed data
+  // while the accounts had moved −£1,174.51. See the note on HOME's
+  // headline in components/mobile/MobileHome.tsx for why no snapshot in
+  // the schema can supply a true net-worth delta today: the daily table
+  // starts 2026-09-07 and covers accounts only, and investments are not
+  // snapshotted at all.
+  //
+  // This screen loses nothing by dropping it, because WHAT CHANGED
+  // directly below is the real answer — accounts, since the first
+  // snapshot, labelled with the date that snapshot actually carries,
+  // and broken down by cause.
 
   const currencyExposure = useMemo(
     () => computeCurrencyExposure(accounts, positions),
@@ -420,8 +424,6 @@ export function WorthScreen() {
       >
         <WorthHero
           netWorth={netWorth}
-          mtdDelta={mtdDelta}
-          mtdPct={mtdPct}
           unconvertibleAccounts={unconvertibleAccounts}
           loading={isLoading && netWorth == null}
         />
@@ -570,53 +572,14 @@ export function WorthScreen() {
 
 function WorthHero({
   netWorth,
-  mtdDelta,
-  mtdPct,
   unconvertibleAccounts,
   loading,
 }: {
   netWorth: number | null;
-  mtdDelta: number | null;
-  mtdPct: number | null;
   unconvertibleAccounts: number;
   loading: boolean;
 }) {
   const value = netWorth != null ? formatBaseMoney(netWorth) : (loading ? "…" : "—");
-
-  const now = new Date();
-  const monthShort = now.toLocaleString(undefined, { month: "short" });
-  // First-of-current-month for the delta label — matches HOME's shape
-  // ("since 1 Aug") so the two hero devices read as siblings.
-  const startOfMonthLabel = `since 1 ${monthShort}`;
-  // On the 1st of the month the "since 1 <month>" window is at most 24
-  // hours wide, and the proxy that supplies mtdDelta (dashboard.thisMonth.
-  // netSavings) has known day-1 uncertainty — a zero reads as
-  // "no change so far this month" but is really "the reference point IS
-  // right now". Same failure class as the +0.00% Investments row already
-  // removed. Falling back to "since 1 <last month>" is rejected: it
-  // would show a different metric under the same label (MTD vs
-  // month-over-month), which is more dishonest than showing —. The dash
-  // resolves on the 2nd, when there's a genuine day-vs-yesterday
-  // comparison available.
-  const isFirstOfMonth = now.getDate() === 1;
-
-  let deltaLine: React.ReactNode = null;
-  if (!isFirstOfMonth && mtdDelta != null && mtdPct != null) {
-    const positive = mtdDelta >= 0;
-    const sign = positive ? "+" : "−";
-    const colour = positive ? "var(--ft-green)" : "var(--ft-red)";
-    deltaLine = (
-      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: colour }}>
-        {sign}{formatBaseMoney(Math.abs(mtdDelta))} · {sign}{Math.abs(mtdPct).toFixed(2)}% {startOfMonthLabel}
-      </span>
-    );
-  } else if (netWorth != null) {
-    deltaLine = (
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>
-        — {startOfMonthLabel}
-      </span>
-    );
-  }
 
   return (
     <div style={{ padding: "20px 16px 12px" }}>
@@ -645,7 +608,6 @@ function WorthHero({
       >
         {value}
       </div>
-      {deltaLine && <div style={{ marginTop: 6 }}>{deltaLine}</div>}
       {unconvertibleAccounts > 0 && (
         <div
           style={{
