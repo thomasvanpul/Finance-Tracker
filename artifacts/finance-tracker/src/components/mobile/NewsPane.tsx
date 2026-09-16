@@ -18,6 +18,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { customFetch } from "@workspace/api-client-react";
 import { VStack } from "@/components/primitives";
+import { SectionHeader } from "@/components/phone/SectionHeader";
+import { HomeSectionHeader } from "./home-section-header";
 
 interface ConnectedTo {
   kind: "ticker" | "currency";
@@ -74,40 +76,13 @@ export function NewsPane({ onOpenInvestments }: { onOpenInvestments?: () => void
 
   return (
     <>
-      {/* Section header — matches the shape of SectionHeader in
-          MobileHome. Kept inline here so the whole pane
-          (header + list) appears all-or-nothing based on whether
-          any anchor-tied news exists. An empty header above an
-          empty list would waste real estate. */}
-      <div
-        style={{
-          marginTop: 24,
-          padding: "16px 18px 0",
-          borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.16em", color: "var(--ft-dim)" }}>
-            NEWS · CONNECTED TO YOU
-          </span>
-          {onOpenInvestments && (
-            <a
-              onClick={(e) => { e.preventDefault(); onOpenInvestments(); }}
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.16em",
-                color: "var(--ft-dim)",
-                textDecoration: "none",
-                cursor: "pointer",
-              }}
-            >
-              INVESTMENTS ›
-            </a>
-          )}
-        </div>
-      </div>
-    <div style={{ padding: "0 18px" }}>
+      {/* Header + list render all-or-nothing, so an empty header never
+          sits above an empty list. The header is HOME's one section header
+          (DESIGN.md §2); until 16 Sep 2026 this pane drew its own. */}
+      {onOpenInvestments
+        ? <HomeSectionHeader label="NEWS · CONNECTED TO YOU" link="INVESTMENTS ›" onLink={onOpenInvestments} />
+        : <div style={{ marginTop: 16 }}><SectionHeader label="NEWS · CONNECTED TO YOU" /></div>}
+    <div style={{ padding: "0 16px" }}>
       <VStack gap={0}>
         {data.items.slice(0, 6).map((it, i) => (
           <a
@@ -119,7 +94,9 @@ export function NewsPane({ onOpenInvestments }: { onOpenInvestments?: () => void
               display: "block",
               minHeight: 60,
               padding: "12px 0",
-              borderTop: "1px solid var(--ft-border)",
+              // The header's rule already sits above the first row; a second
+              // one there doubles up (DESIGN.md §5).
+              ...(i > 0 ? { borderTop: "1px solid var(--ft-border)" } : {}),
               ...(i === Math.min(5, data.items.length - 1)
                 ? { borderBottom: "1px solid var(--ft-border)" }
                 : {}),
@@ -142,7 +119,9 @@ export function NewsPane({ onOpenInvestments }: { onOpenInvestments?: () => void
                 letterSpacing: "0.06em",
               }}
             >
-              <span style={{ color: "var(--ft-accent)" }}>
+              {/* A tag that reads, not a control: muted, not the accent
+                  (DESIGN.md §11). */}
+              <span style={{ color: "var(--ft-muted)" }}>
                 {it.connectedTo.kind === "ticker" ? "YOUR " : "YOUR "}{it.connectedTo.label}
               </span>
               <span>·</span>

@@ -9,7 +9,8 @@ import {
   useGetFxRates,
   type StockQuote,
 } from "@workspace/api-client-react";
-import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { Text, VStack } from "@/components/primitives";
+import { HomeSectionHeader } from "./home-section-header";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { FixingMark, closeTagText } from "@/components/FixingMark";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
@@ -229,49 +230,21 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
 
   return (
     <>
-      {/* Header + link to the full markets tab */}
-      <div
-        style={{
-          marginTop: 24,
-          padding: "16px 18px 0",
-          borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
-        }}
-      >
-        <HStack align="baseline" justify="between">
-          {/* "MARKETS · TOUCHING YOU" until 16 Sep 2026. J27 took the
-              per-security prices out and left a heading promising market
-              data over an aggregate portfolio value, a list of the user's
-              own tickers and quantities, and the FX rows. Every row under
-              this heading is now something the user holds, so that is what
-              it says. The INVESTMENTS drill is unchanged. */}
-          <MonoLabel as="span" size={11} letterSpacing="0.16em">
-            WHAT YOU HOLD
-          </MonoLabel>
-          <a
-            onClick={(e) => { e.preventDefault(); onOpenInvestments(); }}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              minHeight: 44,
-              margin: "-15px 0",
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              color: "var(--ft-dim)",
-              textDecoration: "none",
-              cursor: "pointer",
-            }}
-          >
-            INVESTMENTS ›
-          </a>
-        </HStack>
-        {staleTs !== null && (
-          <div style={{ marginTop: 4 }}>
-            <StaleAsOf ts={staleTs} isFresh={false} compact />
-          </div>
-        )}
-      </div>
+      {/* "MARKETS · TOUCHING YOU" until 16 Sep 2026. J27 took the
+          per-security prices out and left a heading promising market data
+          over an aggregate portfolio value, a list of the user's own tickers
+          and quantities, and the FX rows. Every row under this heading is
+          now something the user holds, so that is what it says. The header
+          itself is HOME's one section header (DESIGN.md §2) — this pane drew
+          its own, a ruled dim label, under a banded one. */}
+      <HomeSectionHeader label="WHAT YOU HOLD" link="INVESTMENTS ›" onLink={onOpenInvestments} />
+      {staleTs !== null && (
+        <div style={{ padding: "4px 16px 0" }}>
+          <StaleAsOf ts={staleTs} isFresh={false} compact />
+        </div>
+      )}
 
-      <VStack paddingX={18} marginTop={6}>
+      <VStack paddingX={16}>
         {/* Aggregate holdings value — one figure for the whole portfolio,
             which is the grain J26 permits. Null-safe per G10: the payload
             only carries a number once the dashboard has loaded. */}
@@ -301,7 +274,7 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
                 : "—"}
             </Text>
             <div style={{ gridColumn: "1 / -1" }}>
-              <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
+              <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
                 {[
                   `your ${heldPositions.length} position${heldPositions.length === 1 ? "" : "s"}`,
                   // Not live, and said so. Crypto and FX stay live and carry
@@ -398,10 +371,12 @@ function PositionRow({ ticker, shares, isLast, onClick }: PositionRowProps) {
         borderBottomColor: "var(--ft-border)",
       }}
     >
-      <Text as="span" mono size={13} weight={700} color="var(--ft-blue)" letterSpacing="0.02em">
+      {/* Text colour, not --ft-blue: this row is pressable, and a
+          categorical colour never marks a control (DESIGN.md §11). */}
+      <Text as="span" mono size={13} weight={700} letterSpacing="0.02em">
         {ticker}
       </Text>
-      <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
+      <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
         your {qtyLabel(shares)} {unitNoun(ticker, shares)}
       </Text>
     </div>
@@ -451,7 +426,10 @@ function FxRow({ ccy, nativeSum, rate, chg, fixingAt, isFirst, isLast }: FxRowPr
       }}
     >
       {/* Row 1 — GBP/XXX · rate · change% */}
-      <Text as="span" mono size={13} weight={700} color="var(--ft-blue)" letterSpacing="0.02em">
+      {/* Matches the position rows above. Blue here was categorical and
+          allowed, but directly under pressable rows in the same blue it
+          taught the reader that blue means press (DESIGN.md §11). */}
+      <Text as="span" mono size={13} weight={700} letterSpacing="0.02em">
         GBP/{ccy}
       </Text>
       <Text as="span" mono size={13} numeric>
@@ -462,7 +440,7 @@ function FxRow({ ccy, nativeSum, rate, chg, fixingAt, isFirst, isLast }: FxRowPr
       </Text>
       {/* Row 2 — native holding · converted */}
       <div style={{ gridColumn: "1 / -1" }}>
-        <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
+        <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
           your {sym}{nfmt(nativeSum)}
           {baseEquivalent != null ? ` ≈ ${formatMoney(baseEquivalent, getBaseCurrency())}` : ""}
         </Text>

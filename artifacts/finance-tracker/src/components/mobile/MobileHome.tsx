@@ -11,7 +11,7 @@ import {
   useListUpcoming,
 } from "@workspace/api-client-react";
 import { MobileEmptyState } from "./mobile-ui";
-import { SectionHeader } from "@/components/phone/SectionHeader";
+import { HomeSectionHeader } from "./home-section-header";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { MarketPane } from "./MarketPane";
 import { NewsPane } from "./NewsPane";
@@ -233,7 +233,7 @@ export function MobileHome(_props: MobileHomeProps) {
           flexDirection: "column",
         }}
       >
-        <HStack justify="end" align="center" height={44} paddingX={18}>
+        <HStack justify="end" align="center" height={44} paddingX={16}>
           <Text as="span" mono size={11} color="var(--ft-dim)">NUMERIS</Text>
         </HStack>
         {(() => {
@@ -286,7 +286,7 @@ export function MobileHome(_props: MobileHomeProps) {
       className="mobile-scroll"
     >
         {/* Top bar (44px, JetBrains Mono, dim) */}
-        <HStack justify="end" align="center" height={44} paddingX={18}>
+        <HStack justify="end" align="center" height={44} paddingX={16}>
           {/* The count alone. This read "LIVE · 8 ACCOUNTS" until 16 Sep 2026
               and claimed something the app cannot do: these balances are
               maintained by hand, and nothing on this screen is a live feed
@@ -311,7 +311,7 @@ export function MobileHome(_props: MobileHomeProps) {
             other persona keeps NET WORTH + since-1st-of-month
             (the existing headline shape). */}
         {persona === "market" ? (
-          <VStack padding="4px 18px 18px">
+          <VStack padding="4px 16px 0">
             <MonoLabel size={11} letterSpacing="0.16em">PORTFOLIO</MonoLabel>
             <HStack align="baseline" gap={4} marginTop={6}>
               <Text as="span" size={17} color="var(--ft-dim)">£</Text>
@@ -354,13 +354,13 @@ export function MobileHome(_props: MobileHomeProps) {
               );
             })()}
             {unconvertibleAccounts > 0 && (
-              <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
+              <Text as="div" size={11} mt={6} color="var(--ft-amber)">
                 {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
               </Text>
             )}
           </VStack>
         ) : (
-          <VStack padding="4px 18px 18px">
+          <VStack padding="4px 16px 0">
             <MonoLabel size={11} letterSpacing="0.16em">NET WORTH</MonoLabel>
             <DrillTarget href="/net-worth" title="Net worth — everything it is the sum of">
               <HStack align="baseline" gap={4} marginTop={6}>
@@ -380,7 +380,7 @@ export function MobileHome(_props: MobileHomeProps) {
               </HStack>
             </DrillTarget>
             {unconvertibleAccounts > 0 && (
-              <Text as="div" mono size={10} mt={4} color="var(--ft-amber)" letterSpacing="0.06em">
+              <Text as="div" size={11} mt={6} color="var(--ft-amber)">
                 {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
               </Text>
             )}
@@ -396,53 +396,54 @@ export function MobileHome(_props: MobileHomeProps) {
             on. Rendering it on both tabs would be one finding stated
             twice, so it moved rather than being copied. */}
 
-        {/* Claimed (liabilities are outlined, no depth).
-            C2-4: when the API supplies topPending, list up to 3
+        {/* Claimed. C2-4: when the API supplies topPending, list up to 3
             counterparties by name + amount underneath the total.
-            If not (older API), only the count line renders. */}
+
+            Until 16 Sep 2026 a 14px red-outlined square stood in front of
+            this line. It was a div — no input, no state, no handler — that
+            looked exactly like an unticked checkbox (DESIGN.md §16: a control
+            that does nothing is a lie), so it is gone rather than wired.
+
+            The total and the per-person amounts are a balance owed, not a
+            move, so they are drawn in the text colour with their minus sign,
+            as WORTH draws OWED. Red on HOME is kept for a figure that went
+            down (§7, §11); it was carrying five meanings on this screen. */}
         {owedByMe != null && owedByMe > 0 && (
-          <VStack gap={4} padding="18px 18px 0">
-            <HStack align="start" gap={12}>
-              <div
-                style={{
-                  width: 14,
-                  height: 14,
-                  borderWidth: 1, borderStyle: "solid", borderColor: "var(--ft-red)",
-                  boxSizing: "border-box",
-                  flex: "none",
-                  marginTop: 2,
-                }}
-              />
-              <DrillTarget href="/owing" title="The debts this claims">
-                <span className="ft-drill">
-                  <Text
-                    as="div"
-                    mono
-                    size={11}
-                    lineHeight="16px"
-                    color="var(--ft-red)"
-                    numeric
-                  >
-                    CLAIMED {nfmt(-owedByMe, { symbol: "£" })} · {pendingCount ?? 0}{" "}
-                    {pendingCount === 1 ? "DEBT" : "DEBTS"}
-                  </Text>
-                </span>
-              </DrillTarget>
-            </HStack>
+          <VStack gap={6} padding="16px 16px 0">
+            <DrillTarget href="/owing" title="The debts this claims">
+              <span className="ft-drill">
+                <Text
+                  as="div"
+                  mono
+                  size={11}
+                  lineHeight="16px"
+                  numeric
+                >
+                  CLAIMED {nfmt(-owedByMe, { symbol: "£" })}
+                  {pendingCount != null && ` · ${pendingCount} ${pendingCount === 1 ? "DEBT" : "DEBTS"}`}
+                </Text>
+              </span>
+            </DrillTarget>
             {topPending.filter((p) => p.direction === "i_owe_them").slice(0, 3).map((p) => (
-              <HStack key={`${p.name}-${p.amountBase}`} align="baseline" justify="between" padding="0 0 0 26px">
+              <HStack key={`${p.name}-${p.amountBase}`} align="baseline" justify="between" gap={12}>
                 <Text as="span" size={11} color="var(--ft-muted)" truncate>
                   {p.name}
                 </Text>
-                <Text as="span" mono size={11} color="var(--ft-red)" numeric>
-                  {nfmt(-p.amountBase, { symbol: "£" })}
-                </Text>
+                <span style={{ flex: "none" }}>
+                  <Text as="span" mono size={11} color="var(--ft-muted)" numeric>
+                    {nfmt(-p.amountBase, { symbol: "£" })}
+                  </Text>
+                </span>
               </HStack>
             ))}
           </VStack>
         )}
 
-        <InsightSlot insight={currentInsight} onDismiss={handleDismissInsight} />
+        {currentInsight != null && (
+          <div style={{ paddingTop: 16 }}>
+            <InsightSlot insight={currentInsight} onDismiss={handleDismissInsight} />
+          </div>
+        )}
 
         {/* Persona ordering (lib/persona-emphasis.ts): a markets persona
             sees market movement above the cashflow chart, everyone else
@@ -458,7 +459,7 @@ export function MobileHome(_props: MobileHomeProps) {
                   link="CASHFLOW ›"
                   onLink={() => navigate("/cashflow")}
                 />
-                <div style={{ padding: "0 18px" }}>
+                <div style={{ padding: "0 16px" }}>
                   <CashflowChart
                     days={dailyBalances}
                     todayIndex={todayIndex}
@@ -490,7 +491,7 @@ export function MobileHome(_props: MobileHomeProps) {
           link="MONTH ›"
           onLink={() => navigate("/upcoming")}
         />
-        <div style={{ padding: "0 18px" }}>
+        <div style={{ padding: "0 16px" }}>
           <UpcomingList bills={upcomingBills} incoming={upcomingIncome} />
           <a
             onClick={(e) => {
@@ -501,58 +502,16 @@ export function MobileHome(_props: MobileHomeProps) {
               display: "flex",
               alignItems: "center",
               minHeight: 44,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
+              fontSize: 13,
               color: "var(--ft-dim)",
               textDecoration: "none",
               cursor: "pointer",
             }}
           >
-            SPLIT A BILL ›
+            Split a bill ›
           </a>
         </div>
 
-    </div>
-  );
-}
-
-// ── Section header (label + link) ────────────────────────────────────────────
-// The shared phone SectionHeader is the titlebar; this only supplies the
-// right-slot link and the gap that separates one home section from the last.
-function HomeSectionHeader({
-  label,
-  link,
-  onLink,
-}: {
-  label: string;
-  link: string;
-  onLink: () => void;
-}) {
-  return (
-    <div style={{ marginTop: 24 }}>
-      <SectionHeader
-        label={label}
-        right={
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              onLink();
-            }}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              minHeight: 44,
-              margin: "-5px 0",
-              fontWeight: 400,
-              color: "var(--ft-dim)",
-              textDecoration: "none",
-              cursor: "pointer",
-            }}
-          >
-            {link}
-          </a>
-        }
-      />
     </div>
   );
 }
@@ -592,6 +551,23 @@ function buildDailyBalances(
   return result;
 }
 
+// Until 16 Sep 2026 this drew thirty bars with no scale, a red bar and a
+// yellow bar with no legend, each bar carrying a 5px offset shadow, and four
+// labels spaced along one line with nothing tying them to a bar. Now, by
+// rule:
+//   · the plot states its scale — the top rule is labelled with the tallest
+//     balance and the baseline is £0 (DESIGN.md §5, §7);
+//   · days that have not happened are dotted outlines, not a dimmer solid
+//     (the phone's "dotted means not-yet-real");
+//   · TODAY and LOW are tick-marked under their own bars, not coloured —
+//     hue does not carry them (§11). LOW is red only when it is below zero;
+//   · depth is decoration, so the offset shadow is gone (Mobile Amendment
+//     permits elevation only on floating surfaces).
+// Bar height is still |balance| / max — see report Deferred on negatives.
+const PLOT_H = 120;
+const AXIS_H = 18;
+const EDGE_LABEL_CLEARANCE = 5; // days — hide an edge date the TODAY label would collide with
+
 function CashflowChart({
   days,
   todayIndex,
@@ -606,69 +582,91 @@ function CashflowChart({
   monthShortMixed: string;
 }) {
   const maxAbs = days.length ? Math.max(...days.map((d) => Math.abs(d.balance)), 1) : 1;
+  const n = Math.max(days.length, 1);
+  const centreOf = (i: number) => `${((i + 0.5) / n) * 100}%`;
+  const lowIndex = low != null ? days.findIndex((d) => d.day === low.day) : -1;
+  const hasToday = todayIndex >= 0 && todayIndex < days.length;
+  const showFirst = !hasToday || todayIndex >= EDGE_LABEL_CLEARANCE;
+  const showLast = !hasToday || todayIndex < days.length - EDGE_LABEL_CLEARANCE;
+  const axisLabel = { position: "absolute" as const, top: 4, whiteSpace: "nowrap" as const };
+  const tick = (i: number) => (
+    <span
+      key={`tick-${i}`}
+      aria-hidden
+      style={{ position: "absolute", top: 0, left: centreOf(i), width: 1, height: 4, background: "var(--ft-muted)" }}
+    />
+  );
 
   return (
-    <div>
-      <div style={{ position: "relative", height: 132, marginTop: 14 }}>
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 6,
-            bottom: 0,
-            top: 6,
-            display: "flex",
-            alignItems: "flex-end",
-            gap: 2,
-          }}
-        >
-          {days.map((d, i) => {
-            const heightPct = Math.max(1, (Math.abs(d.balance) / maxAbs) * 100);
-            const isToday = i === todayIndex;
-            const isLow = low != null && d.day === low.day;
-            const color = d.future
-              ? "var(--ft-dim)"
-              : isLow
-                ? "var(--ft-red)"
-                : isToday
-                  ? "var(--ft-accent)"
-                  : "var(--ft-text)";
-            return (
-              <span
-                key={i}
-                style={{
-                  flex: 1,
-                  height: `${heightPct}%`,
-                  background: color,
-                  boxShadow: "5px -5px 0 0 var(--ft-border)",
-                  minWidth: 1,
-                }}
-              />
-            );
-          })}
-        </div>
+    <div style={{ marginTop: 12 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+        <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
+          {nfmt(maxAbs, { symbol: "£", decimals: 0 })}
+        </Text>
+      </div>
+      <div
+        style={{
+          height: PLOT_H,
+          display: "flex",
+          alignItems: "flex-end",
+          gap: 2,
+          borderTop: "1px solid var(--ft-border)",
+          borderBottom: "1px solid var(--ft-border2)",
+        }}
+      >
+        {days.map((d, i) => {
+          const heightPct = Math.max(1, (Math.abs(d.balance) / maxAbs) * 100);
+          return (
+            <span
+              key={i}
+              style={{
+                flex: 1,
+                minWidth: 1,
+                height: `${heightPct}%`,
+                boxSizing: "border-box",
+                ...(d.future
+                  ? { border: "1px dotted var(--ft-dim)", borderBottom: "none" }
+                  : { background: "var(--ft-text)" }),
+              }}
+            />
+          );
+        })}
+      </div>
+      <div style={{ position: "relative", height: AXIS_H, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+        {hasToday && tick(todayIndex)}
+        {lowIndex >= 0 && lowIndex !== todayIndex && tick(lowIndex)}
+        {showFirst && <span className="pnum" style={{ ...axisLabel, left: 0 }}>1 {monthShortMixed}</span>}
+        {hasToday && (
+          <span style={{ ...axisLabel, left: centreOf(todayIndex), transform: "translateX(-50%)", color: "var(--ft-text)" }}>
+            TODAY
+          </span>
+        )}
+        {showLast && <span className="pnum" style={{ ...axisLabel, right: 0 }}>{lastDay} {monthShortMixed}</span>}
       </div>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          marginTop: 8,
+          alignItems: "baseline",
+          flexWrap: "wrap",
+          gap: "6px 12px",
+          marginTop: 6,
           fontFamily: "var(--font-mono)",
           fontSize: 11,
           color: "var(--ft-dim)",
-          gap: 8,
         }}
       >
-        <span>1 {monthShortMixed}</span>
-        <span style={{ color: "var(--ft-accent)" }}>TODAY</span>
-        {low ? (
-          <span className="pnum" style={{ color: "var(--ft-red)", whiteSpace: "nowrap" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span aria-hidden style={{ width: 8, height: 8, background: "var(--ft-text)" }} />
+          SO FAR
+          <span aria-hidden style={{ width: 8, height: 8, marginLeft: 6, border: "1px dotted var(--ft-dim)", boxSizing: "border-box" }} />
+          PROJECTED
+        </span>
+        {low && (
+          <span className="pnum" style={{ color: low.balance < 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
             LOW {nfmt(low.balance, { symbol: "£" })} · {low.day} {monthShortMixed}
           </span>
-        ) : (
-          <span />
         )}
-        <span>{lastDay} {monthShortMixed}</span>
       </div>
     </div>
   );
@@ -733,28 +731,35 @@ function UpcomingList({
             justifyContent: "space-between",
             alignItems: "center",
             minHeight: 44,
-            borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)",
+            // No top rule on the first row: COMING's header draws it (DESIGN.md §5).
+            ...(i > 0 ? { borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)" } : {}),
             ...(i === rows.length - 1
               ? { borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: "var(--ft-border)" }
               : {}),
             fontSize: 14,
           }}
         >
-          <Text as="span" size={14}>
+          {/* The name may give; the amount may not (DESIGN.md §8). */}
+          <Text as="span" size={14} truncate>
             {r.name} · {r.dateStr}
           </Text>
-          <Text
-            as="span"
-            mono
-            size={13}
-            color={r.kind === "in" ? "var(--ft-green)" : "var(--ft-red)"}
-            numeric
-          >
-            {nfmt(r.kind === "in" ? r.amount : -r.amount, {
-              symbol: r.currency === "GBP" ? "£" : "",
-              sign: r.kind === "in",
-            })}
-          </Text>
+          <span style={{ flex: "none", paddingLeft: 12 }}>
+            <Text
+              as="span"
+              mono
+              size={13}
+              color={r.kind === "in" ? "var(--ft-green)" : "var(--ft-red)"}
+              numeric
+            >
+              {/* Native currency is named on every foreign value (§7). This
+                  passed an empty symbol for anything not GBP, so a USD bill
+                  read as a bare "−20.00". */}
+              {nfmt(r.kind === "in" ? r.amount : -r.amount, {
+                symbol: CURRENCY_SYMBOLS[r.currency] ?? `${r.currency} `,
+                sign: r.kind === "in",
+              })}
+            </Text>
+          </span>
         </div>
       ))}
     </VStack>
