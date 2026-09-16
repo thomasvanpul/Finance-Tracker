@@ -104,10 +104,18 @@ const heavyWeekAhead: InsightProducer = (_txs, context) => {
   if (upcoming.length < 3) return null;
   const convertible = upcoming.filter((i) => i.baseEquivalent != null);
   const sym = context.baseCurrency === "GBP" ? "£" : context.baseCurrency === "USD" ? "$" : (context.baseCurrency ?? "") + " ";
+  // The body is one line of ~45 characters (DESIGN.md §15). It read
+  // "£308 in committed outgoings in the next 7 days." until 16 Sep 2026 —
+  // 43 characters before the figure, so any total of £10 or more was cut
+  // mid-word on the phone. The headline already says what; the body says
+  // how much and by when: "£1,234,567 going out by Wed 23 Sep" is 34.
+  const by = new Date(now.getTime() + 7 * 86_400_000)
+    .toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
+    .replace(",", "");
   const body =
     convertible.length === upcoming.length && convertible.length > 0
-      ? `${sym}${convertible.reduce((s, i) => s + i.baseEquivalent!, 0).toLocaleString("en-GB", { maximumFractionDigits: 0 })} in committed outgoings in the next 7 days.`
-      : `${upcoming.length} expenses due in the next 7 days.`;
+      ? `${sym}${convertible.reduce((s, i) => s + i.baseEquivalent!, 0).toLocaleString("en-GB", { maximumFractionDigits: 0 })} going out by ${by}`
+      : `${upcoming.length} expenses due by ${by}`;
   return {
     id: `heavy-week:${isoWeek(now)}`,
     source: "heavy-week-ahead",
