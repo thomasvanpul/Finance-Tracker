@@ -19,26 +19,75 @@ type Period = "7D" | "1M" | "3M" | "ALL";
 
 type CurrencyGroup = { currency: string; nativeTotal: number; gbpTotal: number; share: number | null };
 
+// The shares must sum to 100%, and until 2026-09-16 they summed to 103%.
+//
+// Numerator and denominator were drawn from two different populations. The
+// denominator, `totalCash`, is `assetAccountsTotal` (routes/dashboard.ts) and
+// EXCLUDES liabilities. The numerator reduced over every row in
+// `accountBreakdown`, liabilities included, so the seed account's £6,800
+// season-ticket loan was added to the GBP bucket as if it were £6,800 held.
+// GBP therefore claimed 28% of a whole that never contained it, and
+// MYR 75% + GBP 28% + EUR 0% came to 103%.
+//
+// This is exactly the defect `lib/account-sign.ts` exists to end, and that
+// module's own comment names the shape: "it lives in one module so a third
+// list cannot re-introduce the same defect with its own reduce()". This was
+// that third list, with its own reduce(), in a file that already imported the
+// module for something else.
+//
+// NET is the convention, matching the two surfaces that already state a
+// currency exposure and already agree with each other — `computeCurrencyExposure`
+// (phone/WorthScreen.tsx) and the Currency Exposure block on the accounts page,
+// both of which sign with `signedAccountAmount` on both halves of the division.
+// The phone carries the argument: a £6,800 sterling loan against £11,375 of
+// sterling cash is £4,575 of sterling, not £18,175. This widget was the only
+// one of the three that disagreed, which is why the desktop shipped 103% while
+// the phone did not.
+//
+// The share of a net whole can be NEGATIVE — a currency whose only holding is
+// a loan. The figure prints as it is, because CLAUDE.md's rule is that a
+// figure is shown as supplied or not at all. The BAR is what cannot draw it:
+// value is encoded by length, and a length has no sign, so the bar clamps at
+// zero while the percentage beside it does not.
 function buildCurrencyGroups(
-  accountBreakdown: { currency: string; balance: number; baseEquivalent: number | null }[],
-  totalCash: number
+  accountBreakdown: { currency: string; balance: number; baseEquivalent: number | null; type: string }[],
+  netTotal: number
 ): CurrencyGroup[] {
   const map = new Map<string, { native: number; gbp: number }>();
   for (const acct of accountBreakdown) {
     const prev = map.get(acct.currency) ?? { native: 0, gbp: 0 };
-    map.set(acct.currency, { native: prev.native + acct.balance, gbp: prev.gbp + (acct.baseEquivalent ?? 0) });
+    map.set(acct.currency, {
+      native: prev.native + (signedAccountAmount(acct.type, acct.balance) ?? 0),
+      gbp: prev.gbp + (signedAccountAmount(acct.type, acct.baseEquivalent) ?? 0),
+    });
   }
   return Array.from(map.entries())
     .map(([currency, { native, gbp }]) => ({
       currency,
       nativeTotal: native,
       gbpTotal: gbp,
-      // Share of zero total cash is undefined, not 0% for every currency.
-      share: totalCash > 0 ? (gbp / totalCash) * 100 : null,
+      // Share of a zero total is undefined, not 0% for every currency.
+      share: netTotal > 0 ? (gbp / netTotal) * 100 : null,
     }))
     .sort((a, b) => b.gbpTotal - a.gbpTotal);
 }
 
+/**
+ * A share as a percentage, where rounding must not turn a real holding into
+ * nothing.
+ *
+ * €540.75 of a £200,579.93 total is 0.23%, and `toFixed(0)` printed that as
+ * "0%" directly above the €540.75 itself — the card stating in one line that
+ * the money in the next line does not exist. A share too small to round to a
+ * whole percent reports as "<1%", which is true and is visibly not a zero.
+ * The mirror case gets the same treatment: a share just under 100% must not
+ * round up to a "100%" that denies the other currencies on the strip.
+ */
+function formatShare(share: number): string {
+  if (share > 0 && share < 0.5) return "<1%";
+  if (share < 100 && share >= 99.5) return ">99%";
+  return `${share.toFixed(0)}%`;
+}
 
 function formatNative(amount: number, currency: string): string {
   const symbols: Record<string, string> = { GBP: "£", USD: "$", EUR: "€", MYR: "RM ", SGD: "S$", AUD: "A$", CAD: "C$", JPY: "¥", HKD: "HK$", CHF: "CHF " };
@@ -75,7 +124,16 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
     // around it is the same box drawn without a border, and on the light
     // themes it read as the strongest rectangle in the widget.
     <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 0 0 12px", overflowX: "auto", scrollbarWidth: "none" }}>
+      {/* The denominator, named. A set of percentages is a claim about a
+          whole, and a reader who cannot see which whole cannot check the
+          claim — which is how 103% survived on screen for days. It names
+          ACCOUNTS rather than net worth because the portfolio is not in this
+          division, and NET OF DEBT because liabilities are signed into both
+          halves of it; see buildCurrencyGroups. */}
+      <div style={{ padding: "10px 12px 0", fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ft-dim)" }}>
+        Share of accounts, net of debt
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "6px 0 0 12px", overflowX: "auto", scrollbarWidth: "none" }}>
         {groups.map((g, i) => (
           // The two totals are sums of the accounts held in this currency, so
           // the cell opens the accounts list (§14). The share percentage beside
@@ -97,7 +155,7 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
                 <CurrencyMark code={g.currency} size={10} />
               </span>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 2 }}>
-                {g.share == null ? "—" : `${g.share.toFixed(0)}%`}
+                {g.share == null ? "—" : formatShare(g.share)}
               </span>
             </div>
             <div style={{ color: "var(--ft-accent)" }}>
@@ -112,7 +170,7 @@ function CurrencyExposureStrip({ groups }: { groups: CurrencyGroup[] }) {
             )}
             {/* share bar */}
             <div style={{ marginTop: 4, height: 2, background: "var(--ft-border)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${g.share ?? 0}%`, background: `hsl(${(groups.indexOf(g) * 47 + 200) % 360}, 60%, 55%)`, opacity: 0.9 }} />
+              <div style={{ height: "100%", width: `${Math.max(0, g.share ?? 0)}%`, background: `hsl(${(groups.indexOf(g) * 47 + 200) % 360}, 60%, 55%)`, opacity: 0.9 }} />
             </div>
           </DrillTarget>
         ))}
@@ -388,7 +446,10 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
     ? history.slice(-periodDef.days)
     : history;
 
-  const currencyGroups = d ? buildCurrencyGroups(d.accountBreakdown, d.totalCash) : [];
+  // Denominator: accounts NET of liabilities, so it is the same population the
+  // buckets above are summed from. `d.totalCash` is the gross asset total and
+  // was the wrong half of the division — see buildCurrencyGroups.
+  const currencyGroups = d ? buildCurrencyGroups(d.accountBreakdown, d.totalCash - (d.totalLiabilities ?? 0)) : [];
 
   // "This month" here must sum the same window the ledger will show.
   const month = thisMonthRange();
