@@ -157,7 +157,28 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
 
   const rowLimit = isExpanded ? 30 : 15;
 
-  const filtered = allTransactions
+  // Newest first, and sorted HERE rather than assumed.
+  //
+  // On 13 and 16 September this widget's top row was 11 June and its bottom
+  // row 14 July, under the heading "Recent Transactions". The ledger was not
+  // empty and the window was not wrong: GET /transactions orders by date
+  // ASCENDING (routes/transactions.ts), the list was sliced to the first 15
+  // without being sorted, and a widget named "recent" showed the fifteen
+  // OLDEST rows it had. The three September rows were at the far end of the
+  // array and never rendered.
+  //
+  // Sorted in the widget rather than by flipping the route, because ascending
+  // is what every other consumer of that endpoint already reads - the
+  // transactions page, the month strips on this dashboard, the MoM
+  // comparison - and "recent" is this widget's own contract to keep. A widget
+  // that means "newest" must not inherit its order from a shared endpoint.
+  //
+  // localeCompare on the ISO date: these are YYYY-MM-DD strings, so lexical
+  // order is chronological order and no Date is constructed to get it. Ties
+  // fall back to id so the order is stable across renders rather than
+  // depending on the sort's own stability for equal keys.
+  const filtered = [...allTransactions]
+    .sort((a, b) => b.date.localeCompare(a.date) || String(b.id).localeCompare(String(a.id)))
     .filter(tx => typeFilter === "all" || tx.type === typeFilter)
     .filter(tx => {
       if (!search.trim()) return true;
