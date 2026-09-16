@@ -233,8 +233,14 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
         }}
       >
         <HStack align="baseline" justify="between">
+          {/* "MARKETS · TOUCHING YOU" until 16 Sep 2026. J27 took the
+              per-security prices out and left a heading promising market
+              data over an aggregate portfolio value, a list of the user's
+              own tickers and quantities, and the FX rows. Every row under
+              this heading is now something the user holds, so that is what
+              it says. The INVESTMENTS drill is unchanged. */}
           <MonoLabel as="span" size={11} letterSpacing="0.16em">
-            MARKETS · TOUCHING YOU
+            WHAT YOU HOLD
           </MonoLabel>
           <a
             onClick={(e) => { e.preventDefault(); onOpenInvestments(); }}
