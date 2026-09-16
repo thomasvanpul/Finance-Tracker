@@ -521,7 +521,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   // widget (Net Liquidity). "Accounts" rather than "Assets" because
   // Portfolio is a separate cell and separate from this figure.
   const kpis = d ? [
-    { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Accounts + Portfolio − debt", animate: true, href: drillWhen(d.accountBreakdown.length > 0, "/net-worth") },
+    { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Accounts + Portfolio + owed − liabilities", animate: true, href: drillWhen(d.accountBreakdown.length > 0, "/net-worth") },
     { label: "Accounts",     raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
     { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(d.portfolio.totalValueBase), color: d.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(d.portfolio.totalPlBase)}`, animate: false, href: drillWhen(d.portfolio.totalValueBase !== 0, "/investments") },
     { label: "Net Liquidity",raw: null,                                   value: formatBaseMoney(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
@@ -535,10 +535,36 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
     { label: "Savings Rate", value: d.thisMonth.savingsRate == null ? "—" : formatPercent(d.thisMonth.savingsRate), color: (d.thisMonth.savingsRate ?? 0) >= 20 ? "var(--ft-green)" : "var(--ft-amber)" },
   ] : [];
 
+  // The card's own arithmetic, in the terms it does not already state above.
+  //
+  // This row used to be Accounts, Portfolio and Net Debt, which printed
+  // ACCOUNTS and PORTFOLIO a SECOND time inside the same card — the same two
+  // figures, six inches apart, from two config arrays that each listed them.
+  // A layout bug would have been the kinder explanation.
+  //
+  // Worse than the repetition was what the repetition crowded out. Net worth
+  // on this account is £216,033.82 and the card showed Accounts £207,379.93,
+  // Portfolio £15,358.19 and Net Debt £48.00, which comes to £222,690.12 —
+  // £6,656.30 apart from the figure at the top of the same card, under a
+  // caption reading "Accounts + Portfolio − debt". The £6,800 season-ticket
+  // loan appeared nowhere, and "debt" pointed at the £48 someone is owed
+  // rather than at the liability.
+  //
+  // The identity routes/dashboard.ts states and its tests pin has four terms:
+  //
+  //   netWorth == totalCash + portfolio.totalValueBase + owing.netBase
+  //               − totalLiabilities
+  //
+  // Two are already cells above, so this row carries the two that were
+  // missing, and the four now reconcile on screen: 207,379.93 + 15,358.19
+  // + 95.70 − 6,800.00 = 216,033.82.
+  //
+  // Owing is the NET of both directions, not `totalIOwe`. A row labelled
+  // "Net Debt" that ignored the £143.70 owed TO the holder was not net, and
+  // it is the term the identity actually contains.
   const breakdownItems = d ? [
-    { label: "Accounts",  value: formatBaseMoney(d.totalCash),                color: "var(--ft-accent)", href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
-    { label: "Portfolio", value: formatBaseMoney(d.portfolio.totalValueBase),  color: "var(--ft-green)", href: drillWhen(d.portfolio.totalValueBase !== 0, "/investments") },
-    { label: "Net Debt",  value: formatBaseMoney(d.owing.totalIOwe),          color: d.owing.totalIOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)", href: drillWhen(d.owing.totalIOwe !== 0, "/owing") },
+    { label: "Owed, net",  value: formatBaseMoney(d.owing.netBase),                color: d.owing.netBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", href: drillWhen(d.owing.pendingCount > 0, "/owing") },
+    { label: "Liabilities", value: formatBaseMoney(-(d.totalLiabilities ?? 0)),    color: (d.totalLiabilities ?? 0) > 0 ? "var(--ft-red)" : "var(--ft-dim)", href: drillWhen((d.totalLiabilities ?? 0) !== 0, "/accounts") },
   ] : [];
 
   const chartSection = (
