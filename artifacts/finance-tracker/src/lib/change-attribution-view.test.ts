@@ -52,7 +52,10 @@ describe("attributionView — the three lines", () => {
       // The app quotes rates as units-per-base everywhere (accounts.tsx
       // FxRateCell), so a share priced from a native-to-base rate is shown
       // the way the FX panel shows it, not upside down.
-      "the rate moved | GBP/MYR 5.4054 → 5.5556",
+      // The subject is what the amount beside it measures. A rate moves in
+      // percent — that is `detail`, right here on this row — so a rate
+      // cannot be what moved by a number of pounds.
+      "the rate revalued your balances | GBP/MYR 5.4054 → 5.5556",
       "nothing explains it | balance moved, no transaction",
     ]);
   });

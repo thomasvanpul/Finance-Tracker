@@ -25,7 +25,11 @@ export type AttributionRowKind = ChangeAttributionPart["kind"];
 
 export interface AttributionRow {
   kind: AttributionRowKind;
-  /** Reads as the subject of a sentence: "you spent", "the rate moved". */
+  /** Reads as the subject of a sentence COMPLETED BY `amountBase`: "you
+   *  spent", "the rate revalued your balances". The subject must therefore
+   *  be the thing that amount measures — a label naming something the
+   *  amount is not the size of ("the rate moved −£1,090.28") states a
+   *  falsehood however well it reads. */
   label: string;
   amountBase: number;
   /** The evidence for the label — a count, a rate pair, an account name. */
@@ -192,7 +196,22 @@ function rowFor(part: ChangeAttributionPart, from: string | null, to: string, ba
           : accounts.length === currencies.size
             ? `${currencies.size} ${currencies.size === 1 ? "currency" : "currencies"}`
             : `${plural(accounts.length, "account")} · ${currencies.size} currencies`;
-      return { kind: "rate", label: "the rate moved", amountBase: part.amountBase, detail, drillHref: "/net-worth", breakdown };
+      // "the rate moved −£1,090.28" was a category error on the dashboard's
+      // one-line finding. A rate moves in PERCENT — GBP/MYR 5.4054 → 5.5556,
+      // which is what `detail` on this very row says. What moved by
+      // £1,090.28 is the base-currency value of balances held in that
+      // currency, because the rate changed.
+      //
+      // The label is the subject of a sentence that is completed by the
+      // amount, so the subject has to be the thing the amount measures. The
+      // rate stays the actor and the balances become what it acted on, which
+      // is both true and still reads as a row label above its evidence.
+      //
+      // Distinct from the `valuation` row's "the value was re-marked" on
+      // purpose: that one is a mark-to-market with no transaction, this one
+      // is an FX leg, and collapsing them would lose the only distinction
+      // this decomposition exists to draw.
+      return { kind: "rate", label: "the rate revalued your balances", amountBase: part.amountBase, detail, drillHref: "/net-worth", breakdown };
     }
     case "valuation":
       return {
@@ -219,7 +238,8 @@ function rowFor(part: ChangeAttributionPart, from: string | null, to: string, ba
 
 /**
  * What a part is called when it is the subject of a sentence rather than
- * the label on a row. The row labels are verb phrases ("the rate moved"),
+ * the label on a row. The row labels are verb phrases ("the rate revalued
+ * your balances"),
  * which do not survive being embedded — "the rest is the rate moved".
  */
 const KIND_NOUN: Record<AttributionRowKind, string> = {
