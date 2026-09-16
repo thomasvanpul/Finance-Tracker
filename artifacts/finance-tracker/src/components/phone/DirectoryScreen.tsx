@@ -172,7 +172,8 @@ function GroupRow({ group, onTap }: { group: DirectoryGroup; onTap: () => void }
             letterSpacing: "0.06em",
           }}
         >
-          {isMulti ? `${group.items.length} ›` : "›"}
+          {/* A count is a number (DESIGN.md §7). */}
+          {isMulti ? <><span className="pnum">{group.items.length}</span> ›</> : "›"}
         </span>
       </button>
     </li>
@@ -292,13 +293,11 @@ export function DirectoryScreen() {
                 style={{
                   padding: "48px 20px",
                   textAlign: "center",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--ft-text-xs)",
-                  letterSpacing: "0.08em",
+                  fontSize: 13,
                   color: "var(--ft-dim)",
-                  textTransform: "uppercase",
                 }}
               >
+                {/* Empty-state copy is a sentence, so sans (DESIGN.md §10). */}
                 Nothing matches "{query}"
               </div>
             )}

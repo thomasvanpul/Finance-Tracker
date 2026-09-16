@@ -9,9 +9,10 @@ import { DrillTarget } from "@/components/drill";
 // pages/split.tsx, pages/investments/markets-tab.tsx today.
 //
 // Square by design — Amendment :55 keeps aligned metric columns square.
-// Hairlines between cells are per-cell borderRight / borderBottom (last
-// column and last row carry none) inside one 1px frame — no CSS gap, so
-// hover-tints don't leave gaps between cells.
+// The 1px frame is the only line. Until 16 Sep 2026 every cell also drew
+// borderRight / borderBottom, which is the ruled KPI grid DESIGN.md §5
+// withdrew: cells inside a framed panel carry no border and no band fill,
+// and the cell padding is what separates the columns.
 //
 // Amendment lines followed:
 //   :55  aligned metric columns stay square (no border-radius)
@@ -39,22 +40,19 @@ interface StatGridProps {
   columns?: 1 | 2 | 3 | 4;
 }
 
-type StatCellProps = StatGridItem & { isLastCol: boolean; isLastRow: boolean };
+type StatCellProps = StatGridItem;
 
-function StatCell({ label, value, sub, accent, icon, isFinancial, href, isLastCol, isLastRow }: StatCellProps) {
+function StatCell({ label, value, sub, accent, icon, isFinancial, href }: StatCellProps) {
   const cell = (
     <HoverRow
       style={{
-        background: "var(--ft-surface)",
         padding: "10px 12px",
-        borderRight: isLastCol ? undefined : "1px solid var(--ft-border)",
-        borderBottom: isLastRow ? undefined : "1px solid var(--ft-border)",
         display: "flex",
         flexDirection: "column",
         gap: 4,
         minWidth: 0,
         // With a drill the anchor is the grid item, so the cell has to fill
-        // it or the hairlines stop short of the row below.
+        // it or the hover tint stops short of the row below.
         flex: href ? 1 : undefined,
       }}
     >
@@ -115,21 +113,19 @@ function StatCell({ label, value, sub, accent, icon, isFinancial, href, isLastCo
 }
 
 export function StatGrid({ items, columns = 2 }: StatGridProps) {
-  const rowCount = Math.ceil(items.length / columns);
   return (
     <div
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
         border: "1px solid var(--ft-border)",
+        background: "var(--ft-surface)",
       }}
     >
-      {items.map((item, i) => (
+      {items.map((item) => (
         <StatCell
           key={item.label}
           {...item}
-          isLastCol={(i + 1) % columns === 0 || i === items.length - 1}
-          isLastRow={i >= (rowCount - 1) * columns}
         />
       ))}
     </div>

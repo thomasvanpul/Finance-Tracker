@@ -4,10 +4,13 @@ import type { ReactNode } from "react";
 // wrapped desktop pages Thomas already reads well narrow. Left slot for
 // label + optional icon; right slot for status / count / badge.
 //
-// tone maps to a 3px left border in a semantic colour token. Default is
-// no left border. Ten call sites across profile + import today
-// hand-roll the accent-left-border variant with different colour tokens
-// — this consolidates them.
+// tone colours the label text. It never draws an edge (DESIGN.md §4).
+//
+// This is unframed page structure (DESIGN.md §6), so it draws what §2 gives
+// SectionRule: the label and a hairline beneath, no fill, inset to the same
+// 16px content edge as the rows under it. Until 16 Sep 2026 it sat on a
+// --ft-raised band with a 12px inset — a box drawn without a line (§5), and
+// the one left edge on the phone that matched nothing below it.
 //
 // Amendment lines followed (src/index.css:47–94):
 //   :77  mono label at var(--ft-text-xs) = 11px (raised from historical
@@ -39,10 +42,9 @@ export function SectionHeader({ label, right, tone = "default", icon }: SectionH
   return (
     <div
       style={{
-        background: "var(--ft-raised)",
         borderBottom: "1px solid var(--ft-border)",
-        paddingLeft: 12,
-        paddingRight: 12,
+        paddingLeft: 16,
+        paddingRight: 16,
         minHeight: 34,
         display: "flex",
         alignItems: "center",

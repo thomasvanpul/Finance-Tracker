@@ -54,6 +54,11 @@ export function computeHoldings(d: HoldingsInput | null | undefined): Holdings {
 
 export type ViewMode = "blocks" | "bands" | "ring";
 
+// None of the three views carries an offset shadow. Each drew a 10px
+// border-coloured block behind its field until 16 Sep 2026: depth on a data
+// container, which the Mobile Amendment allows only on floating surfaces,
+// and which read as a second, misaligned frame.
+
 export function ViewTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   const base: React.CSSProperties = {
     display: "flex",
@@ -68,8 +73,11 @@ export function ViewTab({ label, active, onClick }: { label: string; active: boo
     cursor: "pointer",
     boxSizing: "border-box",
   };
+  // The current value in a segmented control is the accent (DESIGN.md §11).
+  // It was filled with --ft-text, which no other control on the phone uses
+  // for "selected".
   const on: React.CSSProperties = {
-    background: "var(--ft-text)",
+    background: "var(--ft-accent)",
     color: "var(--ft-base)",
   };
   const off: React.CSSProperties = {
@@ -127,7 +135,6 @@ export function RingView({ holdings }: { holdings: Holdings }) {
       <div
         style={{
           width: "100%", maxWidth: 354, height: 296,
-          boxShadow: "10px -10px 0 0 var(--ft-border)",
           background: "var(--ft-surface)",
           display: "grid", placeItems: "center",
           fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)",
@@ -154,7 +161,6 @@ export function RingView({ holdings }: { holdings: Holdings }) {
     <div
       style={{
         width: "100%", maxWidth: 354, minHeight: 296,
-        boxShadow: "10px -10px 0 0 var(--ft-border)",
         background: "var(--ft-surface)",
         display: "flex", flexDirection: "column", alignItems: "stretch",
         padding: 16, boxSizing: "border-box", gap: 16,
@@ -205,7 +211,6 @@ export function BandsView({ months }: { months: BandsMonth[] }) {
       <div
         style={{
           width: "100%", maxWidth: 354, height: 296,
-          boxShadow: "10px -10px 0 0 var(--ft-border)",
           background: "var(--ft-surface)",
           display: "grid", placeItems: "center",
           fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)",
@@ -229,7 +234,6 @@ export function BandsView({ months }: { months: BandsMonth[] }) {
     <div
       style={{
         width: "100%", maxWidth: 354, minHeight: 296,
-        boxShadow: "10px -10px 0 0 var(--ft-border)",
         background: "var(--ft-surface)",
         padding: 16, boxSizing: "border-box",
         display: "flex", flexDirection: "column", gap: 16,

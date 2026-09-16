@@ -13,7 +13,10 @@ import type { Insight } from "@/lib/spending-insights";
 // screen swap producers in later without touching the layout.
 //
 // Amendment lines followed (src/index.css:47–94):
-//   :54  border-radius 16 on the card (in range 16-24)
+//   :54  border-radius 16 on the card (in range 16-24). The Amendment wins
+//        on radius below 768px (DESIGN.md precedence), so it overrides the
+//        6px .ft-float radius; the raised fill, border and elevation are
+//        §6's, and mark the card as something that leaves.
 //   :74  ≥44px tap target on the dismiss button (padding gets us there
 //        without a giant visual X)
 //   :77  11px floor on the mono label; body sits at 13px
@@ -35,11 +38,10 @@ export function InsightSlot({ insight, onDismiss }: InsightSlotProps) {
       // tell "the slot is empty" from "the harness could not find the slot".
       // Same purpose as [data-skeleton] elsewhere.
       data-insight-slot={insight.source}
+      className="ft-float"
       style={{
         margin: "0 16px 12px",
         padding: "14px 14px 12px 16px",
-        background: "var(--ft-surface)",
-        border: "1px solid var(--ft-border)",
         borderRadius: 16,
         display: "flex",
         gap: 12,

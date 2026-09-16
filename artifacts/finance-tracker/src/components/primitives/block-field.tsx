@@ -113,7 +113,6 @@ export function BlockField({ holdings }: { holdings: Holdings }) {
         width: "100%",
         maxWidth: AVAILABLE_W,
         height: FIELD_H,
-        boxShadow: "10px -10px 0 0 var(--ft-border)",
         display: "flex",
         flexDirection: "column",
         gap: showProperty ? GAP : 0,
