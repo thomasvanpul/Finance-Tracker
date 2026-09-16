@@ -3514,6 +3514,10 @@ export default function Dashboard() {
     // drill into an empty September — a promise the product did not keep.
     const drillWhen = (hasRows: boolean, href: string): string | undefined =>
       hasRows ? href : undefined;
+    // The unknown mark is an EM dash. DESIGN.md §14 fixes it — "null prints
+    // —" — and every cell here printed an en dash, so the strip and the Net
+    // Worth card below it marked the same unknown metric with two different
+    // glyphs on one screen. Ten cells, all off by the same character.
     // Net worth is the sum of the account rows. Its test is not "is it
     // non-zero" — two accounts that cancel out sum to a real zero — but
     // whether this dashboard has already proved the rows exist.
@@ -3524,7 +3528,7 @@ export default function Dashboard() {
       lead: true,
       href: drillWhen(hasAccounts, "/net-worth"),
       value: formatBaseMoney(netWorth),
-      delta: netWorth > 0 ? undefined : "–",
+      delta: netWorth > 0 ? undefined : "—",
       // --ft-text, not --ft-blue. DESIGN.md §11 defines blue as
       // categorical — "a series line, a type badge, an identity" — and
       // says it "carries no affordance". A person's net worth is not a
@@ -3540,18 +3544,18 @@ export default function Dashboard() {
     const MONTHLY_INCOME: KpiCellData = {
       label: "MONTHLY INCOME",
       href: drillWhen(income > 0, ledgerHref({ type: "income", ...thisMonthRange() })),
-      value: income > 0 ? formatBaseMoney(income) : "–",
+      value: income > 0 ? formatBaseMoney(income) : "—",
       valueColor: income > 0 ? "var(--ft-green)" : "var(--ft-dim)",
     };
     const MONTHLY_SPEND: KpiCellData = {
       label: "MONTHLY SPEND",
       href: drillWhen(expenses > 0, ledgerHref({ type: "expense", ...thisMonthRange() })),
-      value: expenses > 0 ? formatBaseMoney(expenses) : "–",
+      value: expenses > 0 ? formatBaseMoney(expenses) : "—",
       valueColor: expenses > 0 ? "var(--ft-red)" : "var(--ft-dim)",
     };
     const SAVINGS_RATE: KpiCellData = {
       label: "SAVINGS RATE",
-      value: income > 0 ? `${Math.round(savingsRate)}%` : "–",
+      value: income > 0 ? `${Math.round(savingsRate)}%` : "—",
       delta: netSavings !== 0 ? `${netSavings >= 0 ? "+" : ""}${formatBaseMoney(netSavings)}` : undefined,
       deltaColor: netSavings > 0 ? "var(--ft-green)" : "var(--ft-red)",
       valueColor: savingsRate >= 20
@@ -3564,12 +3568,12 @@ export default function Dashboard() {
     };
     const MOM_SPEND: KpiCellData = {
       label: "MoM SPEND",
-      value: prevExpenses > 0 ? `${momSign}${momDelta.toFixed(1)}%` : "–",
+      value: prevExpenses > 0 ? `${momSign}${momDelta.toFixed(1)}%` : "—",
       valueColor: prevExpenses > 0 ? momColor : "var(--ft-dim)",
     };
     const PORTFOLIO: KpiCellData = {
       label: "PORTFOLIO",
-      value: portfolioVal > 0 ? formatBaseMoney(portfolioVal) : "–",
+      value: portfolioVal > 0 ? formatBaseMoney(portfolioVal) : "—",
       // Delta is total P&L (return-since-inception). Kept as the
       // secondary line on this cell for continuity; the intraday
       // headline lives on PORTFOLIO_DAY (below) for the market persona.
@@ -3587,7 +3591,7 @@ export default function Dashboard() {
       // Null return means no cost basis (empty portfolio) — no percent
       // to compute. Renders "—", never a fabricated "+0.00%".
       value: portfolioPct == null
-        ? "–"
+        ? "—"
         : `${portfolioPct >= 0 ? "+" : ""}${portfolioPct.toFixed(2)}%`,
       valueColor: portfolioPct == null
         ? "var(--ft-dim)"
@@ -3616,17 +3620,17 @@ export default function Dashboard() {
     };
     const CASH: KpiCellData = {
       label: "CASH",
-      value: cash !== 0 ? formatBaseMoney(cash) : "–",
+      value: cash !== 0 ? formatBaseMoney(cash) : "—",
       valueColor: cash > 0 ? "var(--ft-text)" : "var(--ft-dim)",
     };
     const OWED_TO_ME: KpiCellData = {
       label: "OWED TO ME",
-      value: owedToMe > 0 ? formatBaseMoney(owedToMe) : "–",
+      value: owedToMe > 0 ? formatBaseMoney(owedToMe) : "—",
       valueColor: owedToMe > 0 ? "var(--ft-green)" : "var(--ft-dim)",
     };
     const I_OWE: KpiCellData = {
       label: "I OWE",
-      value: iOwe > 0 ? formatBaseMoney(iOwe) : "–",
+      value: iOwe > 0 ? formatBaseMoney(iOwe) : "—",
       valueColor: iOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)",
     };
 

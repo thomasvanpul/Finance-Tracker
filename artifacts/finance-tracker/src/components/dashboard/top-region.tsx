@@ -49,6 +49,19 @@ import { AllowanceBand } from "./allowance-band";
 
 export const RULE = "1px solid var(--ft-border)";
 
+/**
+ * Whether a cell's value is the "we do not know" mark rather than a figure.
+ *
+ * Both dashes are tested because the dashboard's cells print both — most use
+ * an en dash and PORTFOLIO_DAY an em dash — and a check that knew only one of
+ * them would be a guard that silently stopped guarding the day a cell was
+ * written with the other.
+ */
+function isUnknown(value: string): boolean {
+  const v = value.trim();
+  return v === "\u2013" || v === "\u2014";
+}
+
 /** Structurally the dashboard's own KpiCellData, declared here rather than
  *  imported so nothing in components/ depends on a page module. */
 export interface TopRegionCell {
@@ -104,6 +117,22 @@ export function isDashed(cell: TopRegionCell): boolean {
  * nothing to say carries no underline and no hit area.
  */
 export function Reading({ cell, valueSize = 12 }: { cell: TopRegionCell; valueSize?: number }) {
+  // A delta QUALIFIES a value. With no value there is nothing for it to
+  // qualify, and on one baseline it stops reading as the qualifier and starts
+  // reading as the figure.
+  //
+  // SAVINGS RATE was the live case: income is £0, so a savings rate is
+  // undefined and the cell correctly printed a dash — but the delta slot
+  // carried this month's net savings, and the strip read
+  // "SAVINGS RATE – -£40.45" while the Net Worth card two inches below read
+  // "SAVINGS RATE —". Same metric, same screen, two answers, and the one
+  // that looked like a number was a currency amount standing in for a
+  // percentage.
+  //
+  // Suppressed here rather than at each cell because it is a property of the
+  // pair, not of any one metric: PORTFOLIO with a zero value and a non-zero
+  // P&L had the identical defect waiting on different data.
+  const delta = isUnknown(cell.value) ? undefined : cell.delta;
   const figure = (
     <Text as="span" numeric size={valueSize} weight={600}
       color={cell.valueColor ?? "var(--ft-text)"} className={cell.href ? "ft-drill" : undefined} nowrap>
@@ -116,8 +145,8 @@ export function Reading({ cell, valueSize = 12 }: { cell: TopRegionCell; valueSi
       {cell.href
         ? <DrillTarget href={cell.href} title={`${cell.label} — open what it is made of`}>{figure}</DrillTarget>
         : figure}
-      {cell.delta !== undefined && (
-        <Text as="span" numeric size={9} weight={600} color={cell.deltaColor ?? "var(--ft-dim)"} nowrap>{cell.delta}</Text>
+      {delta !== undefined && (
+        <Text as="span" numeric size={9} weight={600} color={cell.deltaColor ?? "var(--ft-dim)"} nowrap>{delta}</Text>
       )}
     </HStack>
   );
