@@ -3509,11 +3509,20 @@ export default function Dashboard() {
     // MoM delta: this month's spend against last month's.
     //
     // MoM SPEND could never render a value. `baseEquivalent` on an expense
-    // row is NEGATIVE — the seed's August rows sum to −1,334.91 — so
+    // row is NEGATIVE — the seed's August rows sum to −1,325.81 — so
     // `prevExpenses > 0` was false on every account that had ever spent
     // anything, and the cell fell to its dash forever. The guard read like a
     // no-data check and was actually a sign error, which is why the slot
     // looked like missing data rather than a bug.
+    //
+    // That figure read −1,334.91 until 16 Sep 2026 and was wrong by exactly
+    // £9.10. August is 14 rows summing to £1,325.81 against the stored
+    // native_to_base_rate; £9.10 is a 31 JULY expense. The comment was
+    // written while getPrevMonthBounds still used toISOString(), which in
+    // UTC+8 began "last month" on 31 July — the bug documented at that
+    // function above. The bounds were fixed; this comment was not. It was a
+    // stale comment, not a second live derivation: both derivations agree
+    // once they are given the same window.
     //
     // The comparison was mismatched underneath it too: `expenses` comes from
     // the API as a POSITIVE magnitude (thisMonth.expenses = 40.45) while this
