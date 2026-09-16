@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import {
   useListInvestments,
   useListAccounts,
+  useGetDashboard,
   useGetMarketQuotes,
   getGetMarketQuotesQueryKey,
   useGetFxRates,
@@ -25,6 +26,35 @@ import { getBaseCurrency } from "@/lib/currency-store";
 //   - Live-updating values must not animate. Absolute.
 //
 // News is out of scope for this run.
+//
+// ── J27, 2026-09-16: no per-security price on this surface ──────────────────
+// This pane used to print AAPL $331.34 −0.52%, BTC-USD $75,811.59 −2.32%,
+// MSFT $497.12 −1.64% and VUSA.L £106.78 −0.45%, one row per holding.
+// J26 settled that holdings are valued as AGGREGATES and that a
+// per-security price is never displayed. The desktop index tiles came out
+// on 11 Sep and the server learned to refuse index symbols, but nothing
+// touched this surface because the phone had not been photographed.
+//
+// What is licensed and what is not:
+//   · Per-security prices arrive via getStockPrices, whose chain is
+//     Yahoo → Alpaca → Polygon → Twelve Data. Alpaca refused display to
+//     third parties on any plan (ticket 350117, 11 Sep) and called this
+//     use commercial. The PRIMARY lane is worse, not better: market.ts
+//     documents Yahoo as "a STOPGAP, not a launch-safe provider" and an
+//     "undocumented, unlicensed endpoint". So the exposure does not
+//     depend on which lane happened to serve the row.
+//   · The user's own holdings — ticker, quantity, cost basis — are their
+//     record and need no licence from anybody. They stay.
+//   · FX rows stay too. They are not securities, and their rate comes
+//     from the FX endpoint's Yahoo → Frankfurter chain, Frankfurter being
+//     the ECB's openly published reference fixings.
+//
+// So the positions block keeps ticker and quantity, gains ONE aggregate
+// value (dashboard.portfolio.totalValueBase — the same figure the market
+// persona's headline already renders, not a new metric invented to fill
+// the space), and loses price and change%. The pane also stops REQUESTING
+// per-security quotes: the tickers are no longer in the useGetMarketQuotes
+// call, so the surface neither shows nor fetches them.
 
 // StockQuote (regenerated 2026-08-16 with changePercent + previousClose
 // added to the OpenAPI spec) now carries the runtime fields the server
@@ -60,6 +90,24 @@ function pctLabel(chg: number | null | undefined): string {
   return `${chg >= 0 ? "+" : "−"}${Math.abs(chg).toFixed(2)}%`;
 }
 
+// Crypto quote-pair tickers, mirroring the server's classifyTicker rule in
+// api-server/src/lib/market-classifier.ts. Only used to pick the noun.
+const CRYPTO_TICKER = /-(USD|USDT|EUR|GBP|BTC|ETH)$/;
+
+// "shares" is wrong for a coin — you do not hold 0.05 shares of Bitcoin.
+function unitNoun(ticker: string, qty: number): string {
+  const noun = CRYPTO_TICKER.test(ticker) ? "unit" : "share";
+  return qty === 1 ? noun : `${noun}s`;
+}
+
+// Quantity, not money: the number rule's "two decimals for facts" is about
+// currency. A holding of 8 is 8, and 0.05 of a coin is 0.05 — the stored
+// scale is 6dp, so "0.050000" and the old fixed-4dp "0.0500" were both
+// trailing-zero noise. Separators stay; up to 6dp, none of them padding.
+function qtyLabel(qty: number): string {
+  return qty.toLocaleString("en-GB", { maximumFractionDigits: 6 });
+}
+
 interface MarketPaneProps {
   onOpenInvestments: () => void;
 }
@@ -68,6 +116,9 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
   const [, navigate] = useLocation();
   const { data: investments = [] } = useListInvestments();
   const { data: accounts = [] } = useListAccounts();
+  // Aggregate holdings value. Server-computed, already on the payload this
+  // screen loads for its headline — TanStack serves it from cache.
+  const { data: dashboard } = useGetDashboard();
 
   // Held tickers: only positions the user owns. If they hold nothing,
   // this section shows only FX (or nothing at all).
@@ -99,16 +150,14 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
       .sort((a, b) => a.ccy.localeCompare(b.ccy));
   }, [accounts]);
 
-  // Combined ticker query: positions + FX pairs. useGetMarketQuotes hits
-  // Yahoo through the api-server, cached 5 min server-side. Refetch every
-  // 30 s so the pane earns its "this changes without you doing anything"
-  // slot but doesn't hammer the upstream.
+  // FX pairs ONLY. Held tickers used to be in this list; J27 took them out
+  // (see the note at the top of the file). Nothing on this surface renders
+  // a per-security price any more, so nothing on this surface asks for one.
+  // Refetch every 30 s so the pane earns its "this changes without you
+  // doing anything" slot but doesn't hammer the upstream.
   const allTickers = useMemo(
-    () => [
-      ...heldPositions.map((p) => p.ticker),
-      ...heldForeignCurrencies.map((f) => f.pair),
-    ],
-    [heldPositions, heldForeignCurrencies],
+    () => heldForeignCurrencies.map((f) => f.pair),
+    [heldForeignCurrencies],
   );
 
   const tickerParam = { tickers: allTickers.join(",") };
@@ -164,6 +213,8 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
     return oldest;
   }, [quotes]);
 
+  const holdingsValueBase = dashboard?.portfolio.totalValueBase ?? null;
+
   // Nothing to show and no holdings → don't render the pane at all.
   // A first-run user with no accounts and no positions doesn't need a
   // MARKETS section that would just show "—" everywhere.
@@ -210,9 +261,44 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
       </div>
 
       <VStack paddingX={18} marginTop={6}>
-        {/* Positions: one row per held ticker */}
+        {/* Aggregate holdings value — one figure for the whole portfolio,
+            which is the grain J26 permits. Null-safe per G10: the payload
+            only carries a number once the dashboard has loaded. */}
+        {heldPositions.length > 0 && (
+          <div
+            onClick={onOpenInvestments}
+            style={{
+              cursor: "pointer",
+              display: "grid",
+              gridTemplateColumns: "1fr auto",
+              rowGap: 2,
+              columnGap: 12,
+              alignItems: "baseline",
+              minHeight: 52,
+              padding: "10px 0",
+              borderBottomWidth: 1,
+              borderBottomStyle: "solid",
+              borderBottomColor: "var(--ft-border)",
+            }}
+          >
+            <Text as="span" mono size={13} weight={700} letterSpacing="0.02em">
+              HOLDINGS
+            </Text>
+            <Text as="span" mono size={13} numeric>
+              {holdingsValueBase != null
+                ? formatMoney(holdingsValueBase, getBaseCurrency())
+                : "—"}
+            </Text>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
+                your {heldPositions.length} position{heldPositions.length === 1 ? "" : "s"}
+              </Text>
+            </div>
+          </div>
+        )}
+        {/* Positions: ticker + quantity. The user's own record — no price,
+            no change%. J27. */}
         {heldPositions.map((p, i) => {
-          const q = quoteMap.get(p.ticker);
           const isLast =
             i === heldPositions.length - 1 && heldForeignCurrencies.length === 0;
           return (
@@ -220,8 +306,6 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
               key={`pos-${p.ticker}`}
               ticker={p.ticker}
               shares={p.shares}
-              quote={q}
-              isFirst={i === 0}
               isLast={isLast}
               onClick={() => navigate("/investments")}
             />
@@ -262,61 +346,42 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
 }
 
 // ── Position row ─────────────────────────────────────────────────────────────
-// TICKER · price + native ccy · change% · "your N shares" relevance line.
+// TICKER · quantity. No price and no change% — J27, see the note at the top
+// of this file. The row is the user's own holding, which is why it survives
+// the removal at all; the value of the whole set is the HOLDINGS row above.
 
 interface PositionRowProps {
   ticker: string;
   shares: number;
-  quote?: QuoteExt;
-  isFirst: boolean;
   isLast: boolean;
   onClick: () => void;
 }
 
-function PositionRow({ ticker, shares, quote, isFirst, isLast, onClick }: PositionRowProps) {
-  const chg = quote?.changePercent ?? null;
-  const price = typeof quote?.price === "number" && Number.isFinite(quote.price) && quote.price > 0 ? quote.price : null;
-  const sym = quote?.currency && CURRENCY_SYMBOLS[quote.currency]
-    ? CURRENCY_SYMBOLS[quote.currency]
-    : quote?.currency
-      ? `${quote.currency} `
-      : "";
+function PositionRow({ ticker, shares, isLast, onClick }: PositionRowProps) {
   return (
     <div
       onClick={onClick}
       style={{
         cursor: "pointer",
         display: "grid",
-        gridTemplateColumns: "auto 1fr auto",
-        rowGap: 2,
+        gridTemplateColumns: "auto 1fr",
         columnGap: 12,
         alignItems: "baseline",
-        minHeight: 52,
+        // 44 is the Amendment's tap minimum. The row was 52 when it
+        // carried two lines; it carries one now.
+        minHeight: 44,
         padding: "10px 0",
-        borderTopWidth: isFirst ? 0 : 1,
-        borderTopStyle: "solid",
-        borderTopColor: "var(--ft-border)",
         borderBottomWidth: isLast ? 1 : 0,
         borderBottomStyle: "solid",
         borderBottomColor: "var(--ft-border)",
       }}
     >
-      {/* Row 1 — TICKER · price (native) · change% */}
       <Text as="span" mono size={13} weight={700} color="var(--ft-blue)" letterSpacing="0.02em">
         {ticker}
       </Text>
-      <Text as="span" mono size={13} numeric>
-        {price != null ? `${sym}${nfmt(price)}` : "—"}
+      <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
+        your {qtyLabel(shares)} {unitNoun(ticker, shares)}
       </Text>
-      <Text as="span" mono size={13} weight={600} color={pctColor(chg)} numeric>
-        {pctLabel(chg)}
-      </Text>
-      {/* Row 2 — relevance line spans all three columns */}
-      <div style={{ gridColumn: "1 / -1" }}>
-        <Text as="span" mono size={10} color="var(--ft-dim)" numeric>
-          your {nfmt(shares, { decimals: shares < 1 ? 4 : 0 })} share{shares === 1 ? "" : "s"}
-        </Text>
-      </div>
     </div>
   );
 }
