@@ -136,8 +136,8 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // Preview-mode UI state — theme-swatch preview, widget-carousel preview.
   // Not a data fabrication; the "preview" here is a controlled UI state
   // toggled by the user, and no financial value is invented.
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1896, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1898, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1898, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1900, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
   { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 773, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
   { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 774, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
@@ -148,7 +148,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // is a mathematical placeholder that never renders as a currency figure.
   { path: "artifacts/finance-tracker/src/components/investments/derivatives-tab.tsx", line: 1489, reason: "chart normalisation denominator: payoffData empty → 1 to avoid /0 in bar height calc" },
   { path: "artifacts/finance-tracker/src/components/investments/portfolio-tables.tsx", line: 148, reason: "ratio for weighting bar; 1 = fully weighted when live price is missing (chart geometry, not currency)" },
-  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 597, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
+  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 605, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
   { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 159, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 550, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1511, reason: "chart max denominator: empty merchants → 1 to avoid /0" },
@@ -190,8 +190,8 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1578, reason: "border thickness (2px hi-value, 4px normal)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1248, reason: "chart bar width in px (38 mobile / 44 desktop)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1249, reason: "chart bar height in px (34 mobile / 40 desktop)" },
-  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 439, reason: "popup position fallback: no anchor rect → 100px default" },
-  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 443, reason: "popup position fallback: no anchor rect → 100px default" },
+  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 440, reason: "popup position fallback: no anchor rect → 100px default" },
+  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 444, reason: "popup position fallback: no anchor rect → 100px default" },
   { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 848, reason: "chart bar min height in px (4px)" },
   { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 515, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
   { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 514, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
