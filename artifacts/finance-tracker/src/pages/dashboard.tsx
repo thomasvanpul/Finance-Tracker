@@ -447,15 +447,26 @@ function getMonthStart(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
+// Built from LOCAL calendar fields, like getMonthStart and thisMonthRange
+// beside it, rather than through toISOString().
+//
+// toISOString() names the UTC day. In UTC+8 the local 1 August is still
+// 31 July in UTC, so "last month" began on 31 July and quietly folded a
+// July day into the August comparison; west of Greenwich the same idiom
+// pushed the END bound to 1 September and folded in a September one. The
+// window was wrong in both directions, differently, and right only for
+// users on UTC itself.
 function getPrevMonthBounds(): { from: string; to: string } {
   const now = new Date();
-  const firstOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastOfPrev = new Date(firstOfThisMonth.getTime() - 1);
-  const firstOfPrev = new Date(lastOfPrev.getFullYear(), lastOfPrev.getMonth(), 1);
-  return {
-    from: firstOfPrev.toISOString().slice(0, 10),
-    to: lastOfPrev.toISOString().slice(0, 10),
-  };
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  // Month 0 of `new Date(y, m, d)` rolls back into December of y−1 on its
+  // own, so January needs no special case.
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const first = new Date(y, m - 1, 1);
+  const last = new Date(y, m, 0);
+  const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  return { from: iso(first), to: iso(last) };
 }
 
 function formatDayLabel(dateStr: string): string {
@@ -3495,11 +3506,27 @@ export default function Dashboard() {
     const owedToMe = dashData.owing?.totalOwedToMe ?? 0;
     const iOwe = dashData.owing?.totalIOwe ?? 0;
 
-    // MoM delta: compare current month expenses to previous. Skip
-    // unconvertible rows from the prev-month sum; if enough rows drop
-    // out the delta is understated, which the KPI accepts silently.
-    const prevExpenses = (prevMonthTxs ?? []).reduce((s, t) => s + (t.baseEquivalent ?? 0), 0);
-    const momDelta = prevExpenses > 0 ? ((expenses - prevExpenses) / prevExpenses) * 100 : 0;
+    // MoM delta: this month's spend against last month's.
+    //
+    // MoM SPEND could never render a value. `baseEquivalent` on an expense
+    // row is NEGATIVE — the seed's August rows sum to −1,334.91 — so
+    // `prevExpenses > 0` was false on every account that had ever spent
+    // anything, and the cell fell to its dash forever. The guard read like a
+    // no-data check and was actually a sign error, which is why the slot
+    // looked like missing data rather than a bug.
+    //
+    // The comparison was mismatched underneath it too: `expenses` comes from
+    // the API as a POSITIVE magnitude (thisMonth.expenses = 40.45) while this
+    // sum is signed, so had the guard ever passed it would have divided a
+    // positive by a negative and printed a delta with the wrong sign.
+    //
+    // Both sides are magnitudes now. Unconvertible rows are still skipped
+    // and still silently understate the base — unchanged here, and the
+    // honest fix for it is a nullable total, which is a larger change than
+    // this cell.
+    const prevExpenses = (prevMonthTxs ?? []).reduce((s, t) => s + Math.abs(t.baseEquivalent ?? 0), 0);
+    const thisExpenses = Math.abs(expenses);
+    const momDelta = prevExpenses > 0 ? ((thisExpenses - prevExpenses) / prevExpenses) * 100 : 0;
     const momSign = momDelta >= 0 ? "+" : "";
     const momColor = momDelta > 5 ? "var(--ft-red)" : momDelta < -5 ? "var(--ft-green)" : "var(--ft-amber)";
 
