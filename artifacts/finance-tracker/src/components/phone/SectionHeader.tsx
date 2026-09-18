@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { PHONE_GUTTER, PHONE_HEADER_H } from "./rhythm";
 
 // SectionHeader — the mono-uppercase section titlebar used across the
 // wrapped desktop pages Thomas already reads well narrow. Left slot for
@@ -13,6 +14,9 @@ import type { ReactNode } from "react";
 // the one left edge on the phone that matched nothing below it.
 //
 // Amendment lines followed (src/index.css:47–94):
+// Height and gutter come from components/phone/rhythm.ts — the phone's one
+// rhythm, decided there rather than per screen.
+//
 //   :77  mono label at var(--ft-text-xs) = 11px (raised from historical
 //        9-10px on the hand-rolled sites during extraction, per the
 //        30 Aug survey — "extraction is when Amendment fixes land, not
@@ -43,9 +47,9 @@ export function SectionHeader({ label, right, tone = "default", icon }: SectionH
     <div
       style={{
         borderBottom: "1px solid var(--ft-border)",
-        paddingLeft: 16,
-        paddingRight: 16,
-        minHeight: 34,
+        paddingLeft: PHONE_GUTTER,
+        paddingRight: PHONE_GUTTER,
+        minHeight: PHONE_HEADER_H,
         display: "flex",
         alignItems: "center",
         gap: 8,

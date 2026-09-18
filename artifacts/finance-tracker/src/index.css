@@ -274,7 +274,7 @@
    need to clear the tab bar / header don't hard-code a magic number that
    silently goes stale when the chrome changes. See mobile-pb below. */
 :root {
-  --ft-tab-bar-h: 64px;  /* PhoneTabBar rendered height: 44 minHeight + 10+10 padding-y */
+  --ft-tab-bar-h: 49px;  /* PhoneTabBar rendered height: 48 minHeight + 1px top rule */
 }
 
 /* ── Logo mark tokens ───────────────────────────────────────────────────────
@@ -1268,6 +1268,28 @@ body.density-comfortable .ft-terminal {
 }
 .ft-terminal .ft-dashboard-strip > * + * {
   border-left: 1px solid var(--ft-border);
+}
+
+/* Frame what you operate, rule what you read. pages/dashboard.tsx puts
+   .ft-readout on the slot of a widget that only reports (READOUT_WIDGETS
+   there states the principle and the list). Its root surface loses the side
+   and bottom edges and the fill, and keeps one hairline above as its seat.
+   The border keeps its width so nothing shifts by a pixel.
+
+   !important because half of these roots are hand-rolled inline frames
+   (CashFlowPreviewPanel, SpendingVelocityPanel) and PanelBox paints its
+   surface inline too — the same reason the container-query block below
+   uses it. Customize mode renders a different slot without the class, so
+   every widget is framed again while it can be dragged. */
+.ft-terminal .ft-readout > :first-child {
+  background: transparent !important;
+  border-color: transparent !important;
+  border-style: solid !important;
+  border-width: 1px !important;
+  border-top-color: var(--ft-border) !important;
+}
+.ft-terminal .ft-readout .ft-panelrule {
+  background: transparent;
 }
 
 /* ── Container-query fabric ────────────────────────────────────────────────

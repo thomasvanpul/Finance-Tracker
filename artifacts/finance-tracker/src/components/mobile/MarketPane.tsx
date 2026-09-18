@@ -11,6 +11,7 @@ import {
 } from "@workspace/api-client-react";
 import { Text, VStack } from "@/components/primitives";
 import { HomeSectionHeader } from "./home-section-header";
+import { PHONE_GUTTER, PHONE_ROW_PY } from "@/components/phone/rhythm";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { FixingMark, closeTagText } from "@/components/FixingMark";
 import { nfmt, CURRENCY_SYMBOLS } from "./mobile-format";
@@ -239,12 +240,12 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
           its own, a ruled dim label, under a banded one. */}
       <HomeSectionHeader label="WHAT YOU HOLD" link="INVESTMENTS ›" onLink={onOpenInvestments} />
       {staleTs !== null && (
-        <div style={{ padding: "4px 16px 0" }}>
+        <div style={{ padding: `4px ${PHONE_GUTTER}px 0` }}>
           <StaleAsOf ts={staleTs} isFresh={false} compact />
         </div>
       )}
 
-      <VStack paddingX={16}>
+      <VStack paddingX={PHONE_GUTTER}>
         {/* Aggregate holdings value — one figure for the whole portfolio,
             which is the grain J26 permits. Null-safe per G10: the payload
             only carries a number once the dashboard has loaded. */}
@@ -258,8 +259,8 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
               rowGap: 2,
               columnGap: 12,
               alignItems: "baseline",
-              minHeight: 52,
-              padding: "10px 0",
+              minHeight: 44,
+              padding: `${PHONE_ROW_PY}px 0`,
               borderBottomWidth: 1,
               borderBottomStyle: "solid",
               borderBottomColor: "var(--ft-border)",
@@ -365,7 +366,7 @@ function PositionRow({ ticker, shares, isLast, onClick }: PositionRowProps) {
         // 44 is the Amendment's tap minimum. The row was 52 when it
         // carried two lines; it carries one now.
         minHeight: 44,
-        padding: "10px 0",
+        padding: `${PHONE_ROW_PY}px 0`,
         borderBottomWidth: isLast ? 1 : 0,
         borderBottomStyle: "solid",
         borderBottomColor: "var(--ft-border)",
@@ -415,8 +416,9 @@ function FxRow({ ccy, nativeSum, rate, chg, fixingAt, isFirst, isLast }: FxRowPr
         rowGap: 2,
         columnGap: 12,
         alignItems: "baseline",
-        minHeight: 52,
-        padding: "10px 0",
+        // Read, not pressed: two lines at 8px padding, no tap floor.
+        minHeight: 40,
+        padding: `${PHONE_ROW_PY}px 0`,
         borderTopWidth: isFirst ? 0 : 1,
         borderTopStyle: "solid",
         borderTopColor: "var(--ft-border)",

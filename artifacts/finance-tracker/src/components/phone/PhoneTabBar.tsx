@@ -1,16 +1,5 @@
 import { useSyncExternalStore } from "react";
 import { Link, useLocation } from "wouter";
-import {
-  CalendarClock,
-  ChartCandlestick,
-  Eye,
-  Handshake,
-  House,
-  Landmark,
-  LayoutGrid,
-  Receipt,
-  type LucideIcon,
-} from "lucide-react";
 import { useActivePersona } from "@/lib/persona-hook";
 import {
   FIXED_TABS_AFTER,
@@ -54,29 +43,31 @@ type Tab = {
   aliases: readonly string[];
 };
 
-// One glyph per position, above the label. Icons plus labels is the
-// phone convention — it is what every native tab bar the user already
-// owns does — and the text-only bar read as a terminal menu: four words
-// in 11px mono with nothing for the eye to land on. The record is
-// exhaustive over every fixed key and slot id, so a new slot option
-// cannot ship without a glyph.
-const TAB_ICONS: Record<TabKey, LucideIcon> = {
-  home: House,
-  worth: Landmark,
-  directory: LayoutGrid,
-  spending: Receipt,
-  markets: ChartCandlestick,
-  upcoming: CalendarClock,
-  owing: Handshake,
-  watchlist: Eye,
-};
+// Four words on rules, not four pictures. Until 16 Sep 2026 this was a
+// stock icon set — a house, a bank, a receipt, a grid of squares — over
+// mono labels: the one element on either surface that looked like every
+// other app, and the loudest generated-app tell on the phone.
+//
+// The phone equivalent of the desktop sidebar (DESIGN.md §12) is the
+// sidebar's own treatment laid on its side:
+//   · labels are language, so they are sans (§10), at 13px;
+//   · positions are divided by hairlines, the way the desktop divides a
+//     strip of readings, and the bar sits on one hairline above;
+//   · the active position is --ft-accent-tint with an --ft-accent-edge
+//     edge and a 600 label, exactly the sidebar's active row. No stripe on
+//     any edge (§4) — the 2px top rule this used to carry was one.
+// The active state does not rest on hue: the filled cell and the heavier
+// label both read in greyscale.
+//
+// 48 is over the Amendment's 44px floor with room for the edge.
+const TAB_MIN_HEIGHT = 48;
+const LABEL_SIZE = 13;
 
-// 2px active rule + 6 top + 20 glyph + 3 gap + 13 label line + 5 bottom
-// = 49, the native tab-bar height, comfortably over the Amendment's
-// 44px floor (the text-only bar sat at exactly 44 — measured, not a
-// margin). The label stays at 11px, the Amendment's minimum type size.
-const TAB_MIN_HEIGHT = 49;
-const GLYPH_SIZE = 20;
+// Tab labels are stored upper-case in lib/tab-slot.ts, which Lock #18 and
+// the settings picker also read. The bar sets them as words.
+function asWord(label: string): string {
+  return label.charAt(0) + label.slice(1).toLowerCase();
+}
 
 // The fixed positions live in lib/tab-slot.ts next to the slot options so
 // Lock #18 can assert tab-URL purity against one definition.
@@ -133,18 +124,13 @@ export function PhoneTabBar() {
         flexShrink: 0,
         display: "grid",
         gridTemplateColumns: "repeat(4, 1fr)",
-        background: "var(--ft-surface)",
-        // The 1px rule is the boundary, same as every frame on desktop.
-        // The old bar also floated on a 24px shadow; depth is decoration
-        // here (MOBILE-CONCEPT: value by length or area, never depth),
-        // and the hairline already separates content from chrome.
+        background: "var(--ft-base)",
         borderTop: "1px solid var(--ft-border)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
-      {tabs.map((tab) => {
+      {tabs.map((tab, i) => {
         const active = isActive(tab, loc);
-        const Glyph = TAB_ICONS[tab.key];
         return (
           <Link
             key={tab.key}
@@ -152,25 +138,25 @@ export function PhoneTabBar() {
             aria-current={active ? "page" : undefined}
             style={{
               minHeight: TAB_MIN_HEIGHT,
+              minWidth: 0,
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: 3,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11,
-              letterSpacing: "0.06em",
+              fontFamily: "var(--font-sans)",
+              fontSize: LABEL_SIZE,
+              fontWeight: active ? 600 : 400,
               whiteSpace: "nowrap",
-              color: active ? "var(--ft-accent)" : "var(--ft-muted)",
+              color: active ? "var(--ft-text)" : "var(--ft-muted)",
+              background: active ? "var(--ft-accent-tint)" : "transparent",
+              borderLeft: i > 0 ? "1px solid var(--ft-border)" : "none",
+              outline: active ? "1px solid var(--ft-accent-edge)" : "none",
+              outlineOffset: -1,
               textDecoration: "none",
-              borderTop: active ? "2px solid var(--ft-accent)" : "2px solid transparent",
-              marginTop: -1,
               cursor: "pointer",
-              padding: "6px 2px 5px",
+              padding: "0 4px",
             }}
           >
-            <Glyph size={GLYPH_SIZE} strokeWidth={active ? 2 : 1.5} aria-hidden="true" />
-            {tab.label}
+            {asWord(tab.label)}
           </Link>
         );
       })}

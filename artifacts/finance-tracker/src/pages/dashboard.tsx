@@ -416,6 +416,36 @@ const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<{ isExpanded?: boolean }
   "cash-runway": CashRunwayWidget,
 };
 
+// Frame what you operate; rule what you read.
+//
+// A widget keeps its frame when something inside it answers input — a
+// filter, a range, a month stepper, a currency toggle, a form, a row you act
+// on. The frame bounds what those controls reach. A widget that only reports
+// — figures, their captions, a bar or a sparkline, a ranked list whose only
+// affordance is a drill away — sits on a rule instead: one hairline above,
+// no sides, no fill (index.css, ".ft-readout").
+//
+// Customize mode renders SortableWidget, which never carries the class, so
+// every widget is framed again while it is a drag target — the reason
+// DESIGN.md §6 gives widgets a frame at all. savings-rate and emergency-fund
+// were already drawn this way, by hand, before the rule was written down.
+const READOUT_WIDGETS: ReadonlySet<WidgetId> = new Set<WidgetId>([
+  "cash-flow-preview",
+  "spending-velocity",
+  "savings-rate",
+  "emergency-fund",
+  "nw-milestones",
+  "cash-runway",
+  "financial-health",
+  "month-comparison",
+  "spending-forecast",
+  "daily-spend",
+  "top-merchants",
+  "subscription-tracker",
+]);
+const registerClass = (id: WidgetId): string | undefined =>
+  READOUT_WIDGETS.has(id) ? "ft-readout" : undefined;
+
 const WIDGET_DEF_MAP = Object.fromEntries(WIDGET_REGISTRY.map(w => [w.id, w]));
 
 const WIDGET_NAV: Partial<Record<WidgetId, { label: string; href: string }[]>> = {
@@ -1445,6 +1475,7 @@ function ViewModeWidget({ id, onExpand }: { id: WidgetId; onExpand: () => void }
   return (
     <div
       ref={wrapRef}
+      className={registerClass(id)}
       style={{ position: "relative" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -1520,7 +1551,7 @@ function LongPressDraggableWidget({ id, anyDragging, onExpand }: { id: WidgetId;
           slot at the right height. Measuring the height instead and drawing a
           box of that size would be a second source of truth for a number the
           layout already knows. */}
-      <div style={{ visibility: isDragging ? "hidden" : "visible" }}>
+      <div className={registerClass(id)} style={{ visibility: isDragging ? "hidden" : "visible" }}>
         <Component />
       </div>
       {isDragging && (

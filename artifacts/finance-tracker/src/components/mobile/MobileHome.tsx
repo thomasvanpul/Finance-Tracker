@@ -12,6 +12,8 @@ import {
 } from "@workspace/api-client-react";
 import { MobileEmptyState } from "./mobile-ui";
 import { HomeSectionHeader } from "./home-section-header";
+import { HomeHero, type HeroCell } from "./home-hero";
+import { PHONE_GROUP_GAP, PHONE_GUTTER, PHONE_IN_GROUP } from "@/components/phone/rhythm";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { MarketPane } from "./MarketPane";
 import { NewsPane } from "./NewsPane";
@@ -285,145 +287,115 @@ export function MobileHome(_props: MobileHomeProps) {
       }}
       className="mobile-scroll"
     >
-        {/* Top bar (44px, JetBrains Mono, dim) */}
-        <HStack justify="end" align="center" height={44} paddingX={16}>
-          {/* The count alone. This read "LIVE · 8 ACCOUNTS" until 16 Sep 2026
-              and claimed something the app cannot do: these balances are
-              maintained by hand, and nothing on this screen is a live feed
-              from a bank. "ACTIVE" was the other candidate and is untrue for
-              a second reason — `activeAccounts` is the whole of
-              accountBreakdown, with no active/dormant filter anywhere in it.
-              The count is the only part of the old label that was a fact,
-              and the drill title already says what the count is of. */}
-          <DrillTarget href="/accounts" title="The accounts this counts">
-            <span className="ft-drill">
-              <Text as="span" mono size={11} color="var(--ft-dim)">
-                {activeAccounts.length} {activeAccounts.length === 1 ? "ACCOUNT" : "ACCOUNTS"}
-              </Text>
-            </span>
-          </DrillTarget>
-        </HStack>
+        {/* The 44px top bar that used to stand here held one thing — the
+            account count — above a hero floating in whitespace. Both are
+            now readings of one strip (see home-hero.tsx): the count is a
+            cell of it, so the screen opens on the figure rather than on
+            empty chrome.
 
-        {/* Headline (P2·9). Market persona gets PORTFOLIO VALUE +
-            day delta, matching the same argument as the desktop
-            KPI bar: a market user opens the app to see the market
-            moved, and net worth doesn't tell them that. Every
-            other persona keeps NET WORTH + since-1st-of-month
-            (the existing headline shape). */}
-        {persona === "market" ? (
-          <VStack padding="4px 16px 0">
-            <MonoLabel size={11} letterSpacing="0.16em">PORTFOLIO</MonoLabel>
-            <HStack align="baseline" gap={4} marginTop={6}>
-              <Text as="span" size={17} color="var(--ft-dim)">£</Text>
-              <Text
-                as="span"
-                size={34}
-                weight={600}
-                lineHeight="34px"
-                letterSpacing="-0.035em"
-                numeric
-              >
-                {dashboardLoading
+            Claimed is the strip's second cell. It was a line of mono under
+            the hero with 16px above it; it is a reading like the others, and
+            the people it is owed to hang under the strip as its detail.
+
+            Until 16 Sep 2026 a 14px red-outlined square stood in front of
+            the claimed line. It was a div — no input, no state, no handler —
+            that looked exactly like an unticked checkbox (DESIGN.md §16: a
+            control that does nothing is a lie), so it is gone rather than
+            wired. The total and the per-person amounts are a balance owed,
+            not a move, so they are drawn in the text colour with their minus
+            sign, as WORTH draws OWED. Red on HOME is kept for a figure that
+            went down (§7, §11). */}
+        {(() => {
+          const cells: HeroCell[] = [
+            {
+              key: "accounts",
+              label: activeAccounts.length === 1 ? "ACCOUNT" : "ACCOUNTS",
+              value: String(activeAccounts.length),
+              href: "/accounts",
+              title: "The accounts this counts",
+            },
+          ];
+          if (owedByMe != null && owedByMe > 0) {
+            cells.push({
+              key: "claimed",
+              // The count rides in the legend, not beside the figure: a
+              // 7-figure balance plus "· 12 DEBTS" does not fit a half-width
+              // cell, and a figure is shown in full or not at all (§8).
+              label: pendingCount != null
+                ? `CLAIMED · ${pendingCount} ${pendingCount === 1 ? "DEBT" : "DEBTS"}`
+                : "CLAIMED",
+              value: nfmt(-owedByMe, { symbol: "£" }),
+              href: "/owing",
+              title: "The debts this claims",
+            });
+          }
+          const fxNote = unconvertibleAccounts > 0 ? (
+            <Text as="div" size={11} mt={PHONE_IN_GROUP} color="var(--ft-amber)">
+              {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
+            </Text>
+          ) : null;
+
+          // Market persona gets PORTFOLIO VALUE + day delta, matching the
+          // same argument as the desktop KPI bar: a market user opens the app
+          // to see the market moved, and net worth doesn't tell them that.
+          // Every other persona keeps NET WORTH (P2·9).
+          if (persona === "market") {
+            const since = sinceCloseLabel(dashboard?.portfolio.dayChangeFromSession);
+            const dGbp = dashboard?.portfolio.dayChangeBase ?? null;
+            const dPct = dashboard?.portfolio.dayChangePercent ?? null;
+            const col = dGbp == null ? "var(--ft-dim)" : dGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+            return (
+              <HomeHero
+                label="PORTFOLIO"
+                symbol="£"
+                figure={dashboardLoading
                   ? "…"
                   : dashboard?.portfolio.totalValueBase != null
                     ? nfmt(dashboard.portfolio.totalValueBase)
                     : "—"}
-              </Text>
-            </HStack>
-            {/* Close-to-close delta, dated by the session it runs from
-                (not "24H" — a Monday spans the weekend). Null → render
-                "—", never a fabricated zero. */}
-            {(() => {
-              const since = sinceCloseLabel(dashboard?.portfolio.dayChangeFromSession);
-              const dGbp = dashboard?.portfolio.dayChangeBase ?? null;
-              const dPct = dashboard?.portfolio.dayChangePercent ?? null;
-              if (dGbp == null) {
-                return (
-                  <Text as="div" mono size={12} mt={6} color="var(--ft-dim)">
-                    {since} · —
-                  </Text>
-                );
-              }
-              const col = dGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)";
-              return (
-                <Text as="div" mono size={12} mt={6} color={col} numeric>
-                  {nfmt(dGbp, { sign: true, symbol: "£" })}
-                  {dPct != null && ` · ${nfmt(dPct, { sign: true })}%`}
-                  {` · ${since}`}
-                </Text>
-              );
-            })()}
-            {unconvertibleAccounts > 0 && (
-              <Text as="div" size={11} mt={6} color="var(--ft-amber)">
-                {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
-              </Text>
-            )}
-          </VStack>
-        ) : (
-          <VStack padding="4px 16px 0">
-            <MonoLabel size={11} letterSpacing="0.16em">NET WORTH</MonoLabel>
-            <DrillTarget href="/net-worth" title="Net worth — everything it is the sum of">
-              <HStack align="baseline" gap={4} marginTop={6}>
-                <Text as="span" size={17} color="var(--ft-dim)">£</Text>
-                <span className="ft-drill">
-                  <Text
-                    as="span"
-                    size={34}
-                    weight={600}
-                    lineHeight="34px"
-                    letterSpacing="-0.035em"
-                    numeric
-                  >
-                    {dashboardLoading ? "…" : netWorth != null ? nfmt(netWorth) : "—"}
-                  </Text>
-                </span>
-              </HStack>
-            </DrillTarget>
-            {unconvertibleAccounts > 0 && (
-              <Text as="div" size={11} mt={6} color="var(--ft-amber)">
-                {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
-              </Text>
-            )}
-          </VStack>
-        )}
+                cells={cells}
+                under={
+                  <>
+                    {/* Close-to-close delta, dated by the session it runs
+                        from (not "24H" — a Monday spans the weekend). Null →
+                        render "—", never a fabricated zero. */}
+                    <Text as="div" mono size={12} mt={PHONE_IN_GROUP} color={col} numeric>
+                      {dGbp == null
+                        ? `${since} · —`
+                        : `${nfmt(dGbp, { sign: true, symbol: "£" })}${dPct != null ? ` · ${nfmt(dPct, { sign: true })}%` : ""} · ${since}`}
+                    </Text>
+                    {fxNote}
+                  </>
+                }
+              />
+            );
+          }
+          return (
+            <HomeHero
+              label="NET WORTH"
+              symbol="£"
+              figure={dashboardLoading ? "…" : netWorth != null ? nfmt(netWorth) : "—"}
+              href="/net-worth"
+              hrefTitle="Net worth — everything it is the sum of"
+              cells={cells}
+              under={fxNote}
+            />
+          );
+        })()}
 
-        {/* WHAT CHANGED stood here from 2026-09-07 to 2026-09-10 and now
-            stands on WORTH. The reason it was under this hero — the hero
-            states a move and this states what the move was made of — is
-            true of the WORTH hero too, and WORTH is the balance sheet:
-            "what changed" is a statement about balances, and every row in
-            it drills to an account, which is the tab those accounts live
-            on. Rendering it on both tabs would be one finding stated
-            twice, so it moved rather than being copied. */}
+        {/* WHAT CHANGED stood under this hero from 2026-09-07 to 2026-09-10
+            and now stands on WORTH. The reason it was here — the hero states
+            a move and this states what the move was made of — is true of the
+            WORTH hero too, and WORTH is the balance sheet: "what changed" is
+            a statement about balances, and every row in it drills to an
+            account, which is the tab those accounts live on. Rendering it on
+            both tabs would be one finding stated twice, so it moved rather
+            than being copied. */}
 
-        {/* Claimed. C2-4: when the API supplies topPending, list up to 3
-            counterparties by name + amount underneath the total.
-
-            Until 16 Sep 2026 a 14px red-outlined square stood in front of
-            this line. It was a div — no input, no state, no handler — that
-            looked exactly like an unticked checkbox (DESIGN.md §16: a control
-            that does nothing is a lie), so it is gone rather than wired.
-
-            The total and the per-person amounts are a balance owed, not a
-            move, so they are drawn in the text colour with their minus sign,
-            as WORTH draws OWED. Red on HOME is kept for a figure that went
-            down (§7, §11); it was carrying five meanings on this screen. */}
-        {owedByMe != null && owedByMe > 0 && (
-          <VStack gap={6} padding="16px 16px 0">
-            <DrillTarget href="/owing" title="The debts this claims">
-              <span className="ft-drill">
-                <Text
-                  as="div"
-                  mono
-                  size={11}
-                  lineHeight="16px"
-                  numeric
-                >
-                  CLAIMED {nfmt(-owedByMe, { symbol: "£" })}
-                  {pendingCount != null && ` · ${pendingCount} ${pendingCount === 1 ? "DEBT" : "DEBTS"}`}
-                </Text>
-              </span>
-            </DrillTarget>
+        {/* Who the claimed total is owed to. Detail under the strip, not a
+            reading of it. */}
+        {owedByMe != null && owedByMe > 0 && topPending.some((p) => p.direction === "i_owe_them") && (
+          <VStack gap={PHONE_IN_GROUP} padding={`${PHONE_IN_GROUP}px ${PHONE_GUTTER}px 0`}>
             {topPending.filter((p) => p.direction === "i_owe_them").slice(0, 3).map((p) => (
               <HStack key={`${p.name}-${p.amountBase}`} align="baseline" justify="between" gap={12}>
                 <Text as="span" size={11} color="var(--ft-muted)" truncate>
@@ -440,7 +412,7 @@ export function MobileHome(_props: MobileHomeProps) {
         )}
 
         {currentInsight != null && (
-          <div style={{ paddingTop: 16 }}>
+          <div style={{ paddingTop: PHONE_GROUP_GAP }}>
             <InsightSlot insight={currentInsight} onDismiss={handleDismissInsight} />
           </div>
         )}
@@ -459,7 +431,7 @@ export function MobileHome(_props: MobileHomeProps) {
                   link="CASHFLOW ›"
                   onLink={() => navigate("/cashflow")}
                 />
-                <div style={{ padding: "0 16px" }}>
+                <div style={{ padding: `0 ${PHONE_GUTTER}px` }}>
                   <CashflowChart
                     days={dailyBalances}
                     todayIndex={todayIndex}
@@ -491,7 +463,7 @@ export function MobileHome(_props: MobileHomeProps) {
           link="MONTH ›"
           onLink={() => navigate("/upcoming")}
         />
-        <div style={{ padding: "0 16px" }}>
+        <div style={{ padding: `0 ${PHONE_GUTTER}px` }}>
           <UpcomingList bills={upcomingBills} incoming={upcomingIncome} />
           <a
             onClick={(e) => {
@@ -598,7 +570,7 @@ function CashflowChart({
   );
 
   return (
-    <div style={{ marginTop: 12 }}>
+    <div style={{ marginTop: 8 }}>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
         <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
           {nfmt(maxAbs, { symbol: "£", decimals: 0 })}
@@ -730,7 +702,9 @@ function UpcomingList({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            minHeight: 44,
+            // 36, not 44: these rows are read, not pressed, so the
+            // Amendment's tap floor does not apply to them.
+            minHeight: 36,
             // No top rule on the first row: COMING's header draws it (DESIGN.md §5).
             ...(i > 0 ? { borderTopWidth: 1, borderTopStyle: "solid", borderTopColor: "var(--ft-border)" } : {}),
             ...(i === rows.length - 1
