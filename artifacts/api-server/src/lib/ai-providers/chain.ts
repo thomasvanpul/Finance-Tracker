@@ -278,9 +278,12 @@ export async function chainCategorize(opts: {
 }
 
 // ── Vision ────────────────────────────────────────────────────────────────
-// Receipt scan / receipt split. Both providers support vision:
-//   Groq       → qwen/qwen3.6-27b (5 images/req, 20MB)
-//   Cerebras   → gemma-4-31b       (2 images/req, 4MB)
+// Receipt scan / receipt split.
+//   Groq       → qwen/qwen3.8-27b (5 images/req, 20MB) — LIVE
+//   Cerebras   → gemma-4-31b       — RETIRED 2026-09-18, and Cerebras
+//                has no replacement that accepts images. The vision
+//                fallback tier is gone; chainVision is effectively
+//                single-provider until Cerebras serves a vision model.
 // One image per request in all our current callers.
 
 export async function chainVision(opts: {

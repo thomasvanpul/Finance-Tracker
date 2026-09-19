@@ -14,11 +14,26 @@
 //
 // ── Models ────────────────────────────────────────────────────────────────
 //   CEREBRAS_CHAT_MODEL   (default gpt-oss-120b)  — chat + categorize
-//   CEREBRAS_VISION_MODEL (default gemma-4-31b)   — receipt scan/split
+//   CEREBRAS_VISION_MODEL (default gemma-4-31b)   — DEAD ON PURPOSE, see below
 //
-// Only two free-tier models on the platform (verified 2026-08-23). If
-// Cerebras prunes again the boot verify will name whatever it does
-// return — see verifyProvidersAtBoot for the fix-me sentence.
+// Cerebras pruned again on/before 2026-09-18. Its models list now
+// returns exactly two ids: gpt-oss-120b and qwen-3.8-27b. gemma-4-31b
+// is gone, and it was the ONLY model Cerebras ever served that accepts
+// image input — per Cerebras's own image-inputs doc, "image support is
+// only available with gemma-4-31b". Neither survivor is multimodal.
+//
+// So CEREBRAS_VISION_MODEL is LEFT pointing at the retired gemma-4-31b
+// deliberately. Repointing it at qwen-3.8-27b would make the boot check
+// go quiet and then fail on every receipt with a shape error instead —
+// a wrong model that boots is worse than a dead one that shouts. This
+// value stays dead until Cerebras serves a vision model again.
+//
+// Separately, and invisibly to the boot check: this account's Cerebras
+// key returns HTTP 200 on GET /models but HTTP 402 payment_required on
+// POST /chat/completions for BOTH surviving models (measured
+// 2026-09-18). The whole Cerebras lane is therefore dead regardless of
+// which model is named here. Verifying against the models list cannot
+// see that — it is a different endpoint with different entitlements.
 
 import { callOpenAICompat, callOpenAICompatStream, type OpenAiMessage, type OpenAiStreamChunk } from "./openai-compat";
 import type { AiCallResult } from "./types";

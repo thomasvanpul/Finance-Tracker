@@ -5,13 +5,15 @@
 // next retirement is a Render env change, not a code change. Groq
 // killed llama-3.3-70b-versatile on 16 Aug 2026
 // (the deprecation that motivated this whole architecture) so the
-// defaults land on the current openai/gpt-oss-* family and qwen3.6-27b
-// for vision.
+// defaults land on the current openai/gpt-oss-* family and qwen3.8-27b
+// for vision. qwen3.6-27b was retired in turn and replaced by
+// qwen3.8-27b on 2026-09-18 — it is the only model on Groq's list
+// whose input_modalities include "image".
 //
 // ── Models ────────────────────────────────────────────────────────────────
 //   GROQ_CHAT_MODEL       (default openai/gpt-oss-120b)  — chat
 //   GROQ_CATEGORIZE_MODEL (default openai/gpt-oss-20b)   — batch categorize
-//   GROQ_VISION_MODEL     (default qwen/qwen3.6-27b)     — receipt scan/split
+//   GROQ_VISION_MODEL     (default qwen/qwen3.8-27b)     — receipt scan/split
 //
 // The three env vars share ONE api key (GROQ_API_KEY) — Groq's key
 // grants access to every model on the account. Per-task variables
@@ -36,7 +38,7 @@ export function groqCategorizeModel(): string {
 }
 
 export function groqVisionModel(): string {
-  return process.env.GROQ_VISION_MODEL || "qwen/qwen3.6-27b";
+  return process.env.GROQ_VISION_MODEL || "qwen/qwen3.8-27b";
 }
 
 // Every current + configured Groq model — used by verifyProvidersAtBoot
@@ -103,7 +105,7 @@ export function groqCategorize(opts: {
   });
 }
 
-// Vision path — Groq's qwen3.6-27b accepts up to 5 images/req at 20MB
+// Vision path — Groq's qwen3.8-27b accepts up to 5 images/req at 20MB
 // each. Our receipt-scan/split callers only send one image at a time.
 // The image_url is a data URL: `data:image/jpeg;base64,<b64>`.
 export function groqVision(opts: {

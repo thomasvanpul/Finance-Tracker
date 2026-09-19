@@ -216,8 +216,10 @@ else is tried (`A/lib/ai-providers/chain.test.ts`, "Groq and Cerebras both fail"
 
 | Order | Provider | Host | Models (defaults) |
 | --- | --- | --- | --- |
-| 1 | Groq | `api.groq.com/openai/v1` (`groq.ts:24`) | `openai/gpt-oss-120b` chat, `openai/gpt-oss-20b` categorise, `qwen/qwen3.6-27b` vision (`groq.ts:31-39`) |
-| 2 | Cerebras | `api.cerebras.ai/v1` (`cerebras.ts:26`) | `gpt-oss-120b` chat and categorise, `gemma-4-31b` vision (`cerebras.ts:33-37`) |
+| 1 | Groq | `api.groq.com/openai/v1` (`groq.ts:26`) | `openai/gpt-oss-120b` chat, `openai/gpt-oss-20b` categorise, `qwen/qwen3.8-27b` vision (`groq.ts:32-42`) |
+| 2 | Cerebras | `api.cerebras.ai/v1` (`cerebras.ts:41`) | `gpt-oss-120b` chat and categorise; vision `gemma-4-31b` **retired 2026-09-18 and left dead deliberately** — Cerebras serves no multimodal replacement (`cerebras.ts:47-53`) |
+
+Measured 2026-09-18: this account's Cerebras key returns HTTP 200 on `GET /models` but HTTP 402 `payment_required` on `POST /chat/completions` for both surviving models, so lane 2 does not serve at all. Boot verification checks the models list only and cannot see this.
 
 - Every model can be overridden by an environment variable; production values
   live in the Render dashboard, not the repo.

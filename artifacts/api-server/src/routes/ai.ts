@@ -2,7 +2,8 @@
 // (lib/ai-providers/chain.ts) rather than calling one vendor directly:
 //   • chainChat        walks Groq → Cerebras
 //   • chainCategorize  walks Groq (small model) → Cerebras
-//   • chainVision      walks Groq (qwen3.6-27b) → Cerebras (gemma)
+//   • chainVision      walks Groq (qwen3.8-27b) → Cerebras (gemma,
+//                      retired 2026-09-18 — no vision fallback today)
 //
 // Rationale: Gemini alone produced three separate failures inside a
 // week (retired model, silent catches, key-format mismatch), and the
