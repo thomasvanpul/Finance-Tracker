@@ -89,6 +89,14 @@ async function signUp(): Promise<string> {
     .from(userTable)
     .where(eq(userTable.email, SEED_EMAIL));
   if (row.length === 0) throw new Error("user row missing after sign-up");
+  // 980b0be (19 Sep 2026) turned on REQUIRE_EMAIL_VERIFICATION, so sign-up no
+  // longer returns a session and sign-in answers 403 until the link is
+  // clicked. The seed user has no inbox and every capture script signs in
+  // with its password, so verify it here, directly in the dev branch.
+  await db
+    .update(userTable)
+    .set({ emailVerified: true })
+    .where(eq(userTable.email, SEED_EMAIL));
   return row[0].id;
 }
 
