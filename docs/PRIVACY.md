@@ -24,11 +24,12 @@ your data and is responsible for it.
 - Name: `[TO CONFIRM: full legal name]`
 - Postal address: `[TO CONFIRM]`
 - Contact for anything in this policy: `[TO CONFIRM: address on
-  financetracker.work]`
+  numeris.page]`
 - `[TO CONFIRM: whether a UK or EU representative is needed, which depends on
   where the operator is established.]`
 
-Numeris is on the web at financetracker.work and is intended for the App Store
+Numeris is on the web at numeris.page (and, until the domain move completes,
+at financetracker.work) and is intended for the App Store
 and Google Play. It is built for people in the UK and the European Union.
 
 ## 2. The short version

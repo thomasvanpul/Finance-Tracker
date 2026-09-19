@@ -162,7 +162,7 @@ export const SERVICE_FACTS: readonly ServiceFact[] = [
     id: "vercel",
     name: "Vercel",
     category: "infrastructure",
-    role: "Serves the React SPA at financetracker.work",
+    role: "Serves the React SPA at financetracker.work; numeris.page once DNS cuts over",
     plan: "Hobby",
     monthlyCostGbp: 0,
     nextPlan: { name: "Pro ($20/mo)", monthlyCostGbp: 16 },

@@ -2,7 +2,7 @@
 
 A full-stack personal finance tracker. GBP base currency, single-user, dark "Excel Pro" spreadsheet theme.
 
-**Live site:** [financetracker.work](https://financetracker.work)
+**Live site:** [financetracker.work](https://financetracker.work) — moving to [numeris.page](https://numeris.page); both hosts work during the cutover.
 
 ---
 
@@ -107,7 +107,7 @@ pnpm --filter @workspace/db run push               # push DB schema changes (dev
 | `APP_PASSWORD` | Password gate for the whole app |
 | `JWT_SECRET` | Session signing secret (`openssl rand -hex 32`) |
 | `SESSION_SECRET` | Express session secret |
-| `ALLOWED_ORIGINS` | Comma-separated CORS origins (e.g. `https://financetracker.work,capacitor://localhost`). The `capacitor://localhost` entry is required for the native iOS shell — see BACKLOG § G13. |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins (e.g. `https://numeris.page,https://financetracker.work,capacitor://localhost`). List every host that must work at once — CORS fails closed on a missing one. The `capacitor://localhost` entry is required for the native iOS shell — see BACKLOG § G13. |
 | `WISE_API_TOKEN` | Wise personal API token (Settings → API tokens) |
 | `WISE_ENV` | `live` (default) or `sandbox` |
 

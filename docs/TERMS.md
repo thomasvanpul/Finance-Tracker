@@ -12,9 +12,10 @@
 
 Numeris is run by one person, not a company: `[TO CONFIRM: full legal name]`,
 `[TO CONFIRM: postal address]`. You can reach them at
-`[TO CONFIRM: support address on financetracker.work]`.
+`[TO CONFIRM: support address on numeris.page]`.
 
-Numeris is on the web at financetracker.work and is intended for the App Store
+Numeris is on the web at numeris.page (and, until the domain move completes,
+at financetracker.work) and is intended for the App Store
 and Google Play. It is built for people in the UK and the European Union.
 
 There is nothing to pay for. The app contains no payments, subscriptions or

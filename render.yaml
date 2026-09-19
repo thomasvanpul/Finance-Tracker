@@ -41,9 +41,24 @@ services:
       # Several cannot be reconstructed if the project suspends.
       - key: DATABASE_URL          # Neon production, with the rotated password
         sync: false
-      - key: ALLOWED_ORIGINS       # https://financetracker.work
+      # Comma-separated. During the numeris.page cutover this must list BOTH
+      # hosts — https://numeris.page,https://financetracker.work — plus
+      # capacitor://localhost for the iOS shell. CORS fails CLOSED on a
+      # missing entry (403, obvious). The FIRST entry used to be special:
+      # better-auth.ts took origin[0] for WebAuthn; it now takes the whole
+      # list, so order no longer decides which host can use passkeys.
+      # Drop financetracker.work only after DNS, OAuth redirect URIs and the
+      # Resend sending domain have all moved.
+      - key: ALLOWED_ORIGINS       # https://numeris.page,https://financetracker.work
         sync: false
-      - key: API_BASE_URL          # this service's own https URL, set after first deploy
+      # NOT this service's own Render URL, despite what this comment used to
+      # say. Measured 2026-09-19: /api/auth-providers reports callbackBase
+      # "https://financetracker.work", i.e. the SPA origin. better-auth builds
+      # every OAuth redirect_uri from it AND derives the passkey rpID from its
+      # hostname, so changing this is the flag-day step: Google and GitHub
+      # redirect URIs must be re-registered in the same window, and every
+      # existing passkey stops working the moment the hostname changes.
+      - key: API_BASE_URL          # the PUBLIC SPA origin, e.g. https://numeris.page
         sync: false
       - key: BETTER_AUTH_SECRET
         sync: false

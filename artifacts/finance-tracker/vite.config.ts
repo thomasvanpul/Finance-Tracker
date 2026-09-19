@@ -29,6 +29,14 @@ const buildCommit =
 export default defineConfig(async ({ mode }) => {
 const env = loadEnv(mode, process.cwd(), "");
 const apiUrl = env.VITE_API_URL ?? "";
+// The origin this dev server claims to be when it proxies to a REMOTE https
+// API. It has to be a member of that API's ALLOWED_ORIGINS or the request is
+// refused with 403 — so it is config, not a constant, and it moves when the
+// production origin moves. The default is the origin the deployed API
+// currently allows (verified 2026-09-19: an Origin of https://numeris.page
+// is answered 403 by numeris-api.onrender.com, financetracker.work with 200).
+// Flip the default when ALLOWED_ORIGINS on Render leads with the new host.
+const devProxyOrigin = env.VITE_PROD_ORIGIN ?? "https://financetracker.work";
 return {
   base: basePath,
   define: {
@@ -138,8 +146,8 @@ return {
               // dev CORS check and surfaces as 403 on sign-in.
               if (apiUrl.startsWith("https://")) {
                 proxy.on("proxyReq", (proxyReq) => {
-                  proxyReq.setHeader("origin", "https://financetracker.work");
-                  proxyReq.setHeader("referer", "https://financetracker.work/");
+                  proxyReq.setHeader("origin", devProxyOrigin);
+                  proxyReq.setHeader("referer", `${devProxyOrigin}/`);
                   const cookie = proxyReq.getHeader("cookie");
                   if (cookie && typeof cookie === "string") {
                     proxyReq.setHeader("cookie", cookie.replace(/\bbetter-auth\./g, "__Secure-better-auth."));

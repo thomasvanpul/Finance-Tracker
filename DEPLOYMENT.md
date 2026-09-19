@@ -1,7 +1,7 @@
 # Deploying Numeris (free tier)
 
 This uses **Render** (hosts the API) + **Vercel** (hosts the SPA) + **Neon**
-(Postgres database), all free. The live SPA is at financetracker.work and the
+(Postgres database), all free. The live SPA is at financetracker.work (moving to numeris.page) and the
 live API is at `https://numeris-api.onrender.com`.
 
 Claude can't create these accounts or click through their dashboards for you —
