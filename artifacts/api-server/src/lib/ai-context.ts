@@ -67,6 +67,7 @@ import {
 } from "@workspace/db";
 import { getBaseCurrency } from "./app-settings-db";
 import { toBase, txToBase, getFxRates, getStockPrices } from "./market";
+import { isMarketDataEnabled } from "./market-flag";
 import { monthRange, localDateString, forwardWindow } from "./date-ranges";
 import { signedAccountAmount } from "./account-sign";
 
@@ -315,7 +316,14 @@ async function computeNetPosition(
   // with a missing quote or FX leg makes the total unknown, per L1.
   let portfolioValueBase: number | null = 0;
   let portfolioUnknownReason: string | null = null;
-  if (investments.length > 0) {
+  if (investments.length > 0 && !isMarketDataEnabled()) {
+    // Market data off. The portfolio total is genuinely unknown, and the
+    // reason belongs in the context so the model says "I don't have prices"
+    // rather than inventing one or reading the absence as a zero. Same
+    // null-propagation the dashboard uses; only the reason string differs.
+    portfolioValueBase = null;
+    portfolioUnknownReason = "market data is off on this deployment";
+  } else if (investments.length > 0) {
     const tickers = [...new Set(investments.map((i) => i.ticker))];
     const prices = await getStockPrices(tickers);
     const priceMap = new Map(prices.map((p) => [p.ticker, p]));

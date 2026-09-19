@@ -14,6 +14,14 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { __setYahooForTesting, getStockPrices } from "./market";
 
+// This file asserts previousClose arithmetic off real quote shapes, so it needs market data ON.
+// The flag (lib/market-flag.ts) defaults to OFF in production and therefore
+// in tests, and every fetcher throws MarketDataOffError without it. Turning
+// it on here states what this file is about; it is not a workaround, and the
+// OFF behaviour has its own lock in lib/market-flag.lock.test.ts.
+process.env.ENABLE_MARKET_DATA = "1";
+
+
 // The stub speaks the CHART shape, because that is the transport the price
 // lane uses. It moved off quote() on 2026-09-06: quote() requires Yahoo's
 // cookie+crumb bootstrap, which 429s from Render's shared egress, and chart()

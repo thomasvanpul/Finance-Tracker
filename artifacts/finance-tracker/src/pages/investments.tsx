@@ -111,6 +111,7 @@ import {
 // (later in this file) uses it against real positions, not just
 // watchlist tickers.
 import { MarketsTab, alertTriggered } from "./investments/markets-tab";
+import { useMarketDataEnabled } from "@/lib/market-visibility";
 
 const TH: React.CSSProperties = {
   padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)",
@@ -1522,6 +1523,12 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabId>(defaultTab ?? "markets");
+  // Whether this deployment serves market data at all (lib/market-visibility.ts).
+  // /investments IS the markets screen — defaultTab="markets" renders only
+  // MarketsTab — so with markets off the whole page is replaced by a line
+  // saying so. /portfolio shares this component and keeps working; it loses
+  // the DERIVATIVES tab (option chains are quotes) and its quote lookups.
+  const marketsVisible = useMarketDataEnabled();
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -1554,12 +1561,12 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   const hasInvestments = (investments?.length ?? 0) > 0;
   const { data: spyHistory } = useGetMarketHistory(
     { ticker: "SPY", period: "1y" },
-    { query: { enabled: hasInvestments, staleTime: 1000 * 60 * 60 } }
+    { query: { enabled: hasInvestments && marketsVisible, staleTime: 1000 * 60 * 60 } }
   );
 
   const tickers = [...new Set(investments?.map((i) => i.ticker) ?? [])].join(",");
   const { data: quotes } = useGetMarketQuotes(
-    { tickers }, { query: { enabled: !!tickers, queryKey: getGetMarketQuotesQueryKey({ tickers }), refetchInterval: 60_000 } }
+    { tickers }, { query: { enabled: !!tickers && marketsVisible, queryKey: getGetMarketQuotesQueryKey({ tickers }), refetchInterval: 60_000 } }
   );
   const quoteMap = new Map<string, QuoteData>(quotes?.map((q) => [q.ticker, q as QuoteData]) ?? []);
 
@@ -1858,6 +1865,27 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     { label: "LARGEST POSITION", value: "—" },
   ];
 
+  // /investments is the markets screen and nothing else. With market data
+  // off there is no honest partial version of it, so it says so once rather
+  // than rendering a frame around eight empty panels. Deep links and the
+  // g·i shortcut still land somewhere that explains itself.
+  if (defaultTab === "markets" && !marketsVisible) {
+    return (
+      <VStack gap={6}>
+        <PanelBox padding="24px 20px">
+          <VStack gap={8}>
+            <MonoLabel>MARKETS</MonoLabel>
+            <Text as="p" color="var(--ft-muted)" size={13} lineHeight={1.6}>
+              This deployment does not serve market data. Your holdings and
+              their cost basis are on Portfolio; prices, quotes and news are
+              off.
+            </Text>
+          </VStack>
+        </PanelBox>
+      </VStack>
+    );
+  }
+
   return (
     <VStack gap={6}>
       {/* KPI Bar — replaces PageHeader on this data page */}
@@ -1953,7 +1981,14 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           scrollbarWidth: "none" as const,
           WebkitOverflowScrolling: "touch" as const,
         }}>
-          {TABS.filter((t) => t.id !== "markets").map((tab) => {
+          {TABS
+            .filter((t) => t.id !== "markets")
+            // DERIVATIVES is an option chain, which carries the underlying's
+            // price. ORDERS is a set of alerts whose only job is to compare a
+            // target against a live quote — with no quotes it can never fire
+            // and every row reads blank. Both go with the market surface.
+            .filter((t) => marketsVisible || (t.id !== "derivatives" && t.id !== "orders"))
+            .map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
@@ -2500,10 +2535,10 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
       )}
 
       {/* ─── ORDERS TAB ─── */}
-      {defaultTab !== "markets" && activeTab === "orders" && <OrdersTab quoteMap={quoteMap} />}
+      {defaultTab !== "markets" && marketsVisible && activeTab === "orders" && <OrdersTab quoteMap={quoteMap} />}
 
       {/* ─── DERIVATIVES TAB ─── */}
-      {defaultTab !== "markets" && activeTab === "derivatives" && <DerivativesTab quoteMap={quoteMap} />}
+      {defaultTab !== "markets" && marketsVisible && activeTab === "derivatives" && <DerivativesTab quoteMap={quoteMap} />}
 
       {/* ─── MARKETS TAB — rendered directly on /investments, hidden on /portfolio ─── */}
       {defaultTab === "markets" ? <MarketsTab /> : null}

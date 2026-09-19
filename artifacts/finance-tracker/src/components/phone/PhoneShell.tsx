@@ -10,6 +10,7 @@ import { SpendingScreen } from "./SpendingScreen";
 import { WorthScreen } from "./WorthScreen";
 import { UpcomingScreen } from "./UpcomingScreen";
 import { MarketScreen } from "./MarketScreen";
+import { useMarketDataEnabled } from "@/lib/market-visibility";
 
 // Directory-wrapped desktop pages. Lazy-loaded so the phone bundle doesn't
 // pay for pages a phone user may never visit. Only pages that phone users
@@ -234,6 +235,7 @@ function AnimatedRoute({ location, children }: { location: string; children: Rea
 
 export function PhoneShell() {
   const [location] = useLocation();
+  const marketsVisible = useMarketDataEnabled();
   return (
     <div
       style={{
@@ -263,7 +265,11 @@ export function PhoneShell() {
 
           <Route path="/worth" component={WorthScreen} />
           <Route path="/spending" component={SpendingScreen} />
-          <Route path="/markets" component={MarketScreen} />
+          {/* The phone MARKETS tab. Registered only when this deployment
+              serves market data — an unregistered route falls through to the
+              shell's own not-found rather than rendering an empty screen.
+              See lib/market-visibility.ts. */}
+          {marketsVisible && <Route path="/markets" component={MarketScreen} />}
           <Route path="/upcoming" component={UpcomingScreen} />
           <Route path="/directory" component={DirectoryScreen} />
 

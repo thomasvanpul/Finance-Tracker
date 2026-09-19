@@ -213,3 +213,28 @@ export function clearSlotId(): void {
 export function effectiveSlotId(persona: PersonaId): SlotId {
   return loadSlotId() ?? slotIdForPersona(persona);
 }
+
+// ── Market slots ────────────────────────────────────────────────────────────
+//
+// Two of the five slots exist only to show market data. When the deployment
+// does not serve any (see lib/market-visibility.ts) they must not be
+// pickable, and — more importantly — a slot ALREADY pinned to one has to
+// resolve to something else, or the phone keeps a MARKETS tab pointing at a
+// route that is no longer registered. The `market` persona pins it by
+// default, so this is the common case, not the edge one.
+//
+// Pure, so the fallback is testable without a browser.
+export const MARKET_SLOT_IDS: ReadonlySet<SlotId> = new Set(["markets", "watchlist"]);
+
+export function isMarketSlot(id: SlotId): boolean {
+  return MARKET_SLOT_IDS.has(id);
+}
+
+/** The slot actually usable right now, given whether markets are served. */
+export function resolveSlotId(id: SlotId, marketDataEnabled: boolean): SlotId {
+  if (marketDataEnabled || !isMarketSlot(id)) return id;
+  // UPCOMING is the fallback rather than the list's first entry: it is the
+  // one remaining slot that is about the user's own data and has something
+  // on it for every persona.
+  return "upcoming";
+}

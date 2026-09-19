@@ -36,9 +36,10 @@ import { SpriteActor } from "@/components/companion/sprite-actor";
 import { STATE_TITLE } from "@/components/companion/companion";
 import { ConnectionsPanel } from "./settings-connections";
 import {
-  SLOT_OPTIONS, saveSlotId, clearSlotId, loadSlotId, slotIdForPersona,
+  SLOT_OPTIONS, saveSlotId, clearSlotId, loadSlotId, slotIdForPersona, isMarketSlot,
   SLOT_UPDATE_EVENT,
 } from "@/lib/tab-slot";
+import { useMarketDataEnabled } from "@/lib/market-visibility";
 
 // The companion states worth showing, in the order they read as a story:
 // asleep because the books balance, through to something waiting to be read.
@@ -452,6 +453,10 @@ function FeatureDot({ level, color }: { level: FeatureLevel; color: string }) {
 }
 
 function TerminalProfilePanel() {
+  // The two market slots are not offerable when this deployment serves no
+  // market data — see lib/market-visibility.ts and resolveSlotId in
+  // lib/tab-slot.ts, which handles a slot already pinned to one.
+  const marketsVisible = useMarketDataEnabled();
   function handleResetAndReconfigure() {
     localStorage.removeItem("nr-onboarding-complete");
     localStorage.removeItem("ft-onboarding-dismissed");
@@ -700,7 +705,7 @@ function TerminalProfilePanel() {
               Your profile sets a default; pin a different one here to override it.
             </p>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-              {SLOT_OPTIONS.map((opt) => {
+              {SLOT_OPTIONS.filter((opt) => marketsVisible || !isMarketSlot(opt.id)).map((opt) => {
                 const isActive = effectiveSlotId === opt.id;
                 return (
                   <button

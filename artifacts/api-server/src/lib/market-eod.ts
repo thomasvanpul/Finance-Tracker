@@ -3,6 +3,7 @@ import { db, eodPricesTable } from "@workspace/db";
 import { logger } from "./logger";
 import { classifyTicker } from "./market-classifier";
 import { getStockPrices, sessionDateUtc, utcDayBefore, yahooDailyBars, type DailyBar, type StockPriceData } from "./market";
+import { isMarketDataEnabled } from "./market-flag";
 
 // ── End-of-day valuation ─────────────────────────────────────────────────────
 //
@@ -193,6 +194,14 @@ function toEod(
 export async function getEodPrices(tickers: string[]): Promise<Map<string, EodPrice>> {
   const eligible = [...new Set(tickers)].filter(isEodValued);
   const out = new Map<string, EodPrice>();
+  // Market data off: no closes, no provider call, and NO throw. This is the
+  // deliberate difference from lib/market.ts, whose fetchers throw. The
+  // callers here — /api/investments, /api/dashboard — have to keep serving a
+  // portfolio without prices, and the shape they already use for "we could
+  // not price this" (an absent entry, priceAvailable false) is exactly the
+  // right answer. Returning empty routes through code that is already
+  // exercised rather than through a new error path.
+  if (!isMarketDataEnabled()) return out;
   if (eligible.length === 0) return out;
 
   const stored = await readStored(eligible);
@@ -335,6 +344,12 @@ export function oldestSessionDate(dates: ReadonlyArray<string | null | undefined
 }
 
 export async function getValuationPrices(tickers: string[]): Promise<ValuationPrices> {
+  // Same contract as getEodPrices above: empty, not an error. Guarded here
+  // too rather than relying on the call below, because the live (non-EOD)
+  // half goes to getStockPrices, which DOES throw when the flag is off.
+  if (!isMarketDataEnabled()) {
+    return { prices: new Map(), asOfSession: null, staleTickers: [] };
+  }
   const unique = [...new Set(tickers)];
   const eodTickers = unique.filter(isEodValued);
   const liveTickers = unique.filter((t) => !isEodValued(t));

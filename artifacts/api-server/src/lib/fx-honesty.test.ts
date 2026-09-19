@@ -9,6 +9,14 @@ import {
 } from "./market";
 import { __resetProviderHealthForTesting } from "./provider-health";
 
+// This file asserts a failed quote is omitted, not fabricated as zero, so it needs market data ON.
+// The flag (lib/market-flag.ts) defaults to OFF in production and therefore
+// in tests, and every fetcher throws MarketDataOffError without it. Turning
+// it on here states what this file is about; it is not a workaround, and the
+// OFF behaviour has its own lock in lib/market-flag.lock.test.ts.
+process.env.ENABLE_MARKET_DATA = "1";
+
+
 // Yahoo is imported via require() at module scope, and vi.mock cannot
 // intercept that cleanly, so market.ts exposes __setYahooForTesting as a
 // test seam. Inject a stub whose .quote() always throws and every FX/

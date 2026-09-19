@@ -39,10 +39,18 @@ import { useKeyboard } from "@/hooks/use-keyboard";
 import { usePageSwipe } from "@/hooks/use-page-swipe";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { useMarketDataEnabled } from "@/lib/market-visibility";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
+
+// The status bar names the host the user is actually on, read at runtime
+// rather than written down. It was the literal "financetracker.work", which
+// would have been a lie from the moment numeris.page started serving and a
+// lie again at the next rename. Reading location means it is correct on
+// both hosts during the cutover with no build-time switch.
+const SERVED_HOST = typeof window !== "undefined" ? window.location.hostname : "";
 
 // Unified nav — primary items shown always, secondary items shown behind "More" toggle.
 // All items for a section live together so section headers never duplicate when More is open.
@@ -117,6 +125,12 @@ const BOTTOM_ITEMS = [
 ];
 
 // Flat list of all configurable nav items (sections only, not bottom items)
+// Nav destinations that exist only to show market data. Hidden wholesale
+// when the deployment does not serve any — see lib/market-visibility.ts. A
+// nav row to a page that cannot load anything reads as a broken feature
+// rather than an absent one.
+export const MARKET_NAV_HREFS: ReadonlySet<string> = new Set(["/investments"]);
+
 const ALL_NAV_ITEMS: { href: string; label: string; code: string; section: string }[] = [
   ...NAV_SECTIONS.flatMap((s) => s.items.map((item) => ({ ...item, section: s.label }))),
 ];
@@ -324,7 +338,10 @@ function useClock() {
 
 // ── World Clock hover component ──────────────────────────────────────────────
 
-function ClockDisplay({ clock }: { clock: string; }) {
+// marketsVisible: the world clock stays a clock when market data is off —
+// a timezone is not market data. What goes is the exchange name and the
+// OPEN/PRE/CLOSED badge, which are a claim about a market session.
+function ClockDisplay({ clock, marketsVisible }: { clock: string; marketsVisible: boolean; }) {
   const [hover, setHover] = useState(false);
   const [pos, setPos] = useState({ x: 0, y: 0, vw: 0 });
   const [editing, setEditing] = useState(false);
@@ -402,13 +419,17 @@ function ClockDisplay({ clock }: { clock: string; }) {
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: "var(--ft-text)" }}>{city.label}</div>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>{city.exchange}</div>
+                  {marketsVisible && (
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>{city.exchange}</div>
+                  )}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                   <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", letterSpacing: "0.04em" }}>{t}</span>
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, padding: "1px 6px", background: badgeBg, color: badgeColor, border: `1px solid ${badgeBdr}` }}>
-                    {status}
-                  </span>
+                  {marketsVisible && (
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, padding: "1px 6px", background: badgeBg, color: badgeColor, border: `1px solid ${badgeBdr}` }}>
+                      {status}
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -1215,6 +1236,11 @@ export function Layout({ children }: LayoutProps) {
   const isViewportLocked = VIEWPORT_LOCKED_ROUTES.has(location);
   const { theme } = useFintrackTheme();
   const { local: clock } = useClock();
+  // Does this deployment serve market data? Asked of the server, false until
+  // it answers, false on error — see lib/market-visibility.ts. Everything
+  // market-shaped in this file hangs off it: the ticker strip, the
+  // exchange/session badge in the world clock, and the Markets nav row.
+  const marketsVisible = useMarketDataEnabled();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   // One boolean, no database work on the server. Decides whether the Admin
@@ -1444,7 +1470,13 @@ export function Layout({ children }: LayoutProps) {
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);
 
-  const allItems = NAV_SECTIONS.flatMap(s => s.items).concat(BOTTOM_ITEMS);
+  // One predicate, used by every list that can put a market destination on
+  // screen: the configure-nav panel, the pinned row, the sidebar itself, and
+  // the breadcrumb label lookup below.
+  const navItemVisible = (href: string) => marketsVisible || !MARKET_NAV_HREFS.has(href);
+  const visibleNavItems = ALL_NAV_ITEMS.filter((i) => navItemVisible(i.href));
+
+  const allItems = NAV_SECTIONS.flatMap(s => s.items).filter((i) => navItemVisible(i.href)).concat(BOTTOM_ITEMS);
   const UNLISTED_LABELS: Record<string, string> = {
     "/fire": "FIRE", "/mortgage": "Mortgage", "/pension": "Pension",
     "/year-review": "Year Review",
@@ -1600,7 +1632,7 @@ export function Layout({ children }: LayoutProps) {
         {configuring ? (
           <SidebarConfigPanel
             config={sidebarConfig}
-            allItems={ALL_NAV_ITEMS}
+            allItems={visibleNavItems}
             collapsed={effectiveCollapsed}
             onClose={() => setConfiguring(false)}
             onChange={(next) => {
@@ -1616,7 +1648,7 @@ export function Layout({ children }: LayoutProps) {
               );
 
               const pinnedItems = sidebarConfig.pinnedFirst
-                ? ALL_NAV_ITEMS.filter((item) => configMap.get(item.href)?.pinned && configMap.get(item.href)?.visible !== false)
+                ? visibleNavItems.filter((item) => configMap.get(item.href)?.pinned && configMap.get(item.href)?.visible !== false)
                 : [];
 
               // Build sections from config.items order so reordering is reflected in nav
@@ -1624,6 +1656,7 @@ export function Layout({ children }: LayoutProps) {
               const orderedNavItems = sidebarConfig.items
                 .filter(c => {
                   if (c.visible === false) return false;
+                  if (!navItemVisible(c.href)) return false;
                   if (sidebarConfig.pinnedFirst && c.pinned) return false;
                   if (!moreOpen && SECONDARY_HREFS.has(c.href)) return false;
                   return true;
@@ -2036,16 +2069,21 @@ export function Layout({ children }: LayoutProps) {
           {/* Right side — ticker shrinks first, essential buttons never disappear */}
           <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 1, minWidth: 0 }}>
 
-            {/* Ticker — isolated so it's the only thing that compresses; hidden on mobile via CSS */}
-            <div className="ft-header-ticker-strip" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", borderRight: "1px solid var(--ft-border)", marginRight: 12 }}>
-              <LiveTickerBar />
-            </div>
+            {/* Ticker — isolated so it's the only thing that compresses; hidden on mobile via CSS.
+                Gone entirely when this deployment does not serve market data: it is
+                chrome on every desktop page, so leaving it to render an empty strip
+                would be the most visible remnant of a feature that is off. */}
+            {marketsVisible && (
+              <div className="ft-header-ticker-strip" style={{ flexShrink: 1, minWidth: 0, overflow: "hidden", borderRight: "1px solid var(--ft-border)", marginRight: 12 }}>
+                <LiveTickerBar />
+              </div>
+            )}
 
             {/* Essential buttons — flex-shrink: 0 so they're always visible */}
             <div style={{ display: "flex", alignItems: "center", gap: 0, flexShrink: 0 }}>
 
             {/* Clock with world timezone hover — hidden on mobile to reclaim header space */}
-            {!isMobile && <ClockDisplay clock={clock} />}
+            {!isMobile && <ClockDisplay clock={clock} marketsVisible={marketsVisible} />}
 
             {/* PWA install prompt — hidden on mobile (home screen install prompt is native) */}
             {!isMobile && <PWAInstallButton />}
@@ -2320,7 +2358,7 @@ export function Layout({ children }: LayoutProps) {
             <span style={{ color: "var(--ft-border2)" }}>│</span>
             <span>/ COMMAND</span>
             <span style={{ color: "var(--ft-border2)" }}>│</span>
-            <span>financetracker.work</span>
+            <span>{SERVED_HOST}</span>
           </div>
         </footer>
       </div>

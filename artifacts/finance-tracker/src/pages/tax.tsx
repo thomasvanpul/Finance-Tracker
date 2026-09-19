@@ -20,6 +20,7 @@ import { FileText, Plus, Trash2, Download, Info, Clock, CalendarDays, ShieldChec
 import { FtDropdown } from "@/components/ft-dropdown";
 import type { FtDropdownOption } from "@/components/ft-dropdown";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { useMarketDataEnabled } from "@/lib/market-visibility";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -883,7 +884,13 @@ export default function Tax() {
 
   const { data: investments } = useListInvestments();
   const tickers = [...new Set(investments?.map(i => i.ticker) ?? [])].join(",");
-  const { data: rawQuotes } = useGetMarketQuotes({ tickers }, { query: { enabled: !!tickers, queryKey: getGetMarketQuotesQueryKey({ tickers }) } });
+  // Dividend estimates are derived from a quote's dividendYield and price,
+  // so they are market data wearing a tax hat. With markets off the quote
+  // map is empty and the estimate falls to 0 — which the screen already
+  // handles, because a holding with no dividend data has always summed to
+  // nothing rather than to a guess.
+  const marketsVisible = useMarketDataEnabled();
+  const { data: rawQuotes } = useGetMarketQuotes({ tickers }, { query: { enabled: !!tickers && marketsVisible, queryKey: getGetMarketQuotesQueryKey({ tickers }) } });
   const quoteMap = new Map<string, QuoteLike>(((rawQuotes ?? []) as QuoteLike[]).map(q => [q.ticker, q]));
   const estimatedDividends = useMemo(() => {
     if (!investments) return 0;

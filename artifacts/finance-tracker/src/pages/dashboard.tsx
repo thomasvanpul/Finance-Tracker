@@ -74,6 +74,7 @@ import { DashboardTopRegion, Insights, RULE } from "@/components/dashboard/top-r
 import { netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
 import { samePointSpend, sameDayLabel } from "@/lib/same-point-spend";
 import { closeTagText, sinceCloseLabel } from "@/components/FixingMark";
+import { useMarketDataEnabled } from "@/lib/market-visibility";
 
 // ── Saved Views ───────────────────────────────────────────────────────────────
 
@@ -388,6 +389,9 @@ export function NetWorthMilestonesWidget() {
     </div>
   );
 }
+
+// Widgets whose whole content is market data. See lib/market-visibility.ts.
+const MARKET_WIDGET_IDS: ReadonlySet<string> = new Set(["market-snapshot"]);
 
 const WIDGET_COMPONENTS: Record<WidgetId, ComponentType<{ isExpanded?: boolean }>> = {
   "net-worth": NetWorthWidget,
@@ -3371,8 +3375,16 @@ export default function Dashboard() {
     useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
-  const enabledIds = order.filter(id => isEnabled(id as WidgetId)) as WidgetId[];
-  const disabledIds = order.filter(id => !isEnabled(id as WidgetId)) as WidgetId[];
+  // Market widgets are dropped from BOTH lists when this deployment does
+  // not serve market data: not rendered, and not offered in the add-widget
+  // list either. Several personas preset market-snapshot
+  // (lib/persona.ts), so a saved layout can name it even though nobody
+  // chose it — filtering here is what makes those layouts still correct.
+  const marketWidgetsVisible = useMarketDataEnabled();
+  const widgetVisible = (id: string) =>
+    marketWidgetsVisible || !MARKET_WIDGET_IDS.has(id);
+  const enabledIds = order.filter(id => isEnabled(id as WidgetId) && widgetVisible(id)) as WidgetId[];
+  const disabledIds = order.filter(id => !isEnabled(id as WidgetId) && widgetVisible(id)) as WidgetId[];
 
   // Two-column layout: track which items are in the right column.
   // Left column = all enabled items NOT in rightSet (in enabledIds order).

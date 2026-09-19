@@ -136,10 +136,10 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // Preview-mode UI state — theme-swatch preview, widget-carousel preview.
   // Not a data fabrication; the "preview" here is a controlled UI state
   // toggled by the user, and no financial value is invented.
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1929, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1931, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 773, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 774, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1933, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1935, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 778, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 779, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
 
 const ALLOWLIST_B: readonly AllowEntry[] = [
@@ -148,7 +148,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // is a mathematical placeholder that never renders as a currency figure.
   { path: "artifacts/finance-tracker/src/components/investments/derivatives-tab.tsx", line: 1489, reason: "chart normalisation denominator: payoffData empty → 1 to avoid /0 in bar height calc" },
   { path: "artifacts/finance-tracker/src/components/investments/portfolio-tables.tsx", line: 148, reason: "ratio for weighting bar; 1 = fully weighted when live price is missing (chart geometry, not currency)" },
-  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 556, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
+  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 561, reason: "chart normalisation: empty daily balances → 1 to avoid /0 in bar height" },
   { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 159, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 550, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1511, reason: "chart max denominator: empty merchants → 1 to avoid /0" },
@@ -175,7 +175,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // UI dimensions, font sizes, opacities, layout constants — pixel/percent
   // values in JSX-style variable initializers. Non-currency.
   { path: "artifacts/finance-tracker/src/components/currency-mark.tsx", line: 41, reason: "SVG font-size in px based on character count (18 or 22)" },
-  { path: "artifacts/finance-tracker/src/components/layout.tsx", line: 1285, reason: "sidebar-width restore default: 212px when localStorage value is absent" },
+  { path: "artifacts/finance-tracker/src/components/layout.tsx", line: 1311, reason: "sidebar-width restore default: 212px when localStorage value is absent" },
   { path: "artifacts/finance-tracker/src/components/matrix-rain.tsx", line: 91, reason: "matrix-rain glyph scale (1.4 or 1) — animation randomisation, not currency" },
   { path: "artifacts/finance-tracker/src/components/page-transition.tsx", line: 59, reason: "CSS opacity for fade transition (0 or 1)" },
   { path: "artifacts/finance-tracker/src/components/primitives/block-field.tsx", line: 162, reason: "figure font size (px) for hero/no-hero layout" },
@@ -190,8 +190,8 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1578, reason: "border thickness (2px hi-value, 4px normal)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1248, reason: "chart bar width in px (38 mobile / 44 desktop)" },
   { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1249, reason: "chart bar height in px (34 mobile / 40 desktop)" },
-  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 440, reason: "popup position fallback: no anchor rect → 100px default" },
-  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 444, reason: "popup position fallback: no anchor rect → 100px default" },
+  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 441, reason: "popup position fallback: no anchor rect → 100px default" },
+  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 445, reason: "popup position fallback: no anchor rect → 100px default" },
   { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 848, reason: "chart bar min height in px (4px)" },
   { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 515, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
   { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 514, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
@@ -200,7 +200,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/components/mobile/mobile-format.ts", line: 10, reason: "default decimals count (2) for nfmt when unspecified" },
   { path: "artifacts/finance-tracker/src/lib/currency-query.ts", line: 105, reason: "decimal-place count for the palette conversion result: 2dp at |value| >= 1, 4dp below a unit where 2dp would round a real difference to nothing. A precision setting, not a figure — the value itself comes from convertVia, which returns null rather than a fallback when a leg is unpriced." },
   { path: "artifacts/finance-tracker/src/lib/currency-query.ts", line: 114, reason: "decimal-place count for the unit rate, mirroring FxRateCell in accounts.tsx: 2dp at >= 100, else 4dp. A precision setting, not a figure." },
-  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 49, reason: "default decimals count (2) for local nfmt fallback" },
+  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 50, reason: "default decimals count (2) for local nfmt fallback" },
   { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", line: 242, reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
 
   // Streaks, thresholds — non-money integers.

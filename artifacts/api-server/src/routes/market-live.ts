@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { alpacaStream, type CandlePoint } from "../lib/alpaca-stream.js";
 import { indexRefusalBody, isIndexSymbol } from "../lib/market-classifier.js";
+import { marketDataOnly } from "../lib/market-flag";
 
 const router = Router();
 
@@ -8,7 +9,7 @@ const router = Router();
 // Clients connect with EventSource and receive:
 //   event: init   — the current buffer (array of CandlePoint)
 //   event: candle — each newly closed candle (single CandlePoint)
-router.get("/api/market/live/:ticker", (req, res) => {
+router.get("/api/market/live/:ticker", marketDataOnly, (req, res) => {
   // Refused before the streaming check: an index level is not shown whether
   // or not streaming is configured (lib/market-classifier.ts).
   const requested = (req.params.ticker as string).toUpperCase();

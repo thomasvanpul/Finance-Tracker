@@ -74,6 +74,7 @@ import {
   type ProviderName,
 } from "./market-classifier";
 import { alpacaFetchPrices, polygonFetchPrices, twelveDataFetchPrices, frankfurterFetchPrices, priceToQuote } from "./market-adapters";
+import { assertMarketDataEnabled } from "./market-flag";
 
 // Cache entries
 let fxCache: { data: FxRatesData; ts: number } | null = null;
@@ -582,6 +583,10 @@ export function utcDayBefore(iso: string): string {
 }
 
 export async function yahooDailyBars(ticker: string): Promise<DailyBar[]> {
+  // Gated. See lib/market-flag.ts — the deployment decides whether this
+  // server serves market data at all, and the answer is checked before any
+  // cache read or provider call, not after.
+  assertMarketDataEnabled();
   if (isIndexSymbol(ticker)) throw new IndexLevelRefusedError(ticker);
   const read = await withProvider("yahoo", async (): Promise<YahooRead<DailyBar[]>> => {
     const period1 = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
@@ -865,10 +870,18 @@ function settleRefusals<T extends { ticker: string }>(
 }
 
 export async function getStockQuotes(tickers: string[]): Promise<StockQuoteData[]> {
+  // Gated. See lib/market-flag.ts — the deployment decides whether this
+  // server serves market data at all, and the answer is checked before any
+  // cache read or provider call, not after.
+  assertMarketDataEnabled();
   return (await readStockQuotes(tickers)).rows;
 }
 
 export async function readStockQuotes(requested: string[]): Promise<MarketRead<StockQuoteData>> {
+  // Gated. See lib/market-flag.ts — the deployment decides whether this
+  // server serves market data at all, and the answer is checked before any
+  // cache read or provider call, not after.
+  assertMarketDataEnabled();
   // Refused by shape before the cache or any provider is touched.
   const refused = new Set(requested.filter(isIndexSymbol));
   const tickers = requested.filter((t) => !refused.has(t));
@@ -943,10 +956,18 @@ export async function readStockQuotes(requested: string[]): Promise<MarketRead<S
 }
 
 export async function getStockPrices(tickers: string[]): Promise<StockPriceData[]> {
+  // Gated. See lib/market-flag.ts — the deployment decides whether this
+  // server serves market data at all, and the answer is checked before any
+  // cache read or provider call, not after.
+  assertMarketDataEnabled();
   return (await readStockPrices(tickers)).rows;
 }
 
 export async function readStockPrices(requested: string[]): Promise<MarketRead<StockPriceData>> {
+  // Gated. See lib/market-flag.ts — the deployment decides whether this
+  // server serves market data at all, and the answer is checked before any
+  // cache read or provider call, not after.
+  assertMarketDataEnabled();
   // Refused by shape before the cache or any provider is touched.
   const refused = new Set(requested.filter(isIndexSymbol));
   const tickers = requested.filter((t) => !refused.has(t));
@@ -1084,6 +1105,10 @@ async function fetchPolygonAggs(
 }
 
 export async function getStockHistory(ticker: string, period: string): Promise<HistoryPoint[]> {
+  // Gated. See lib/market-flag.ts — the deployment decides whether this
+  // server serves market data at all, and the answer is checked before any
+  // cache read or provider call, not after.
+  assertMarketDataEnabled();
   if (isIndexSymbol(ticker)) throw new IndexLevelRefusedError(ticker);
   const cacheKey = `${ticker}:${period}`;
   const now = Date.now();
@@ -1236,6 +1261,10 @@ export async function getFilteredNewsForUser(
   holdings: { tickers: string[]; currencies: string[] },
   limit: number = 12,
 ): Promise<FilteredNewsItem[]> {
+  // Gated. See lib/market-flag.ts — the deployment decides whether this
+  // server serves market data at all, and the answer is checked before any
+  // cache read or provider call, not after.
+  assertMarketDataEnabled();
   if (holdings.tickers.length === 0 && holdings.currencies.length === 0) {
     return [];
   }
@@ -1331,6 +1360,10 @@ async function fetchNewsRSS(ticker: string): Promise<NewsItem[]> {
 }
 
 export async function getStockNews(ticker: string): Promise<NewsItem[]> {
+  // Gated. See lib/market-flag.ts — the deployment decides whether this
+  // server serves market data at all, and the answer is checked before any
+  // cache read or provider call, not after.
+  assertMarketDataEnabled();
   const key = ticker;
   const now = Date.now();
   const cached = newsCache.get(key);
@@ -1381,6 +1414,10 @@ const detailCache = new Map<string, { data: StockDetail; ts: number }>();
 const DETAIL_TTL_MS = 15 * 60 * 1000;
 
 export async function getStockDetail(ticker: string): Promise<StockDetail> {
+  // Gated. See lib/market-flag.ts — the deployment decides whether this
+  // server serves market data at all, and the answer is checked before any
+  // cache read or provider call, not after.
+  assertMarketDataEnabled();
   // Shape only. The modules requested below do not include quoteType, so a
   // no-caret index is not caught here; its fiftyTwoWeekChange would be the
   // one figure derived from the level.
@@ -1548,6 +1585,10 @@ const optionsCache = new Map<string, { data: OptionsChain; ts: number }>();
 const OPTIONS_TTL_MS = 10 * 60 * 1000;
 
 export async function getOptionsChain(ticker: string, expiry?: string): Promise<OptionsChain> {
+  // Gated. See lib/market-flag.ts — the deployment decides whether this
+  // server serves market data at all, and the answer is checked before any
+  // cache read or provider call, not after.
+  assertMarketDataEnabled();
   // An index option chain carries the index level as its underlyingPrice.
   if (isIndexSymbol(ticker)) throw new IndexLevelRefusedError(ticker);
   const key =`${ticker}:${expiry ?? "first"}`;

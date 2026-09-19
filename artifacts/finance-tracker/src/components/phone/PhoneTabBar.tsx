@@ -5,6 +5,7 @@ import {
   FIXED_TABS_AFTER,
   FIXED_TABS_BEFORE,
   loadSlotId,
+  resolveSlotId,
   slotIdForPersona,
   slotOptionById,
   SLOT_UPDATE_EVENT,
@@ -12,6 +13,7 @@ import {
   type SlotId,
   type SlotOption,
 } from "@/lib/tab-slot";
+import { useMarketDataEnabled } from "@/lib/market-visibility";
 
 // The phone tab bar has four positions:
 //   HOME · WORTH · [chosen slot] · DIRECTORY
@@ -100,6 +102,7 @@ function slotToTab(opt: SlotOption): Tab {
 }
 
 export function PhoneTabBar() {
+  const marketsVisible = useMarketDataEnabled();
   const [loc] = useLocation();
   const persona = useActivePersona();
 
@@ -114,7 +117,13 @@ export function PhoneTabBar() {
     () => null,
   );
 
-  const slot = slotToTab(slotOptionById(savedSlotId ?? slotIdForPersona(persona)));
+  // A pinned MARKETS slot has to resolve elsewhere when this deployment
+  // serves no market data, or the tab bar keeps a MARKETS entry pointing at
+  // a route PhoneShell no longer registers. resolveSlotId is pure and does
+  // the choosing; see lib/tab-slot.ts.
+  const slot = slotToTab(slotOptionById(
+    resolveSlotId(savedSlotId ?? slotIdForPersona(persona), marketsVisible),
+  ));
   const tabs = [...FIXED_BEFORE, slot, ...FIXED_AFTER];
 
   return (

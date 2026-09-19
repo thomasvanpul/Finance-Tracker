@@ -5,7 +5,7 @@
 // real Express server or add supertest as a dep. The behaviour under test
 // is the handler + provider-health snapshot, not Express routing itself.
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import router from "./market-providers";
 import { __resetProviderHealthForTesting, registerProvider } from "../lib/provider-health";
 
@@ -23,8 +23,21 @@ async function callProviders(): Promise<any> {
   });
 }
 
+// The provider list is now gated: with market data off the endpoint still
+// answers (the client needs the answer) but reports no providers, because
+// none of those lanes is running. The shape and secrecy locks below are
+// about the ON state, so they set the flag; the OFF state has its own
+// describe block at the bottom.
+const SAVED_FLAG = process.env.ENABLE_MARKET_DATA;
+
 beforeEach(() => {
   __resetProviderHealthForTesting();
+  process.env.ENABLE_MARKET_DATA = "1";
+});
+
+afterEach(() => {
+  if (SAVED_FLAG === undefined) delete process.env.ENABLE_MARKET_DATA;
+  else process.env.ENABLE_MARKET_DATA = SAVED_FLAG;
 });
 
 describe("/api/market/providers · shape and secrecy", () => {
@@ -95,5 +108,36 @@ describe("/api/market/providers · shape and secrecy", () => {
         "creditsResetAt",
       ]),
     );
+  });
+});
+
+describe("/api/market/providers · with market data off", () => {
+  it("still answers, so the client can learn markets are off", async () => {
+    // This endpoint is deliberately NOT refused by marketDataOnly. The SPA
+    // is a static bundle and has no other way to find out; refusing it
+    // would leave the client guessing, and the rule in this repo is that
+    // the server decides what renders. See routes/market-providers.ts.
+    delete process.env.ENABLE_MARKET_DATA;
+    const body = await callProviders();
+    expect(body.marketDataEnabled).toBe(false);
+  });
+
+  it("reports NO providers when nothing is calling them", async () => {
+    // Breaker state with markets off is a fact about the past. Publishing
+    // it invites an operator to debug a chain that is not running.
+    delete process.env.ENABLE_MARKET_DATA;
+    registerProvider({ name: "yahoo", configured: true });
+    registerProvider({ name: "alpaca", configured: true });
+    const body = await callProviders();
+    expect(body.providers).toEqual([]);
+  });
+
+  it("marketDataEnabled is true only for the exact opt-in string", async () => {
+    for (const value of ["0", "true", "yes", "", " 1 "]) {
+      process.env.ENABLE_MARKET_DATA = value;
+      expect((await callProviders()).marketDataEnabled).toBe(false);
+    }
+    process.env.ENABLE_MARKET_DATA = "1";
+    expect((await callProviders()).marketDataEnabled).toBe(true);
   });
 });

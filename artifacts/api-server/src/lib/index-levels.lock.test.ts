@@ -52,6 +52,14 @@ import { __resetProviderHealthForTesting, getProviderHealth, registerProvider } 
 import marketRouter from "../routes/market";
 import liveRouter from "../routes/market-live";
 
+// This file asserts the index-level refusal inside the quote path, so it needs market data ON.
+// The flag (lib/market-flag.ts) defaults to OFF in production and therefore
+// in tests, and every fetcher throws MarketDataOffError without it. Turning
+// it on here states what this file is about; it is not a workaround, and the
+// OFF behaviour has its own lock in lib/market-flag.lock.test.ts.
+process.env.ENABLE_MARKET_DATA = "1";
+
+
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const CLIENT_SRC = join(REPO_ROOT, "artifacts", "finance-tracker", "src");
 
@@ -320,8 +328,19 @@ function call(router: any, path: string, req: Record<string, unknown>): Promise<
       flushHeaders() {},
       write() {},
     };
-    const full = { query: {}, params: {}, on() {}, ...req };
-    Promise.resolve(layer.route.stack[0].handle(full, res)).catch(reject);
+    const full = { query: {}, params: {}, path, on() {}, ...req };
+    // Walk the WHOLE handler stack, not just [0]. These routes gained a
+    // marketDataOnly guard in front of the handler (lib/market-flag.ts), and
+    // calling [0] with no `next` meant the test stopped exercising the route
+    // as it is actually mounted — it would have passed against a route whose
+    // real first middleware refused everything.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handlers = layer.route.stack.map((l: any) => l.handle);
+    const step = (i: number): void => {
+      if (i >= handlers.length) return reject(new Error("handler chain fell through"));
+      Promise.resolve(handlers[i](full, res, () => step(i + 1))).catch(reject);
+    };
+    step(0);
   });
 }
 

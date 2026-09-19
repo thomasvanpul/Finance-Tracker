@@ -20,6 +20,14 @@ import {
   type ChatContextRaw,
 } from "./ai-context";
 
+// This file assembles the chat context, including a portfolio total, so it needs market data ON.
+// The flag (lib/market-flag.ts) defaults to OFF in production and therefore
+// in tests, and every fetcher throws MarketDataOffError without it. Turning
+// it on here states what this file is about; it is not a workaround, and the
+// OFF behaviour has its own lock in lib/market-flag.lock.test.ts.
+process.env.ENABLE_MARKET_DATA = "1";
+
+
 // Stub the market module: FX rates are the load-bearing input for the
 // null-propagation tests, so we return deterministic rates + a fixed
 // updatedAt. Individual tests can re-stub inside their scope.

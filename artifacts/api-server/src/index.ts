@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { isMarketDataEnabled, MARKET_DATA_FLAG } from "./lib/market-flag";
 import { alpacaStream } from "./lib/alpaca-stream";
 import { verifyProvidersAtBoot } from "./lib/ai-config";
 import { migrateAtBoot } from "./lib/migrate";
@@ -63,7 +64,13 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
-  alpacaStream.connect();
+  // The Alpaca websocket is a market-data surface like any other, and the
+  // one that runs without anybody asking. Not connecting is the difference
+  // between "we do not serve quotes" and "we do not serve quotes but we do
+  // hold an authenticated subscription to them". See lib/market-flag.ts.
+  if (isMarketDataEnabled()) alpacaStream.connect();
+  else logger.info({ [MARKET_DATA_FLAG]: process.env[MARKET_DATA_FLAG] ?? null },
+    "Market data is off — Alpaca stream not connected");
 
   // Retention for request_metrics — prune at boot (catches long-idle
   // deploys where the previous prune ran days ago) and every 24 h on

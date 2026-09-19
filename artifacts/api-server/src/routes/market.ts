@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db, investmentsTable, accountsTable } from "@workspace/db";
 import { getFxRates, readStockPrices, readStockQuotes, getStockHistory, getStockDetail, getOptionsChain, getStockNews, getFilteredNewsForUser } from "../lib/market";
 import { IndexLevelRefusedError, indexRefusalBody } from "../lib/market-classifier";
+import { marketDataOnly } from "../lib/market-flag";
 import {
   GetFxRatesResponse,
   GetMarketPricesQueryParams,
@@ -12,6 +13,14 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+// Every endpoint below EXCEPT /market/fx-rates is a market-data surface and
+// is refused when the deployment does not serve one. fx-rates is excluded on
+// purpose: ECB fixings via Frankfurter carry no display restriction and
+// every converted figure in the app depends on them, so switching markets
+// off must not take the second line off every foreign balance. The reasoning
+// in full is in lib/market-flag.ts.
+
 
 // Index symbols are answered 451 Unavailable For Legal Reasons: the index
 // owner licenses the level and this app does not show it
@@ -32,7 +41,7 @@ router.get("/market/fx-rates", async (req, res): Promise<void> => {
   res.json(GetFxRatesResponse.parse(rates));
 });
 
-router.get("/market/prices", async (req, res): Promise<void> => {
+router.get("/market/prices", marketDataOnly, async (req, res): Promise<void> => {
   const query = GetMarketPricesQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
@@ -45,7 +54,7 @@ router.get("/market/prices", async (req, res): Promise<void> => {
   res.json(GetMarketPricesResponse.parse(rows));
 });
 
-router.get("/market/quotes", async (req, res): Promise<void> => {
+router.get("/market/quotes", marketDataOnly, async (req, res): Promise<void> => {
   const query = GetMarketQuotesQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });
@@ -58,7 +67,7 @@ router.get("/market/quotes", async (req, res): Promise<void> => {
   res.json(GetMarketQuotesResponse.parse(rows));
 });
 
-router.get("/market/history", async (req, res): Promise<void> => {
+router.get("/market/history", marketDataOnly, async (req, res): Promise<void> => {
   const ticker = typeof req.query.ticker === "string" ? req.query.ticker.trim().toUpperCase() : "";
   const period = typeof req.query.period === "string" ? req.query.period.trim() : "1y";
   if (!ticker) { res.status(400).json({ error: "ticker required" }); return; }
@@ -71,7 +80,7 @@ router.get("/market/history", async (req, res): Promise<void> => {
   }
 });
 
-router.get("/market/detail", async (req, res): Promise<void> => {
+router.get("/market/detail", marketDataOnly, async (req, res): Promise<void> => {
   const ticker = typeof req.query.ticker === "string" ? req.query.ticker.trim().toUpperCase() : "";
   if (!ticker) { res.status(400).json({ error: "ticker required" }); return; }
   try {
@@ -83,7 +92,7 @@ router.get("/market/detail", async (req, res): Promise<void> => {
   }
 });
 
-router.get("/market/options", async (req, res): Promise<void> => {
+router.get("/market/options", marketDataOnly, async (req, res): Promise<void> => {
   const ticker = typeof req.query.ticker === "string" ? req.query.ticker.trim().toUpperCase() : "";
   const expiry = typeof req.query.expiry === "string" ? req.query.expiry.trim() : undefined;
   if (!ticker) { res.status(400).json({ error: "ticker required" }); return; }
@@ -96,7 +105,7 @@ router.get("/market/options", async (req, res): Promise<void> => {
   }
 });
 
-router.get("/market/news", async (req, res): Promise<void> => {
+router.get("/market/news", marketDataOnly, async (req, res): Promise<void> => {
   const ticker = typeof req.query.ticker === "string" ? req.query.ticker.trim().toUpperCase() : "";
   if (!ticker) { res.status(400).json({ error: "ticker required" }); return; }
   const data = await getStockNews(ticker);
@@ -107,7 +116,7 @@ router.get("/market/news", async (req, res): Promise<void> => {
 // news is pulled per-ticker (inherent anchor); currency news is
 // deferred until a generic-feed source is wired. If the user
 // holds neither, returns [] — the pane must not render.
-router.get("/market/news/for-user", async (req, res): Promise<void> => {
+router.get("/market/news/for-user", marketDataOnly, async (req, res): Promise<void> => {
   const userId = (req as unknown as { userId: string }).userId;
   const investments = await db
     .select({ ticker: investmentsTable.ticker })

@@ -17,6 +17,14 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { getStockPrices, __setYahooForTesting } from "./market";
 import { __resetProviderHealthForTesting, registerProvider } from "./provider-health";
 
+// This file asserts the provider fallback chain, so it needs market data ON.
+// The flag (lib/market-flag.ts) defaults to OFF in production and therefore
+// in tests, and every fetcher throws MarketDataOffError without it. Turning
+// it on here states what this file is about; it is not a workaround, and the
+// OFF behaviour has its own lock in lib/market-flag.lock.test.ts.
+process.env.ENABLE_MARKET_DATA = "1";
+
+
 // Mock the api-server env so Alpaca is "configured" in test — the
 // adapter checks process.env at call time (via the auth headers), so
 // providing plausible dummy values is sufficient. Production behaviour

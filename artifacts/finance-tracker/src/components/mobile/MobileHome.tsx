@@ -28,6 +28,7 @@ import {
   type AccountType,
   type HoldingsInput,
 } from "@/components/phone/CompositionChart";
+import { useMarketDataEnabled } from "@/lib/market-visibility";
 import {
   selectInsight,
   loadDismissedIds,
@@ -82,6 +83,10 @@ interface MobileHomeProps {
 
 export function MobileHome(_props: MobileHomeProps) {
   const [, navigate] = useLocation();
+  // The markets home section is the whole of MarketPane + NewsPane. Off
+  // means absent, not empty — see lib/market-visibility.ts. The persona
+  // ordering above still runs; this section simply has nothing to place.
+  const marketsVisible = useMarketDataEnabled();
   const { privacy: _privacy } = usePrivacy();
 
   const now = new Date();
@@ -442,7 +447,7 @@ export function MobileHome(_props: MobileHomeProps) {
                 </div>
               </div>
             )
-          ) : (
+          ) : marketsVisible ? (
             <div key="markets">
               {/* Markets pane — the only element that differs tomorrow morning
                   without the user doing anything. Scoped to holdings + implied
@@ -454,7 +459,7 @@ export function MobileHome(_props: MobileHomeProps) {
                   show. See components/mobile/NewsPane.tsx. */}
               <NewsPane onOpenInvestments={() => navigate("/investments")} />
             </div>
-          ),
+          ) : null,
         )}
 
         {/* Coming section */}

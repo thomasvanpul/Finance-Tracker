@@ -28,6 +28,7 @@
 
 import { Router, type IRouter } from "express";
 import { getProviderHealth } from "../lib/provider-health";
+import { isMarketDataEnabled } from "../lib/market-flag";
 
 const router: IRouter = Router();
 
@@ -44,8 +45,29 @@ const router: IRouter = Router();
 //         lastOk: "2026-08-20T20:14:33Z" }
 //     ]
 //   }
+//
+// ── marketDataEnabled: why this endpoint is NOT refused when markets are off
+//
+// It is the client's only way to find out. The SPA is a static bundle on a
+// CDN, so it cannot be built knowing what the server decided, and this repo
+// has a standing rule against a build-time VITE_* flag deciding what renders
+// — a Google button that was live while its redirect URI was unregistered
+// cost an hour, and the lesson generalises. So the client asks, exactly as
+// it asks /api/auth-providers which buttons may render, and it assumes OFF
+// until told otherwise. Refusing this endpoint would leave the client with
+// no answer at all, which fails in the wrong direction: a Markets tab
+// rendered against a server that will 503 every request in it.
+//
+// With markets off the provider list is EMPTY rather than reported as
+// healthy. Nothing is calling those lanes, so their breaker state is a fact
+// about the past; publishing it would invite an operator to debug a chain
+// that is not running.
 router.get("/market/providers", (_req, res) => {
-  res.json({ providers: getProviderHealth() });
+  const marketDataEnabled = isMarketDataEnabled();
+  res.json({
+    marketDataEnabled,
+    providers: marketDataEnabled ? getProviderHealth() : [],
+  });
 });
 
 export default router;
