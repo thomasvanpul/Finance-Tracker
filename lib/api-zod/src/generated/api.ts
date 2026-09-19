@@ -180,6 +180,7 @@ export const GetDashboardResponse = zod.object({
   "totalPlPercent": zod.number().nullable(),
   "dayChangeBase": zod.number().nullable(),
   "dayChangePercent": zod.number().nullable(),
+  "positionsAtCost": zod.number(),
   "unavailablePositions": zod.number(),
   "valuationAsOfSession": zod.string().nullable(),
   "dayChangeFromSession": zod.string().nullable()
@@ -753,6 +754,7 @@ export const ListInvestmentsResponseItem = zod.object({
   "plBase": zod.number().nullable(),
   "plPercent": zod.number().nullable(),
   "baseEquivalent": zod.number().nullable(),
+  "costBasisValueBase": zod.number().nullable(),
   "createdAt": zod.string()
 })
 export const ListInvestmentsResponse = zod.array(ListInvestmentsResponseItem)
@@ -778,6 +780,7 @@ export const GetInvestmentSummaryResponse = zod.object({
   "totalPlBase": zod.number(),
   "totalPlPercent": zod.number().nullable(),
   "positions": zod.number(),
+  "positionsAtCost": zod.number(),
   "unavailablePositions": zod.number(),
   "valuationAsOfSession": zod.string().nullable()
 })
@@ -812,6 +815,7 @@ export const UpdateInvestmentResponse = zod.object({
   "plBase": zod.number().nullable(),
   "plPercent": zod.number().nullable(),
   "baseEquivalent": zod.number().nullable(),
+  "costBasisValueBase": zod.number().nullable(),
   "createdAt": zod.string()
 })
 

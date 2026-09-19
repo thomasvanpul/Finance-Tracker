@@ -2438,7 +2438,13 @@ components:
       # user's base currency fails (30 Aug 2026: previously these were
       # named gbpValue/plGbp and computed against literal GBP regardless
       # of the user's base — see enrich-investment.ts for the fix note).
-      required: [id, ticker, name, buyDate, shares, costPricePerShare, currency, priceAvailable, livePrice, currentValue, plBase, plPercent, baseEquivalent, createdAt]
+      #
+      # costBasisValueBase is populated independently of priceAvailable —
+      # shares × costPricePerShare converted to the user's base currency.
+      # Never a fetched or invented price: it is what was actually paid.
+      # A consumer with no live price falls back to this instead of
+      # showing nothing, and labels the figure as valued at cost.
+      required: [id, ticker, name, buyDate, shares, costPricePerShare, currency, priceAvailable, livePrice, currentValue, plBase, plPercent, baseEquivalent, costBasisValueBase, createdAt]
       properties:
         id:
           type: integer
@@ -2465,6 +2471,8 @@ components:
         plPercent:
           type: [number, "null"]
         baseEquivalent:
+          type: [number, "null"]
+        costBasisValueBase:
           type: [number, "null"]
         createdAt:
           type: string
@@ -2500,11 +2508,16 @@ components:
 
     InvestmentSummary:
       type: object
-      # totals sum ONLY positions with priceAvailable=true. unavailablePositions
-      # counts positions whose price the market API could not supply; those are
-      # excluded from every total. Consumers should surface the count so the
-      # user understands the roll-up is partial.
-      required: [totalValueBase, totalPlBase, totalPlPercent, positions, unavailablePositions, valuationAsOfSession]
+      # totals sum positions with priceAvailable=true at their live value,
+      # AND unpriced positions at cost basis (see Investment.costBasisValueBase)
+      # — a position is dropped from every total ONLY when neither a live
+      # price nor a convertible cost basis exists. unavailablePositions
+      # counts that genuinely-unaccounted case. positionsAtCost counts how
+      # many of the total are cost-valued rather than live, so a consumer
+      # can label the figure as partial (e.g. "3 of 12 positions priced at
+      # cost, not live market value") instead of a total that silently
+      # excludes a whole unpriced portfolio.
+      required: [totalValueBase, totalPlBase, totalPlPercent, positions, positionsAtCost, unavailablePositions, valuationAsOfSession]
       properties:
         totalValueBase:
           type: number
@@ -2517,6 +2530,8 @@ components:
         totalPlPercent:
           type: ["number", "null"]
         positions:
+          type: integer
+        positionsAtCost:
           type: integer
         unavailablePositions:
           type: integer
@@ -3144,7 +3159,7 @@ components:
                 enum: [cash, investment, pension, property, other, liability]
         portfolio:
           type: object
-          required: [totalValueBase, totalPlBase, totalPlPercent, dayChangeBase, dayChangePercent, unavailablePositions, valuationAsOfSession, dayChangeFromSession]
+          required: [totalValueBase, totalPlBase, totalPlPercent, dayChangeBase, dayChangePercent, positionsAtCost, unavailablePositions, valuationAsOfSession, dayChangeFromSession]
           properties:
             totalValueBase:
               type: number
@@ -3172,12 +3187,21 @@ components:
             # itself is null or previousValue sums to 0.
             dayChangePercent:
               type: ["number", "null"]
-            # Holdings whose price could not be resolved. They contribute to
-            # NOTHING above - not value, not cost, not the delta - so a
-            # non-zero count means every figure in this object is partial.
-            # Same name and meaning as InvestmentSummary.unavailablePositions;
-            # consumers must surface it rather than print a partial roll-up as
-            # if it were complete.
+            # Holdings priced at cost basis instead of a live price — see
+            # Investment.costBasisValueBase and InvestmentSummary.positionsAtCost.
+            # Already included in totalValueBase (never dropped), but they
+            # contribute nothing to totalPlBase or dayChangeBase (a
+            # cost-valued position has no known return or day movement), so
+            # this count is how a consumer labels the totals as partly not-live.
+            positionsAtCost:
+              type: integer
+            # Holdings with NEITHER a live price NOR a convertible cost basis
+            # — the one case still genuinely unaccounted for; they contribute
+            # to nothing above. Same name and meaning as
+            # InvestmentSummary.unavailablePositions. A non-zero count here
+            # means the total is missing real value, not just a live price;
+            # consumers must surface it rather than print the roll-up as
+            # complete.
             unavailablePositions:
               type: integer
             # See InvestmentSummary.valuationAsOfSession.

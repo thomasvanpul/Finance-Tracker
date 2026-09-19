@@ -4,6 +4,7 @@ import { db, accountsTable, transactionsTable, investmentsTable, upcomingTable, 
 import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, txToBase } from "../lib/market";
 import { getValuationPrices } from "../lib/market-eod";
+import { nativeCurrencyForTicker } from "../lib/ticker-currency";
 import { foldDayChange, type DayChangeLeg } from "../lib/portfolio-day-change";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
@@ -197,21 +198,31 @@ async function processAccounts(accounts: Account[], baseCurrency: string) {
 //
 // Two consequences the callers depend on:
 //
-//   · `unavailablePositions` — a position whose price could not be resolved
-//     contributes nothing AND is counted. Before 16 Sep 2026 it contributed
-//     nothing and was not counted, so a portfolio silently missing a holding
-//     rendered identically to a complete one. Same name and same meaning as
+//   · `unavailablePositions` — a position with NEITHER a live/EOD price NOR
+//     a convertible cost basis contributes nothing AND is counted. Before
+//     16 Sep 2026 an unpriced position contributed nothing and was not
+//     counted; before 19 Sep 2026 (ENABLE_MARKET_DATA going off) EVERY
+//     position was unpriced and this term silently zeroed the whole
+//     portfolio out of net worth. Same name and same meaning as
 //     GET /investments/summary, which has carried the count since it shipped;
 //     a parallel signal with a different name would be the actual mistake.
 //
+//   · `positionsAtCost` — a position with no live/EOD price but a resolvable
+//     cost basis (shares × costPricePerShare, converted via
+//     nativeCurrencyForTicker) IS counted in the value/cost totals — never
+//     dropped — but contributes nothing to day-change (there is no known
+//     movement for a figure valued at what was paid). Consumers use this
+//     count to label the total as partly not-live rather than staying silent
+//     about it.
+//
 //   · `valuationAsOfSession` — the OLDEST session in the total, so the screen
 //     can date the figure. A total is only as current as its stalest leg.
-async function processInvestments(investments: Investment[], baseCurrency: string) {
+export async function processInvestments(investments: Investment[], baseCurrency: string) {
   if (investments.length === 0) {
     return {
       portfolioValueBase: 0, portfolioCostBase: 0,
       dayChangeBase: 0 as number | null, dayChangePrevValueBase: 0 as number | null,
-      unavailablePositions: 0, valuationAsOfSession: null as string | null,
+      unavailablePositions: 0, positionsAtCost: 0, valuationAsOfSession: null as string | null,
       dayChangeFromSession: null as string | null,
     };
   }
@@ -223,18 +234,30 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
   // any leg that couldn't convert. The reduce below preserves the G10
   // invariant: whole-portfolio day-change goes null if ANY contribution
   // has a null day leg. Order-independent, safe to parallelise.
-  interface Contribution { valueBase: number | null; costBase: number | null; dayBase: number | null; dayPrevBase: number | null; dayFromSession: string | null; }
+  interface Contribution { valueBase: number | null; costBase: number | null; dayBase: number | null; dayPrevBase: number | null; dayFromSession: string | null; pricedAtCost: boolean; }
   const contributions: Contribution[] = await Promise.all(
     investments.map(async (inv): Promise<Contribution> => {
       const priceData = priceMap.get(inv.ticker);
-      if (!priceData || typeof priceData.price !== "number" || !Number.isFinite(priceData.price)) {
-        return { valueBase: null, costBase: null, dayBase: null, dayPrevBase: null, dayFromSession: null };
-      }
       const shares = parseFloat(inv.shares);
       const costPrice = parseFloat(inv.costPricePerShare);
+      const costBasisAmount = shares * costPrice;
+
+      if (!priceData || typeof priceData.price !== "number" || !Number.isFinite(priceData.price)) {
+        // No live/EOD price. Fall back to what Numeris actually has: the
+        // cost basis, in the currency the ticker's own exchange implies
+        // (never invented — see ticker-currency.ts). This position still
+        // counts in the portfolio total; it just has no P/L or day-change
+        // to report, because valuing at cost cannot show either.
+        const currency = nativeCurrencyForTicker(inv.ticker);
+        const costBase = await toBase(costBasisAmount, currency, baseCurrency);
+        if (costBase == null) {
+          return { valueBase: null, costBase: null, dayBase: null, dayPrevBase: null, dayFromSession: null, pricedAtCost: false };
+        }
+        return { valueBase: costBase, costBase, dayBase: null, dayPrevBase: null, dayFromSession: null, pricedAtCost: true };
+      }
       const currency = priceData.currency ?? "USD";
       const currentValue = shares * priceData.price;
-      const costBasis = shares * costPrice;
+      const costBasis = costBasisAmount;
       // Four FX legs for this position, fired in parallel — same
       // baseCurrency, same currency; toBase's in-memory FX cache serves
       // them all from one lookup.
@@ -254,20 +277,22 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
       // wouldn't have been in the totals under the old sequential code
       // either — the `continue` on line 73 of the old handler).
       if (valueBase == null || costBase == null) {
-        return { valueBase: null, costBase: null, dayBase: null, dayPrevBase: null, dayFromSession: null };
+        return { valueBase: null, costBase: null, dayBase: null, dayPrevBase: null, dayFromSession: null, pricedAtCost: false };
       }
-      return { valueBase, costBase, dayBase, dayPrevBase, dayFromSession: priceData.previousSessionDate ?? null };
+      return { valueBase, costBase, dayBase, dayPrevBase, dayFromSession: priceData.previousSessionDate ?? null, pricedAtCost: false };
     }),
   );
 
   let portfolioValueBase = 0;
   let portfolioCostBase = 0;
   let unavailablePositions = 0;
+  let positionsAtCost = 0;
   const dayLegs: DayChangeLeg[] = [];
   for (const c of contributions) {
     if (c.valueBase == null || c.costBase == null) { unavailablePositions += 1; continue; }
     portfolioValueBase += c.valueBase;
     portfolioCostBase += c.costBase;
+    if (c.pricedAtCost) { positionsAtCost += 1; continue; }
     dayLegs.push({ dayBase: c.dayBase, dayPrevBase: c.dayPrevBase, dayFromSession: c.dayFromSession });
   }
   // Day-change: null if any leg that contributes to value has a null delta,
@@ -277,7 +302,7 @@ async function processInvestments(investments: Investment[], baseCurrency: strin
   const { dayChangeBase, dayChangePrevValueBase, dayChangeFromSession } = foldDayChange(dayLegs);
   return {
     portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase,
-    unavailablePositions,
+    unavailablePositions, positionsAtCost,
     // Null when nothing in the portfolio was EOD-valued (a crypto-only
     // holder), which is the honest answer rather than today's date.
     valuationAsOfSession: asOfSession,
@@ -597,7 +622,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // of each other, so Promise.all across domains.
   const [
     { accountBreakdown, totalCash, totalLiabilities, cashOnlyTotal, unconvertibleAccounts },
-    { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase, unavailablePositions, valuationAsOfSession, dayChangeFromSession },
+    { portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase, unavailablePositions, positionsAtCost, valuationAsOfSession, dayChangeFromSession },
     { monthIncome, monthExpenses },
     { committedOut, expectedIn },
     debtsResult,
@@ -821,8 +846,13 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         totalPlPercent: portfolioPlPercent == null ? null : Math.round(portfolioPlPercent * 100) / 100,
         dayChangeBase: dayChangeBase == null ? null : Math.round(dayChangeBase * 100) / 100,
         dayChangePercent: dayChangePercent == null ? null : Math.round(dayChangePercent * 100) / 100,
+        // How many of the positions above are valued at cost, not a live
+        // price — included in totalValueBase but not in totalPlBase or
+        // dayChangeBase. See processInvestments for the full contract.
+        positionsAtCost,
         // The roll-up is partial when this is non-zero: that many holdings
-        // had no resolvable price and are absent from every figure above.
+        // had neither a live price nor a convertible cost basis, and are
+        // absent from every figure above.
         unavailablePositions,
         // The session the securities in this total closed on. The screen
         // dates the figure by it, because the figure is explicitly not live.

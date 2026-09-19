@@ -1106,6 +1106,8 @@ export interface Investment {
   plPercent: number | null;
   /** @nullable */
   baseEquivalent: number | null;
+  /** @nullable */
+  costBasisValueBase: number | null;
   createdAt: string;
 }
 
@@ -1131,6 +1133,7 @@ export interface InvestmentSummary {
   /** @nullable */
   totalPlPercent: number | null;
   positions: number;
+  positionsAtCost: number;
   unavailablePositions: number;
   /** @nullable */
   valuationAsOfSession: string | null;
@@ -1718,6 +1721,7 @@ export type DashboardSummaryPortfolio = {
   dayChangeBase: number | null;
   /** @nullable */
   dayChangePercent: number | null;
+  positionsAtCost: number;
   unavailablePositions: number;
   /** @nullable */
   valuationAsOfSession: string | null;

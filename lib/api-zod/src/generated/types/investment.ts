@@ -25,5 +25,7 @@ export interface Investment {
   plPercent: number | null;
   /** @nullable */
   baseEquivalent: number | null;
+  /** @nullable */
+  costBasisValueBase: number | null;
   createdAt: string;
 }

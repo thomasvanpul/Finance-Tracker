@@ -1,0 +1,117 @@
+import { describe, it, expect, vi } from "vitest";
+
+// Pure arithmetic through processInvestments — mock the db import so the
+// module loads without DATABASE_URL (same pattern as dashboard.net-worth.test.ts),
+// and mock lib/market + lib/market-eod so no network/DB call happens.
+vi.mock("@workspace/db", () => ({
+  db: {}, accountsTable: {}, transactionsTable: {}, investmentsTable: {},
+  upcomingTable: {}, debtsTable: {}, nwSnapshotsTable: {}, sharedExpensesTable: {},
+  sharedExpenseParticipantsTable: {}, userTable: {},
+}));
+
+// Deterministic FX, GBP-pivoted like the real cache: USD->GBP at 1.25.
+const RATES: Record<string, number> = { USD: 1.25, GBP: 1 };
+vi.mock("../lib/market", () => ({
+  toBase: async (amount: number, from: string, base: string): Promise<number | null> => {
+    if (from === base) return amount;
+    const fromRate = from === "GBP" ? 1 : RATES[from];
+    const toRate = base === "GBP" ? 1 : RATES[base];
+    if (!fromRate || !toRate) return null;
+    return (amount / fromRate) * toRate;
+  },
+  txToBase: async () => null,
+}));
+
+let mockPriceMap = new Map<string, { ticker: string; price: number; currency: string; previousClose: number | null; previousSessionDate?: string | null; updatedAt: string }>();
+vi.mock("../lib/market-eod", () => ({
+  getValuationPrices: async () => ({
+    prices: mockPriceMap,
+    asOfSession: mockPriceMap.size > 0 ? "2026-09-18" : null,
+    staleTickers: [],
+  }),
+}));
+
+const { processInvestments } = await import("./dashboard");
+
+interface FakeInvestment { ticker: string; shares: string; costPricePerShare: string }
+function inv(ticker: string, shares: string, costPricePerShare: string): FakeInvestment {
+  return { ticker, shares, costPricePerShare };
+}
+
+// The exact defect the task describes: with ENABLE_MARKET_DATA off,
+// getValuationPrices() returns an empty price map for every ticker. The old
+// code excluded every position entirely (unavailablePositions === all of
+// them, portfolioValueBase === 0), so net worth silently dropped the whole
+// portfolio. Fixed by falling back to cost basis — never invented, never
+// silently dropped.
+describe("processInvestments — net worth must not silently drop the unpriced portfolio", () => {
+  it("regression: markets fully off, one US position — portfolio value comes from cost basis, not 0", async () => {
+    mockPriceMap = new Map(); // empty: no ticker has a live/EOD price
+    // 10 shares * $180 cost, no suffix -> USD -> GBP at 1.25 = 1440
+    const result = await processInvestments([inv("AAPL", "10", "180.00")] as never, "GBP");
+    expect(result.portfolioValueBase).not.toBe(0);
+    expect(result.portfolioValueBase).toBe(1440);
+    expect(result.portfolioCostBase).toBe(1440);
+    expect(result.unavailablePositions).toBe(0);
+    expect(result.positionsAtCost).toBe(1);
+  });
+
+  it("regression: markets fully off, a non-US position — currency inferred from ticker suffix, not defaulted to USD", async () => {
+    mockPriceMap = new Map();
+    // 10 shares * £100 cost, .L suffix -> GBP, base GBP -> identity, 1000
+    const result = await processInvestments([inv("VOD.L", "10", "100.00")] as never, "GBP");
+    expect(result.portfolioValueBase).toBe(1000);
+    expect(result.positionsAtCost).toBe(1);
+  });
+
+  it("all positions live-priced: unaffected by the fallback (no regression)", async () => {
+    mockPriceMap = new Map([
+      ["AAPL", { ticker: "AAPL", price: 210, currency: "USD", previousClose: 205, previousSessionDate: "2026-09-18", updatedAt: "2026-09-19T00:00:00Z" }],
+    ]);
+    const result = await processInvestments([inv("AAPL", "10", "180.00")] as never, "GBP");
+    // 2100 USD / 1.25 = 1680
+    expect(result.portfolioValueBase).toBe(1680);
+    expect(result.positionsAtCost).toBe(0);
+    expect(result.unavailablePositions).toBe(0);
+    // Day change still computed for a fully live portfolio.
+    expect(result.dayChangeBase).not.toBeNull();
+  });
+
+  it("mixed portfolio: one live, one cost-valued — both count toward the total", async () => {
+    mockPriceMap = new Map([
+      ["AAPL", { ticker: "AAPL", price: 210, currency: "USD", previousClose: 205, previousSessionDate: "2026-09-18", updatedAt: "2026-09-19T00:00:00Z" }],
+      // VOD.L deliberately absent from the price map — unpriced.
+    ]);
+    const result = await processInvestments(
+      [inv("AAPL", "10", "180.00"), inv("VOD.L", "10", "100.00")] as never,
+      "GBP",
+    );
+    expect(result.portfolioValueBase).toBe(1680 + 1000);
+    expect(result.positionsAtCost).toBe(1);
+    expect(result.unavailablePositions).toBe(0);
+    // A cost-valued leg has no known day movement, so it must not be
+    // silently folded into the day-change baseline: the mixed portfolio's
+    // day-change traces the live leg's own session, undiluted by a leg
+    // that isn't dated at all.
+    expect(result.dayChangeFromSession).toBe("2026-09-18");
+  });
+
+  it("still excludes a position with neither a live price nor a convertible cost basis", async () => {
+    mockPriceMap = new Map();
+    // Base currency THB has no FX rate in this test's RATES table, so even
+    // the cost-basis fallback cannot convert. This is the one case that
+    // legitimately stays excluded.
+    const result = await processInvestments([inv("AAPL", "10", "180.00")] as never, "THB");
+    expect(result.portfolioValueBase).toBe(0);
+    expect(result.unavailablePositions).toBe(1);
+    expect(result.positionsAtCost).toBe(0);
+  });
+
+  it("empty portfolio: honestly zero, not a fallback artifact", async () => {
+    mockPriceMap = new Map();
+    const result = await processInvestments([], "GBP");
+    expect(result.portfolioValueBase).toBe(0);
+    expect(result.unavailablePositions).toBe(0);
+    expect(result.positionsAtCost).toBe(0);
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { enrichInvestment, type InvestmentRow } from "./enrich-investment";
+import { enrichInvestment, summarizeInvestments, type InvestmentRow } from "./enrich-investment";
 import type { StockPriceData, FxRatesData } from "./market";
 
 // The G10 contract: when the market API has no price for a ticker, every
@@ -126,6 +126,44 @@ describe("enrichInvestment — base-currency correctness (30 Aug 2026 fix)", () 
   });
 });
 
+describe("enrichInvestment — cost-basis fallback (markets off / no price)", () => {
+  it("values an unpriced position at cost basis instead of leaving it at nothing", () => {
+    // Net worth honesty fix: a position with no live price used to
+    // contribute nothing to any total. costBasisValueBase gives a caller
+    // something legitimate to fall back on — never null just because
+    // priceAvailable is false.
+    const result = enrichInvestment(row, new Map(), fx, "GBP");
+    expect(result.priceAvailable).toBe(false);
+    // 10 shares * $180 = $1800 USD -> GBP at 1.25 = 1440
+    expect(result.costBasisValueBase).toBe(1440);
+  });
+
+  it("infers the position's currency from its exchange suffix, not a hardcoded USD", () => {
+    const lseRow: InvestmentRow = { ...row, ticker: "VOD.L", costPricePerShare: "100.00" };
+    const result = enrichInvestment(lseRow, new Map(), fx, "GBP");
+    expect(result.priceAvailable).toBe(false);
+    expect(result.currency).toBe("GBP");
+    // 10 shares * £100 = £1000, GBP base -> identity conversion, no FX loss.
+    expect(result.costBasisValueBase).toBe(1000);
+  });
+
+  it("returns null costBasisValueBase when the base-currency FX rate is missing", () => {
+    const result = enrichInvestment(row, new Map(), fx, "THB");
+    expect(result.priceAvailable).toBe(false);
+    expect(result.costBasisValueBase).toBeNull();
+  });
+
+  it("is still populated when a live price IS available (doesn't regress the priced path)", () => {
+    const good: StockPriceData = { ticker: "AAPL", price: 210, currency: "USD", previousClose: null, updatedAt: "2026-08-15T00:00:00Z" };
+    const result = enrichInvestment(row, new Map([["AAPL", good]]), fx, "GBP");
+    expect(result.priceAvailable).toBe(true);
+    expect(result.costBasisValueBase).toBe(1440);
+    // Unaffected by the shared-rate refactor.
+    expect(result.baseEquivalent).toBe(1680);
+    expect(result.plBase).toBe(240);
+  });
+});
+
 describe("enrichInvestment — plPercent divisor-guard fix", () => {
   it("returns null (not 0) for plPercent when costBasis is 0", () => {
     // Divisor-guard fabrication: `costBasis > 0 ? ... : 0` returned
@@ -141,5 +179,52 @@ describe("enrichInvestment — plPercent divisor-guard fix", () => {
     // baseEquivalent and plBase still valid — the base fields don't depend on cost basis.
     expect(result.baseEquivalent).toBe(1680);
     expect(result.plBase).toBe(1680);
+  });
+});
+
+describe("summarizeInvestments — net worth must not silently drop the unpriced portfolio", () => {
+  const good: StockPriceData = { ticker: "AAPL", price: 210, currency: "USD", previousClose: null, updatedAt: "2026-08-15T00:00:00Z" };
+
+  it("regression: with every ticker unpriced (markets off), totalValueBase is NOT zero", () => {
+    // This is the exact defect the task describes: ENABLE_MARKET_DATA off
+    // made getValuationPrices() return an empty map for every ticker, and
+    // the old reduce (`e.priceAvailable === true` only) summed zero
+    // positions — a real portfolio rendered as £0.
+    const unpriced = enrichInvestment(row, new Map(), fx, "GBP");
+    const totals = summarizeInvestments([unpriced]);
+    expect(totals.totalValueBase).not.toBe(0);
+    expect(totals.totalValueBase).toBe(1440); // cost basis, GBP
+    expect(totals.positionsAtCost).toBe(1);
+    expect(totals.unavailablePositions).toBe(0);
+  });
+
+  it("sums an all-live portfolio exactly as before (no regression to the priced path)", () => {
+    const priced = enrichInvestment(row, new Map([["AAPL", good]]), fx, "GBP");
+    const totals = summarizeInvestments([priced]);
+    expect(totals.totalValueBase).toBe(1680);
+    expect(totals.totalPlBase).toBe(240);
+    expect(totals.positionsAtCost).toBe(0);
+    expect(totals.unavailablePositions).toBe(0);
+  });
+
+  it("mixes a live position and a cost-valued position in one total", () => {
+    const priced = enrichInvestment(row, new Map([["AAPL", good]]), fx, "GBP");
+    const lseRow: InvestmentRow = { ...row, ticker: "VOD.L", costPricePerShare: "100.00" };
+    const unpriced = enrichInvestment(lseRow, new Map(), fx, "GBP");
+    const totals = summarizeInvestments([priced, unpriced]);
+    expect(totals.totalValueBase).toBe(1680 + 1000);
+    // Cost-valued leg contributes 0 P/L, not a fabricated return.
+    expect(totals.totalPlBase).toBe(240);
+    expect(totals.positions).toBe(2);
+    expect(totals.positionsAtCost).toBe(1);
+    expect(totals.unavailablePositions).toBe(0);
+  });
+
+  it("still excludes a position with neither a live price nor a convertible cost basis", () => {
+    const noFx = enrichInvestment(row, new Map(), fx, "THB");
+    const totals = summarizeInvestments([noFx]);
+    expect(totals.totalValueBase).toBe(0);
+    expect(totals.unavailablePositions).toBe(1);
+    expect(totals.positionsAtCost).toBe(0);
   });
 });

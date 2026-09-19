@@ -12,7 +12,7 @@ import {
 } from "@workspace/api-zod";
 import { getFxRates } from "../lib/market";
 import { getValuationPrices } from "../lib/market-eod";
-import { enrichInvestment } from "../lib/enrich-investment";
+import { enrichInvestment, summarizeInvestments } from "../lib/enrich-investment";
 import { getBaseCurrency } from "../lib/app-settings-db";
 
 const router: IRouter = Router();
@@ -59,25 +59,16 @@ router.get("/investments/summary", async (req, res): Promise<void> => {
     getBaseCurrency(userId),
   ]);
   const enriched = investments.map((inv) => enrichInvestment(inv, priceMap, fx, baseCurrency));
-  // Totals sum only priceAvailable positions AND positions whose base
-  // FX pivot succeeded. unavailablePositions surfaces the missing-price
-  // gap; a priced position with no base-FX leg would previously have
-  // summed as 0 via `?? 0` — the same hidden fabrication the G10 fix
-  // closed for missing prices. Now filtered explicitly.
-  const priced = enriched.filter((e) => e.priceAvailable && e.baseEquivalent != null && e.plBase != null);
-  const totalValueBase = priced.reduce((s, i) => s + (i.baseEquivalent as number), 0);
-  const totalPlBase = priced.reduce((s, i) => s + (i.plBase as number), 0);
-  const totalCostBase = totalValueBase - totalPlBase;
-  // No cost basis → no return to compute. Null, not 0. See dashboard.ts
-  // portfolioPlPercent for the same rule and reason.
-  const totalPlPercent: number | null = totalCostBase > 0 ? (totalPlBase / totalCostBase) * 100 : null;
+  // summarizeInvestments folds live-priced positions at their market value
+  // and unpriced positions at cost basis (enrichInvestment.costBasisValueBase)
+  // — never silently dropped. unavailablePositions is now the genuinely
+  // unaccounted case: neither a live price nor a convertible cost basis.
+  // positionsAtCost says how many of the total are cost-valued, not live,
+  // so the screen can label the figure as partial.
+  const totals = summarizeInvestments(enriched);
   res.json(
     GetInvestmentSummaryResponse.parse({
-      totalValueBase: Math.round(totalValueBase * 100) / 100,
-      totalPlBase: Math.round(totalPlBase * 100) / 100,
-      totalPlPercent: totalPlPercent == null ? null : Math.round(totalPlPercent * 100) / 100,
-      positions: enriched.length,
-      unavailablePositions: enriched.length - enriched.filter((e) => e.priceAvailable).length,
+      ...totals,
       // The oldest session in the total. Null when nothing here is
       // EOD-valued. The screen dates the figure by it.
       valuationAsOfSession: asOfSession,
