@@ -13,8 +13,72 @@ const RULES: Rule[] = [
   { pattern: /samsung\s?pay/i,          name: "Samsung Pay" },
   { pattern: /paypal\s?credit/i,        name: "PayPal Credit" },
 
-  // ── E-commerce / Retail ────────────────────────────────────────────────────
+  // ── Platform billing channels (must precede the brand rules below) ────────
+  //
+  // PRINCIPLE: a merchant is the billing entity, not the brand that owns it.
+  //
+  // Large platforms bill through several unrelated channels and name the
+  // channel in the descriptor. `APPLE.COM/BILL` (digital subscriptions and
+  // App Store charges) and `APPLE STORE R123` (retail) share an owner and
+  // nothing else — different price, different cadence, different intent.
+  // Collapsing them to "Apple" puts a monthly subscription, a yearly
+  // developer licence and a one-off £179 purchase into a single group, and
+  // recurring-detector-server.ts rejects that group whole: it requires every
+  // amount to be within ±20% of the median. The charge most worth finding is
+  // the one a brand-wide key guarantees to lose.
+  //
+  // So: when a descriptor carries a recognisable CHANNEL token, the
+  // normalised name keeps it. The bare-brand rule remains as the fallback for
+  // descriptors with no channel. Store numbers, terminal ids and reference
+  // suffixes are still stripped — those are noise, not channel.
+  //
+  // The test for channel vs noise: would two charges bearing this token be
+  // expected to share an amount and a cadence? `Mktp` yes, `R123` no.
+  //
+  // This generalises — Google, Amazon and Microsoft have the identical shape,
+  // and any future platform with more than one billing channel belongs here.
+
+  // Apple.
+  // The channel token is not always adjacent to the brand — Apple bills
+  // the developer programme as `APPLE.COM/BILL DEVELOPER`, so the token
+  // trails the billing domain. Match the token anywhere in an Apple-ish
+  // descriptor, most specific first, and fall through to the bare
+  // billing domain only when no token is present.
+  { pattern: /apple.{0,20}developer/i,  name: "Apple Developer" },
+  { pattern: /itunes/i,                 name: "iTunes" },
+  { pattern: /icloud/i,                 name: "iCloud" },
+  { pattern: /apple.{0,20}music/i,      name: "Apple Music" },
+  { pattern: /apple\s?tv/i,             name: "Apple TV+" },
+  { pattern: /apple.{0,20}\bone\b/i,    name: "Apple One" },
+  { pattern: /apple\s?store/i,          name: "Apple Store" },
+  { pattern: /apple\.com/i,             name: "Apple.com/Bill" },
+  { pattern: /\bapple\b/i,              name: "Apple" },
+
+  // Google
+  { pattern: /google.{0,3}(youtube|yt\s?premium)/i, name: "YouTube Premium" },
+  { pattern: /google.{0,3}workspace|g\s?suite|gsuite/i, name: "Google Workspace" },
+  { pattern: /google.{0,3}cloud|\bgcp\b/i, name: "Google Cloud" },
+  { pattern: /google.{0,3}(one|storage)/i, name: "Google One" },
+  { pattern: /google.{0,3}play/i,       name: "Google Play" },
+  { pattern: /google.{0,3}fi\b/i,       name: "Google Fi" },
+  { pattern: /\bgoogle\b/i,             name: "Google" },
+
+  // Amazon
+  { pattern: /(amazon|amzn).{0,3}prime|prime\s?video/i, name: "Amazon Prime" },
+  { pattern: /amazon\s?web\s?services|\baws\b/i, name: "AWS" },
+  { pattern: /audible/i,                name: "Audible" },
+  { pattern: /kindle/i,                 name: "Kindle" },
+  { pattern: /(amzn|amazon)\s?mktpl?/i, name: "Amazon Marketplace" },
   { pattern: /amzn|amazon/i,            name: "Amazon" },
+
+  // Microsoft
+  { pattern: /(microsoft|msft).{0,3}(365|office)/i, name: "Microsoft 365" },
+  { pattern: /xbox/i,                   name: "Xbox" },
+  { pattern: /azure/i,                  name: "Azure" },
+  { pattern: /microsoft|\bmsft\b/i,     name: "Microsoft" },
+
+
+  // ── E-commerce / Retail ────────────────────────────────────────────────────
   { pattern: /ebay/i,                   name: "eBay" },
   { pattern: /etsy/i,                   name: "Etsy" },
   { pattern: /ali(express|baba|pay)/i,  name: "AliExpress" },
@@ -29,9 +93,6 @@ const RULES: Rule[] = [
   { pattern: /h\s?&\s?m\b/i,            name: "H&M" },
   { pattern: /zara/i,                   name: "Zara" },
   { pattern: /primark/i,                name: "Primark" },
-  { pattern: /apple\.com|apple store|itunes/i, name: "Apple" },
-  { pattern: /google\s?(play|llc|one|storage|fi)/i, name: "Google" },
-  { pattern: /microsoft/i,              name: "Microsoft" },
 
   // ── Food Delivery ─────────────────────────────────────────────────────────
   { pattern: /uber\s?eats/i,            name: "Uber Eats" },
@@ -45,8 +106,6 @@ const RULES: Rule[] = [
   { pattern: /spotify/i,                name: "Spotify" },
   { pattern: /youtube\s?(premium)?/i,   name: "YouTube Premium" },
   { pattern: /disney\+?/i,              name: "Disney+" },
-  { pattern: /amazon\s?prime/i,         name: "Amazon Prime" },
-  { pattern: /apple\s?tv/i,             name: "Apple TV+" },
   { pattern: /hulu/i,                   name: "Hulu" },
   { pattern: /hbo\s?(max|now)?/i,       name: "HBO Max" },
   { pattern: /paramount\+?/i,           name: "Paramount+" },
@@ -54,7 +113,6 @@ const RULES: Rule[] = [
   { pattern: /sky\s?(tv|sports|go)/i,   name: "Sky" },
   { pattern: /bbc\s?iplayer|bbc\s?licence/i, name: "BBC" },
   { pattern: /now\s?tv/i,               name: "NOW TV" },
-  { pattern: /apple\s?music/i,          name: "Apple Music" },
   { pattern: /tidal/i,                  name: "Tidal" },
   { pattern: /deezer/i,                 name: "Deezer" },
 
