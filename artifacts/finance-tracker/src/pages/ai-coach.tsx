@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api-fetch";
 import { formatBaseMoney } from "@/lib/utils";
 import { PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
+import { useMarketDataEnabled } from "@/lib/market-visibility";
 import { PageHeader } from "@/components/page-header";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
@@ -53,14 +54,18 @@ import {
 
 // ── Suggested prompts — organised by persona ─────────────────────────────────
 
-type Prompt = { icon: React.ElementType; label: string; text: string };
+// marketDataOnly prompts name a live benchmark (SPY / S&P 500) this
+// deployment does not serve with ENABLE_MARKET_DATA off — filtered out
+// at render time rather than sent to a coach that has no benchmark to
+// compare against.
+type Prompt = { icon: React.ElementType; label: string; text: string; marketDataOnly?: boolean };
 
 const PROMPTS_BY_PERSONA: Record<PersonaId, Prompt[]> = {
   market: [
-    { icon: TrendingUp,   label: "Portfolio vs benchmarks",          text: "Compare my investment portfolio performance vs SPY and major indices. Where am I outperforming or underperforming?" },
+    { icon: TrendingUp,   label: "Portfolio vs benchmarks",          text: "Compare my investment portfolio performance vs SPY and major indices. Where am I outperforming or underperforming?", marketDataOnly: true },
     { icon: AlertTriangle,label: "Concentration risk check",          text: "Review my portfolio for concentration risk. Am I over-exposed to any single stock, sector, or geography?" },
     { icon: BarChart2,    label: "Best moves this market cycle",      text: "Based on my current holdings and the market environment, what portfolio adjustments should I consider?" },
-    { icon: Sparkles,     label: "What's my alpha?",                  text: "Calculate my approximate alpha vs S&P 500. Am I adding value with my stock selection, or should I consider index funds?" },
+    { icon: Sparkles,     label: "What's my alpha?",                  text: "Calculate my approximate alpha vs S&P 500. Am I adding value with my stock selection, or should I consider index funds?", marketDataOnly: true },
     { icon: Target,       label: "Dividend income potential",         text: "Analyze my portfolio for dividend income opportunities. Which positions pay dividends, and how can I increase yield?" },
     { icon: Shield,       label: "Downside protection",              text: "How exposed is my portfolio to a 20% market downturn? What defensive positions should I consider?" },
   ],
@@ -363,7 +368,10 @@ export default function AiCoach() {
   const primaryPersonaId: PersonaId = useActivePersona();
   const primaryPersona = PERSONAS.find(p => p.id === primaryPersonaId);
   const coachSubtitle = PERSONA_SUBTITLE[primaryPersonaId];
-  const suggestedPrompts = PROMPTS_BY_PERSONA[primaryPersonaId];
+  const marketsVisible = useMarketDataEnabled();
+  const suggestedPrompts = PROMPTS_BY_PERSONA[primaryPersonaId].filter(
+    (p) => marketsVisible || !p.marketDataOnly
+  );
 
   // primaryPersona is still used elsewhere (subtitle, prompt suggestions).
   // No longer feeds context assembly — that's server-side now.

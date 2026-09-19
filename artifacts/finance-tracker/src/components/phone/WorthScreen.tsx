@@ -425,6 +425,8 @@ export function WorthScreen() {
         <WorthHero
           netWorth={netWorth}
           unconvertibleAccounts={unconvertibleAccounts}
+          portfolioUnpriced={dashboard?.portfolio.unavailablePositions ?? 0}
+          portfolioAtCost={dashboard?.portfolio.positionsAtCost ?? 0}
           loading={isLoading && netWorth == null}
         />
 
@@ -573,10 +575,18 @@ export function WorthScreen() {
 function WorthHero({
   netWorth,
   unconvertibleAccounts,
+  portfolioUnpriced,
+  portfolioAtCost,
   loading,
 }: {
   netWorth: number | null;
   unconvertibleAccounts: number;
+  // Net worth includes the investment total, so a position this couldn't
+  // price honestly (excluded) or could only price at cost basis (included,
+  // but not live) both need to be named here — otherwise this hero renders
+  // a bare figure with no signal that part of it is partial.
+  portfolioUnpriced: number;
+  portfolioAtCost: number;
   loading: boolean;
 }) {
   const value = netWorth != null ? formatBaseMoney(netWorth) : (loading ? "…" : "—");
@@ -619,6 +629,24 @@ function WorthHero({
           }}
         >
           {unconvertibleAccounts} account{unconvertibleAccounts !== 1 ? "s" : ""} without FX — not in total
+        </div>
+      )}
+      {(portfolioUnpriced > 0 || portfolioAtCost > 0) && (
+        <div
+          style={{
+            marginTop: 4,
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            color: "var(--ft-amber)",
+            letterSpacing: "0.06em",
+          }}
+        >
+          {[
+            portfolioUnpriced > 0
+              ? `${portfolioUnpriced} position${portfolioUnpriced !== 1 ? "s" : ""} unavailable — not in total`
+              : null,
+            portfolioAtCost > 0 ? `${portfolioAtCost} at cost, not live` : null,
+          ].filter(Boolean).join(" · ")}
         </div>
       )}
     </div>

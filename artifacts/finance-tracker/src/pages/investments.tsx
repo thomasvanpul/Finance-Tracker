@@ -1819,6 +1819,10 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
           : investments && investments.length > 0
             ? `${investments.length} position${investments.length !== 1 ? "s" : ""}`
             : null,
+        // In the total, but priced at cost basis rather than a live/EOD
+        // quote — e.g. with markets off. Named so the figure reads as
+        // honest-but-partial rather than a live market value.
+        summary.positionsAtCost > 0 ? `${summary.positionsAtCost} at cost` : null,
         closeTagText(summary.valuationAsOfSession),
       ].filter(Boolean).join(" · ") || undefined,
       deltaPositive: summary.unavailablePositions > 0 ? false : null,
@@ -2064,7 +2068,8 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               alignItems: "center",
             }}>
               <pre style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-border2)", lineHeight: 1.55, marginBottom: 20, userSelect: "none", whiteSpace: "pre" }}>{
-`  ┌─────────────────────────────────────────────────────┐
+marketsVisible
+? `  ┌─────────────────────────────────────────────────────┐
   │  PORTFOLIO TERMINAL                                 │
   │                                                     │
   │  TICKER  SHARES   COST     LIVE    VALUE    GAIN   │
@@ -2073,6 +2078,16 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   │           [ no positions loaded ]                   │
   │                                                     │
   │  Total  £ 0.00  ─────────  vs S&P 500  ± 0.00%   │
+  └─────────────────────────────────────────────────────┘`
+: `  ┌─────────────────────────────────────────────────────┐
+  │  PORTFOLIO TERMINAL                                 │
+  │                                                     │
+  │  TICKER  SHARES   COST     BASIS    VALUE    GAIN   │
+  │  ─────────────────────────────────────────────────  │
+  │                                                     │
+  │           [ no positions loaded ]                   │
+  │                                                     │
+  │  Total  £ 0.00                                     │
   └─────────────────────────────────────────────────────┘`}</pre>
               <div style={{
                 fontFamily: "var(--font-mono)",
@@ -2090,8 +2105,10 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 40px", marginBottom: 28, maxWidth: 500, width: "100%", textAlign: "left" }}>
                 {[
-                  ["▲", "Live prices via Yahoo Finance"],
-                  ["◈", "Portfolio vs S&P 500 benchmark"],
+                  ...(marketsVisible ? [
+                    ["▲", "Live prices via Yahoo Finance"],
+                    ["◈", "Portfolio vs S&P 500 benchmark"],
+                  ] : []),
                   ["◆", "Asset allocation heat map"],
                   ["⬡", "Dividend tracker + earnings calendar"],
                   ["●", "Concentration risk + rebalancer"],
@@ -2131,8 +2148,10 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
             </div>
           )}
 
-          {/* Portfolio value history + benchmark comparison */}
-          {hasPositions && portfolioHistory.length >= 1 && (() => {
+          {/* Portfolio value history + benchmark comparison — the whole
+              panel is S&P 500/SPY-framed, so it stays behind the flag
+              rather than rendering with a permanently-empty benchmark. */}
+          {marketsVisible && hasPositions && portfolioHistory.length >= 1 && (() => {
             const last = benchmarkChartData[benchmarkChartData.length - 1];
             const portReturn = last ? last.portfolio - 100 : 0;
             const spyReturn = last?.spy != null ? last.spy - 100 : null;

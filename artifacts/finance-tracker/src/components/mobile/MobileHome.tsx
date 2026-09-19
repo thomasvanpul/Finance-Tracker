@@ -340,6 +340,28 @@ export function MobileHome(_props: MobileHomeProps) {
             </Text>
           ) : null;
 
+          // Both NET WORTH and the market persona's PORTFOLIO hero include
+          // the investment total, so both need this note: a position with
+          // neither a live price nor a convertible cost basis is excluded
+          // (unavailablePositions), and one valued at cost rather than a
+          // live/EOD quote is IN the total but not live (positionsAtCost).
+          // Without this, either hero renders a figure with no signal that
+          // part of it is missing or not market-priced.
+          const portfolioUnpriced = dashboard?.portfolio.unavailablePositions ?? 0;
+          const portfolioAtCost = dashboard?.portfolio.positionsAtCost ?? 0;
+          const portfolioNote = portfolioUnpriced > 0 || portfolioAtCost > 0 ? (
+            <Text as="div" size={11} mt={PHONE_IN_GROUP} color="var(--ft-amber)">
+              {[
+                portfolioUnpriced > 0
+                  ? `${portfolioUnpriced} position${portfolioUnpriced !== 1 ? "s" : ""} unavailable — not in value`
+                  : null,
+                portfolioAtCost > 0
+                  ? `${portfolioAtCost} at cost, not live`
+                  : null,
+              ].filter(Boolean).join(" · ")}
+            </Text>
+          ) : null;
+
           // Market persona gets PORTFOLIO VALUE + day delta, matching the
           // same argument as the desktop KPI bar: a market user opens the app
           // to see the market moved, and net worth doesn't tell them that.
@@ -370,6 +392,7 @@ export function MobileHome(_props: MobileHomeProps) {
                         : `${nfmt(dGbp, { sign: true, symbol: "£" })}${dPct != null ? ` · ${nfmt(dPct, { sign: true })}%` : ""} · ${since}`}
                     </Text>
                     {fxNote}
+                    {portfolioNote}
                   </>
                 }
               />
@@ -383,7 +406,7 @@ export function MobileHome(_props: MobileHomeProps) {
               href="/net-worth"
               hrefTitle="Net worth — everything it is the sum of"
               cells={cells}
-              under={fxNote}
+              under={<>{fxNote}{portfolioNote}</>}
             />
           );
         })()}

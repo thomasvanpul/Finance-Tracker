@@ -221,6 +221,12 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
   // the screen states them rather than deriving anything of its own.
   const closeText = closeTagText(dashboard?.portfolio.valuationAsOfSession);
   const unpriced = dashboard?.portfolio.unavailablePositions ?? 0;
+  // Positions valued at cost basis rather than a live/EOD price — with
+  // markets off, or a ticker the price feed has no quote for. Named
+  // separately from `unpriced` because these ARE in the total, just not
+  // at a market price: the total is honest, not silent, but not "live"
+  // either.
+  const atCost = dashboard?.portfolio.positionsAtCost ?? 0;
 
   // Nothing to show and no holdings → don't render the pane at all.
   // A first-run user with no accounts and no positions doesn't need a
@@ -285,6 +291,10 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
                   // into the total as a zero. Same wording as the desktop
                   // INVESTMENTS KPI ("N unavailable — not in value").
                   unpriced > 0 ? `${unpriced} unavailable — not in value` : null,
+                  // A leg valued at cost basis IS in the total above — this
+                  // names it as not-live rather than letting a stale-looking
+                  // figure pass as a market price.
+                  atCost > 0 ? `${atCost} at cost` : null,
                 ]
                   .filter(Boolean)
                   .join(" · ")}

@@ -3556,6 +3556,10 @@ export default function Dashboard() {
     // date format as the phone's HOLDINGS row (components/FixingMark.tsx).
     const portfolioCloseText = closeTagText(dashData.portfolio?.valuationAsOfSession);
     const portfolioUnpriced  = dashData.portfolio?.unavailablePositions ?? 0;
+    // In the total, but priced at cost basis rather than a live/EOD quote
+    // — e.g. with markets off. Distinct from `portfolioUnpriced`, which is
+    // excluded from the total entirely.
+    const portfolioAtCost    = dashData.portfolio?.positionsAtCost ?? 0;
     const dayChangePercent = dashData.portfolio?.dayChangePercent ?? null;
     const cash = dashData.totalCash ?? 0;
     const owedToMe = dashData.owing?.totalOwedToMe ?? 0;
@@ -3703,12 +3707,13 @@ export default function Dashboard() {
           : null,
         portfolioCloseText,
         portfolioUnpriced > 0 ? `${portfolioUnpriced} UNAVAILABLE` : null,
+        portfolioAtCost > 0 ? `${portfolioAtCost} AT COST` : null,
       ].filter(Boolean).join(" · ") || undefined,
       // The delta line is coloured by the P&L only while the P&L is all it
       // says. Once the close mark shares the line, a green "AT CLOSE · 15 SEP"
       // would be a sign colour on something that has no sign.
       deltaColor:
-        portfolioCloseText || portfolioUnpriced > 0
+        portfolioCloseText || portfolioUnpriced > 0 || portfolioAtCost > 0
           ? "var(--ft-dim)"
           : portfolioPl >= 0 ? "var(--ft-green)" : "var(--ft-red)",
       valueColor: "var(--ft-text)",
