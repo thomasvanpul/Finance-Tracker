@@ -291,7 +291,14 @@ function useColdStartHint(isPending: boolean): boolean {
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = authClient.useSession();
   const showColdStartHint = useColdStartHint(isPending);
-  const { providers, passwordResetEnabled, passkeyEnabled, loading: providersLoading } = useAuthProviders();
+  const {
+    providers,
+    passwordResetEnabled,
+    passkeyEnabled,
+    emailVerificationRequired,
+    signUpEnabled,
+    loading: providersLoading,
+  } = useAuthProviders();
   const browserSupportsWebAuthn = useBrowserWebAuthnSupport();
   const passkeyAvailable = passkeyEnabled && browserSupportsWebAuthn;
   const isOnline = useNetworkStatus();
@@ -338,6 +345,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [socialLoading, setSocialLoading] = useState<ProviderId | null>(null);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [forgotSent, setForgotSent] = useState<{ email: string } | null>(null);
+  // Set after a sign-up that returned no session because the address has to
+  // be confirmed first. Distinct from forgotSent because the copy is
+  // different and so is the way out of it.
+  const [verifySent, setVerifySent] = useState<{ email: string } | null>(null);
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     const token = new URLSearchParams(window.location.search).get("token");
@@ -447,18 +459,40 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     setSubmitting(true);
     setError(null);
     await catch401(async () => {
-      const res = await authClient.signUp.email({ email, password, name });
+      // callbackURL is where better-auth sends the browser AFTER the link
+      // in the mail is opened and the token checked. Our own origin, for
+      // the same reason the reset flow uses it: the server only trusts
+      // origins it was configured with, and anything else comes back 403
+      // "Invalid redirectURL".
+      const res = await authClient.signUp.email({
+        email,
+        password,
+        name,
+        callbackURL: window.location.origin,
+      });
       if (res?.error) {
         setError(classifyAuthError(res.error));
+      } else if (emailVerificationRequired) {
+        // With verification on, better-auth returns { token: null, user }
+        // and sets NO session cookie (dist/api/routes/sign-up.mjs:251).
+        // Revealing the app here would drop the user straight back on
+        // this form with nothing said. Show the inbox screen instead.
+        //
+        // NOTE the wording on that screen. With requireEmailVerification
+        // on, a sign-up for an address that ALREADY has an account also
+        // returns success with a synthetic user (sign-up.mjs:161) — that
+        // is deliberate enumeration protection in better-auth, and it
+        // means we cannot honestly say "account created". We say a link
+        // is on its way if the address is new, which is true either way.
+        setVerifySent({ email });
       } else {
-        // Fresh sign-up: land on the onboarding questionnaire
-        // rather than a bare dashboard. The onboarding component
-        // (see components/onboarding.tsx) reads the persona
-        // localStorage key and renders when it's absent; a
-        // fresh signup has no key, so simply revealing the app
-        // shell brings the OnboardingGate up automatically.
-        // Nothing more to do here — the session flip on the
-        // next useSession refresh reveals children.
+        // Fresh sign-up with verification off: land on the onboarding
+        // questionnaire rather than a bare dashboard. The onboarding
+        // component (see components/onboarding.tsx) reads the persona
+        // localStorage key and renders when it's absent; a fresh signup
+        // has no key, so simply revealing the app shell brings the
+        // OnboardingGate up automatically. Nothing more to do here — the
+        // session flip on the next useSession refresh reveals children.
       }
     });
     setSubmitting(false);
@@ -469,7 +503,25 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     setSubmitting(true);
     setError(null);
     await catch401(async () => {
-      const resetOrigin = import.meta.env.VITE_RESET_ORIGIN || window.location.origin;
+      // Where the reset link should land the user.
+      //
+      // On web this is ALWAYS our own origin. The API trusts the origin it is
+      // served from, so anything else is rejected by better-auth's
+      // originCheck with 403 "Invalid redirectURL" — which the classifier can
+      // only report as the generic "could not reach the server". That is
+      // exactly what VITE_RESET_ORIGIN=https://financetracker.work in a local
+      // .env.local did: every reset request from a dev browser 403'd while
+      // the same request by curl succeeded, because curl wasn't sending the
+      // override.
+      //
+      // The override survives for the ONE case that needs it: the Capacitor
+      // shell, whose window.location.origin is `capacitor://localhost` — not
+      // a URL an emailed link can return to, and not an origin any server
+      // trusts. Same shape as VITE_NATIVE_API_URL in lib/auth-client.ts:
+      // native-only, never consulted on web.
+      const resetOrigin =
+        (isNativeShell() ? (import.meta.env.VITE_RESET_ORIGIN as string | undefined) : undefined)
+        || window.location.origin;
       const res = await authClient.requestPasswordReset({ email, redirectTo: resetOrigin });
       if (res?.error) {
         setError(classifyAuthError(res.error));
@@ -563,11 +615,35 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // "Send the link again". The server refuses this endpoint with 503 when
+  // it has no mail transport (app.ts), so a success here really does mean
+  // something was dispatched — the same contract the reset flow relies on.
+  const handleResendVerification = async () => {
+    if (!email) { setMode("signin"); return; }
+    setResending(true);
+    await catch401(async () => {
+      const client = authClient as unknown as {
+        sendVerificationEmail?: (opts: { email: string; callbackURL?: string })
+          => Promise<{ error?: unknown } | undefined>;
+      };
+      const res = await client.sendVerificationEmail?.({
+        email,
+        callbackURL: window.location.origin,
+      });
+      if (res?.error) setError(classifyAuthError(res.error));
+      else setVerifySent({ email });
+    });
+    setResending(false);
+  };
+
   const applyAction = (action: NonNullable<AuthError["action"]>) => {
     setError(null);
     if (action.intent === "signup") setMode("signup");
     else if (action.intent === "signin") setMode("signin");
     else if (action.intent === "forgot") setMode("forgot");
+    else if (action.intent === "resend_verification") {
+      void handleResendVerification();
+    }
     else if (action.intent === "retry") {
       // Retry: clear the error; the user re-clicks Submit. We
       // don't auto-resubmit because a retry loop against a
@@ -784,13 +860,56 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       );
     }
 
+    // Sign-up succeeded but granted no session: the address has to be
+    // confirmed first. Rendered ahead of the signin/signup form because
+    // falling through to that form is exactly the silent nothing this
+    // screen exists to replace.
+    if (verifySent) {
+      return (
+        <>
+          {renderHeader(
+            "Confirm your email",
+            `If ${verifySent.email} is new here, a confirmation link is on its way. Open it and you are signed in. The link is good for 24 hours.`,
+          )}
+          {renderError()}
+          <VStack gap={10} padding="4px 0 0">
+            <button
+              type="button"
+              onClick={() => { void handleResendVerification(); }}
+              disabled={resending}
+              style={{ ...PRIMARY_BTN, opacity: resending ? 0.5 : 1 }}
+            >
+              {resending ? "Sending…" : "Send the link again"}
+            </button>
+            <HStack justify="center" padding="6px 0 0">
+              <button
+                type="button"
+                onClick={() => { setMode("signin"); setError(null); setVerifySent(null); }}
+                style={LINK_BTN}
+              >
+                ← Back to sign in
+              </button>
+            </HStack>
+          </VStack>
+        </>
+      );
+    }
+
     // signin / signup
     const isSignIn = mode === "signin";
+    // Sign-up is a control that can be dead: verification is required and
+    // the server cannot send the mail, so app.ts answers 503. Say so on the
+    // form rather than letting someone fill it in and find out.
+    const signUpBlocked = !isSignIn && !providersLoading && !signUpEnabled;
     return (
       <>
         {renderHeader(
           isSignIn ? "Sign in" : "Create your account",
-          PITCH,
+          signUpBlocked
+            ? "Sign-up is closed: this server cannot send the confirmation email."
+            : !isSignIn && emailVerificationRequired
+              ? "You'll confirm your email address before your first sign-in."
+              : PITCH,
         )}
         {renderError()}
         <form onSubmit={isSignIn ? handleSignIn : handleSignUp}>
@@ -832,6 +951,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               className="ft-auth-primary"
               disabled={
                 submitting ||
+                signUpBlocked ||
                 !email ||
                 (!isSignIn && !name) ||
                 (!isSignIn && password.length < 8) ||
@@ -840,11 +960,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
               style={{
                 ...PRIMARY_BTN,
                 opacity:
-                  submitting || !email || (isSignIn ? !password : !name || password.length < 8) ? 0.5 : 1,
+                  submitting || signUpBlocked || !email
+                  || (isSignIn ? !password : !name || password.length < 8) ? 0.5 : 1,
               }}
             >
               {submitting
                 ? isSignIn ? "Signing in…" : "Creating account…"
+                : signUpBlocked ? "Sign-up unavailable"
                 : isSignIn ? "Sign in" : "Create account"}
             </button>
           </VStack>

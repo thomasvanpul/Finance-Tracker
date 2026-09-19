@@ -23,6 +23,15 @@ export interface AuthProvidersState {
   // separate feature-detect against window.PublicKeyCredential —
   // callers must check BOTH before rendering the passkey button.
   passkeyEnabled: boolean;
+  // Whether a new account must confirm its address before it can sign in.
+  // Drives the sign-up form's copy and the "check your inbox" screen, so
+  // the UI never promises a session the server will not grant.
+  emailVerificationRequired: boolean;
+  // Whether sign-up is open at all. False when verification is required and
+  // the server has no mail transport — app.ts refuses those sign-ups with
+  // 503, and this is the same answer offered before anyone types. Same rule
+  // as the provider buttons: never render a control that cannot work.
+  signUpEnabled: boolean;
   // Non-null when the fetch itself failed (network, 5xx). Callers
   // must treat "we don't know what's configured" as "render
   // nothing" — never as "render everything hopefully".
@@ -34,6 +43,13 @@ const INITIAL: AuthProvidersState = {
   providers: [],
   passwordResetEnabled: false,
   passkeyEnabled: false,
+  // Assume verification IS required until told otherwise. The wrong
+  // direction to fail is promising an instant session and then dropping
+  // the user back on a sign-in form with no explanation.
+  emailVerificationRequired: true,
+  // But assume sign-up is NOT open until told otherwise, for the same
+  // fail-closed reason the provider list starts empty.
+  signUpEnabled: false,
   error: null,
 };
 
@@ -41,11 +57,13 @@ interface Response {
   providers: ProviderId[];
   passwordResetEnabled: boolean;
   passkeyEnabled?: boolean;
+  emailVerificationRequired?: boolean;
+  signUpEnabled?: boolean;
 }
 
 // The endpoint lives at /api on the same origin (dev proxy points
-// /api to the API server; production has the same rewrite via the
-// financetracker.work proxy).
+// /api to the API server; production has the same rewrite, whatever
+// host is serving the SPA — see artifacts/finance-tracker/vercel.json).
 const ENDPOINT = "/api/auth-providers";
 
 export function useAuthProviders(): AuthProvidersState {
@@ -67,6 +85,8 @@ export function useAuthProviders(): AuthProvidersState {
               providers: [],
               passwordResetEnabled: false,
               passkeyEnabled: false,
+              emailVerificationRequired: true,
+              signUpEnabled: false,
               error: `providers endpoint returned ${res.status}`,
             });
           }
@@ -83,6 +103,13 @@ export function useAuthProviders(): AuthProvidersState {
             // is authoritatively "no passkey support" from the
             // client's view.
             passkeyEnabled: !!body.passkeyEnabled,
+            // Absent field -> assume required. An older server bundle that
+            // pre-dates the verification rollout is the one case where
+            // guessing "not required" would be right, and it is also the
+            // case where guessing wrong is harmless: the copy says an email
+            // is coming, and one does.
+            emailVerificationRequired: body.emailVerificationRequired !== false,
+            signUpEnabled: !!body.signUpEnabled,
             error: null,
           });
         }
@@ -93,6 +120,8 @@ export function useAuthProviders(): AuthProvidersState {
             providers: [],
             passwordResetEnabled: false,
             passkeyEnabled: false,
+            emailVerificationRequired: true,
+            signUpEnabled: false,
             error: err instanceof Error ? err.message : String(err),
           });
         }

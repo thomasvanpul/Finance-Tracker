@@ -25,6 +25,7 @@ const KEYS_UNDER_TEST = [
   "APPLE_CLIENT_ID",  "APPLE_CLIENT_SECRET",
   "GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET",
   "RESEND_API_KEY",
+  "DEV_EMAIL_LOG",
 ];
 
 beforeEach(() => {
@@ -105,6 +106,20 @@ describe("/api/auth-providers — configuration reporting", () => {
 
   it("RESEND_API_KEY set → passwordResetEnabled=true", async () => {
     process.env.RESEND_API_KEY = "re_test";
+    const body = await call();
+    expect(body.passwordResetEnabled).toBe(true);
+  });
+
+  it("no transport at all -> passwordResetEnabled=false", async () => {
+    const body = await call();
+    expect(body.passwordResetEnabled).toBe(false);
+  });
+
+  it("DEV_EMAIL_LOG=1 outside production -> passwordResetEnabled=true", async () => {
+    // The UI gate has to follow the dev-log transport too, or the flow is
+    // unwalkable on a machine with no mail provider — which is every
+    // machine this repo is developed on.
+    process.env.DEV_EMAIL_LOG = "1";
     const body = await call();
     expect(body.passwordResetEnabled).toBe(true);
   });

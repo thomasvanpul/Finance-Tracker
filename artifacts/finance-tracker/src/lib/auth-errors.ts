@@ -8,7 +8,7 @@ import { apiFetch } from "./api-fetch";
 // distinguishable failure now has its own kind and its own
 // user-facing message.
 //
-// The mapping is deliberately narrow: eight kinds. If the API
+// The mapping is deliberately narrow. If the API
 // starts surfacing more distinct failures, add them here rather
 // than smuggling a raw error.message into the UI.
 //
@@ -26,7 +26,13 @@ export type AuthErrorKind =
   | "provider_unavailable"   // OAuth click hit a provider that
                              // isn't actually configured (shouldn't
                              // happen if useAuthProviders is fresh)
-  | "reset_transport_off"    // RESEND_API_KEY not set on server
+  | "reset_transport_off"    // no mail transport on the server, so a
+                             //   reset link cannot be delivered
+  | "signup_closed"          // same, for sign-up: verification is required
+                             //   and the server cannot send the link, so it
+                             //   refuses rather than bank a dead account
+  | "email_not_verified"     // correct password, but the address has never
+                             //   been confirmed. 403 from better-auth.
   | "reset_token_invalid"    // reset link expired or malformed
   | "rate_limited"           // 429 from the auth-limiter middleware
   | "two_factor_wrong"       // TOTP code did not verify
@@ -54,7 +60,7 @@ export interface AuthError {
   // small link/button (e.g. "Try sign up instead" for no_such_account).
   action?: {
     label: string;
-    intent: "signup" | "signin" | "forgot" | "retry";
+    intent: "signup" | "signin" | "forgot" | "retry" | "resend_verification";
   };
 }
 
@@ -64,6 +70,10 @@ const MESSAGES: Record<AuthErrorKind, string> = {
   email_taken:         "An account with that email already exists.",
   provider_unavailable: "That provider is not available right now.",
   reset_transport_off: "Password reset is not configured on this server. Contact the operator.",
+  signup_closed:       "Sign-up is closed: this server cannot send the confirmation email. Contact the operator.",
+  // Not a failure the user caused, and not one a retry fixes — so the
+  // message names the next action and the action below offers to resend.
+  email_not_verified:  "Confirm your email address first. The link is in the message we sent when you signed up.",
   reset_token_invalid: "This reset link has expired. Request a new one.",
   rate_limited:        "Too many attempts. Wait a minute, then try again.",
   two_factor_wrong:    "That 6-digit code did not match.",
@@ -85,6 +95,7 @@ const DEFAULT_ACTIONS: Partial<Record<AuthErrorKind, AuthError["action"]>> = {
   no_such_account: { label: "Sign up instead", intent: "signup" },
   email_taken:     { label: "Sign in instead", intent: "signin" },
   reset_token_invalid: { label: "Request a new link", intent: "forgot" },
+  email_not_verified:  { label: "Send the link again", intent: "resend_verification" },
   server_waking:   { label: "Retry", intent: "retry" },
   server_error:    { label: "Retry", intent: "retry" },
   unreachable:     { label: "Retry", intent: "retry" },
@@ -132,9 +143,27 @@ export function classifyAuthError(err: unknown): AuthError {
 
   if (status === 429) return makeAuthError("rate_limited");
 
-  // Reset transport disabled (thrown from sendResetPassword in
-  // better-auth.ts when RESEND_API_KEY is missing).
+  // Mail transport disabled on the server. TWO cases, and the more
+  // specific one is tested FIRST — both strings contain "transport is not
+  // configured", so the other order would report a closed sign-up as a
+  // password-reset problem. See api-server/src/lib/email-transport.ts,
+  // which owns both strings and locks this ordering in its own test.
+  if (lower.includes("email verification transport is not configured")) {
+    return makeAuthError("signup_closed");
+  }
   if (lower.includes("transport is not configured")) return makeAuthError("reset_transport_off");
+
+  // Correct password, unconfirmed address. better-auth answers
+  // 403 "Email not verified" (dist/api/routes/sign-in.mjs:242, base error
+  // code EMAIL_NOT_VERIFIED). Checked BEFORE the two-factor branch below,
+  // which matches the bare substring "code" and would otherwise be reached
+  // by any future wording carrying it; and well before the `status >= 400`
+  // fallback, which would render this as "the server responded with an
+  // error" — a claim about the server for something the user can fix in
+  // their inbox.
+  if (lower.includes("not verified") || lower.includes("email_not_verified")) {
+    return makeAuthError("email_not_verified");
+  }
 
   // Reset link expired / invalid
   if (lower.includes("invalid token") || lower.includes("expired") || lower.includes("token") && lower.includes("invalid")) {
@@ -170,7 +199,15 @@ export function classifyAuthError(err: unknown): AuthError {
     return makeAuthError("wrong_credentials");
   }
 
-  if (status === 500 || status === 502 || status === 503 || status === 504) {
+  // Any status at all means the server answered. The `unreachable` bucket
+  // below is for the case where we cannot tell that it did — see its comment.
+  // This used to test only the 5xx codes, so a 403 fell through and was
+  // rendered as "Could not reach the server. Check your connection", which is
+  // a claim about the network that the status code already contradicts. The
+  // live instance of it: better-auth answers 403 "Invalid redirectURL" when a
+  // reset request names an origin the server does not trust, and the reset
+  // screen reported a connection problem for a configuration one.
+  if (typeof status === "number" && status >= 400) {
     return makeAuthError("server_error");
   }
 

@@ -14,6 +14,12 @@ import marketProvidersRouter from "./routes/market-providers";
 import aiStatusRouter from "./routes/ai-status";
 import { logger } from "./lib/logger";
 import { auth } from "./lib/better-auth";
+import {
+  isEmailDeliverable,
+  RESET_TRANSPORT_OFF_MESSAGE,
+  VERIFICATION_TRANSPORT_OFF_MESSAGE,
+} from "./lib/email-transport";
+import { REQUIRE_EMAIL_VERIFICATION } from "./lib/auth-policy";
 import { requestMetricsMiddleware } from "./lib/request-metrics";
 
 // True only when NODE_ENV is explicitly "development". Unset NODE_ENV → false → full production enforcement.
@@ -163,11 +169,64 @@ const apiLimiter = rateLimit({
 // app.rate-limit.test.ts can assert the predicate directly. The bug
 // this locks against — strict limiter accidentally covering
 // get-session — was invisible from the config object alone.
-const CREDENTIAL_PATHS = /^\/api\/auth\/(sign-in|sign-up|forget-password|reset-password|change-password)/;
+//
+// `request-password-reset` is the name better-auth 1.6.23 actually serves
+// (dist/api/routes/password.mjs). `forget-password` is the pre-1.x name and
+// is kept only because better-auth's own limiter still lists both; on this
+// version nothing is mounted there. Until 2026-09-19 the regex named ONLY
+// the dead one, so the live reset-request endpoint — the one the comment
+// above calls out as needing spam protection — had no limiter at all. The
+// handler below terminates the request, so it never reaches apiLimiter
+// either: it was unthrottled, not generously throttled.
+const CREDENTIAL_PATHS = /^\/api\/auth\/(sign-in|sign-up|forget-password|request-password-reset|reset-password|change-password)/;
 export function isCredentialPath(path: string): boolean {
   return CREDENTIAL_PATHS.test(path);
 }
+
+// Refuse a reset request this server cannot deliver, BEFORE better-auth
+// handles it. This is the gate; the throw inside sendResetPassword is not,
+// because better-auth 1.6.23 runs that callback as a background task and
+// answers 200 "check your email" regardless. Without this the UI showed
+// "Check your inbox" for a mail nobody sent.
+//
+// The message is the contract string the frontend classifier matches to
+// render `reset_transport_off` — see lib/email-transport.ts.
+// 503, not 4xx: the request is fine, the server is missing a capability.
+// Nothing here depends on the email, so it reveals nothing about whether
+// an account exists.
+const RESET_REQUEST_PATH = /^\/api\/auth\/(request-password-reset|forget-password)/;
+
+// Refuse a sign-up this server could never complete, for the same reason and
+// in the same place. With REQUIRE_EMAIL_VERIFICATION on, a sign-up with no
+// mail transport creates a user who is refused at every later sign-in and
+// has no way to ask for another link — an account banked against an address
+// nobody can prove they own. Better to say the server is not open.
+//
+// send-verification-email is the resend endpoint and is covered by the same
+// answer; without it the "didn't get the mail?" button would report success
+// for a mail nobody sent, which is the failure the reset path already taught
+// us to close.
+const SIGNUP_PATH = /^\/api\/auth\/(sign-up|send-verification-email)/;
+export function isVerificationDependentPath(path: string): boolean {
+  return SIGNUP_PATH.test(path);
+}
+
 app.all("/api/auth/{*path}", (req, res, next) => {
+  if (RESET_REQUEST_PATH.test(req.path) && !isEmailDeliverable()) {
+    res.status(503).json({ message: RESET_TRANSPORT_OFF_MESSAGE, code: "RESET_TRANSPORT_OFF" });
+    return;
+  }
+  if (
+    REQUIRE_EMAIL_VERIFICATION
+    && isVerificationDependentPath(req.path)
+    && !isEmailDeliverable()
+  ) {
+    res.status(503).json({
+      message: VERIFICATION_TRANSPORT_OFF_MESSAGE,
+      code: "VERIFICATION_TRANSPORT_OFF",
+    });
+    return;
+  }
   if (isCredentialPath(req.path)) return authLimiter(req, res, next);
   return next();
 }, toNodeHandler(auth));

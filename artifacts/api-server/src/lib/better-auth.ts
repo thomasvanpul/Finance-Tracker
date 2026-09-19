@@ -4,15 +4,128 @@ import { twoFactor, bearer } from "better-auth/plugins";
 import { passkey } from "@better-auth/passkey";
 import { db, userTable, sessionTable, accountTable, verificationTable, twoFactorTable, passkeyTable } from "@workspace/db";
 import { logger } from "./logger";
+import {
+  resolveEmailTransport,
+  RESET_TRANSPORT_OFF_MESSAGE,
+} from "./email-transport";
+import {
+  REQUIRE_EMAIL_VERIFICATION,
+  EMAIL_VERIFICATION_EXPIRES_IN_SECONDS,
+} from "./auth-policy";
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+// A blank env var is UNSET, not a value. Render and Vercel both make it easy
+// to create a key with an empty string, and `??` alone would have handed that
+// empty string to better-auth as a base URL and to WebAuthn as an rpID.
+function env(name: string): string | undefined {
+  const raw = process.env[name];
+  return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : undefined;
+}
+
+const allowedOrigins = env("ALLOWED_ORIGINS")
+  ? env("ALLOWED_ORIGINS")!.split(",").map((o) => o.trim()).filter(Boolean)
   : [];
+
+// The one origin this server calls itself. It is what better-auth builds
+// every OAuth `redirect_uri` from, so it is registered with Google and
+// GitHub and cannot be changed on one side alone. Read from config, never
+// hardcoded — a rename is an env change plus a provider change, not a diff.
+// Measured 2026-09-19: production answers `callbackBase`
+// "https://financetracker.work" on /api/auth-providers, i.e. API_BASE_URL
+// is the SPA origin and NOT this service's own Render URL, despite what
+// the comment in render.yaml says.
+const API_ORIGIN = env("API_BASE_URL")
+  ?? env("RENDER_EXTERNAL_URL")
+  ?? (env("RAILWAY_PUBLIC_DOMAIN")
+    ? `https://${env("RAILWAY_PUBLIC_DOMAIN")}`
+    : "http://localhost:3000");
+
+function hostnameOf(origin: string, fallback: string): string {
+  try {
+    return new URL(origin).hostname;
+  } catch {
+    return fallback;
+  }
+}
+
+// Exported so the cutover behaviour is lockable in a test. Both are read at
+// import time from env, which is the point: a rename is a deploy-time change,
+// not a code change.
+export const WEBAUTHN_RP_ID = env("PASSKEY_RP_ID") ?? hostnameOf(API_ORIGIN, "localhost");
+export const WEBAUTHN_ORIGINS: string | string[] =
+  allowedOrigins.length ? allowedOrigins : "http://localhost:4321";
 
 const DEV_PORTS = [3000, 4173, 4321, 5173, 5174, 5175, 5176, 8080, 8000, 9000];
 const localhostOrigins = DEV_PORTS.flatMap(
   (port) => [`http://localhost:${port}`, `https://localhost:${port}`],
 );
+
+// One dispatcher for every transactional mail this server sends.
+//
+// Both callers (password reset, email verification) run as better-auth
+// background tasks, so nothing thrown in here reaches the HTTP response.
+// The refusals that DO reach the user live in app.ts; this function's job is
+// delivery and an honest log line, in that order — the "dispatched" line is
+// written only after Resend has accepted the send, never before.
+async function sendTransactionalEmail(mail: {
+  label: string;
+  to: string;
+  url: string;
+  subject: string;
+  html: string;
+}): Promise<void> {
+  const transport = resolveEmailTransport();
+
+  if (transport.kind === "none") {
+    logger.warn(
+      { email: mail.to },
+      `[${mail.label}] BLOCKED: no transport configured; nothing dispatched`,
+    );
+    throw new Error(RESET_TRANSPORT_OFF_MESSAGE);
+  }
+
+  // Dev-only. The link goes to the server log and no mail is sent.
+  // Whoever turned DEV_EMAIL_LOG on is at the terminal that receives it;
+  // see email-transport.ts for the two-condition gate that keeps this off
+  // everywhere else.
+  if (transport.kind === "dev-log") {
+    logger.warn(
+      { email: mail.to, link: mail.url },
+      `[${mail.label}] DEV-ONLY: no email sent. Open the link above to continue.`,
+    );
+    return;
+  }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore – resend is an optional peer; install it to enable email delivery
+    const { Resend } = await import("resend");
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const result = await resend.emails.send({
+      // EMAIL_FROM is the real knob and must name a domain VERIFIED with
+      // Resend — an unverified sender is rejected at send time, not at
+      // boot. The fallback derives from API_ORIGIN rather than naming a
+      // host literally, so it follows a rename instead of outliving one;
+      // it is still only a fallback, and a deployment that relies on it
+      // will fail at Resend until that domain is verified there.
+      from: env("EMAIL_FROM") ?? `noreply@${hostnameOf(API_ORIGIN, "localhost")}`,
+      to: mail.to,
+      subject: mail.subject,
+      html: mail.html,
+    });
+    // Resend returns { data, error } — an HTTP-level error surfaces as a
+    // non-null `error`. Log AFTER we know the send succeeded.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const err = (result as any)?.error;
+    if (err) {
+      logger.error({ email: mail.to, err }, `[${mail.label}] Resend rejected the send`);
+      throw new Error(`Failed to send ${mail.label.toLowerCase()} email.`);
+    }
+    logger.info({ email: mail.to }, `[${mail.label}] dispatched`);
+  } catch (err) {
+    logger.error({ email: mail.to, err: String(err) }, `[${mail.label}] delivery failed`);
+    throw err;
+  }
+}
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
@@ -42,64 +155,65 @@ export const auth = betterAuth({
       passkey: passkeyTable,
     },
   }),
-  baseURL: process.env.API_BASE_URL
-    ?? (process.env.RENDER_EXTERNAL_URL
-      ?? (process.env.RAILWAY_PUBLIC_DOMAIN
-        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-        : "http://localhost:3000")),
+  baseURL: API_ORIGIN,
   trustedOrigins: allowedOrigins.length
     ? [...allowedOrigins, ...localhostOrigins]
     : localhostOrigins,
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
-    // Password reset flow. Behaviour depends on whether the
-    // outbound email transport is configured — RESEND_API_KEY on
-    // the server. If it isn't, we THROW so better-auth returns an
-    // error the client can render as "password reset is
-    // unavailable in this environment". We never log "dispatching"
-    // and then not send: that is the exact failure mode the F5/
-    // auth-rebuild task named — reporting success for something
-    // that didn't happen.
+    // See lib/auth-policy.ts for what turning this on changes — sign-up
+    // stops returning a session, sign-in 403s until the link is clicked,
+    // and a duplicate sign-up answers with a synthetic success instead of
+    // USER_ALREADY_EXISTS. app.ts refuses sign-up outright when no mail
+    // transport is live, because this flag without one banks accounts that
+    // can never be signed into.
+    requireEmailVerification: REQUIRE_EMAIL_VERIFICATION,
+    // Password reset flow. Which transport is live is resolved in
+    // lib/email-transport.ts — read the reasoning there, including why
+    // the refusal that actually protects the user sits in app.ts and not
+    // in this callback.
     //
-    // The routes/auth-providers.ts endpoint reports the same fact
-    // via `passwordResetEnabled: false` so the "Forgot password?"
-    // link is HIDDEN in that case; this throw is the defence
-    // against a stale UI or a direct API call reaching the reset
-    // path anyway.
+    // Short version: better-auth 1.6.23 runs this function as a
+    // background task, so a throw here NEVER reaches the HTTP
+    // response. It is a last-ditch guard and a log line, not a gate.
     sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
-      if (!process.env.RESEND_API_KEY) {
-        logger.warn(
-          { email: user.email },
-          "[Password Reset] BLOCKED: RESEND_API_KEY not configured; nothing dispatched",
-        );
-        throw new Error("Password reset email transport is not configured on this server.");
-      }
-      try {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore – resend is an optional peer; install it to enable email delivery
-        const { Resend } = await import("resend");
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        const result = await resend.emails.send({
-          from: process.env.EMAIL_FROM ?? "noreply@financetracker.work",
-          to: user.email,
-          subject: "Reset your Numeris password",
-          html: `<p>Click <a href="${url}">here</a> to reset your password. This link expires in 1 hour.</p>`,
-        });
-        // Resend returns { data, error } — an HTTP-level error
-        // surfaces as a non-null `error`. Log AFTER we know the
-        // send succeeded, never before.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const err = (result as any)?.error;
-        if (err) {
-          logger.error({ email: user.email, err }, "[Password Reset] Resend rejected the send");
-          throw new Error("Failed to send password reset email.");
-        }
-        logger.info({ email: user.email }, "[Password Reset] dispatched");
-      } catch (err) {
-        logger.error({ email: user.email, err: String(err) }, "[Password Reset] delivery failed");
-        throw err;
-      }
+      await sendTransactionalEmail({
+        label: "Password Reset",
+        to: user.email,
+        url,
+        subject: "Reset your Numeris password",
+        html: `<p>Click <a href="${url}">here</a> to reset your Numeris password. This link expires in 1 hour.</p>`,
+      });
+    },
+  },
+  // Email verification. Same transport, same background-task caveat, same
+  // reason the real gate is in app.ts: better-auth 1.6.23 dispatches
+  // sendVerificationEmail through runInBackgroundOrAwait
+  // (dist/api/routes/sign-up.mjs:241), so a throw here is a log line and
+  // nothing more.
+  emailVerification: {
+    // Both are explicit rather than inherited from
+    // requireEmailVerification. sendOnSignIn matters more than it looks:
+    // without it, a user who loses the first mail has no way back in from
+    // the sign-in form — better-auth 403s and sends nothing
+    // (dist/api/routes/sign-in.mjs:232).
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    // Clicking the link signs them in. The alternative is bouncing a
+    // verified user to a sign-in form to retype a password they set ninety
+    // seconds ago, for no security gained — the token in the link is
+    // single-use and already proves control of the address.
+    autoSignInAfterVerification: true,
+    expiresIn: EMAIL_VERIFICATION_EXPIRES_IN_SECONDS,
+    sendVerificationEmail: async ({ user, url }: { user: { email: string }; url: string }) => {
+      await sendTransactionalEmail({
+        label: "Email Verification",
+        to: user.email,
+        url,
+        subject: "Confirm your email for Numeris",
+        html: `<p>Confirm this address to finish setting up Numeris: <a href="${url}">verify my email</a>.</p><p>The link is good for 24 hours. If you did not create a Numeris account, ignore this message — nothing happens until the link is opened.</p>`,
+      });
     },
   },
   // Social providers. Each is behind a runtime-env pair check
@@ -173,7 +287,29 @@ export const auth = betterAuth({
     // registration still stands for web users. See G14.
     passkey({
       rpName: "Numeris",
-      origin: allowedOrigins.length ? allowedOrigins[0] : "http://localhost:4321",
+      // rpID is the domain BAKED INTO every credential the authenticator
+      // stores. WebAuthn has no migration for it: change it and every
+      // already-enrolled passkey stops being offered, with no error
+      // anywhere — the browser simply finds nothing to sign with. That is
+      // the silent class of failure, so it is explicit here rather than
+      // inferred from baseURL behind our backs.
+      //
+      // The default reproduces exactly what the plugin computed before
+      // (`new URL(baseURL).hostname`), so nothing changes today. On the
+      // day API_BASE_URL moves to numeris.page, rpID moves with it and
+      // existing passkeys DIE — unavoidable, because rpID must be a
+      // registrable suffix of the origin the ceremony runs on. Users
+      // re-enrol from Settings → Sign-in Methods. PASSKEY_RP_ID exists so
+      // that is a decision someone makes, not something that happens.
+      rpID: WEBAUTHN_RP_ID,
+      // ALL configured origins, not just the first. The plugin passes this
+      // straight to @simplewebauthn's expectedOrigin, which accepts an
+      // array, and taking [0] meant that during a domain cutover — when
+      // ALLOWED_ORIGINS legitimately lists both the old and the new host —
+      // every passkey ceremony from whichever host happened to be second
+      // in the list failed verification. Empty config still falls back to
+      // the dev origin, so this widens nothing when nothing is set.
+      origin: WEBAUTHN_ORIGINS,
     }),
   ],
   account: {

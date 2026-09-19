@@ -39,6 +39,10 @@ describe("rate-limit predicate · which /api/auth/* paths get the strict limiter
     "/api/auth/sign-in/email",
     "/api/auth/sign-in/username",
     "/api/auth/sign-up/email",
+    // The name better-auth 1.6.23 actually serves. It was absent from
+    // CREDENTIAL_PATHS until 2026-09-19, so reset-email requests took
+    // unlimited attempts while the test passed on the dead legacy name.
+    "/api/auth/request-password-reset",
     "/api/auth/forget-password",
     "/api/auth/reset-password",
     "/api/auth/reset-password/some-token-xyz",
