@@ -1,46 +1,57 @@
-# DEPRECATED — this workflow no longer keeps Render warm.
+# RE-ENABLED 2026-09-21 as an EXPERIMENTAL SECONDARY pinger — read this
+# whole comment before trusting it, because this exact mechanism has
+# already failed once.
 #
-# Between 2026-08-26 and 2026-09-01 GitHub Actions fired this schedule
-# a median of once every 260 minutes against a 10-minute cron, with the
-# worst gap 737 minutes and every single one of the 29 measured gaps
-# exceeding Render's 15-minute idle threshold (measurement:
-# `gh run list --workflow=keep-alive.yml`). The mitigation was
-# decorative — Render slept between every gap, and the next visitor
-# paid a 30–60s cold-start every time.
+# ── Why this is back on a schedule ───────────────────────────────────────
+# Healthchecks.io fired DOWN/UP five times overnight 2026-09-20/21
+# (episodes of 8m54s, 1h34m, 39m54s, 41m22s, 1h23m — real outages, not
+# cold-start blips: numeris-api's own boot log shows SEVEN fresh
+# "Server listening" events between 18:00 and 09:00 — 19:19, 21:15,
+# 03:04, 03:38, 05:37, 06:44, 07:50 — with gaps up to 5h49m between
+# them. A 1-minute external ping landing successfully makes a 15-minute
+# idle spin-down impossible, so the documented primary pinger
+# (cron-job.org, see docs/OPERATIONS.md § "Uptime pinger and
+# dead-man's-switch") was not reaching the instance that night. Its
+# account could not be inspected from this session (no stored login),
+# so its actual state — paused, misconfigured, deleted — is still
+# unconfirmed. Fixing THAT is the real fix. This workflow is a stopgap
+# underneath it, not a replacement for checking it.
 #
-# The header comment on the original file predicted "5-15 min drift
-# under load" but nobody ever measured what actually ran. The same
-# failure class as a lock that passes while broken.
+# ── Why re-enabling this specific mechanism is a real risk, not a formality ──
+# Between 2026-08-26 and 2026-09-01 this exact schedule (10-minute cron)
+# was measured firing a median of once every 260 minutes, worst gap 737
+# minutes, and ALL 29 measured gaps exceeded Render's 15-minute idle
+# threshold — i.e. it never once actually kept the instance warm
+# (measurement: `gh run list --workflow=keep-alive.yml`). GitHub's
+# scheduled-workflow queue delay under load is the suspected cause and
+# there is no reason to assume it has improved. Before trusting this
+# again, MEASURE: `gh run list --workflow=keep-alive.yml --limit 30`
+# after it has had 24h+ to run, and compare each run's queued-vs-started
+# time against the 10-minute schedule. If the drift reproduces, this
+# workflow is decorative again and the fix has to be cron-job.org itself
+# (or paying for Render Starter — no sleep, $7/mo, see
+# docs/OPERATIONS.md § "Upgrade signal").
 #
-# ── Current arrangement ──────────────────────────────────────────────────
-# Primary keep-alive is cron-job.org (1-minute interval, free,
-# commercial-safe per ToS). Signup and monitor URL are documented in
-# docs/OPERATIONS.md § "Uptime pinger and dead-man's-switch".
+# ── Cost ──────────────────────────────────────────────────────────────────
+# thomasvanpul/Finance-Tracker is a public repo, so Actions minutes are
+# free/unlimited regardless of run count. The cost that DOES apply is
+# Render's own free-tier ceiling: pinging every 10 minutes keeps the
+# instance awake close to continuously, i.e. close to 720-744 of the
+# 750 free instance-hours/month this single service is allowed — right
+# up against the cap with almost no headroom, not free in the sense of
+# "no consequence."
 #
-# Failure-visibility layer is a Healthchecks.io dead-man's-switch. The
-# api-server's /api/healthz handler POSTs to HEALTHCHECKS_PING_URL on
-# every request; Healthchecks alerts if no heartbeat arrives inside the
-# check's expected window. This catches "cron-job.org itself broke" and
-# every related silent-failure mode that this GitHub Actions workflow
-# didn't.
-#
-# ── Why the file is still here ───────────────────────────────────────────
-# So that a future maintainer with the same idea finds the evidence
-# in-repo before implementing it again. Do not credit this file with
-# keeping Render warm. Do not re-enable it as primary. If you decide
-# GitHub Actions cron has improved, MEASURE first with
-# `gh run list --workflow=keep-alive.yml --limit 30` and confirm the
-# actual gap distribution before pointing anything at it.
-#
-# Left disabled below: no `schedule:` trigger, so it never runs on its
-# own. Kept only as a manually-triggerable escape hatch for the
-# operator who wants to warm Render exactly once after a deploy or a
-# provider swap.
+# ── Failure-visibility layer, unchanged ──────────────────────────────────
+# Healthchecks.io dead-man's-switch still covers "cron-job.org broke",
+# "this workflow broke", and everything else per docs/OPERATIONS.md.
+# Its grace/period tuning was not touched here — no stored login for
+# that dashboard either.
 
-name: keep-alive-render (DEPRECATED — manual trigger only)
+name: keep-alive-render (experimental secondary — re-enabled 2026-09-21, MEASURE before trusting)
 
 on:
-  # No schedule. See header above.
+  schedule:
+    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 concurrency:
@@ -52,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Ping /api/healthz (manual)
+      - name: Ping /api/healthz
         env:
           RENDER_HEALTH_URL: ${{ secrets.RENDER_HEALTH_URL }}
         run: |

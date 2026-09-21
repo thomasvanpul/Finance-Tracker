@@ -88,11 +88,44 @@ each month is a soft heartbeat for the heartbeat.
 
 ### The `.github/workflows/keep-alive.yml` file
 
-Now DEPRECATED. Its `on: schedule:` was removed 2026-09-01. The
-workflow remains as a manually-triggerable escape hatch and as a
-documentation artefact — its header comment records why GitHub cron
-proved unreliable so the same mistake isn't remade. See that file
-for the measurement.
+Its `on: schedule:` was removed 2026-09-01 after GitHub Actions cron
+measured unreliable (median 260-min gap against a 10-min schedule; see
+the file's header for the full measurement), then RE-ENABLED
+2026-09-21 as an experimental secondary pinger — see "2026-09-21:
+overnight cold starts" below for why, and the file's own header for
+why it is not trusted as a fix without re-measuring.
+
+### 2026-09-21: overnight cold starts, and the primary pinger's state is unconfirmed
+
+Healthchecks.io fired DOWN/UP five times overnight 2026-09-20/21
+(episodes of 8m54s, 1h34m, 39m54s, 41m22s, 1h23m). Confirmed via the
+Render dashboard (Events tab, then Logs filtered to `Server listening`)
+that this was NOT a crash loop — the last `ServerFailed`/OOM events are
+from 2026-09-06, unrelated — and IS cold starts on the free plan: seven
+separate boots between 18:00 and 09:00 (19:19, 21:15, 03:04, 03:38,
+05:37, 06:44, 07:50 GMT+1), with gaps up to 5h49m between them.
+
+That gap distribution is the important part. cron-job.org is documented
+above as pinging every 1 minute; a successfully-landing 1-minute ping
+makes Render's 15-minute idle spin-down impossible. Seven cold boots in
+one night means the primary pinger was not reaching the instance that
+night — not "the cold start is expected and just needs a stopgap", the
+primary mitigation this whole arrangement depends on was not doing its
+job. This session had no stored login for cron-job.org and did not
+attempt to create one, so whether the monitor is paused, misconfigured,
+or was deleted is still unconfirmed. **Checking that account is the
+real fix and is still open** — re-enabling the GitHub Actions workflow
+(above) is a stopgap underneath it, not a substitute for it.
+
+Not fixed this session (no stored login, and entering credentials via
+browser automation is out of scope regardless): Healthchecks.io's
+period/grace tuning, which the originating task asked for ("wire
+Healthchecks so it only alerts on real failures, not on the cold
+start"). Worth pushing back on that framing too — these were not brief
+cold-start blips masked by an over-sensitive monitor; the shortest
+episode was 8m54s and the longest 1h34m, meaning the instance was
+genuinely unreachable for real spans of time. Loosening Healthchecks'
+grace period would hide genuine downtime, not a false positive.
 
 ## Upgrade signal — when to move Render to Starter ($7/mo)
 
