@@ -1,0 +1,336 @@
+/* The picker's surface.
+ *
+ * Every colour here is a token from /tokens.css, which is the file
+ * `bin/generate.py` writes and `bin/check.py` guards. No hex literal appears
+ * below: this page is a consumer of the design system it was built to feed, and
+ * a consumer that paints its own colours is the exact defect `bin/conformance.py`
+ * exists to catch.
+ *
+ * The frame is the content. Chrome is a scrim over it, never a panel beside it,
+ * because the judgement being asked is about the whole image and a sidebar
+ * would be answering a different question.
+ */
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --ink: var(--density-5);
+  --ink-dim: var(--field-light-core);
+  --ground: var(--density-0);
+  --edge: var(--density-2);
+  --live: var(--density-4);
+  --gap: 12px;
+  --bar: 44px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font: 400 17px/1.45 ui-sans-serif, -apple-system, "SF Pro Text", system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  /* 100dvh, not 100vh: iOS Safari's collapsing toolbar otherwise hides the
+     answer row behind itself, which is the one part that must always be tappable. */
+  height: 100dvh;
+}
+
+/* ---- the bar ------------------------------------------------------------ */
+
+#bar {
+  flex: 0 0 auto;
+  height: var(--bar);
+  display: flex;
+  align-items: center;
+  gap: var(--gap);
+  padding: 0 14px;
+  border-bottom: 1px solid var(--field-light-edge);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+#where { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#count { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+
+#track {
+  flex: 0 0 90px;
+  height: 2px;
+  background: var(--field-light-edge);
+}
+#track-fill { height: 100%; width: 0; background: var(--live); transition: width .25s ease; }
+
+/* ---- the screen --------------------------------------------------------- */
+
+#screen {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+
+.plate {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  background: var(--ground);
+}
+
+/* `contain`, not `cover`. These frames are being judged on composition; cropping
+   one to fill the viewport would be editing the thing he is looking at. */
+.plate img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.aside {
+  position: absolute;
+  top: var(--gap);
+  left: var(--gap);
+  right: var(--gap);
+  max-width: 52ch;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--ground) 82%, transparent);
+  border-left: 2px solid var(--live);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.full {
+  position: absolute;
+  right: var(--gap);
+  bottom: var(--gap);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  text-decoration: none;
+  padding: 6px 10px;
+  border: 1px solid var(--field-light-edge);
+  background: color-mix(in srgb, var(--ground) 76%, transparent);
+}
+
+/* ---- the ask ------------------------------------------------------------ */
+
+.ask {
+  flex: 0 0 auto;
+  padding: 14px 14px calc(14px + var(--safe-b));
+  background: var(--ground);
+  border-top: 1px solid var(--field-light-edge);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 62%;
+  overflow-y: auto;
+}
+
+.q {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.q .quiet { display: block; font-weight: 400; font-size: 14px; color: var(--ink-dim); margin-top: 4px; }
+
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+.row-label {
+  width: 100%;
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: -2px;
+}
+
+.opt {
+  flex: 1 1 auto;
+  min-height: 52px;
+  min-width: 96px;
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--edge);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .12s ease, border-color .12s ease;
+}
+
+.opt:hover { border-color: var(--live); }
+.opt .key {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-dim);
+  border: 1px solid var(--field-light-edge);
+  padding: 1px 5px;
+}
+.opt[aria-pressed="true"] {
+  background: var(--live);
+  border-color: var(--live);
+  color: var(--ground);
+  font-weight: 600;
+}
+.opt[aria-pressed="true"] .key { color: var(--ground); border-color: var(--ground); }
+
+.notes { display: flex; flex-wrap: wrap; gap: 8px; }
+.note { flex: 1 1 240px; display: flex; flex-direction: column; gap: 4px; }
+.note label {
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.note input {
+  min-height: 46px;
+  padding: 8px 12px;
+  background: var(--field-light-edge);
+  border: 1px solid var(--edge);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* under 16px iOS zooms the page on focus and never zooms back */
+}
+.note input:focus { outline: none; border-color: var(--live); }
+.note input.saved { border-color: var(--field-light-core); }
+
+/* ---- the grid screens --------------------------------------------------- */
+
+.grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 4px;
+  padding: 4px;
+  align-content: start;
+}
+
+.cell {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border: 2px solid transparent;
+  background: var(--field-light-edge);
+  cursor: pointer;
+  overflow: hidden;
+}
+.cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cell figcaption {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  padding: 3px 5px;
+  font-size: 10px;
+  text-align: left;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ground) 78%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cell[aria-pressed="true"] { border-color: var(--live); }
+.cell[aria-pressed="true"] figcaption { background: var(--live); color: var(--ground); font-weight: 600; }
+
+/* ---- the tally ---------------------------------------------------------- */
+
+.tally {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--ink-dim);
+  padding: 6px 0;
+  border-top: 1px solid var(--field-light-edge);
+}
+.tally b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ---- prose screens ------------------------------------------------------ */
+
+.prose {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 28px 20px;
+  max-width: 62ch;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+}
+.prose h1 { font-size: 26px; line-height: 1.2; margin: 0; }
+.prose p { margin: 0; color: var(--ink-dim); }
+.prose p strong { color: var(--ink); }
+.prose code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: .9em;
+  color: var(--density-4);
+}
+.warn { border-left: 2px solid var(--live); padding-left: 10px; }
+
+/* ---- moving ------------------------------------------------------------- */
+
+#move {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 1px;
+  background: var(--field-light-edge);
+  padding-bottom: var(--safe-b);
+}
+#move button {
+  flex: 1 1 auto;
+  min-height: 50px;
+  background: var(--ground);
+  color: var(--ink-dim);
+  border: 0;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+#move button:hover:not(:disabled) { color: var(--ink); }
+#move button:disabled { opacity: .3; cursor: default; }
+#prev { flex: 0 0 25%; }
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(66px + var(--safe-b));
+  transform: translate(-50%, 14px);
+  padding: 7px 14px;
+  background: var(--live);
+  color: var(--ground);
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+#toast.up { opacity: 1; transform: translate(-50%, 0); }
+#toast.bad { background: var(--density-2); color: var(--ink); }
+
+@media (min-width: 900px) {
+  .ask { padding: 18px 24px; }
+  .q { font-size: 21px; }
+  .opt { flex: 0 1 auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

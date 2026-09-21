@@ -32,10 +32,34 @@ keep reasoning. Do not start a second list — add a row here and an entry in it
 section. Every status in the index was checked against source at `788463c` on
 13 Sep 2026; the evidence is in each entry.
 
+**Amended 19 Sep 2026, after the market-data withdrawal (`3d8d8e4`).** Market
+data is off by default on every deployment (`api-server/src/lib/market-flag.ts`),
+and production answers `{"marketDataEnabled":false}`. Twenty-four items were
+triaged against that: 2 retired, 12 reworked, 10 kept behind the flag, and a
+12-item watch list of items that look market-related and are not (FX, cost
+basis, the user's own broker positions). Two new sections were added: **L**
+carries the defects the withdrawal created, **M** carries store submission.
+Do not retire an item for touching `lib/market.ts`; FX lives there too.
+
 ## Index
 
-174 items · 123 open · 51 closed. Open by tier: NOW 10 · NEXT 8 · NOT YET 105.
+206 items · 154 open · 52 closed. Open by tier: NOW 28 · NEXT 20 · NOT YET 106.
 Update the counts when a row changes.
+
+**Counts recounted 19 Sep 2026, and the old line was wrong before this session
+touched it.** The committed line read `174 items · 123 open · 51 closed. NOW 10
+· NEXT 8 · NOT YET 105`. Counting the index rows of that same commit gives 171
+items, 50 closed, 121 open, NOW 14, NEXT 13, NOT YET 94, so the header had
+drifted from its own table and the drift was in the direction that made NOW look
+smaller than it was. The numbers above are the measured ones. Reproduce them
+with the row regex `^\| ([A-Z]\d+) \| (.*?) \| (.*?) \| (.*?) \|$` and count
+column 4; a row whose tier is `—` is a closed row.
+
+This session added 33 rows (L1 to L7, M1 to M12, N1 to N14), dropped J26 and
+J27, and re-tiered G41, G42 and J1. NOW now holds 27 items. The roadmap's cap of
+ten is broken, which is a decision for Thomas and not a drafting error; the
+ordered route in `Efforts/Numeris-Roadmap.md` groups those 27 into phases so the
+cap can be re-imposed per phase rather than across the whole tier.
 
 | id | item | status | tier |
 | --- | --- | --- | --- |
@@ -141,8 +165,8 @@ Update the counts when a row changes.
 | G38 | kpi-bar and MobileAccounts ship to nobody | DECIDE | NOT YET |
 | G39 | compact-tiles sums every asset type | DECIDE | NOT YET |
 | G40 | Owed label merges loans and overdrafts | TODO | NOT YET |
-| G41 | ETF cards carry index trademarks | DECIDE | NOT YET |
-| G42 | ai-coach invites index comparisons | TODO | NOT YET |
+| G41 | ETF cards carry index trademarks | DECIDE | NOW |
+| G42 | ai-coach invites index comparisons | TODO | NOW |
 | G43 | nw_snapshots has no liability bucket | DECIDE | NOT YET |
 | G44 | recurring_patterns has no consumer | DECIDE | NOT YET |
 | G45 | /api/ai/status never tests a completion | TODO | NOT YET |
@@ -186,6 +210,8 @@ Update the counts when a row changes.
 | J1 | Market data vendor decision | DECIDE | NOT YET |
 | J2 | Alpaca licensing, revisit Mar 2027 | PARKED | NOT YET |
 | J3 | Index levels refused server-side | DONE | — |
+| J28 | `fxRatesFromYahoo` is not behind `ENABLE_MARKET_DATA` | TODO | NOW |
+| J29 | Background EOD valuation job and snapshot tables | TODO | NOT YET |
 | J4 | Attribution: market, currency, money added | TODO | NEXT |
 | J5 | Dividends as dated income into D1 | TODO | NEXT |
 | J6 | Cost of ownership measured | TODO | NOT YET |
@@ -208,13 +234,46 @@ Update the counts when a row changes.
 | J23 | Double-entry substrate | IDEA | NOT YET |
 | J24 | Currency as a life position | IDEA | NOT YET |
 | J25 | Permission instead of restriction | ADOPTED | — |
-| J26 | Valuation without display: EOD only, aggregate figures, never a per-security price | DECIDE | NOW |
-| J27 | Phone HOME shows per-security live prices (AAPL/BTC/MSFT/VUSA.L with % change, under a LIVE badge) — contradicts J26 and Alpaca's refusal | TODO | NOW |
+| J26 | Valuation without display: EOD only, aggregate figures, never a per-security price | DROPPED | — |
+| J27 | Phone HOME shows per-security live prices (AAPL/BTC/MSFT/VUSA.L with % change, under a LIVE badge) — contradicts J26 and Alpaca's refusal | DROPPED | — |
 | K1 | AI chain Groq to Cerebras, failures visible | DONE | — |
 | K2 | Receipt scan counts against the AI limit | DONE | — |
 | K3 | Per-user daily AI budget | TODO | NOT YET |
 | K4 | Operator alert when a provider lane dies | TODO | NOT YET |
 | K5 | Consistent AI quality across providers | PARTIAL | NOT YET |
+| L1 | Phone HOME prints `PORTFOLIO £0` for a market-persona user with holdings | TODO | NOW |
+| L2 | Net worth silently omits the whole portfolio when market data is off | TODO | NOW |
+| L3 | Onboarding still sells live prices, portfolio P&L and an earnings calendar | TODO | NOW |
+| L4 | `/portfolio` empty state and benchmark panel still promise prices and an S&P line | TODO | NOW |
+| L5 | `MarketPane` took the FX rows and the holdings list down with it | TODO | NEXT |
+| L6 | The market persona has no differentiating widget left on the desktop dashboard | DECIDE | NEXT |
+| L7 | Restate what Numeris is, in product copy, without market data | DECIDE | NEXT |
+| M1 | Apple 5.1.1(ix): a finance app should be submitted by a legal entity, not an individual | DECIDE | NOW |
+| M2 | Apple 4.8: Sign in with Apple is required beside Google Sign-In | TODO | NOW |
+| M3 | Apple 5.1.2(i): explicit permission before personal data reaches a third-party AI | TODO | NOW |
+| M4 | No camera usage-description string, while three screens use `capture="environment"` | TODO | NOT YET |
+| M5 | No privacy manifest (`PrivacyInfo.xcprivacy`) anywhere in the iOS project | TODO | NOT YET |
+| M6 | No public web URL for privacy, terms, support or account deletion | TODO | NOT YET |
+| M7 | Reviewer demo account for a login-gated app | TODO | NOT YET |
+| M8 | Screenshots, age rating, review notes, export compliance | TODO | NOT YET |
+| M9 | Enable Banking is on a Restricted Production tier that a public app does not fit | DECIDE | NOT YET |
+| M10 | Account deletion does not revoke the Enable Banking consent | TODO | NOT YET |
+| M11 | Android platform does not exist | DECIDE | NOT YET |
+| M12 | `docs/DATA-INVENTORY.md` is stale on the deletion LIKE bug | TODO | NOT YET |
+| N1 | Phone UPCOMING's Add CTA is wired to a no-op, and no add path exists on phone | TODO | NOW |
+| N2 | No press feedback on any phone row (`HoverRow` is hover-only) | TODO | NOW |
+| N3 | No phone settings screen; `MobileSettings.tsx` was built and never wired | TODO | NOW |
+| N4 | Eight phone routes render a desktop-only dead end | DECIDE | NOW |
+| N5 | Phone HOME has no error or loading state | TODO | NOW |
+| N6 | Sub-44px tap targets on WORTH and UPCOMING | TODO | NEXT |
+| N7 | Phone paints the desktop shell first on every load | TODO | NEXT |
+| N8 | The phone's shape: four tabs, one persona slot, three docs disagreeing | DECIDE | NEXT |
+| N9 | 16 of 31 phone destinations are desktop pages in a back-button wrapper | DECIDE | NEXT |
+| N10 | 644 hardcoded `rgba()` bypass the `--ft-*` tokens the eleven themes need | TODO | NOT YET |
+| N11 | Four implementations of "a panel"; DESIGN.md sanctions three | DECIDE | NOT YET |
+| N12 | 28 sidebar entries against CLAUDE.md's own ~20 rule | DECIDE | NOT YET |
+| N13 | `docs/STYLE-INVENTORY.md` is stale by 34% | TODO | NOT YET |
+| N14 | `CLAUDE.md` and `MOBILE-CONCEPT.md` both describe a phone shell that does not exist | TODO | NOW |
 
 ---
 
@@ -1526,8 +1585,8 @@ of that check.
 - **G38 · `kpi-bar.tsx` and `MobileAccounts.tsx` ship to nobody — DECIDE (delete?) · NOT YET.** [G13] Overlaps D6.
 - **G39 · `compact-tiles` "emergency fund" and "total cash" sum every asset type — DECIDE (semantics) · NOT YET.** [G14]
 - **G40 · Balance sheet "owed" side merges loans and overdrafts in its label — TODO · NOT YET.** [G15] A comment at `accounts.tsx:3015-3020` says the merge was deliberate; the label is the defect.
-- **G41 · ETF cards labelled "S&P 500", "NASDAQ 100", "Dow Jones" — index trademarks — DECIDE · NOT YET.** [G16]
-- **G42 · `ai-coach` prompt copy invites comparisons against an index it can no longer source — TODO · NOT YET.** [G17]
+- **G41 · ETF cards labelled "S&P 500", "NASDAQ 100", "Dow Jones" — index trademarks — DECIDE · NOW.** [G16] Re-tiered 19 Sep 2026: with prices gone these strings are the surviving market surface a tester still reads.
+- **G42 · `ai-coach` prompt copy invites comparisons against an index it can no longer source — TODO · NOW.** [G17] Re-tiered 19 Sep 2026. `pages/ai-coach.tsx:63` still offers "What's my alpha? … vs S&P 500" while `lib/ai-context.ts:319` correctly tells the model the portfolio total is unknown, so the chip invites a question the app has already decided it cannot answer.
 - **G43 · `nw_snapshots` has no liability bucket — DECIDE (design) · NOT YET.** [G18]
 - **G44 · `recurring_patterns` has no client consumer — DECIDE (retire, or Confirm/Dismiss) · NOT YET.** [G19]
 - **G45 · `/api/ai/status` reports available without testing a completion — TODO · NOT YET.** [G20]
@@ -1767,13 +1826,63 @@ what they *should* hold is a regulated activity and is ruled out.
 
 **Data and licensing**
 
-- **J1 · Market data vendor decision — DECIDE (Thomas) · NOW.** [H3, H4, N3]
+- **J1 · Market data vendor decision — DECIDE (Thomas) · NOT YET.** [H3, H4, N3]
   Twelve Data Venture from $149/mo with external display rights (less 20%
   student, 17% annual). Ask the three numbered questions in writing before
   paying. `BLOCKER.md` falsifier 2: Alpaca's terms are personal and
   non-commercial.
+  **Re-tiered NOT YET, 19 Sep 2026.** The body said NOW while the index row
+  said NOT YET; the index was right and the drift is corrected here. The
+  withdrawal in `3d8d8e4` answers the question a different way: no vendor is
+  paid for, `ENABLE_MARKET_DATA` is off, and nothing in NOW depends on a quote
+  any more. A tester round and a store submission both complete without this.
+  It returns to NOW only when Thomas decides markets are back in the product,
+  and the £/$ cost is then a paid subscription against an app with no revenue.
+  **Licence read per provider, 19 Sep 2026 evening** (every clause quoted with
+  URL in `.review/archive/2026-09-19T*-markets-legal-form*.report.md`
+  appendix A, and in the vault at `Atlas/Projects/Finance-Tracker/Market-Data-Providers.md`).
+  The "$149/mo" above is wrong: Twelve Data Business Venture reads **$499/mo
+  ($414 annual)** today and is the cheapest written display grant found. Three
+  legal tiers: (0) none, cost basis only, today; (1) **background valuation,
+  Tiingo Commercial $50/mo** (ToS §1.6(b) persistence on paid plans, §1.6(c)
+  Derived Products naming "percentage returns" and "aggregated statistics",
+  §7.3 internal consumption only), screens show portfolio total, allocation and
+  portfolio return only, never a price or a per-position value, guarded for the
+  one-holding case where the aggregate collapses to the price; (2) **display,
+  Twelve Data Venture $499/mo**, prices and per-position values. Crypto on any
+  tier: CoinGecko Basic $35/mo with "Data provided by CoinGecko" attribution.
+  FX stays ECB via Frankfurter, cite ECB. LSE holdings need LSE's own Schedule B
+  §3.3.6 written waiver whatever the vendor. Rejected with the clause: Massive
+  individual tiers ("solely for your own personal, non-commercial, and
+  non-business purposes"; Business $2,499/mo US-only), Finnhub, EODHD published
+  tiers, Alpha Vantage, FMP, Nasdaq Data Link (Order Form), Stooq, Marketstack
+  (no display clause in the binding agreement), Databento (best language,
+  $199/mo, US-only, terms unreadable). Recommendation: tier 1 when markets
+  return, after Tiingo's LSE/EU coverage and the LSE waiver are confirmed in
+  writing. Decision is Thomas's; see the roadmap's decision 4.
 - **J2 · Alpaca commercial licensing — revisit ~Mar 2027 — PARKED · NOT YET.** [H5]
 - **J3 · Index levels refused server-side, by shape and provider type — DONE (`45d284b`).** [A9]
+- **J28 · `fxRatesFromYahoo` is not behind `ENABLE_MARKET_DATA` — TODO · NOW.**
+  `api-server/src/routes/market.ts:103-130` still scrapes Yahoo for FX on a
+  cache miss (in-process, 5-minute TTL) while the product says markets are off
+  and Yahoo is out (scraping, `Atlas/Settled.md`). Found 19 Sep by the code
+  map for the markets plan. Fix: route FX through the ECB/Frankfurter path
+  only, persist rates in an `fx_rates` table (date, base, quote, rate,
+  provider `ecb`), and put "ECB" in the `fx` provenance mark. Independent of
+  J1; do it now.
+- **J29 · Background EOD valuation job and snapshot tables — TODO · NOT YET, behind J1.**
+  The repo has no scheduler: no cron, no Render cron job, no timer.
+  `eod_prices` (`lib/market-eod.ts`; not tenanted) fills lazily on request;
+  `nw_snapshots` is a monthly lazy upsert; `account_balance_snapshots` a daily
+  lazy one. When J1 picks tier 1: a Render cron at 03:00 UK hitting an
+  authenticated internal route that (a) fetches one close per distinct held
+  ticker into `eod_prices` (provider `tiingo`, crypto `coingecko`), (b) writes a
+  tenanted `portfolio_snapshots` row per user (total, class subtotals,
+  allocation, portfolio-level day change; per-position values computed and
+  never serialised), (c) makes `nw_snapshots` daily with `positionsAtCost` = 0
+  and `valuationAsOfSession` set. Screens read snapshots and never trigger a
+  fetch; if the job has not run they fall back to cost basis with the
+  `positionsAtCost` copy, as today. Full plan in the 19 Sep report §1.2.
 
 **Markets features — approved by Thomas 13 Sep 2026**
 
@@ -1803,6 +1912,22 @@ what they *should* hold is a regulated activity and is ruled out.
 - **J24 · Currency as a life position — IDEA · NOT YET.** [F13]
 - **J25 · Permission instead of restriction — ADOPTED as a copy principle, not a build item.** [F14] The roadmap says it governs every line of copy from now on. Counted, but has no tier.
 
+**Retired 19 Sep 2026 by the market-data withdrawal**
+
+Both had index rows and no body entry, which is how they survived the 13 Sep
+reconciliation unexamined. Written out here at the moment they are dropped, so
+the record says what was retired rather than only that something was.
+
+- **J26 · Valuation without display: EOD only, aggregate figures, never a per-security price — DROPPED.**
+  It was the compromise position: value a holding from a completed session
+  close and never show the price itself. `lib/market-flag.ts:9-12` overrules it
+  in writing — "a price on a screen is a price on a screen, whatever its age" —
+  so an EOD close that values a holding is inside the flag like any other quote.
+  The idea is not wrong; it is unreachable without a licence, which is J1.
+- **J27 · Phone HOME shows per-security live prices under a LIVE badge — DROPPED.**
+  Fixed by `MarketPane`'s retitling to WHAT YOU HOLD on 16 Sep, then made moot
+  by the flag, which hides the pane entirely. Nothing to do.
+
 ---
 
 ## K. AI
@@ -1815,3 +1940,307 @@ what they *should* hold is a regulated activity and is ruled out.
 
 *Not merged: register H6 (`vault-backup.sh` reports writes it did not make) is
 machine-side, not Numeris, and stays in the vault.*
+
+---
+
+## L. What the market-data withdrawal broke
+
+Added 19 Sep 2026. The switch in `3d8d8e4` is correct and the server is safe.
+These are the places the product does not yet tell the truth about the absence.
+L1 to L4 are tester-visible today.
+
+- **L1 · Phone HOME prints `PORTFOLIO £0` for a market-persona user with holdings — TODO · NOW.**
+  Chain: `lib/market-eod.ts:350-352` returns an empty price map when the flag is
+  off; `routes/dashboard.ts:230-232` returns all-null for an unpriced position
+  and `:268` skips it, so `portfolioValueBase` stays 0; `:819` serialises
+  `totalValueBase: 0`; `components/mobile/MobileHome.tsx:358` tests `!= null`,
+  which 0 passes, and renders `£0` under a `—` day change.
+  `lib/ai-context.ts:316-325` does the right thing for the same fact, setting
+  the total to `null` with the reason "market data is off on this deployment",
+  and its comment claims it is doing "the same null-propagation the dashboard
+  uses". It is not. Fix the server to return `null`, then let the screens say
+  they do not know.
+  Done when: a user with holdings and the flag off sees a stated unknown rather
+  than a number, on phone HOME, phone WORTH and the desktop dashboard.
+- **L2 · Net worth silently omits the whole portfolio — TODO · NOW.**
+  `routes/dashboard.ts:798` computes net worth from `portfolioValueBase`, which
+  is 0 for every position. `pages/investments.tsx:1817-1824` and
+  `pages/dashboard.tsx:3558` do caption `unavailablePositions`; the two phone
+  headlines do not — `components/mobile/MobileHome.tsx:382` and
+  `components/phone/WorthScreen.tsx:582` render `dashboard.netWorth` bare.
+  No test covers net worth with the flag off: grepped every file containing
+  `ENABLE_MARKET_DATA` under `artifacts/api-server/src` and
+  `artifacts/finance-tracker/src`, zero `netWorth` references in any of them.
+  This is the defect class `CLAUDE.md` names as the worst a finance app ships.
+  Done when: a lock test asserts the behaviour under both flag states, and no
+  surface shows a net-worth figure that excludes a position without saying so.
+- **L3 · Onboarding still sells market data — TODO · NOW.**
+  `components/onboarding.tsx:64` offers "Investments and market prices / Live
+  prices, portfolio P&L, earnings calendar" as the first of four tracks. Neither
+  `onboarding.tsx` nor `components/persona-quick-start.tsx` contains
+  `useMarketDataEnabled` (grep count 0 in both). Picking it sets persona
+  `market` (`onboarding.tsx:41-42`), whose default slot is `markets`
+  (`lib/tab-slot.ts:111`), which `resolveSlotId` then rewrites to `upcoming`.
+  A user who said investments are what they care about is given an UPCOMING tab.
+  Done when: the first screen a tester sees offers nothing the deployment
+  cannot serve, and the market persona either goes behind the flag or is
+  re-described around holdings and cost.
+- **L4 · `/portfolio` empty state and benchmark panel still promise prices — TODO · NOW.**
+  `pages/investments.tsx:2075` prints "vs S&P 500 ± 0.00%" inside the ASCII
+  terminal a brand-new user meets; `:2093-2096` lists "Live prices via Yahoo
+  Finance", "Portfolio vs S&P 500 benchmark" and "Dividend tracker + earnings
+  calendar" as what they will get; `:2162` titles a panel "Portfolio vs S&P 500"
+  while the SPY series it names is disabled at `:1564`. Overlaps G41 and G42,
+  which are re-tiered to NOW alongside this.
+  Done when: nothing on `/portfolio` names a price source or an index.
+- **L5 · `MarketPane` took the FX rows and the holdings list down with it — TODO · NEXT.**
+  `lib/market-flag.ts:22-33` keeps FX and cost basis outside the flag on purpose,
+  and `components/mobile/MarketPane.tsx:48-52` says the same in its own comment.
+  The pane is titled WHAT YOU HOLD (`:241`) and carries the user's tickers,
+  quantities and the FX rows, all of which survive the licensing decision, and
+  all of which are hidden because the whole pane is gated. That over-reaches
+  the stated policy. G24's five cited sites are all FX rows inside this pane.
+- **L6 · The market persona has no differentiating widget left — DECIDE · NEXT.**
+  `market-snapshot` was first and full-width for the `market` persona
+  (`lib/persona.ts:45,50`) and one of five enabled at first run (`:44`).
+  `pages/dashboard.tsx:3383-3387` drops it from both `enabledIds` and
+  `disabledIds`, so the grid closes up cleanly and the persona is left with the
+  four `FIRST_RUN_CORE_WIDGETS` everyone else gets (`persona.ts:56-59`).
+  The decision is what fills the full-width slot. Candidates already in this
+  backlog, ranked: F9 (Safe to Spend at main-number weight, already rendering at
+  `top-region.tsx:425`), F10 (completeness), J19 ("what breaks first"), J6 (cost
+  of ownership), G44 (recurring confirm/dismiss).
+- **L7 · Restate what Numeris is, without market data — DECIDE · NEXT.**
+  `docs/TARGET-PRODUCT.md:25-29` ("the world moves on the screen") and
+  `:152-178` (persona resolves finance-app vs stock-tracker) both rest on prices
+  arriving by themselves. `:167-170` states the retention thesis outright: "a
+  budget shows the same numbers tomorrow, a portfolio moves overnight without
+  the user touching it." The portfolio no longer moves. What still moves
+  overnight is FX, which is real for a Malaysian household holding US and UK
+  assets and is exactly what J4 (attribution) and J7 ("while you slept") were
+  going to measure. Either TARGET-PRODUCT is amended to say so or the goal is
+  narrowed. This is `BLOCKER.md` falsifier 2 asking its question, and the
+  answer is Thomas's.
+
+---
+
+## M. Store submission — App Store and Google Play
+
+Added 19 Sep 2026. Rules checked against Apple's live guidelines page and Play
+Console help, fetched 2026-09-19; Apple's page renders no revision date and no
+Play help page fetched rendered one, so every rule here is "current as fetched"
+rather than dated. Apple Developer Program membership is paid and enrolled as
+an **Individual** (`Atlas/Settled.md`, 26 Aug 2026). Google Play registration
+($25) is unpaid. Ship v1 free, so the Free Apps Agreement applies and no
+banking or tax form is needed.
+
+What already holds: account deletion exists in-app and deletes records rather
+than deactivating (`routes/account.ts:16-34`, `lib/account-deletion.ts:96`, UI
+at `pages/profile.tsx:1485-1548`), which satisfies Apple 5.1.1(v) and Play's
+in-app limb. The UIScene migration is coherent and locked
+(`src/lib/ios-scene-adoption.lock.test.ts`). No payment-initiation code ships:
+grep for `payment.?initiat|initiatePayment|/payments|PISP` across
+`artifacts/api-server/src` returns zero hits, so Numeris is account-information
+only today, which keeps it clear of Apple 3.1.3 and of PIS licensing.
+
+- **M1 · Apple 5.1.1(ix): a legal entity, not an individual developer — DECIDE (Thomas) · NOW.**
+  Apple's text, quoted verbatim from the guidelines page on 19 Sep 2026: "Apps
+  that provide services in highly regulated fields (such as banking and
+  financial services, healthcare, gambling, legal cannabis use, air travel and
+  crypto exchanges) or that require sensitive user information should be
+  submitted by a legal entity that provides the services, and not by an
+  individual developer." Numeris holds bank account data.
+  `docs/PRIVACY.md:20-21` says the service is "run by one person, not a
+  company", and the Individual enrolment is a settled decision from 26 Aug.
+  Three routes, none of them free: form an entity and re-enrol; ship Android
+  plus an iOS PWA and drop the App Store; or narrow the product so it holds no
+  bank connection, which costs the H section. No code change resolves this.
+- **M2 · Apple 4.8: Sign in with Apple beside Google — TODO · NOW.**
+  4.8 binds because Google Sign-In is offered and none of its five exemptions
+  applies. The code is already there and only the credentials are missing:
+  `routes/auth-providers.ts:43` and `lib/better-auth.ts:237` wire Apple,
+  `components/auth-gate.tsx:55,70` renders the button, and production returns
+  only `["google","github"]` because `APPLE_CLIENT_ID` and
+  `APPLE_CLIENT_SECRET` are unset. There is also no `.entitlements` file
+  anywhere in the iOS project. Roughly a day, mostly portal work.
+- **M3 · Apple 5.1.2(i): explicit permission before a third-party AI sees personal data — TODO · NOW.**
+  Apple's text, verbatim: "You must clearly disclose where personal data will be
+  shared with third parties, including with third-party AI, and obtain explicit
+  permission before doing so." `docs/DATA-INVENTORY.md:305-312` records that
+  there is no opt-in and that four pages send the financial position to Groq or
+  Cerebras on a timer (`pages/dashboard.tsx:942`, `budget.tsx:503`,
+  `goals.tsx:907`, `investments.tsx:885`). Same work as N6 in the roadmap and
+  the same `[BLOCKED]` markers at `docs/PRIVACY.md:152` and `:265`; doing it
+  once clears a store rule and a GDPR obligation together.
+- **M4 · No camera usage-description string — TODO · NOT YET.**
+  `artifacts/finance-tracker/ios/App/App/Info.plist` is 70 lines and contains
+  zero `UsageDescription` keys, while `components/quick-add-transaction.tsx:320`
+  and `pages/split.tsx:291,319` use `capture="environment"`. On a device that is
+  a crash in front of a reviewer, not a warning. An hour.
+- **M5 · No privacy manifest — TODO · NOT YET.**
+  No `*.xcprivacy` exists anywhere in the repo outside `node_modules`. Missing
+  required-reason declarations are an automated rejection before a human sees
+  the build. Two to four hours.
+- **M6 · No public web URL for privacy, terms, support or deletion — TODO · NOT YET.**
+  Play requires both an in-app deletion path and a **web** URL where deletion
+  can be requested. Numeris has the first and not the second. None of the routes
+  in `src/App.tsx` is `/privacy`, `/terms` or `/support`, and
+  `artifacts/finance-tracker/vercel.json` rewrites everything to `index.html`,
+  so `numeris.page/privacy` returns the SPA shell. One deliverable clears the
+  privacy-policy URL, the support URL and the deletion URL at once, and it is
+  gated by the 8 `[BLOCKED]` and 21 `TO CONFIRM` markers in `docs/PRIVACY.md`,
+  whose own header forbids publication while any remain. One to two days after
+  those are answered.
+- **M7 · Reviewer demo account — TODO · NOT YET.** The app is login-gated, so
+  both stores need working credentials in the review notes, on an account
+  carrying enough data that the reviewer sees a product rather than an empty
+  state. One to two days, and it interacts with L1 to L4: the demo account is
+  the first place a `£0` portfolio would be read as a broken app.
+- **M8 · Screenshots, age rating, review notes, export compliance — TODO · NOT YET.**
+  Mechanical, but none of it exists. Export compliance is a 30-minute flag.
+- **M9 · Enable Banking tier — DECIDE (Thomas) · NOT YET.**
+  `adapters/enable-banking.ts:1-7` states the current tier in its own header:
+  "Restricted Production tier fits this project's shape exactly today: one user,
+  own accounts, real data, no company, no cost." A listed app is none of those
+  four. Ask Enable Banking in writing what a public app needs, the same way the
+  Alpaca question was asked. Two hours to send, and the answer could change M1.
+- **M10 · Deletion does not revoke the bank consent — TODO · NOT YET.**
+  No `revoke` call exists in `adapters/enable-banking.ts`, so deleting an
+  account leaves a live consent at the provider. Not a store rule. It is a
+  GDPR one, and it is the kind of thing that reads badly next to a deletion
+  feature the store listing advertises. A day.
+- **M11 · Android does not exist — DECIDE · NOT YET.**
+  No `android/` directory, `@capacitor/android` is not a dependency, and only a
+  dead `cap:android` script remains at
+  `artifacts/finance-tracker/package.json:16`. One to two days to a
+  device-installable build. The long pole is policy: a new personal Play
+  account needs testers opted in continuously for fourteen days before
+  production access, and the current target-API deadline has already passed,
+  so the API level must be checked against Play Console before building.
+
+- **M12 · `docs/DATA-INVENTORY.md` is stale on the deletion LIKE bug — TODO · NOT YET.**
+  `DATA-INVENTORY.md:71-74` still describes `identifier LIKE '%<email>'` in the
+  account-deletion path as a live defect. It was fixed on 13 Sep:
+  `lib/account-deletion.ts:83-88` now uses two `eq()` comparisons, and the
+  comment above it at `:72-82` records the suffix-match and `_`-wildcard
+  reasoning in full. A store-readiness sweep on 19 Sep read the doc rather than
+  the code and reported the bug as open, which is the cost of leaving it. Check
+  the rest of `DATA-INVENTORY.md` against the code in the same pass.
+
+---
+
+## N. The UI/UX overhaul
+
+Added 19 Sep 2026 from a full audit of every screen against `docs/DESIGN.md`,
+the Anti-Vibe Constitution and Mobile Amendment in
+`artifacts/finance-tracker/src/index.css`, `docs/AI-DESIGN-TELLS.md` and the
+vault's `Atlas/Style-AI-Slop-Tells.md`. Measured shape: 41 phone URLs of which
+40 are live, 5 purpose-built phone screens, 16 desktop pages rendered inside a
+back-button wrapper, 8 dead ends, 4 tab positions; 37 desktop routes against 28
+sidebar entries, 9 of them with no sidebar entry at all. Phone first, because
+it is where the audit found every blocker.
+
+The rule for this section: **a design iteration is shown before anything is
+built** for N8, N9 and the HOME and UPCOMING work. Thomas picks. The
+corrections in N1 to N7 need no design input and can go first.
+
+**Blocks the tester round**
+
+- **N1 · The Add CTA on phone UPCOMING does nothing — TODO · NOW.**
+  `components/phone/UpcomingScreen.tsx:528` is `onCta={() => {}}`, under copy at
+  `:525` reading "Tap + to add a bill, subscription, or income item." There is
+  no `+`. There is no way to create a bill, a subscription or an income item
+  anywhere on the phone. `DESIGN.md` §16 says a control that does nothing is a
+  lie. The root cause is worth recording: `components/mobile-ui.tsx:56-72` makes
+  `ctaLabel` and `onCta` required at the type level for `scope="screen"`, to
+  enforce the Amendment's "one thing the user can do" rule, and the guard
+  produced the exact defect it exists to prevent. One of 11 `onCta=` sites is a
+  no-op; this one.
+- **N2 · No press feedback on any phone row — TODO · NOW.**
+  `components/phone/HoverRow.tsx:18-19` handles `onMouseEnter` and
+  `onMouseLeave` only, and its own header calls itself a no-op on phone. It
+  wraps `PhoneEntityRow.tsx:196` and `StatGrid.tsx:47`, which is every row on
+  WORTH, SPENDING and UPCOMING. One file, and the cheapest fix in the audit.
+- **N3 · No phone settings screen — TODO · NOW.** `components/mobile/MobileSettings.tsx`
+  is 772 lines and is imported by nothing. A phone tester meets the 2,984-line
+  desktop `pages/settings.tsx` in a wrapper. First deliverable is a measured
+  diff of what the desktop page does that the mobile one does not, so
+  revive-versus-rewrite is decided on evidence.
+- **N4 · Eight phone routes are dead ends — DECIDE · NOW.**
+  `components/phone/PhoneShell.tsx:72-80`. A route that renders "desktop only"
+  is a route that should not be reachable from the phone directory.
+- **N5 · Phone HOME has no error or loading state — TODO · NOW.**
+- **N14 · The docs describe a phone that does not exist — TODO · NOW.**
+  `CLAUDE.md` says five tabs (HOME, WORTH, SPENDING, UPCOMING, DIRECTORY).
+  `docs/MOBILE-CONCEPT.md` says four with different names (HOME, MONTH, MOVE,
+  FIND). The code has four positions with one persona-driven slot:
+  `lib/tab-slot.ts:88-93` and `components/phone/PhoneTabBar.tsx:41-45`. SPENDING
+  and UPCOMING are two options for the same slot and are never both on screen,
+  so UPCOMING has no tab of its own. Flagged in `Atlas/Inbox.md` on 16 Sep and
+  never corrected. Correct `CLAUDE.md` first: every "where does this live"
+  argument is currently being made against a shell that is not there.
+
+**Needs a design iteration before any code**
+
+- **N8 · The phone's shape — DECIDE · NEXT.** Three alternatives, drawn at 390px
+  in `void` and `arctic`, tab bar and directory only, no screen content:
+  (A) five fixed tabs and the slot dies; (B) four tabs with UPCOMING as a lens
+  on SPENDING; (C) four tabs with DIRECTORY promoted to a real second surface.
+  Everything else on the phone depends on the answer, so this goes first.
+  **Rendered 19 Sep 2026**, from the seed account's live API responses with the
+  flag off, at 390×844 @2x in `void` and `arctic`, HOME plus one detail screen
+  each, not bar-only: `.review/shots/directions-2026-09-19/{A,B,C}-*.png` (HTML
+  beside them). A "the ledger": five tabs, ruled HOME, UPCOMING with an inline
+  add row. B "allowance first": four tabs, SPENDING carries a This month /
+  Upcoming lens, HOME's fixed thumb-zone band is £258.90 a day in 44px with a
+  free/goals/bills bar by length and "Log a spend". C "jobs, then the index":
+  four tabs, HOME is "Needs you" sentences with a verb each, DIRECTORY carries a
+  live figure on every row. Session recommendation B (it is F9 taken
+  literally); Thomas picks. Detail in the 19 Sep report §3.
+- **N9 · The 16 wrapped desktop pages — DECIDE · NEXT.**
+  `PhoneShell.tsx:82-86` already admits it: "Every wrapping is a live iPad-audit
+  defect." 24,779 lines, 2,061 inline styles and 69 hover-only affordances reach
+  the phone this way. The decision is which of the 16 become phone screens,
+  which become sheets, and which stop being reachable on the phone at all.
+- **HOME, after N8.** Four things to draw before building: what its one action
+  is; populated, loading and failed side by side; row identity with and without
+  glyphs; and a version with its 18 middots removed.
+- **UPCOMING, after N1.** Two add affordances drawn against the real screen, a
+  FAB matching SPENDING against an inline add row, each with its empty state.
+
+**Corrections, no design input needed**
+
+- **N6 · Sub-44px tap targets — TODO · NEXT.** The Mobile Amendment
+  (`index.css:82`) says 44px with no exceptions. `InsightSlot.tsx:96` is 32px,
+  reachable through `reconciliation-insight.ts:77` and `WorthScreen.tsx:360,481`;
+  `UpcomingScreen.tsx:287-306` lens filters are about 28px.
+- **N7 · Phone paints the desktop shell first — TODO · NEXT.**
+  `hooks/use-mobile.tsx:6` initialises to `undefined`, so `!!undefined` is false
+  and `App.tsx:214` renders `<Layout>` before the effect corrects it.
+- **N10 · 644 hardcoded `rgba()` in `artifacts/finance-tracker/src` — TODO · NOT YET.**
+  Measured with `grep -ro "rgba(" | wc -l`. They bypass the `--ft-*` tokens that
+  make eleven themes possible, `arctic` included. Mechanical, and the highest
+  leverage desktop cleanup.
+- **N11 · Four implementations of a panel — DECIDE · NOT YET.** `DESIGN.md` §1
+  sanctions three. The fourth is `PANEL_STYLE`/`HEADER_STYLE` at
+  `components/settings-atoms.tsx:6-13` with 15+ call sites. Separately,
+  `PanelBox` is imported and never rendered in 10 files, and `pages/portfolio.tsx`
+  is six lines of which five imports are dead.
+- **N12 · 28 sidebar entries — DECIDE · NOT YET.** Two desktop directions rendered 19 Sep at 1440×900 in both themes, `.review/shots/directions-2026-09-19/D{1,2}-dashboard-*.png`: D1 "report", a six-entry rail with the read side ruled and the operate side framed; D2 "terminal", a twelve-entry grouped sidebar with a KPI strip and ruled tiles. Session recommendation D1. Against `CLAUDE.md`'s own
+  ~20 rule. The sidebar's own styling is §12-compliant on every point; the
+  problem is the count, not the treatment.
+- **N13 · `docs/STYLE-INVENTORY.md` is stale by 34% — TODO · NOT YET.**
+  It records 11,714 `style={{`; the measured count on 19 Sep is 7,710.
+  `pages/investments.tsx` alone went 717 to 264 in `b282d63`, which landed
+  after the doc was written.
+
+**Verified clean, with the coverage stated.** Zero emoji in
+`artifacts/finance-tracker/src`: 137 dingbat hits, all on the `no-emoji.test.ts`
+allowlist, none in the flag or pictograph ranges. The currency-flag maps
+`CLAUDE.md` names in `net-worth.tsx` and `accounts-summary.tsx` are gone, and
+`layout.tsx:245-250` uses country codes. No empty-state artwork, no gradients,
+no transition over 150ms in `pages/`, and no `localStorage` write without a
+reader across 99 sites. Not covered by this sweep: `artifacts/api-server`,
+`artifacts/finance-tracker/ios`, and `static/`. Nothing was rendered: this is a
+source audit, and the 13 screenshot scripts in `scripts/` were not run.
+

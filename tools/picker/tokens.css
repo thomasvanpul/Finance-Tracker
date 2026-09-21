@@ -1,0 +1,20 @@
+/*
+ * Picker chrome tokens for Numeris. Deliberately neutral: the Atrium picker
+ * draws its chrome from Atrium's red ramp, and a red frame around fifty finance
+ * screens would be voting. Graphite, one amber signal, nothing else, so the
+ * only colour on the page is the screen being judged.
+ *
+ * Names are the ones picker.css consumes; values are the only thing that changed.
+ */
+
+:root {
+  --field-light-core: #8a8f98;   /* dim ink: labels, asides */
+  --field-light-edge: #1c1f24;   /* hairlines and pressed surfaces */
+  --density-0: #0b0c0e;          /* ground */
+  --density-1: #15171b;
+  --density-2: #2a2e35;          /* edges */
+  --density-3: #5b616b;
+  --density-4: #e0a030;          /* the one signal: amber, the terminal colour */
+  --density-5: #eceff2;          /* ink */
+  --density-6: #ffffff;
+}

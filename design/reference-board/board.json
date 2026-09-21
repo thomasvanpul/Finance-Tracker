@@ -1,0 +1,412 @@
+{
+  "_": "The Numeris reference board. Each entry is one screen Thomas rates in tools/picker. `why` is the reason it is here, one line. Captured by scripts/src/reference-board-capture.ts; `copy` entries are taken from the vault instead of the web.",
+  "groups": [
+    "terminals",
+    "editorial data",
+    "instruments and HUD",
+    "personal data with a point of view",
+    "consumer finance (control)"
+  ],
+  "screens": [
+    {
+      "id": "finviz-map",
+      "group": "terminals",
+      "title": "Finviz S&P 500 map",
+      "url": "https://finviz.com/map.ashx",
+      "wait": 5000,
+      "why": "The whole market as one treemap: area is size, colour is the day, no chrome. The densest useful single screen in finance, and a replacement for the Bloomberg Terminal page, which refuses headless browsers."
+    },
+    {
+      "id": "tradingview-chart",
+      "group": "terminals",
+      "title": "TradingView chart",
+      "url": "https://www.tradingview.com/chart/?symbol=NASDAQ%3AAAPL",
+      "wait": 6000,
+      "why": "The chart is the whole page and the chrome collapses to thin rails; the one finance UI most people have actually chosen to look at for hours."
+    },
+    {
+      "id": "kraken-pro",
+      "group": "terminals",
+      "title": "Kraken Pro",
+      "url": "https://pro.kraken.com/app/trade/btc-usd",
+      "wait": 8000,
+      "why": "Order book, depth and ladder as a single dense instrument; it commits to being a workbench rather than a brochure."
+    },
+    {
+      "id": "binance-spot",
+      "group": "terminals",
+      "title": "Binance spot",
+      "url": "https://www.binance.com/en/trade/BTC_USDT?type=spot",
+      "wait": 8000,
+      "why": "The maximal case: six live panes, red and green only where they mean direction, everything else grey. Included to find where density stops being useful."
+    },
+    {
+      "id": "hyperliquid",
+      "group": "terminals",
+      "title": "Hyperliquid",
+      "url": "https://app.hyperliquid.xyz/trade",
+      "wait": 8000,
+      "why": "A newer terminal that kept the density and dropped the clutter: monospace figures, hairline grid, one accent."
+    },
+    {
+      "id": "koyfin",
+      "group": "terminals",
+      "title": "Koyfin",
+      "url": "https://www.koyfin.com/",
+      "why": "Bloomberg's information layout rebuilt for a browser; dashboards of small multiples, tables that are actually tables.",
+      "scroll": 700
+    },
+    {
+      "id": "openbb",
+      "group": "terminals",
+      "title": "OpenBB",
+      "url": "https://openbb.co/products/workspace/",
+      "why": "The open-source terminal: a command line that draws charts, which is closer to Claude Code than to a fintech app.",
+      "scroll": 520,
+      "hide": [
+        "div.fixed.inset-0.z-\\[100\\]"
+      ]
+    },
+    {
+      "id": "ibkr-tws",
+      "group": "terminals",
+      "title": "Interactive Brokers TWS",
+      "url": "https://www.interactivebrokers.co.uk/en/trading/tws.php",
+      "why": "Ugly on purpose and trusted for it: no rounded corners, no marketing, a grid of numbers professionals refuse to give up."
+    },
+    {
+      "id": "markets-ft",
+      "group": "terminals",
+      "title": "FT markets data tearsheet",
+      "url": "https://markets.ft.com/data/equities/tearsheet/summary?s=AAPL:NSQ",
+      "why": "A newspaper's data desk doing a terminal: serif headings over tabular numerals, salmon ground, no card in sight."
+    },
+    {
+      "id": "robinhood-legend",
+      "group": "terminals",
+      "title": "Robinhood Legend",
+      "url": "https://robinhood.com/legend/",
+      "why": "A consumer brand building a desktop terminal; shows what the generic fintech look becomes when it tries to be serious.",
+      "scroll": 800
+    },
+    {
+      "id": "ghostfolio-demo",
+      "group": "terminals",
+      "title": "Ghostfolio (open-source wealth tracker, live demo)",
+      "url": "https://ghostfol.io/en/demo",
+      "wait": 8000,
+      "why": "The closest open-source cousin to Numeris: a real portfolio app, dark, chart-led, and a useful test of whether that already reads as template."
+    },
+    {
+      "id": "linear",
+      "group": "terminals",
+      "title": "Linear",
+      "url": "https://linear.app/",
+      "why": "The benchmark for product UI that is dense, keyboard-first and still calm; the standard 'Linear-grade' refers to.",
+      "scroll": 420
+    },
+    {
+      "id": "fred-cpi",
+      "group": "editorial data",
+      "title": "FRED (St. Louis Fed) series page",
+      "url": "https://fred.stlouisfed.org/series/CPIAUCSL",
+      "why": "Institutional and plain: one blue line, grey recession bands, the source and the units printed under the chart. Trust without styling."
+    },
+    {
+      "id": "owid-grapher",
+      "group": "editorial data",
+      "title": "Our World in Data grapher",
+      "url": "https://ourworldindata.org/grapher/gdp-per-capita-worldbank",
+      "wait": 5000,
+      "why": "A chart component with an opinion: labels on the lines instead of a legend, the table one tab away, download always visible."
+    },
+    {
+      "id": "ft-visual",
+      "group": "editorial data",
+      "title": "FT visual and data journalism",
+      "url": "https://www.ft.com/visual-and-data-journalism",
+      "why": "The FT chart doctrine at scale: pink ground, one highlight colour, annotations written as sentences on the chart itself."
+    },
+    {
+      "id": "pudding",
+      "group": "editorial data",
+      "title": "The Pudding",
+      "url": "https://pudding.cool/",
+      "why": "Data stories that scroll like essays; every chart is bespoke to its argument and none of them could be a dashboard widget."
+    },
+    {
+      "id": "reuters-graphics",
+      "group": "editorial data",
+      "title": "Reuters Graphics",
+      "url": "https://www.reuters.com/graphics/",
+      "why": "Wire-service restraint: black, white, one colour, large type, and maps and charts that carry the whole story."
+    },
+    {
+      "id": "sherwood",
+      "group": "editorial data",
+      "title": "Sherwood (formerly Chartr)",
+      "url": "https://sherwood.news/",
+      "why": "Chartr's newsletter charts grown into a newsroom: one colour per story and a headline written on the chart itself. Stands in for The Economist's Graphic detail, which returns 403 headless."
+    },
+    {
+      "id": "d3-gallery",
+      "group": "editorial data",
+      "title": "D3 gallery on Observable",
+      "url": "https://observablehq.com/@d3/gallery",
+      "wait": 5000,
+      "why": "Two hundred chart forms in one grid; the reminder that a figure can be a shape other than a bar, a ring or a line."
+    },
+    {
+      "id": "flowingdata",
+      "group": "editorial data",
+      "title": "FlowingData",
+      "url": "https://flowingdata.com/",
+      "why": "Personal data drawn by one person with a point of view; the charts are about a life, which is what a net worth chart is."
+    },
+    {
+      "id": "datawrapper-blog",
+      "group": "editorial data",
+      "title": "Datawrapper blog",
+      "url": "https://blog.datawrapper.de/",
+      "why": "The working notes of a chart tool that refuses decoration: every post is a rule about colour, labels or annotation with a before and after."
+    },
+    {
+      "id": "gmunk-tron",
+      "group": "instruments and HUD",
+      "title": "GMUNK, Tron: Legacy boardroom",
+      "url": "https://gmunk.com/TRON-Legacy",
+      "why": "The interfaces Thomas rated love on the Atrium run: dense, layered, luminous, every element on an axis, nothing hidden behind a hover.",
+      "scroll": 6850
+    },
+    {
+      "id": "gmunk-oblivion",
+      "group": "instruments and HUD",
+      "title": "GMUNK, Oblivion GFX",
+      "url": "https://gmunk.com/OBLIVION-GFX",
+      "why": "The lighter sibling: white ground, thin rules, radar and telemetry as a calm instrument rather than a glowing one.",
+      "scroll": 1300
+    },
+    {
+      "id": "hudsandguis",
+      "group": "instruments and HUD",
+      "title": "HUDS+GUIS, the screen-interface archive",
+      "url": "https://www.hudsandguis.com/",
+      "why": "The archive of fictional interfaces from film and games, one frame per entry: the fastest way to see what reads as an instrument and what reads as decoration. Replaces Territory Studio, whose Blade Runner 2049 page is Vimeo-driven and never finishes loading headless.",
+      "wait": 5000
+    },
+    {
+      "id": "teenage-engineering-op1",
+      "group": "instruments and HUD",
+      "title": "Teenage Engineering OP-1 field",
+      "url": "https://teenage.engineering/products/op-1",
+      "why": "A screen the size of a stamp that shows one thing beautifully; hardware and UI designed as one object, no chrome at all."
+    },
+    {
+      "id": "nothing",
+      "group": "instruments and HUD",
+      "title": "Nothing",
+      "url": "https://nothing.tech/",
+      "why": "Dot-matrix type and monochrome as a whole identity; proof that a product UI can have a typeface as its personality."
+    },
+    {
+      "id": "vitsoe-rams",
+      "group": "instruments and HUD",
+      "title": "Vitsœ, Dieter Rams",
+      "url": "https://www.vitsoe.com/gb/about/dieter-rams",
+      "why": "The ten principles and the objects that earned them; the source of 'as little design as possible' that fintech quotes and does not do."
+    },
+    {
+      "id": "garmin-g1000",
+      "group": "instruments and HUD",
+      "title": "Garmin G1000 NXi flight deck",
+      "url": "https://www.garmin.com/en-US/p/6420",
+      "why": "A real cockpit display: attitude, tape gauges and a map on one screen, every number sized by how fast it kills you if misread."
+    },
+    {
+      "id": "spacex-dragon",
+      "group": "instruments and HUD",
+      "title": "SpaceX Dragon",
+      "url": "https://www.spacex.com/vehicles/dragon/",
+      "why": "The crew touchscreens: black, thin white lines, a few large figures; a HUD built by people who could not afford decoration."
+    },
+    {
+      "id": "flightradar24",
+      "group": "instruments and HUD",
+      "title": "Flightradar24",
+      "url": "https://www.flightradar24.com/51.5,-0.1/8",
+      "wait": 8000,
+      "why": "A live instrument on a map: thousands of moving things and it still reads at a glance, because the map is the layout."
+    },
+    {
+      "id": "windy",
+      "group": "instruments and HUD",
+      "title": "Windy",
+      "url": "https://www.windy.com/?51.5,-0.1,6",
+      "wait": 8000,
+      "why": "Data as a landscape you move through; the wind field is the interface, controls are a thin strip at the edge."
+    },
+    {
+      "id": "tron-cpu-vision-01c",
+      "group": "instruments and HUD",
+      "title": "Tron: Ares, GMUNK CPU vision (loved on the Atrium run)",
+      "copy": "Atlas/Projects/Atrium/References/tron-ares_gmunk_cpu-vision.01c.jpg",
+      "why": "Rated love for Atrium; on the board so the same eye can say whether it is also right for money."
+    },
+    {
+      "id": "tron-process-050",
+      "group": "instruments and HUD",
+      "title": "Tron: Ares, GMUNK process (loved on the Atrium run)",
+      "copy": "Atlas/Projects/Atrium/References/tron-ares_gmunk_process.050.jpg",
+      "why": "Rated love for Atrium, has an axis; the densest of the frames he kept."
+    },
+    {
+      "id": "tron-interface-022",
+      "group": "instruments and HUD",
+      "title": "Tron: Ares, GMUNK interface (loved on the Atrium run)",
+      "copy": "Atlas/Projects/Atrium/References/tron-ares_gmunk_interface.022.jpg",
+      "why": "Rated love for Atrium; the one that is most nearly a screen someone could use."
+    },
+    {
+      "id": "tron-lcc0570",
+      "group": "instruments and HUD",
+      "title": "Tron: Ares, GMUNK LCC0570 (loved on the Atrium run)",
+      "copy": "Atlas/Projects/Atrium/References/LCC0570_comp_000000_GMK_v0021-01052.jpg",
+      "why": "Rated love for Atrium, has an axis; included as the control for 'dimensions and orbit'."
+    },
+    {
+      "id": "obsidian",
+      "group": "personal data with a point of view",
+      "title": "Obsidian",
+      "url": "https://obsidian.md/",
+      "why": "The graph view Thomas named as the interface he enjoys: your own data as a structure you can see, not a list."
+    },
+    {
+      "id": "claude-code",
+      "group": "personal data with a point of view",
+      "title": "Claude Code",
+      "url": "https://code.claude.com/docs/en/overview",
+      "why": "The terminal look he named alongside Obsidian: monospace, one accent, everything visible, nothing hidden behind a hover."
+    },
+    {
+      "id": "warp",
+      "group": "personal data with a point of view",
+      "title": "Warp terminal",
+      "url": "https://www.warp.dev/",
+      "why": "A terminal rebuilt as a product: blocks, monospace, dense, and still a terminal. The look 'Claude Code' points at, productised."
+    },
+    {
+      "id": "whoop",
+      "group": "personal data with a point of view",
+      "title": "WHOOP",
+      "url": "https://www.whoop.com/",
+      "why": "Personal data with a strong opinion: strain, recovery and sleep as three figures, black ground, no charts you did not ask for."
+    },
+    {
+      "id": "oura",
+      "group": "personal data with a point of view",
+      "title": "Oura",
+      "url": "https://ouraring.com/",
+      "why": "The calm end of personal data: three scores, soft type, a single ring. Included as the opposite pole to WHOOP."
+    },
+    {
+      "id": "gyroscope",
+      "group": "personal data with a point of view",
+      "title": "Gyroscope",
+      "url": "https://gyrosco.pe/",
+      "why": "A life as a dashboard, designed to be looked at rather than used: the closest existing thing to 'how should net worth feel'."
+    },
+    {
+      "id": "exist",
+      "group": "personal data with a point of view",
+      "title": "Exist",
+      "url": "https://exist.io/",
+      "why": "Correlations across everything you track, drawn as plain charts by two people with a point of view; no gamification."
+    },
+    {
+      "id": "strava",
+      "group": "personal data with a point of view",
+      "title": "Strava",
+      "url": "https://www.strava.com/",
+      "why": "The one personal-data app people open daily for years; the map and the figures are the design, the chrome is orange and gone."
+    },
+    {
+      "id": "raycast",
+      "group": "personal data with a point of view",
+      "title": "Raycast",
+      "url": "https://www.raycast.com/",
+      "why": "Mac product UI at its most disciplined: one input, dense lists, keyboard first, dark by design rather than by default."
+    },
+    {
+      "id": "things",
+      "group": "personal data with a point of view",
+      "title": "Things 3",
+      "url": "https://culturedcode.com/things/",
+      "why": "The counter-example to density: white, wide, one typeface, and it is still one of the most liked Mac apps ever made."
+    },
+    {
+      "id": "monzo",
+      "group": "consumer finance (control)",
+      "title": "Monzo",
+      "url": "https://monzo.com/",
+      "why": "Control: the UK consumer bank that defined the friendly coral look every fintech then copied."
+    },
+    {
+      "id": "revolut",
+      "group": "consumer finance (control)",
+      "title": "Revolut",
+      "url": "https://www.revolut.com/",
+      "why": "Control: black, glossy, motion-heavy; the 'premium fintech' template at full strength."
+    },
+    {
+      "id": "copilot-money",
+      "group": "consumer finance (control)",
+      "title": "Copilot Money",
+      "url": "https://copilot.money/",
+      "why": "Control: the best-reviewed US personal finance app; rounded cards on a gradient, exactly the tells list, done well."
+    },
+    {
+      "id": "monarch",
+      "group": "consumer finance (control)",
+      "title": "Monarch",
+      "url": "https://www.monarchmoney.com/",
+      "why": "Control: the Mint successor; a net worth chart, a budget, a card per account. The template Numeris currently resembles."
+    },
+    {
+      "id": "mercury",
+      "group": "consumer finance (control)",
+      "title": "Mercury",
+      "url": "https://mercury.com/",
+      "why": "Control: business banking with real typographic taste; the one fintech designers cite. Test of whether taste alone escapes the template."
+    },
+    {
+      "id": "wise",
+      "group": "consumer finance (control)",
+      "title": "Wise",
+      "url": "https://wise.com/",
+      "why": "Control: multi-currency, which Numeris is; bright green, big type, and the native-first, converted-second figure done at scale."
+    },
+    {
+      "id": "emma",
+      "group": "consumer finance (control)",
+      "title": "Emma",
+      "url": "https://emma-app.com/",
+      "why": "Control: UK aggregator with a mascot; the far end of 'friendly' and a useful floor."
+    },
+    {
+      "id": "actual-budget",
+      "group": "consumer finance (control)",
+      "title": "Actual Budget (live demo)",
+      "url": "https://demo.actualbudget.org/",
+      "wait": 8000,
+      "why": "Control from the other side: open-source envelope budgeting that looks like a spreadsheet and is loved for it."
+    },
+    {
+      "id": "firefly-iii",
+      "group": "consumer finance (control)",
+      "title": "Firefly III (live demo)",
+      "url": "https://demo.firefly-iii.org/",
+      "wait": 6000,
+      "why": "Control: the self-hosted finance manager; Bootstrap admin-template finance, so the board has the generic case on it by name."
+    }
+  ]
+}

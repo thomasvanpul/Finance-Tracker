@@ -1,0 +1,376 @@
+[
+  {
+    "id": "finviz-map",
+    "file": "01-finviz-map.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://finviz.com/map"
+  },
+  {
+    "id": "tradingview-chart",
+    "file": "02-tradingview-chart.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.tradingview.com/chart/?symbol=NASDAQ%3AAAPL"
+  },
+  {
+    "id": "kraken-pro",
+    "file": "03-kraken-pro.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://pro.kraken.com/app/trade/btc-usd"
+  },
+  {
+    "id": "binance-spot",
+    "file": "04-binance-spot.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.binance.com/en-GB/trade/BTC_USDT?type=spot"
+  },
+  {
+    "id": "hyperliquid",
+    "file": "05-hyperliquid.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://app.hyperliquid.xyz/trade"
+  },
+  {
+    "id": "koyfin",
+    "file": "06-koyfin.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.koyfin.com/"
+  },
+  {
+    "id": "openbb",
+    "file": "07-openbb.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://openbb.co/products/workspace/"
+  },
+  {
+    "id": "ibkr-tws",
+    "file": "08-ibkr-tws.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.interactivebrokers.co.uk/en/trading/tws.php"
+  },
+  {
+    "id": "markets-ft",
+    "file": "09-markets-ft.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://markets.ft.com/data/equities/tearsheet/summary?s=AAPL:NSQ"
+  },
+  {
+    "id": "robinhood-legend",
+    "file": "10-robinhood-legend.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://robinhood.com/us/en/legend/"
+  },
+  {
+    "id": "ghostfolio-demo",
+    "file": "11-ghostfolio-demo.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://ghostfol.io/en/home"
+  },
+  {
+    "id": "linear",
+    "file": "12-linear.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://linear.app/"
+  },
+  {
+    "id": "fred-cpi",
+    "file": "13-fred-cpi.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://fred.stlouisfed.org/series/CPIAUCSL"
+  },
+  {
+    "id": "owid-grapher",
+    "file": "14-owid-grapher.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://ourworldindata.org/grapher/gdp-per-capita-worldbank"
+  },
+  {
+    "id": "ft-visual",
+    "file": "15-ft-visual.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.ft.com/visual-and-data-journalism"
+  },
+  {
+    "id": "pudding",
+    "file": "16-pudding.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://pudding.cool/"
+  },
+  {
+    "id": "reuters-graphics",
+    "file": "17-reuters-graphics.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.reuters.com/graphics/"
+  },
+  {
+    "id": "sherwood",
+    "file": "18-sherwood.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://sherwood.news/"
+  },
+  {
+    "id": "d3-gallery",
+    "file": "19-d3-gallery.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://observablehq.com/@d3/gallery"
+  },
+  {
+    "id": "flowingdata",
+    "file": "20-flowingdata.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://flowingdata.com/"
+  },
+  {
+    "id": "datawrapper-blog",
+    "file": "21-datawrapper-blog.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.datawrapper.de/blog"
+  },
+  {
+    "id": "gmunk-tron",
+    "file": "22-gmunk-tron.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://gmunk.com/TRON-Legacy"
+  },
+  {
+    "id": "gmunk-oblivion",
+    "file": "23-gmunk-oblivion.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://gmunk.com/OBLIVION-GFX"
+  },
+  {
+    "id": "hudsandguis",
+    "file": "24-hudsandguis.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.hudsandguis.com/"
+  },
+  {
+    "id": "teenage-engineering-op1",
+    "file": "25-teenage-engineering-op1.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://teenage.engineering/products/op-1"
+  },
+  {
+    "id": "nothing",
+    "file": "26-nothing.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://nothing.tech/"
+  },
+  {
+    "id": "vitsoe-rams",
+    "file": "27-vitsoe-rams.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.vitsoe.com/gb/about/dieter-rams"
+  },
+  {
+    "id": "garmin-g1000",
+    "file": "28-garmin-g1000.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.garmin.com/en-US/p/6420/"
+  },
+  {
+    "id": "spacex-dragon",
+    "file": "29-spacex-dragon.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.spacex.com/vehicles/dragon"
+  },
+  {
+    "id": "flightradar24",
+    "file": "30-flightradar24.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.flightradar24.com/51.50,-0.10/8"
+  },
+  {
+    "id": "windy",
+    "file": "31-windy.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.windy.com/?51.500,-0.100,6"
+  },
+  {
+    "id": "tron-cpu-vision-01c",
+    "file": "32-tron-cpu-vision-01c.jpg",
+    "ok": true,
+    "source": "vault"
+  },
+  {
+    "id": "tron-process-050",
+    "file": "33-tron-process-050.jpg",
+    "ok": true,
+    "source": "vault"
+  },
+  {
+    "id": "tron-interface-022",
+    "file": "34-tron-interface-022.jpg",
+    "ok": true,
+    "source": "vault"
+  },
+  {
+    "id": "tron-lcc0570",
+    "file": "35-tron-lcc0570.jpg",
+    "ok": true,
+    "source": "vault"
+  },
+  {
+    "id": "obsidian",
+    "file": "36-obsidian.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://obsidian.md/"
+  },
+  {
+    "id": "claude-code",
+    "file": "37-claude-code.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://code.claude.com/docs/en/overview"
+  },
+  {
+    "id": "warp",
+    "file": "38-warp.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.warp.dev/"
+  },
+  {
+    "id": "whoop",
+    "file": "39-whoop.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.whoop.com/gb/en/"
+  },
+  {
+    "id": "oura",
+    "file": "40-oura.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://ouraring.com/"
+  },
+  {
+    "id": "gyroscope",
+    "file": "41-gyroscope.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://gyrosco.pe/"
+  },
+  {
+    "id": "exist",
+    "file": "42-exist.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://exist.io/"
+  },
+  {
+    "id": "strava",
+    "file": "43-strava.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.strava.com/"
+  },
+  {
+    "id": "raycast",
+    "file": "44-raycast.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.raycast.com/"
+  },
+  {
+    "id": "things",
+    "file": "45-things.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://culturedcode.com/things/"
+  },
+  {
+    "id": "monzo",
+    "file": "46-monzo.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://monzo.com/"
+  },
+  {
+    "id": "revolut",
+    "file": "47-revolut.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.revolut.com/"
+  },
+  {
+    "id": "copilot-money",
+    "file": "48-copilot-money.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.copilot.money/"
+  },
+  {
+    "id": "monarch",
+    "file": "49-monarch.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://www.monarch.com/"
+  },
+  {
+    "id": "mercury",
+    "file": "50-mercury.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://mercury.com/"
+  },
+  {
+    "id": "wise",
+    "file": "51-wise.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://wise.com/"
+  },
+  {
+    "id": "emma",
+    "file": "52-emma.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://emma-app.com/"
+  },
+  {
+    "id": "actual-budget",
+    "file": "53-actual-budget.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://demo.actualbudget.org/"
+  },
+  {
+    "id": "firefly-iii",
+    "file": "54-firefly-iii.jpg",
+    "ok": true,
+    "source": "web",
+    "finalUrl": "https://demo.firefly-iii.org/login"
+  }
+]
