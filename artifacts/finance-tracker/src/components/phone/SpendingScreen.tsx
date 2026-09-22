@@ -10,7 +10,7 @@ import {
   getListAccountsQueryKey,
   type Transaction,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useSearch } from "wouter";
 import { Plus } from "lucide-react";
 
@@ -286,7 +286,15 @@ export function SpendingScreen() {
     isLoading,
     isError,
     refetch,
-  } = useListTransactions({ dateFrom });
+  } = useListTransactions(
+    { dateFrom },
+    // Each page the sentinel loads widens dateFrom, which is a new query key.
+    // Without the previous page held while it fetches, `transactions` went
+    // undefined, the skeleton replaced the list, and the remounted scroller
+    // put the reader back at the top on every page — the rows became
+    // "reachable" only in the sense that they were in the DOM.
+    { query: { queryKey: getListTransactionsQueryKey({ dateFrom }), placeholderData: keepPreviousData } },
+  );
 
   const invalidate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: getListTransactionsQueryKey() });
