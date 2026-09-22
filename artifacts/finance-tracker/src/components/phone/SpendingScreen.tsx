@@ -461,9 +461,17 @@ export function SpendingScreen() {
   }, [filtered, visibleTxs, pendingDeleteIds]);
 
   // ── infinite-scroll sentinel ───────────────────────────────────
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  // A callback ref held in state, not a useRef. The first render is the
+  // skeleton, so the sentinel does not exist when this effect first runs —
+  // and nothing in [hasMoreToLoad, monthsShown] changes when the data lands
+  // (hasMoreToLoad is already true while loading). With a plain ref the
+  // effect never ran again, the observer was never attached, and the ledger
+  // sat on "LOADING EARLIER…" showing the current month only: 3 of 46 rows
+  // on the seed account (measured 22 Sep, scripts/src/phone-ledger-scroll.ts).
+  // Mounting the sentinel now re-runs the effect.
+  const [sentinel, setSentinel] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
-    const el = sentinelRef.current;
+    const el = sentinel;
     if (!el || !hasMoreToLoad) return;
     const io = new IntersectionObserver(
       (entries) => {
@@ -478,7 +486,7 @@ export function SpendingScreen() {
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [hasMoreToLoad, monthsShown]);
+  }, [sentinel, hasMoreToLoad, monthsShown]);
 
   // ── render branches ────────────────────────────────────────────
   if (isError) {
@@ -596,7 +604,7 @@ export function SpendingScreen() {
             While filtered it would keep asking for older months to fill a
             list the filter is emptying, so it stands down. */}
         {hasMoreToLoad && !filtered && (
-          <div ref={sentinelRef} style={{ padding: "24px 16px", textAlign: "center" }}>
+          <div ref={setSentinel} style={{ padding: "24px 16px", textAlign: "center" }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
               LOADING EARLIER…
             </span>
