@@ -156,7 +156,7 @@ interface CurrencyExposure {
   unconvertibleCount: number;
 }
 
-function computeCurrencyExposure(
+export function computeCurrencyExposure(
   accounts: readonly Account[],
   positions: readonly Position[],
 ): CurrencyExposure {
@@ -180,6 +180,9 @@ function computeCurrencyExposure(
   for (const p of positions) {
     if (p.baseEquivalent == null) { unconvertibleCount += 1; continue; }
     byCurrencyBase.set(p.currency, (byCurrencyBase.get(p.currency) ?? 0) + p.baseEquivalent);
+    // The rows carry positions, so the total they are divided by must too —
+    // without this, BY CURRENCY summed past 100% (77+27+3 on the seed).
+    totalBase += p.baseEquivalent;
     // Position native = currentValue in position's currency. Never
     // shares × cost — that would show the cost basis, not the exposure.
     const nativeValue = p.currentValue ?? 0;
