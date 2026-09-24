@@ -2684,7 +2684,7 @@ export default function Accounts() {
       {/* Accounts spreadsheet table */}
       <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
         {/* Section title — no controls */}
-        <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">{baseCurrency} base</Text>}>CASH ACCOUNTS</PanelHeader>
+        <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">{baseCurrency} base</Text>}>ACCOUNTS</PanelHeader>
         {/* Filter bar — separate row, wraps fine */}
         <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "5px 10px", borderBottom: "1px solid var(--ft-border)", flexWrap: "wrap" }}>
           <input
@@ -2905,7 +2905,9 @@ export default function Accounts() {
                   fontWeight: 700,
                 }}
               >
-                TOTAL CASH
+                {/* Not "cash": the rows are every account type, property and
+                    pensions included. Same wording as the KPI cell above. */}
+                {filteredAccounts.some(a => isLiabilityType(a.type)) ? "TOTAL, NET OF DEBT" : "TOTAL"}
               </div>
               <div
                 className="ft-hide-mobile"
