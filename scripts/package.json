@@ -6,6 +6,9 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "seed:dev": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/seed-dev-user.ts",
+    "seed:testers:dev": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/seed-testers.ts --branch=dev",
+    "seed:testers:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/seed-testers.ts --branch=prod",
+    "verify:tester-logins": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/verify-tester-logins.ts",
     "screenshot": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/screenshot.ts",
     "companion:observe": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/companion-observe.ts",
     "sw:reload-check": "tsx ./src/sw-reload-check.ts",

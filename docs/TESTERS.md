@@ -1,7 +1,12 @@
 # Numeris — tester guide (10 minutes)
 
-For the first tester round, week of 28 Sep 2026. Link and login arrive in
-the testers' WhatsApp group. Nothing here touches your real bank.
+For the first tester round, week of 28 Sep 2026.
+
+**Link:** https://financetracker.work
+
+Your login is sent to you privately, not in this group — everyone gets
+their own account, so there's nothing to mix up between testers. Nothing
+here touches your real bank.
 
 ## Open it
 
