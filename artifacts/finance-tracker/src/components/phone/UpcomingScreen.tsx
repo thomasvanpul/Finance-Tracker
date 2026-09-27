@@ -17,6 +17,8 @@ import { haptic } from "@/lib/haptics";
 import { useToast } from "@/hooks/use-toast";
 import { useSwipeDelete } from "@/hooks/use-swipe-delete";
 
+import { daysLabel, daysUntil, groupUpcoming, overdueOutgoings } from "@/lib/upcoming-schedule";
+
 import { PhoneEntityRow, deriveTone } from "./PhoneEntityRow";
 import { SectionHeader } from "./SectionHeader";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
@@ -29,7 +31,8 @@ import { PhoneSectionError } from "@/components/mobile/mobile-ui";
 // Those are already aliased to the tab in PhoneShell.
 //
 // Structure (from the task brief):
-//   HERO: committed outgoings over the next 30 days in base currency.
+//   HERO: outgoings due over the next 30 days in base currency, with
+//         anything already overdue stated beside it.
 //   Under hero: expected income over the same window, subordinate.
 //   LIST: grouped by week, nearest first. Each row shows description,
 //         due date, and amount. Foreign-currency rows show native beneath.
@@ -46,48 +49,11 @@ import { PhoneSectionError } from "@/components/mobile/mobile-ui";
 
 // ─── Utilities ──────────────────────────────────────────────────────────────
 
-function ymd(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
-}
-
-// Returns the Monday of the week containing `iso` (YYYY-MM-DD).
-function weekStart(iso: string): string {
-  const d = new Date(iso + "T00:00:00Z");
-  const day = d.getUTCDay(); // 0=Sun
-  const offset = day === 0 ? -6 : 1 - day;
-  return ymd(addDays(d, offset));
-}
-
-// "this week", "next week", "3 Oct – 9 Oct", …
-function weekLabel(mondayIso: string, now: Date): string {
-  const thisMonday = weekStart(ymd(now));
-  const nextMonday = ymd(addDays(new Date(thisMonday + "T00:00:00Z"), 7));
-  if (mondayIso === thisMonday) return "This week";
-  if (mondayIso === nextMonday) return "Next week";
-  const start = new Date(mondayIso + "T00:00:00Z");
-  const end = addDays(start, 6);
-  const fmt = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-  return `${fmt(start)} – ${fmt(end)}`;
-}
-
 // "Mon 8 Sep", "Fri 1 Oct"
 function rowDateLabel(iso: string): string {
   return new Date(iso + "T00:00:00Z").toLocaleDateString("en-GB", {
     weekday: "short", day: "numeric", month: "short", timeZone: "UTC",
   });
-}
-
-// Days from now (positive = future, negative = overdue).
-function daysUntil(iso: string, now: Date): number {
-  const due = new Date(iso + "T00:00:00Z");
-  const today = new Date(ymd(now) + "T00:00:00Z");
-  return Math.round((due.getTime() - today.getTime()) / 86_400_000);
 }
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -99,12 +65,6 @@ const SUBSCRIPTION_CATEGORIES = new Set([
 ]);
 
 const RECURRING_FREQUENCIES = new Set(["weekly", "monthly", "quarterly", "yearly"]);
-
-interface WeekGroup {
-  monday: string;
-  label: string;
-  items: UpcomingItem[];
-}
 
 // ─── Data grouping ──────────────────────────────────────────────────────────
 
@@ -118,31 +78,21 @@ function filterItems(items: readonly UpcomingItem[], lens: Lens): UpcomingItem[]
   return items as UpcomingItem[];
 }
 
-function groupByWeek(items: readonly UpcomingItem[], now: Date): WeekGroup[] {
-  const map = new Map<string, UpcomingItem[]>();
-  for (const item of items) {
-    const mon = weekStart(item.dueDate);
-    const existing = map.get(mon);
-    if (existing) existing.push(item);
-    else map.set(mon, [item]);
-  }
-  const sorted = [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
-  return sorted.map(([monday, groupItems]) => ({
-    monday,
-    label: weekLabel(monday, now),
-    items: groupItems,
-  }));
-}
-
 // ─── Hero ────────────────────────────────────────────────────────────────────
 
 interface HeroProps {
   outgoings: number | null;
   income: number | null;
+  overdue: { count: number; total: number | null };
   loading: boolean;
 }
 
-function UpcomingHero({ outgoings, income, loading }: HeroProps) {
+// The server's committedOutgoings30d sums pending expenses dated today to
+// today+30. It leaves out anything already overdue, so under a label of
+// COMMITTED it read as everything owed while the list below carried
+// £1,230 of late bills. The label now says what the figure counts, and the
+// overdue total the list is showing is stated beside it.
+function UpcomingHero({ outgoings, income, overdue, loading }: HeroProps) {
   return (
     <div
       style={{
@@ -162,7 +112,7 @@ function UpcomingHero({ outgoings, income, loading }: HeroProps) {
           marginBottom: 6,
         }}
       >
-        COMMITTED · NEXT 30 DAYS
+        DUE · NEXT 30 DAYS
       </div>
 
       {loading ? (
@@ -179,6 +129,22 @@ function UpcomingHero({ outgoings, income, loading }: HeroProps) {
           }}
         >
           {outgoings != null ? `−${formatBaseMoney(Math.abs(outgoings))}` : "—"}
+        </div>
+      )}
+
+      {!loading && overdue.count > 0 && overdue.total != null && (
+        <div
+          className="pnum"
+          style={{
+            marginTop: 6,
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--ft-text-xs)",
+            color: "var(--ft-red)",
+            textTransform: "uppercase",
+            letterSpacing: "0.06em",
+          }}
+        >
+          {formatBaseMoney(overdue.total)} overdue
         </div>
       )}
 
@@ -203,12 +169,6 @@ function UpcomingHero({ outgoings, income, loading }: HeroProps) {
 }
 
 // ─── Countdown strip ─────────────────────────────────────────────────────────
-
-function daysLabel(days: number): string {
-  if (days <= 0) return "TODAY";
-  if (days === 1) return "1 DAY";
-  return `${days} DAYS`;
-}
 
 function CountdownStrip({ items, now }: { items: UpcomingItem[]; now: Date }) {
   const top3 = useMemo(
@@ -328,7 +288,7 @@ function UpcomingRow({ item, isLast, baseCurrency, now, onPay, onDelete }: RowPr
 
   // secondary: date + overdue label if past
   const secondary = days < 0
-    ? `${dateLabel} · OVERDUE ${Math.abs(days)}d`
+    ? `${dateLabel} · ${Math.abs(days)}d late`
     : dateLabel;
 
   const nativeStr = formatNative(item.nativeAmount, item.currency);
@@ -456,7 +416,7 @@ export function UpcomingScreen() {
   }, [pendingItems, lens, seriesQuery]);
 
   const weekGroups = useMemo(
-    () => groupByWeek(filteredItems, now),
+    () => groupUpcoming(filteredItems, now),
     [filteredItems, now],
   );
 
@@ -471,6 +431,7 @@ export function UpcomingScreen() {
       <UpcomingHero
         outgoings={summary?.committedOutgoings30d ?? null}
         income={summary?.expectedIncome30d ?? null}
+        overdue={overdueOutgoings(pendingItems, now)}
         loading={heroLoading}
       />
 
@@ -529,7 +490,7 @@ export function UpcomingScreen() {
           />
         ) : (
           weekGroups.map((group) => (
-            <div key={group.monday}>
+            <div key={group.key}>
               <SectionHeader label={group.label} />
               {group.items.map((item, idx) => (
                 <UpcomingRow

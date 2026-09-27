@@ -23,9 +23,9 @@ import { useSwipeDelete } from "@/hooks/use-swipe-delete";
 import { Drill, DrillTarget } from "@/components/drill";
 import { categoryTransactionsHref, entityHref, ledgerHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
 import { isUnfiltered, matchesLedgerFilters, readLedgerFilters, type LedgerRowFilters } from "@/lib/ledger-query";
+import { spendDelta } from "@/lib/spend-delta";
 import {
   samePointSpend,
-  sameDayLabel,
   startOfMonth,
   startOfMonthNBack,
   ymd,
@@ -557,6 +557,16 @@ export function SpendingScreen() {
       or bumping into a hard band. Standard iOS pattern (Notes,
       Mail — content fades under floating chrome). `pointer-events:
       none` on the gradient so row taps pass through.
+
+      #5 (27 Sep audit, P0 15) — #4 still put the FAB in the AMOUNT
+      column. The end pad only clears the last row at scroll-end; at
+      every other scroll position some row's figure sat under the FAB,
+      and the full-width fade dimmed the bottom row's figure to near
+      invisible. A figure is shown in full or not at all, so the FAB
+      moves to the LEFT gutter — over the avatar and the start of the
+      name, which may give (DESIGN.md §8); never over a figure — and the
+      fade narrows to the FAB's own column. Still bottom third
+      (Amendment), still no reserved band (#3).
     */
     <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", position: "relative" }}>
       <div
@@ -645,7 +655,7 @@ export function SpendingScreen() {
         style={{
           position: "absolute",
           left: 0,
-          right: 0,
+          width: FAB_SIZE + 32,
           bottom: 0,
           height: 96,
           pointerEvents: "none",
@@ -699,30 +709,27 @@ function SpendingHero({ hero, now, loading, filter }: { hero: HeroData | null; n
     ? (filter.value != null ? formatBaseMoney(filter.value) : "—")
     : (hero?.mtd != null ? formatBaseMoney(hero.mtd) : (loading ? "…" : "—"));
 
-  // Delta: signed (positive = spending more, red; negative = less, green).
-  // Amendment :88 — sign carried in the string ("+"/"−" plus "more"/"less"),
-  // not by hue alone.
+  // Delta: red when spending more, green when less. The direction is
+  // carried once, by the word ("more"/"less"), so it never rests on hue
+  // alone (Amendment :88) — and never twice: a "−" in front of "less"
+  // read as a double negative (spend-delta.ts).
   let deltaLine: React.ReactNode = null;
   if (filter != null) {
     // The month-on-month delta is about the month, not about the filter.
     deltaLine = null;
   } else if (hero != null && hero.mtd != null && hero.lastMonthSamePoint != null) {
-    const diff = hero.mtd - hero.lastMonthSamePoint;
-    const abs = Math.abs(diff);
-    const dayLabel = sameDayLabel(hero.sameDayLastIso);
-    if (abs < 0.005) {
+    const delta = spendDelta(hero.mtd, hero.lastMonthSamePoint, hero.sameDayLastIso);
+    if (delta.kind === "same") {
       deltaLine = (
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>
-          same as by {dayLabel}
+          same as by {delta.day}
         </span>
       );
     } else {
-      const sign = diff > 0 ? "+" : "−";
-      const word = diff > 0 ? "more" : "less";
-      const colour = diff > 0 ? "var(--ft-red)" : "var(--ft-green)";
+      const colour = delta.kind === "more" ? "var(--ft-red)" : "var(--ft-green)";
       deltaLine = (
         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: colour }}>
-          {sign}{formatBaseMoney(abs)} {word} than by {dayLabel}
+          {formatBaseMoney(delta.abs)} {delta.kind} than by {delta.day}
         </span>
       );
     }
@@ -1151,7 +1158,8 @@ function Fab({ onClick }: { onClick: () => void }) {
       aria-label="Add transaction"
       style={{
         position: "absolute",
-        right: 16,
+        // Left, not right: the right edge is the amount column (#5 above).
+        left: 16,
         // Positioned relative to the SPENDING wrapper, which is the
         // nearest position:relative ancestor. The wrapper already sits
         // ABOVE the tab bar (PhoneShell renders the tab bar as a

@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { entityHref } from "@/lib/entity-href";
+import { comingBills } from "@/lib/upcoming-schedule";
 import { DrillTarget } from "@/components/drill";
 import { useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
@@ -183,10 +184,11 @@ export function MobileHome(_props: MobileHomeProps) {
   }, []);
 
   const activeSubs = subs.filter((s) => s.active);
-  const upcomingBills = activeSubs
-    .filter((s): s is typeof s & { nextDue: string } => !!s.nextDue)
-    .sort((a, b) => a.nextDue.localeCompare(b.nextDue))
-    .slice(0, 2);
+  // Past-dated bills are left out rather than grouped as overdue here:
+  // COMING claims certainty about what is ahead, and a nextDue that has
+  // passed is either paid-and-not-rolled or late. UPCOMING (the MONTH link)
+  // carries overdue items in their own group.
+  const upcomingBills = comingBills(activeSubs, new Date(), 2);
   // Upcoming income within the next 30 days. Bills come from
   // subscriptions (recurring); income comes from upcomingTable
   // (explicit one-off or scheduled). Two rendering rows max — enough
