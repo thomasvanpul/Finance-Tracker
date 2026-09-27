@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
+import { AlertTriangle, Check, Info, X } from "lucide-react";
 import { useGetDashboard, useListTransactions, useListUpcoming, useListDebts, useListGoals, useListBudgets } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { PanelHeader } from "@/components/primitives";
@@ -33,11 +34,11 @@ const LEVEL_LABEL: Record<Alert["level"], string> = {
   success: "OK  ",
 };
 
-const LEVEL_ICON: Record<Alert["level"], string> = {
-  info: "ℹ",
-  warn: "⚠",
-  critical: "✕",
-  success: "✓",
+const LEVEL_ICON: Record<Alert["level"], ReactNode> = {
+  info: <Info size={13} />,
+  warn: <AlertTriangle size={13} />,
+  critical: <X size={13} />,
+  success: <Check size={13} />,
 };
 
 const LEVEL_ORDER: Alert["level"][] = ["critical", "warn", "info", "success"];

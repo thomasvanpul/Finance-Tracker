@@ -26,6 +26,7 @@ import {
   TrendingUp,
   TrendingDown,
   Receipt,
+  AlertTriangle,
 } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
@@ -1932,7 +1933,7 @@ export default function Business() {
               gap: 8,
             }}
           >
-            <span style={{ color: "var(--ft-amber)", fontWeight: 700 }}>⚠</span>
+            <AlertTriangle size={11} style={{ color: "var(--ft-amber)", flexShrink: 0 }} />
             Approximate figures only. Applies 20% standard rate to all business
             category transactions in {vatQuarter} ({VAT_QUARTERS[vatQuarter].label}{" "}
             {yr}). Consult a qualified accountant.

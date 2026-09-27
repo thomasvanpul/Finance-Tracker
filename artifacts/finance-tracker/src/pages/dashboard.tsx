@@ -2884,7 +2884,7 @@ function RecentTransactionsWidgetInline() {
   const TYPE_PREFIX: Record<string, string> = {
     income: "+",
     expense: "−",
-    transfer: "↔",
+    transfer: "⇄",
   };
 
   if (isLoading) {

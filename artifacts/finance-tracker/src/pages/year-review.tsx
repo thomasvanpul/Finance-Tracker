@@ -18,6 +18,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { Play } from "lucide-react";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -1394,7 +1395,7 @@ export default function YearReviewPage() {
                 fontWeight: 700,
               }}
             >
-              ▶ Play Wrapped
+              <Play size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 5 }} />Play Wrapped
             </button>
           )}
           {/* Year selector */}

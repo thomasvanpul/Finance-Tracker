@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Zap } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -717,7 +717,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
                             borderRadius: 2,
                           }}
                         >
-                          ⚡ TRIGGERED
+                          <Zap size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 3 }} />TRIGGERED
                         </span>
                       ) : (
                         <span

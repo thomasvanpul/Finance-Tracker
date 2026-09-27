@@ -271,7 +271,7 @@ function EmptyState({ onAdd, isMobile }: { onAdd: () => void; isMobile: boolean 
           }}>
             {"┌──────────────────┐"}<br />
             {"│  NET WORTH  ─────│"}<br />
-            {"│  £ 0.00    ↗    │"}<br />
+            {"│  £ 0.00    ↑    │"}<br />
             {"│  ▁▂▃▄▅▆▇█  ·    │"}<br />
             {"└──────────────────┘"}
           </div>

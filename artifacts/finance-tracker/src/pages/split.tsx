@@ -32,6 +32,7 @@ import {
   Settings2,
   ChevronLeft,
   Camera,
+  ArrowUpRight,
 } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
 
@@ -1920,7 +1921,7 @@ function SettleUpPanel({ group, expenses, myName, onMarkGroupSettled }: SettleUp
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {pushed ? "↗ In Debts" : pushingIdx === i ? "…" : "↗ Push to Debts"}
+                      {pushed ? <><ArrowUpRight size={10} style={{ display: "inline", verticalAlign: "middle", marginRight: 3 }} />In Debts</> : pushingIdx === i ? "…" : <><ArrowUpRight size={10} style={{ display: "inline", verticalAlign: "middle", marginRight: 3 }} />Push to Debts</>}
                     </button>
                   )}
                   <button
@@ -2916,9 +2917,9 @@ export default function SplitPage() {
       }}
     >
       <pre style={{ fontFamily: "var(--font-mono)", fontSize: 9, lineHeight: 1.5, color: "var(--ft-raised)", textAlign: "center" }}>{
-`  A ──pays──▶ shared
-  B ──pays──▶ ledger
-  C ──pays──▶ settle`
+`  A ──pays──► shared
+  B ──pays──► ledger
+  C ──pays──► settle`
       }</pre>
       <div style={{ fontSize: 11, color: "var(--ft-muted)", textAlign: "center", lineHeight: 1.6 }}>
         Select a group from the left panel<br />

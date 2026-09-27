@@ -208,7 +208,7 @@ function EduCallout({ title, color, bg, border, children }: {
             letterSpacing: "0.1em",
           }}
         >
-          {open ? "▼" : "▶"} {title}
+          {open ? "▼" : "►"} {title}
         </span>
       </button>
       {open && (

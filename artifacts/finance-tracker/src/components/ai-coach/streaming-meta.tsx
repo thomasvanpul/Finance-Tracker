@@ -16,6 +16,7 @@
 
 import { MonoLabel } from "@/components/primitives";
 import { HStack, VStack } from "@/components/primitives";
+import { AlertTriangle } from "lucide-react";
 
 // Prefix glyph — same shape everywhere for scannability. A
 // caret-forward mark reads "in progress" without needing motion.
@@ -60,7 +61,7 @@ export function StreamingChainAttempt({ provider }: { provider: string }) {
 export function StreamingChainFallthrough({ from, to }: { from: string; to: string }) {
   return (
     <HStack gap={6} align="baseline">
-      <span aria-hidden style={{ color: "var(--ft-amber)", fontFamily: "var(--font-mono)", fontSize: 10 }}>⚠</span>
+      <AlertTriangle aria-hidden size={10} style={{ color: "var(--ft-amber)", flexShrink: 0 }} />
       <MonoLabel size={10} color="var(--ft-amber)" letterSpacing="0.1em">{from.toUpperCase()}</MonoLabel>
       <MonoLabel size={10} color="var(--ft-dim)">failed → trying</MonoLabel>
       <MonoLabel size={10} color="var(--ft-accent)" letterSpacing="0.1em">{to.toUpperCase()}</MonoLabel>

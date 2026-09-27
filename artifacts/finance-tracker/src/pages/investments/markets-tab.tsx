@@ -16,7 +16,7 @@ import {
   getGetMarketQuotesQueryKey,
   type StockHistoryPoint,
 } from "@workspace/api-client-react";
-import { Bell, Maximize2, Plus, Search, Star, Trash2, X } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Bell, Maximize2, Plus, Search, Star, Trash2, X } from "lucide-react";
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, AreaChart, Area, ReferenceLine, ReferenceArea, Legend,
@@ -739,7 +739,7 @@ export function MarketsTab() {
             >i</span>
           )}
           {hasDrill(label) && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", marginLeft: "auto", opacity: 0.5, letterSpacing: "0.04em" }}>↗</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", marginLeft: "auto", opacity: 0.5, letterSpacing: "0.04em" }}><ArrowUpRight size={8} /></span>
           )}
         </HStack>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: color ?? "var(--ft-text)" }}>{value}</div>
@@ -1028,7 +1028,7 @@ export function MarketsTab() {
             </div>
           ) : histError ? (
             <div style={{ height: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--ft-red)", fontFamily: "var(--font-sans)", fontSize: 12 }}>
-              <span>⚠ Failed to load chart data</span>
+              <span><AlertTriangle size={12} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />Failed to load chart data</span>
               <button onClick={() => refetchHistory()} style={{ fontSize: 9, padding: "2px 8px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", cursor: "pointer" }}>Retry</button>
             </div>
           ) : chartData.length === 0 ? (
@@ -1042,7 +1042,7 @@ export function MarketsTab() {
               {/* Click-to-expand hint — only on first few views */}
               {!isTickPeriod && chartData.length > 0 && !localStorage.getItem("ft-chart-expand-seen") && (
                 <div style={{ position: "absolute", top: 4, left: "50%", transform: "translateX(-50%)", zIndex: 5, fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-blue)", background: "rgba(88,166,255,0.1)", border: "1px solid rgba(88,166,255,0.25)", padding: "1px 8px", pointerEvents: "none" }}>
-                  click to expand ↗
+                  click to expand <ArrowUpRight size={9} style={{ display: "inline", verticalAlign: "middle" }} />
                 </div>
               )}
               {/* Main price chart — area / line / candlestick */}
@@ -1441,7 +1441,7 @@ export function MarketsTab() {
             <div style={{ padding: 20, fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)", textAlign: "center" }}>Loading news…</div>
           ) : newsError ? (
             <div style={{ padding: 20, fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-amber)", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-              <span>⚠ Could not load news</span>
+              <span><AlertTriangle size={12} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />Could not load news</span>
               <button onClick={() => selectedTicker && fetchNews(selectedTicker)} style={{ fontSize: 9, padding: "2px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", cursor: "pointer" }}>Retry</button>
             </div>
           ) : news.length === 0 ? (

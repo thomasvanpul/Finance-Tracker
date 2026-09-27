@@ -56,7 +56,7 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
-  Activity,
+  Activity, AlertTriangle,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { Skeleton as FtSkeleton } from "@/components/skeleton";
@@ -858,7 +858,7 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
                 {meta.lowBalanceThreshold !== null && (
                   <div style={{ marginTop: 4, fontSize: 9, color: balance < meta.lowBalanceThreshold ? "var(--ft-red)" : "var(--ft-green)" }}>
                     {balance < meta.lowBalanceThreshold
-                      ? `⚠ Below threshold by ${formatNative(meta.lowBalanceThreshold - balance, currency)}`
+                      ? <><AlertTriangle size={9} style={{ display: "inline", verticalAlign: "middle", marginRight: 3 }} />Below threshold by {formatNative(meta.lowBalanceThreshold - balance, currency)}</>
                       : `✓ ${formatNative(balance - meta.lowBalanceThreshold, currency)} above threshold`}
                   </div>
                 )}
@@ -1230,7 +1230,7 @@ function HealthBadges({ accountName: _accountName, balance, stats, lowBalanceThr
           {stats.daysSinceLast === 0
             ? "txn today"
             : `${stats.daysSinceLast}d ago`}
-          {stats.daysSinceLast > 30 && " ⚠"}
+          {stats.daysSinceLast > 30 && <AlertTriangle size={9} style={{ display: "inline", verticalAlign: "middle", marginLeft: 4 }} />}
         </span>
       )}
 

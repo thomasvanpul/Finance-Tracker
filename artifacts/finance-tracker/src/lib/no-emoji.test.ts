@@ -65,7 +65,16 @@ const files = walk(SRC_DIR).filter((f) =>
 // Emoji ranges — see the docstring above. Combined into one regex
 // via character class alternation. Node's u flag handles the
 // supplementary-plane codepoints.
-const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]|\u{FE0F}/gu;
+//
+// The second alternative widens the lock to every codepoint with the
+// Unicode `Emoji` property, which includes the BMP "text-default"
+// emoji the ranges above miss: ⚠ ⚙ ▶ ⚡ ♥ ↗ ↔ ℹ ™ and friends. Browsers
+// are allowed to pick either presentation for these, and iOS routinely
+// picks the colour one, so a warning triangle in a mono label renders
+// as a yellow pictograph. ASCII 0-9 # * carry the property too (keycap
+// bases) and are excluded. Use a lucide icon coloured by a --ft-* token,
+// or a non-emoji glyph (► ▸ ⇄ ↑ ♡), instead.
+const EMOJI_RE = /[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]|\u{FE0F}|(?![0-9#*])\p{Emoji}/gu;
 
 interface Hit {
   file: string;

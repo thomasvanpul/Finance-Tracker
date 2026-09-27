@@ -8,7 +8,7 @@ import {
 import { formatBaseMoney } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
-import { TrendingUp } from "lucide-react";
+import { Settings, TrendingUp } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -659,7 +659,7 @@ export default function CashflowPage() {
               color: showSettings ? "var(--ft-accent)" : "var(--ft-muted)",
             }}
           >
-            ⚙ Multipliers
+            <Settings size={10} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />Multipliers
           </button>
         </div>}
       />

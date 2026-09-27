@@ -7,7 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { PageHeader } from "@/components/page-header";
-import { FileText, RefreshCw, Loader2, AlertTriangle, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
+import { FileText, RefreshCw, Loader2, AlertTriangle, ArrowUpRight, TrendingUp, TrendingDown, Shield, Zap } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
@@ -320,7 +320,7 @@ function RecommendationRow({
       <div style={{ padding: "11px 14px", flex: 1 }}>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 4, lineHeight: 1.5 }}>{rec.action}</div>
         <Text as="div" mono size={10} color="var(--ft-dim)" lineHeight={1.5}>
-          <span style={{ color: "var(--ft-accent)", marginRight: 5 }}>↗</span>{rec.impact}
+          <ArrowUpRight size={10} style={{ display: "inline", verticalAlign: "middle", color: "var(--ft-accent)", marginRight: 5 }} />{rec.impact}
         </Text>
       </div>
       <HStack align="center" padding="0 12px" shrink={false}>

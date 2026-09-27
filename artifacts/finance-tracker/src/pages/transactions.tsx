@@ -2570,7 +2570,7 @@ export default function Transactions() {
                       }}
                     >
                       <div style={{ width: 36, minWidth: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRight: "1px solid var(--ft-border)", alignSelf: "stretch", color: "var(--ft-accent)", fontSize: 9, fontFamily: "var(--font-mono)" }}>
-                        {group.expanded ? "▼" : "▶"}
+                        {group.expanded ? "▼" : "►"}
                       </div>
                       <div style={{ width: 90, minWidth: 90, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-dim)", fontSize: 10, fontFamily: "var(--font-mono)" }} />
                       <div style={{ flex: 1, padding: "var(--ft-cell-py) 12px", borderRight: "1px solid var(--ft-border)", color: "var(--ft-text)", fontSize: 11, fontWeight: 600, fontFamily: "var(--font-sans)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

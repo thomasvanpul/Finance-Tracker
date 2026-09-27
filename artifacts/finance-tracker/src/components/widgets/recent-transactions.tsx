@@ -14,7 +14,7 @@ const TYPE_COLOR: Record<string, string> = {
 const TYPE_PREFIX: Record<string, string> = {
   income: "+",
   expense: "−",
-  transfer: "↔",
+  transfer: "⇄",
 };
 const CATEGORY_CHIPS: Record<string, string> = {
   food: "#E6B450",

@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, Lock } from "lucide-react";
+import { AlertTriangle, Check, Lock, Settings2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
 import { useWidgets, WIDGET_REGISTRY } from "@/contexts/widgets-context";
@@ -1225,7 +1225,7 @@ function DashboardPanel() {
           </div>
         ))}
         <div style={{ padding: "8px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", borderTop: "1px solid var(--ft-border)" }}>
-          Changes apply immediately. Use the sidebar ⚙ icon to reorder and pin items.
+          Changes apply immediately. Use the sidebar <Settings2 size={9} style={{ display: "inline", verticalAlign: "middle" }} /> icon to reorder and pin items.
         </div>
       </div>
     </VStack>
@@ -2147,7 +2147,7 @@ function CryptoWalletsPanel() {
             </VStack>
             {formError && (
               <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-red)", padding: "4px 0" }}>
-                ⚠ {formError}
+                <AlertTriangle size={11} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />{formError}
               </div>
             )}
           </div>
@@ -2189,7 +2189,7 @@ function CryptoWalletsPanel() {
                   </div>
                   {wallet.error ? (
                     <Text as="div" size={10} color="var(--ft-red)" mt={2}>
-                      ⚠ {wallet.error}
+                      <AlertTriangle size={10} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />{wallet.error}
                     </Text>
                   ) : wallet.balance != null ? (
                     <HStack gap={10} align="baseline" marginTop={3}>

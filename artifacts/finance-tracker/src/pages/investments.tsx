@@ -940,7 +940,7 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
           {[
             `${holdingCount} holding${holdingCount !== 1 ? "s" : ""}`,
             topTicker ? `Top position: ${topTicker} (${topPct.toFixed(1)}%)` : null,
-            isConcentrated ? "⚠ Concentrated position" : "Diversified",
+            isConcentrated ? "Concentrated position" : "Diversified",
             annualYield != null ? `Est. annual yield: ${annualYield}%` : null,
           ]
             .filter(Boolean)

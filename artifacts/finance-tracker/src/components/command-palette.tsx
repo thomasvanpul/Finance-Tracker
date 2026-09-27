@@ -78,7 +78,7 @@ function buildCommands(
     { id: "go-analytics",     section: "navigation", icon: "◈", title: "Go to Analytics",     shortcut: "G N", action: nav("/analytics") },
     { id: "go-profile",       section: "navigation", icon: "○", title: "Go to Profile",       shortcut: "G P", action: nav("/profile") },
     { id: "go-budget",        section: "navigation", icon: "▦", title: "Go to Budget",        shortcut: "G B", action: nav("/budget") },
-    { id: "go-health-score",  section: "navigation", icon: "♥", title: "Go to Health Score",  shortcut: "G H", action: nav("/health-score") },
+    { id: "go-health-score",  section: "navigation", icon: "♡", title: "Go to Health Score",  shortcut: "G H", action: nav("/health-score") },
     { id: "go-net-worth",     section: "navigation", icon: "◇", title: "Go to Net Worth",     shortcut: "G W", action: nav("/net-worth") },
     { id: "go-whatif",        section: "navigation", icon: "?", title: "Go to Calculators",   shortcut: "G F", action: nav("/whatif") },
     { id: "go-subscriptions", section: "navigation", icon: "↻", title: "Go to Subscriptions", shortcut: "G C", action: nav("/subscriptions") },

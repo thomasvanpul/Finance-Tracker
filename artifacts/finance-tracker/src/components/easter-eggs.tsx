@@ -315,7 +315,7 @@ function VoidNullPointerOverlay({ onDone }: { onDone: () => void }) {
 
 const BOOT_LINES = [
   "BIOS v2.0.6 — Numeris Systems Inc.",
-  "CPU: FinanceCore™ @ 4.20 GHz  [OK]",
+  "CPU: FinanceCore @ 4.20 GHz  [OK]",
   "RAM: 64MB — 65536K OK",
   "Scanning market data feeds...",
   "Loading NUMERIS.SYS.......",
