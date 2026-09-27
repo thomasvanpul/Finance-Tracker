@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { useListTransactions, useGetDashboard } from "@workspace/api-client-react";
 import { apiFetch } from "@/lib/api-fetch";
+import { incomeExpenseTotals, savingsRatePct, withBaseMagnitudes } from "@/lib/tx-magnitude";
 import { formatBaseMoney, formatDate } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
@@ -754,7 +755,7 @@ function WaterfallChart({ income, expenses, categories }: {
             tickLine={false}
           />
           <YAxis
-            tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
+            tickFormatter={formatAxisPounds}
             tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }}
             axisLine={false}
             tickLine={false}
@@ -1041,38 +1042,37 @@ export default function Reports() {
     };
   }, [dateFrom, dateTo]);
 
-  const { data: transactions, isLoading } = useListTransactions(apiParams);
-  const { data: priorTxData } = useListTransactions(priorApiParams ?? {});
+  const { data: transactionsSigned, isLoading } = useListTransactions(apiParams);
+  const { data: priorTxDataSigned } = useListTransactions(priorApiParams ?? {});
+  // The API signs expense baseEquivalent negative. Every figure below reads
+  // `type` as the direction, so the rows carry magnitudes from here on.
+  const transactions = useMemo(
+    () => (transactionsSigned ? withBaseMagnitudes(transactionsSigned) : undefined),
+    [transactionsSigned],
+  );
+  const priorTxData = useMemo(
+    () => (priorTxDataSigned ? withBaseMagnitudes(priorTxDataSigned) : undefined),
+    [priorTxDataSigned],
+  );
   const { data: dashboard } = useGetDashboard();
 
   const { income, expenses, txList } = useMemo(() => {
     const list = transactions ?? [];
-    let inc = 0;
-    let exp = 0;
-    for (const tx of list) {
-      // Skip FX-unavailable rows; the reports view is a summary, not a
-      // ledger — dropping the row is truer than summing 0.
-      if (tx.baseEquivalent == null) continue;
-      if (tx.type === "income") inc += tx.baseEquivalent;
-      else if (tx.type === "expense") exp += tx.baseEquivalent;
-    }
+    // FX-unavailable rows are skipped inside incomeExpenseTotals; the
+    // reports view is a summary, not a ledger — dropping the row is truer
+    // than summing 0.
+    const { income: inc, expenses: exp } = incomeExpenseTotals(list);
     return { income: inc, expenses: exp, txList: list };
   }, [transactions]);
 
   const { priorIncome, priorExpenses } = useMemo(() => {
     if (!priorApiParams) return { priorIncome: null, priorExpenses: null };
-    const list = priorTxData ?? [];
-    let inc = 0, exp = 0;
-    for (const tx of list) {
-      if (tx.baseEquivalent == null) continue;
-      if (tx.type === "income") inc += tx.baseEquivalent;
-      else if (tx.type === "expense") exp += tx.baseEquivalent;
-    }
+    const { income: inc, expenses: exp } = incomeExpenseTotals(priorTxData ?? []);
     return { priorIncome: inc, priorExpenses: exp };
   }, [priorTxData, priorApiParams]);
 
   const netSavings = income - expenses;
-  const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : null;
+  const savingsRate = savingsRatePct({ income, expenses });
   const priorSavingsRate = priorIncome !== null && priorIncome > 0
     ? ((priorIncome - (priorExpenses ?? 0)) / priorIncome) * 100
     : null;
@@ -1440,7 +1440,7 @@ export default function Reports() {
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} width={36} />
+                    <YAxis tickFormatter={formatAxisPounds} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} width={36} />
                     <Tooltip content={<TrendTooltip />} />
                     <Area type="monotone" dataKey="income" name="Income" stroke="var(--ft-green)" strokeWidth={1.5} fill="url(#incomeGrad)" />
                     <Area type="monotone" dataKey="expenses" name="Expenses" stroke="var(--ft-red)" strokeWidth={1.5} fill="url(#expenseGrad)" />
@@ -1504,7 +1504,7 @@ export default function Reports() {
                 <ResponsiveContainer width="100%" height={220}>
                   <ComposedChart data={trendChartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                     <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} width={36} />
+                    <YAxis tickFormatter={formatAxisPounds} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} width={36} />
                     <Tooltip content={<TrendTooltip />} />
                     <Area type="monotone" dataKey="net" name="Net Savings" stroke="var(--ft-cyan)" strokeWidth={2} fill="var(--ft-cyan)" fillOpacity={0.08} />
                   </ComposedChart>
@@ -1536,7 +1536,7 @@ export default function Reports() {
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="month" tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} width={36} />
+                    <YAxis tickFormatter={formatAxisPounds} tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)" }} axisLine={false} tickLine={false} width={36} />
                     <Tooltip content={<TrendTooltip />} />
                     <Area type="monotone" dataKey="income" name="Inflow" stroke="var(--ft-green)" strokeWidth={1.5} fill="url(#incomeGrad)" />
                     <Area type="monotone" dataKey="expenses" name="Outflow" stroke="var(--ft-red)" strokeWidth={1.5} fill="url(#expenseGrad)" />
@@ -1638,4 +1638,15 @@ export default function Reports() {
       </div>
     </div>
   );
+}
+
+// Y-axis tick label. Below £1k a "£0k" tick says nothing (and a small
+// negative rendered as "£-0k"), so whole pounds are shown there; above
+// it, thousands. The minus is the typographic one, before the £.
+function formatAxisPounds(v: number): string {
+  const sign = v < 0 ? "−" : "";
+  const abs = Math.abs(v);
+  if (abs < 1000) return `${sign}£${Math.round(abs)}`;
+  const k = abs / 1000;
+  return `${sign}£${k >= 10 ? k.toFixed(0) : k.toFixed(1).replace(/\.0$/, "")}k`;
 }

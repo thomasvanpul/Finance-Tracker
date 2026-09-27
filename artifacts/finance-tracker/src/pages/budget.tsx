@@ -30,6 +30,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
+import { withBaseMagnitudes } from "@/lib/tx-magnitude";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -1155,16 +1156,27 @@ export default function Budget() {
 
   // ── Hooks ───────────────────────────────────────────────────────────────────
 
-  const { data: expenseTxs } = useListTransactions({
+  const { data: expenseTxsSigned } = useListTransactions({
     type: "expense",
     dateFrom,
   });
 
-  const { data: lastMonthTxs } = useListTransactions({
+  const { data: lastMonthTxsSigned } = useListTransactions({
     type: "expense",
     dateFrom: lastMonthFrom,
     dateTo: lastMonthTo,
   });
+
+  // The API signs expense baseEquivalent negative. Everything below sums
+  // spend and compares it with a limit, so it needs the magnitude.
+  const expenseTxs = useMemo(
+    () => (expenseTxsSigned ? withBaseMagnitudes(expenseTxsSigned) : undefined),
+    [expenseTxsSigned],
+  );
+  const lastMonthTxs = useMemo(
+    () => (lastMonthTxsSigned ? withBaseMagnitudes(lastMonthTxsSigned) : undefined),
+    [lastMonthTxsSigned],
+  );
 
   const { data: allTxs } = useListTransactions({});
 

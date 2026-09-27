@@ -6,6 +6,7 @@ import { Skeleton as FtSkeleton } from "@/components/skeleton";
 import { ErrorState } from "@/components/error-state";
 import { MonoTooltip, monoTooltipStyle, type TooltipEntry } from "@/components/mono-tooltip";
 import { formatBaseMoney } from "@/lib/utils";
+import { withBaseMagnitudes } from "@/lib/tx-magnitude";
 import { loadPersonaIds, PERSONAS, PERSONA_COLORS } from "@/lib/persona";
 import {
   AreaChart, Area, BarChart, Bar, ComposedChart, Line,
@@ -2179,7 +2180,7 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
   const current = new Date().toISOString().slice(0, 7);
   const prevYYMM = monthsAgoStr(1);
 
-  const incomeThisMonth = allTxs.filter(t => t.baseEquivalent > 0 && t.date.startsWith(current)).reduce((s, t) => s + t.baseEquivalent, 0);
+  const incomeThisMonth = allTxs.filter(t => t.type === "income" && t.date.startsWith(current)).reduce((s, t) => s + t.baseEquivalent, 0);
   const income = incomeThisMonth;
 
   const thisMonthExp = expenses.filter(t => t.date.startsWith(current));
@@ -3401,7 +3402,9 @@ export default function Analytics() {
     saveAnnotations(next);
   }, []);
 
-  const allTxs = (txs ?? []) as Tx[];
+  // The API signs expense baseEquivalent negative; every figure on this
+  // page reads `type` as the direction and sums magnitudes.
+  const allTxs = useMemo(() => withBaseMagnitudes((txs ?? []) as Tx[]), [txs]);
   const expenses = useMemo(() => allTxs.filter(t => t.type === "expense"), [allTxs]);
   const budgetTotal = useMemo(
     () => (rawBudgets as Array<{ monthlyLimit?: number }>).reduce((s, b) => s + (b.monthlyLimit ?? 0), 0),

@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { useListTransactions, useGetDashboard } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
+import { withBaseMagnitudes } from "@/lib/tx-magnitude";
 import { MonoTooltip, type TooltipEntry } from "@/components/mono-tooltip";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import {
@@ -1022,7 +1023,7 @@ function ShareableCard({ income, expenses, txCount, year }: {
 function exportYearCSV(txs: Tx[], year: number) {
   const header = ["Date", "Description", "Type", "Category", "GBP"];
   const escape = (v: string | number) => { const s = String(v ?? ""); return s.includes(",") || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s; };
-  const lines = [header.join(","), ...txs.map((t) => [t.date, t.description, t.type, t.category ?? "", t.baseEquivalent.toFixed(2)].map(escape).join(","))];
+  const lines = [header.join(","), ...txs.map((t) => [t.date, t.description, t.type, t.category ?? "", (t.type === "expense" ? -t.baseEquivalent : t.baseEquivalent).toFixed(2)].map(escape).join(","))];
   const blob = new Blob([lines.join("\n")], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -1039,7 +1040,9 @@ export default function YearReviewPage() {
   const { data: rawTxs, isLoading } = useListTransactions({});
   const { data: dashboard } = useGetDashboard();
 
-  const allTxs = (rawTxs ?? []) as Tx[];
+  // The API signs expense baseEquivalent negative; every figure on this
+  // page reads `type` as the direction and sums magnitudes.
+  const allTxs = useMemo(() => withBaseMagnitudes((rawTxs ?? []) as Tx[]), [rawTxs]);
   void dashboard;
 
   const yearTxs = useMemo(

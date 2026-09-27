@@ -10,6 +10,7 @@ import {
 import { getListBudgetsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useListTransactions } from "@workspace/api-client-react";
+import { withBaseMagnitudes } from "@/lib/tx-magnitude";
 import { formatBaseMoney } from "@/lib/utils";
 import { WidgetShell } from "./widget-shell";
 import type { Budget } from "@workspace/api-client-react";
@@ -353,7 +354,8 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
   const dateFrom = `${year}-${String(month + 1).padStart(2, "0")}-01`;
   const { data: txs } = useListTransactions({ type: "expense", dateFrom });
 
-  const spent = (txs ?? []).reduce<Record<string, number>>((acc, tx) => {
+  // baseEquivalent arrives negative for expenses; sum the magnitude.
+  const spent = withBaseMagnitudes(txs ?? []).reduce<Record<string, number>>((acc, tx) => {
     const key = tx.category?.toLowerCase();
     acc[key] = (acc[key] ?? 0) + (tx.baseEquivalent ?? 0);
     return acc;
