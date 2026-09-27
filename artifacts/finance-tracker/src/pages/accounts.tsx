@@ -2324,7 +2324,13 @@ export default function Accounts() {
 
         // Portfolio from dash data
         const portfolioVal = (dashData as { portfolio?: { totalValueBase?: number } } | undefined)?.portfolio?.totalValueBase ?? 0;
-        const netWorth = totalCash + portfolioVal;
+        // Net worth is the API's figure, never re-derived here. This cell once
+        // summed accounts + portfolio and left out the IOUs (owing.netBase), so
+        // /accounts read £215,206.12 while the dashboard, sidebar and phone
+        // read £215,304.16 — two net worths £98.04 apart. The identity is
+        // stated in routes/dashboard.ts computeNetWorth.
+        const netWorth: number | null = dashData?.netWorth ?? null;
+        const owingNet = dashData?.owing?.netBase ?? 0;
 
         // Most recently active account
         const mostRecentAccount = (() => {
@@ -2391,7 +2397,9 @@ export default function Accounts() {
               <KpiCell
                 label="Net Worth"
                 href="/net-worth"
-                value={<span className="pnum" style={{ color: netWorth >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>{formatBaseMoney(netWorth)}</span>}
+                value={netWorth == null
+                  ? <span style={{ color: "var(--ft-dim)" }}>—</span>
+                  : <span className="pnum" style={{ color: netWorth >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>{formatBaseMoney(netWorth)}</span>}
                 // Net worth inherits Total Cash's `?? 0` shortfall
                 // when any account has a null baseEquivalent — the
                 // Total Cash cell already announces the count, but
@@ -2401,7 +2409,9 @@ export default function Accounts() {
                 sub={
                   unconvertibleCount > 0
                     ? <span style={{ color: "var(--ft-amber)" }}>{unconvertibleCount} account{unconvertibleCount !== 1 ? "s" : ""} without FX — not in total</span>
-                    : "accounts (net of debt) + portfolio"
+                    : owingNet !== 0
+                      ? "accounts (net of debt) + portfolio + IOUs"
+                      : "accounts (net of debt) + portfolio"
                 }
                 accent="var(--ft-amber)"
                 icon={<Activity className="w-3.5 h-3.5" />}

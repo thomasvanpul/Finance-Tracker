@@ -71,7 +71,8 @@ import { topRegionVariant } from "@/lib/proto-design";
 import { ProtoDashboard } from "@/components/proto";
 import { ProtoTopRegion } from "@/components/proto/top-region";
 import { DashboardTopRegion, Insights, RULE } from "@/components/dashboard/top-region";
-import { netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
+import { signedAccountAmount } from "@/lib/account-sign";
+import { cashAccountsTotal } from "@/lib/liquidity";
 import { samePointSpend, sameDayLabel } from "@/lib/same-point-spend";
 import { closeTagText, sinceCloseLabel } from "@/components/FixingMark";
 import { useMarketDataEnabled } from "@/lib/market-visibility";
@@ -207,8 +208,12 @@ function EmergencyFundWidget() {
   // summing raw fed a season-ticket loan to every widget downstream as though
   // it were savings. Unconvertible accounts still fall out; the dashboard's
   // own netWorth remains the authoritative total.
+  //
+  // "Liquid" then meant every account net of debt, so a Kuala Lumpur flat, a
+  // SIPP and an ISA were counted as an emergency fund. An emergency fund is
+  // cash: `cash`-type accounts only (lib/liquidity.ts).
   const liquidSavings = useMemo(() => {
-    return netAccountsTotal(accounts ?? []);
+    return cashAccountsTotal(accounts ?? []).total;
   }, [accounts]);
 
   const avgMonthlyExpenses = useMemo(() => {
@@ -269,7 +274,7 @@ function EmergencyFundWidget() {
 
       {/* Meta */}
       <Text as="div" mono size={9} color="var(--ft-dim)">
-        <span className="pnum">{formatBaseMoney(liquidSavings)}</span> liquid
+        <span className="pnum">{formatBaseMoney(liquidSavings)}</span> cash
         {avgMonthlyExpenses > 0 && ` · ${formatBaseMoney(avgMonthlyExpenses)}/mo avg`}
       </Text>
 
@@ -516,8 +521,10 @@ function CashFlowPreviewPanel() {
   const { data: accounts } = useListAccounts({});
   const { data: upcoming } = useListUpcoming();
 
+  // A cash-flow projection starts from cash, not from every account: this
+  // once read "from £214,17…" with a flat, a pension and an ISA in it.
   const startingBalance = useMemo(
-    () => netAccountsTotal(accounts ?? []),
+    () => cashAccountsTotal(accounts ?? []).total,
     [accounts]
   );
 
@@ -565,7 +572,7 @@ function CashFlowPreviewPanel() {
             instead. A caption on two lines is a smaller cost than a starting
             balance that reads as a different amount. */}
         <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", paddingBottom: 2, minWidth: 0, flex: 1 }}>
-          from <span className="pnum">{formatBaseMoney(startingBalance)}</span>
+          from <span className="pnum">{formatBaseMoney(startingBalance)}</span> cash
         </div>
       </HStack>
 
@@ -3561,7 +3568,12 @@ export default function Dashboard() {
     // excluded from the total entirely.
     const portfolioAtCost    = dashData.portfolio?.positionsAtCost ?? 0;
     const dayChangePercent = dashData.portfolio?.dayChangePercent ?? null;
-    const cash = dashData.totalCash ?? 0;
+    // NOT dashData.totalCash: that is every asset account (a net-worth
+    // input) and read "CASH £210,597.55" on the seed account with a flat, a
+    // SIPP and an ISA in it. The API's accountBreakdown carries each row's
+    // type, so the CASH cell sums the `cash` rows only (lib/liquidity.ts).
+    const cashTotal = cashAccountsTotal(dashData.accountBreakdown ?? []);
+    const cash = cashTotal.total;
     const owedToMe = dashData.owing?.totalOwedToMe ?? 0;
     const iOwe = dashData.owing?.totalIOwe ?? 0;
 
@@ -3756,8 +3768,8 @@ export default function Dashboard() {
         : dayChangeBase >= 0 ? "var(--ft-green)" : "var(--ft-red)",
     };
     const CASH: KpiCellData = {
-      label: "CASH",
-      value: cash !== 0 ? formatBaseMoney(cash) : "—",
+      label: cashTotal.unconvertible > 0 ? "CASH · PARTIAL" : "CASH",
+      value: cashTotal.cashAccounts > cashTotal.unconvertible ? formatBaseMoney(cash) : "—",
       valueColor: cash > 0 ? "var(--ft-text)" : "var(--ft-dim)",
     };
     const OWED_TO_ME: KpiCellData = {

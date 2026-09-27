@@ -12,7 +12,7 @@ import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/compon
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
 import { oneShotInsight } from "@/lib/ai-chat-client";
-import { netAccountsTotal } from "@/lib/account-sign";
+import { cashAccountsTotal } from "@/lib/liquidity";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -439,12 +439,14 @@ export default function Briefing() {
     ? Math.round((Date.now() - new Date(briefing.generatedAt).getTime()) / 60000)
     : null;
 
-  // A liability stores a positive balance and the type carries the sign, so
-  // summing raw offered a season-ticket loan as liquidity. netAccountsTotal
-  // subtracts it; an overdraft is already negative and is left alone.
-  const totalLiquid = useMemo(() =>
-    netAccountsTotal((accountsRaw ?? []) as Array<{ type: string; baseEquivalent: number | null }>),
+  // "Liquid Assets" used to be netAccountsTotal over EVERY account, so it
+  // offered a Kuala Lumpur flat, a SIPP and an ISA as liquid (£203,797.55
+  // on the seed account against ~£11k of cash). Only `cash`-type accounts
+  // are cash — lib/liquidity.ts, the same filter the API's netLiquidity uses.
+  const cash = useMemo(() =>
+    cashAccountsTotal((accountsRaw ?? []) as Array<{ type: string; baseEquivalent: number | null }>),
     [accountsRaw]);
+  const hasCashFigure = accountsRaw != null && cash.cashAccounts > 0 && cash.unconvertible < cash.cashAccounts;
 
   const overBudgetCount = useMemo(() => {
     if (!budgetsRaw) return 0;
@@ -582,7 +584,7 @@ export default function Briefing() {
                 // not keep. Seen on this screen — September 2026 has no
                 // income and the figure was underlined anyway.
                 { label: "Net Worth", value: dashboard?.netWorth != null ? formatBaseMoney(dashboard.netWorth) : "—", color: "var(--ft-text)", href: "/net-worth" },
-                { label: "Liquid Assets", value: formatBaseMoney(totalLiquid), color: totalLiquid > 0 ? "var(--ft-blue)" : "var(--ft-muted)", href: "/accounts" },
+                { label: cash.unconvertible > 0 ? "Cash · partial" : "Cash", value: hasCashFigure ? formatBaseMoney(cash.total) : "—", color: hasCashFigure && cash.total > 0 ? "var(--ft-blue)" : "var(--ft-muted)", href: hasCashFigure ? "/accounts" : undefined },
                 { label: "Monthly Income", value: dashboard?.thisMonth?.income != null ? formatBaseMoney(dashboard.thisMonth.income) : "—", color: (dashboard?.thisMonth?.income ?? 0) > 0 ? "var(--ft-green)" : "var(--ft-muted)", href: (dashboard?.thisMonth?.income ?? 0) > 0 ? ledgerHref({ type: "income", from: monthRange.from, to: monthRange.to }) : undefined },
               ].map(({ label, value, color, href }, i, arr) => (
                 <div key={label} style={{ padding: "13px 14px", borderBottom: "1px solid var(--ft-border)" }}>
