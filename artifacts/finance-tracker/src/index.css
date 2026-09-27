@@ -409,6 +409,36 @@ body.density-comfortable {
   justify-content: center;
 }
 
+/* ── Tester report: figures become solid bars for the length of one
+   screenshot (components/tester-report.tsx). A bar, not a blur: a blurred
+   figure can still be read at the size a chat shows it. ── */
+.ft-report-mask .pnum {
+  background: var(--ft-border2) !important;
+  filter: none !important;
+}
+.ft-report-mask .pnum,
+.ft-report-mask .pnum * {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: none !important;
+}
+
+.ft-report-button-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 100%;
+  background: var(--ft-accent);
+  transform-origin: left;
+  animation: ft-report-capture 900ms var(--ft-ease) infinite;
+}
+@keyframes ft-report-capture {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+.ft-report-send:not(:disabled):active { transform: scale(0.98); }
+
 /* ── Privacy mode: blur sensitive numbers ── */
 body.privacy-mode .pnum {
   filter: blur(5px);

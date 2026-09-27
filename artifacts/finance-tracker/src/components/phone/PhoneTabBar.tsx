@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { useReportHold } from "@/components/tester-report";
 import { Link, useLocation } from "wouter";
 import { useActivePersona } from "@/lib/persona-hook";
 import {
@@ -125,11 +126,19 @@ export function PhoneTabBar() {
     resolveSlotId(savedSlotId ?? slotIdForPersona(persona), marketsVisible),
   ));
   const tabs = [...FIXED_BEFORE, slot, ...FIXED_AFTER];
+  // Holding the tab bar on any screen reports that screen to the testers'
+  // group (components/tester-report.tsx). The line along the top edge fills
+  // for the length of the hold, so the gesture shows it is doing something.
+  const { handlers: holdHandlers, holding, holdMs } = useReportHold();
 
   return (
     <nav
       aria-label="Primary"
+      {...holdHandlers}
       style={{
+        position: "relative",
+        WebkitTouchCallout: "none",
+        userSelect: "none",
         flexShrink: 0,
         display: "grid",
         gridTemplateColumns: "repeat(4, 1fr)",
@@ -138,6 +147,21 @@ export function PhoneTabBar() {
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
+      <span
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: -1,
+          left: 0,
+          height: 1,
+          width: "100%",
+          background: "var(--ft-accent)",
+          transformOrigin: "left",
+          transform: holding ? "scaleX(1)" : "scaleX(0)",
+          transition: holding ? `transform ${holdMs}ms linear` : "transform 120ms var(--ft-ease)",
+          pointerEvents: "none",
+        }}
+      />
       {tabs.map((tab, i) => {
         const active = isActive(tab, loc);
         return (

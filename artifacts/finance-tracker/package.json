@@ -106,6 +106,7 @@
     "better-auth": "^1.6.23",
     "dexie": "^4.4.5",
     "dexie-react-hooks": "^4.4.0",
+    "modern-screenshot": "4.7.0",
     "react-spring": "^10.0.4"
   }
 }

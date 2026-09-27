@@ -28,6 +28,7 @@ import { formatBaseMoney } from "@/lib/utils";
 import { ThemeEffects } from "@/components/theme-effects";
 import { useEasterEggs, EasterEggRenderer } from "@/components/easter-eggs";
 import { AiAgent } from "@/components/ai-agent";
+import { ReportButton } from "@/components/tester-report";
 import { PWAInstallButton } from "@/components/pwa-install";
 import { NotificationsPanel, useAlerts, loadDismissed } from "@/components/notifications-panel";
 import { loadSidebarConfig, saveSidebarConfig } from "@/lib/sidebar-config";
@@ -2188,6 +2189,9 @@ export function Layout({ children }: LayoutProps) {
             >
               {privacy ? <EyeOff size={13} /> : <Eye size={13} />}
             </button>
+
+            {/* Report — a bug or an idea about this screen, to the testers' group */}
+            <ReportButton />
 
             {/* Sign out — hidden on mobile (accessible via sidebar profile) */}
             <button

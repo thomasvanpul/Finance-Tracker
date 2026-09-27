@@ -21,6 +21,7 @@ import { PreferencesGate } from "@/components/preferences-gate";
 import NotFound from "@/pages/not-found";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PhoneShell } from "@/components/phone/PhoneShell";
+import { TesterReportProvider } from "@/components/tester-report";
 import { PhoneScreenSkeleton } from "@/components/phone/PhoneScreenSkeleton";
 import { CurrencySync } from "@/components/currency-sync";
 import { useBaseCurrency } from "@/lib/currency-store";
@@ -324,7 +325,9 @@ function App() {
                   <CurrencySync />
                   <DefaultPageRedirector />
                   <PageTransitionOverlay />
-                  <Router />
+                  <TesterReportProvider>
+                    <Router />
+                  </TesterReportProvider>
                 </WouterRouter>
                 <Toaster />
               </OnboardingGate>

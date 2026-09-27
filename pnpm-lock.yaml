@@ -329,6 +329,9 @@ importers:
       dexie-react-hooks:
         specifier: ^4.4.0
         version: 4.4.0(dexie@4.4.5)(react@19.1.0)
+      modern-screenshot:
+        specifier: 4.7.0
+        version: 4.7.0
       react-spring:
         specifier: ^10.0.4
         version: 10.0.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
