@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390">
+<title>Spread, phone home</title>
+<link rel="stylesheet" href="spread.css">
+<style>
+  body { width: 390px; height: 844px; overflow: hidden; position: relative; }
+  .safe { height: 47px; }
+  .top { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 16px 10px; }
+  .top .pnum { font-size: 11px; color: var(--dim); letter-spacing: 0.04em; }
+
+  .book { position: relative; }
+  .row { position: relative; display: grid; grid-template-columns: 58px minmax(0, 1fr) auto auto; column-gap: 8px;
+         align-items: center; height: 30px; padding: 0 16px; font-size: 13.5px; }
+  .row .depth { position: absolute; top: 2px; bottom: 2px; right: 0; }
+  .asks .depth { background: var(--ask-depth); }
+  .bids .depth { background: var(--bid-depth); }
+  .row.crossed .depth { background: var(--warn-depth); }
+  .row.promise .depth { background: none; border: 1px dotted rgba(35,195,142,0.55); border-right: 0; }
+  .row.goal .depth { background: none; border: 1px dotted rgba(255,90,108,0.5); border-right: 0; }
+  .row .depth.off::after { content: ""; position: absolute; left: 2px; top: 7px; bottom: 7px; width: 4px;
+         border-left: 1.5px solid var(--bg); border-right: 1.5px solid var(--bg); transform: skewX(-22deg); }
+  .row > * { position: relative; }
+  .when { font-family: var(--mono); font-size: 10.5px; color: var(--dim); }
+  .native { font-size: 11px; color: var(--dim); text-align: right; }
+  .gbp { font-size: 13.5px; text-align: right; min-width: 92px; }
+  .asks .gbp { color: var(--ask); }
+  .bids .gbp { color: var(--bid); }
+  .row.conv .gbp { opacity: 0.72; font-size: 12.5px; }
+  .row.crossed .gbp, .row.crossed .name { color: var(--warn); }
+  .row.crossed .name { font-weight: 600; }
+
+  .spread { background: var(--band); border-top: 1px solid var(--line2); border-bottom: 1px solid var(--line2);
+            padding: 12px 16px 11px; display: grid; grid-template-columns: 1fr auto; row-gap: 3px; margin: 3px 0; }
+  .nw { font-family: var(--mono); font-size: 35px; font-weight: 500; letter-spacing: -0.02em; line-height: 1; }
+  .nw .p { color: var(--dim); font-weight: 400; }
+  .chg { text-align: right; align-self: end; line-height: 1.25; }
+  .chg .pnum { font-size: 12.5px; }
+  .chg .d { font-size: 10.5px; color: var(--dim); }
+  .free { grid-column: 1 / -1; display: flex; gap: 8px; align-items: baseline; margin-top: 5px; }
+  .free .pnum { font-size: 14px; }
+  .free .s { font-size: 12px; color: var(--dim); }
+
+  .keys { position: absolute; left: 0; right: 0; bottom: 84px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 16px; }
+  .key { height: 48px; border-radius: 3px; display: flex; align-items: center; justify-content: center; gap: 8px;
+         font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
+  .key.primary { background: var(--accent); color: #000; }
+  .key.secondary { border: 1px solid var(--line2); color: var(--accent); }
+  .key .g { font-family: var(--mono); font-weight: 500; font-size: 17px; }
+  .key.primary .g { color: #c8263a; }
+  .key.secondary .g { color: var(--bid); }
+
+  .tabs { position: absolute; left: 0; right: 0; bottom: 0; height: 76px; border-top: 1px solid var(--line);
+          display: grid; grid-template-columns: repeat(5, 1fr); padding-bottom: 30px; }
+  .tab { display: flex; align-items: center; justify-content: center; font-size: 10.5px; letter-spacing: 0.05em;
+         color: var(--faint); font-weight: 500; position: relative; }
+  .tab.on { color: var(--accent); }
+  .tab.on::before { content: ""; position: absolute; top: -1px; left: 22%; right: 22%; height: 2px; background: var(--accent); }
+</style>
+</head>
+<body>
+<div class="safe"></div>
+<div class="top"><span class="pnum" id="date"></span><span class="pnum">GBP</span></div>
+<div class="book asks" id="asks"></div>
+<div class="spread">
+  <div class="nw pnum" id="nw"></div>
+  <div class="chg"><div class="pnum up" id="chg"></div><div class="d" id="chgd"></div></div>
+  <div class="free"><span class="pnum" id="free"></span><span class="s" id="frees"></span></div>
+</div>
+<div class="book bids" id="bids"></div>
+<div class="keys">
+  <div class="key primary"><span class="g">−</span>Spent</div>
+  <div class="key secondary"><span class="g">+</span>Received</div>
+</div>
+<nav class="tabs">
+  <div class="tab on">HOME</div><div class="tab">WORTH</div><div class="tab">SPENDING</div><div class="tab">UPCOMING</div><div class="tab">DIRECTORY</div>
+</nav>
+<script src="../data.js"></script>
+<script src="../lib.js"></script>
+<script src="book.js"></script>
+<script>
+  const { money, dayLabel, dash, attrib, alloc, today } = N;
+  const B = SpreadBook.build();
+  document.getElementById("date").textContent = new Date(today).toLocaleDateString("en-GB",{weekday:"short"}).toUpperCase() + " " + dayLabel(today).toUpperCase();
+  const nwStr = money(dash.netWorth);
+  const dot = nwStr.lastIndexOf(".");
+  document.getElementById("nw").innerHTML = nwStr.slice(0, dot) + '<span class="p">' + nwStr.slice(dot) + "</span>";
+  document.getElementById("chg").innerHTML = money(attrib.totalDeltaBase, "GBP", { signed: true }) + '<span class="fx">fx</span>';
+  document.getElementById("chgd").textContent = "since " + dayLabel(attrib.periodFrom);
+  document.getElementById("free").textContent = money(alloc.dailyAllowance) + "/day";
+  document.getElementById("frees").textContent = "free to " + dayLabel(alloc.windowEnd);
+  SpreadBook.render(document.getElementById("asks"), B.asks.slice().reverse(), B.scale, 390);
+  SpreadBook.render(document.getElementById("bids"), B.bids, B.scale, 390);
+</script>
+</body>
+</html>

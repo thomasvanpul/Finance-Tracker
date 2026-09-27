@@ -1,0 +1,39 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=JetBrains+Mono:wght@400;500;600&display=block");
+
+:root {
+  --bg: #121418;
+  --panel: #181b20;
+  --line: #262a31;
+  --tile: #2c313a;
+  --tile-hi: #353b46;
+  --text: #eef0f2;
+  --dim: #939aa6;
+  --faint: #5d6470;
+  --pos: #3ccf6e;
+  --neg: #f0525f;
+  --warn: #f2ae3d;
+  --accent: #36d6e7;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "Archivo", "Helvetica Neue", sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+.pnum { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fx, .cost { font-family: var(--mono); font-size: 8px; color: var(--dim); vertical-align: super; margin-left: 1px; font-weight: 400; }
+.up { color: var(--pos); } .down { color: var(--neg); }
+
+.map { position: relative; }
+.grp { position: absolute; }
+.grp .gh { position: absolute; left: 0; right: 0; top: 0; height: 15px; font-size: 9.5px; font-weight: 700; font-stretch: 85%;
+           letter-spacing: 0.06em; color: var(--dim); padding: 3px 4px 0; overflow: hidden; white-space: nowrap; display: flex; justify-content: space-between; }
+.grp .gh .pnum { font-weight: 400; font-size: 9px; }
+.tile { position: absolute; background: var(--tile); overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; gap: 2px; }
+.tile.cost { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.055) 0 2px, transparent 2px 7px); }
+.tile.promise { background: transparent; outline: 1px dotted var(--pos); outline-offset: -1px; }
+.tile .tn { font-weight: 750; font-stretch: 78%; text-transform: uppercase; line-height: 1; letter-spacing: 0.01em; white-space: nowrap; }
+.tile .tv { font-family: var(--mono); line-height: 1.1; white-space: nowrap; }
+.tile .tc { font-family: var(--mono); line-height: 1.1; white-space: nowrap; opacity: 0.8; }
+.tile .claim { position: absolute; left: 0; bottom: 0; border: 1px dashed var(--warn); background: rgba(242,174,61,0.10); display: flex; align-items: flex-end; justify-content: flex-start; }
+.tile .claim span { font-family: var(--mono); font-size: 10px; color: var(--warn); padding: 0 4px 3px; white-space: nowrap; }
+.hatch-neg { background: repeating-linear-gradient(135deg, rgba(240,82,95,0.55) 0 2px, rgba(240,82,95,0.12) 2px 6px); }

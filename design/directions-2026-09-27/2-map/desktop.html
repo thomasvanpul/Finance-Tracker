@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Map, desktop</title>
+<link rel="stylesheet" href="map.css">
+<style>
+  body { width: 1440px; height: 900px; overflow: hidden; display: grid; grid-template-rows: 42px 1fr 26px; grid-template-columns: 1000px 1fr; }
+  .top { grid-column: 1 / -1; display: flex; align-items: center; gap: 26px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+  .top .mark { font-weight: 800; font-stretch: 70%; font-size: 15px; letter-spacing: 0.14em; margin-right: 18px; }
+  .top .nav { font-size: 13px; color: var(--faint); font-weight: 500; }
+  .top .nav.on { color: var(--text); box-shadow: inset 0 -2px 0 var(--accent); padding: 12px 0 11px; }
+  .top .r { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--dim); }
+  .left { padding: 6px 0 0 6px; }
+  .right { border-left: 1px solid var(--line); padding: 16px 18px 0; overflow: hidden; }
+  .nw { font-family: var(--mono); font-size: 40px; font-weight: 500; letter-spacing: -0.025em; line-height: 1; }
+  .nw .p { color: var(--faint); }
+  .sub { font-size: 12.5px; color: var(--dim); margin-top: 7px; display: flex; gap: 9px; align-items: baseline; }
+  .figs { display: grid; grid-template-columns: repeat(3, auto); justify-content: space-between; margin: 16px 0 4px; }
+  .figs .k { font-size: 11px; color: var(--dim); font-stretch: 85%; }
+  .figs .v { font-size: 15px; margin-top: 3px; }
+  .sec { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 0 7px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .sec .t { font-size: 11px; font-weight: 700; font-stretch: 80%; letter-spacing: 0.09em; color: var(--dim); }
+  .sec .m { font-family: var(--mono); font-size: 10.5px; color: var(--faint); }
+  .bud { position: relative; }
+  .bt { position: absolute; border: 1px dotted #5d6470; overflow: hidden; padding: 5px 6px; }
+  .bt .f { position: absolute; left: 0; right: 0; bottom: 0; background: #4c5462; }
+  .bt .n { position: relative; font-size: 11.5px; font-weight: 700; font-stretch: 78%; text-transform: uppercase; white-space: nowrap; }
+  .bt .v { position: relative; font-family: var(--mono); font-size: 10.5px; margin-top: 2px; white-space: nowrap; }
+  .bt .v .l { color: var(--faint); }
+  .bt .u { position: relative; font-family: var(--mono); font-size: 10px; color: var(--warn); margin-top: 2px; white-space: nowrap; }
+  .tp { display: grid; grid-template-columns: 46px minmax(0,1fr) auto; column-gap: 8px; height: 23px; align-items: center; font-size: 12px; }
+  .tp .d { font-family: var(--mono); font-size: 10px; color: var(--dim); }
+  .tp .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .status { grid-column: 1 / -1; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 22px; padding: 0 16px; font-family: var(--mono); font-size: 10.5px; color: var(--dim); }
+  .status .r { margin-left: auto; color: var(--faint); }
+  .legend { display: flex; gap: 2px; align-items: center; }
+  .legend i { display: inline-block; width: 26px; height: 12px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="mark">NUMERIS</span>
+  <span class="nav on">Map</span><span class="nav">Spending</span><span class="nav">Upcoming</span><span class="nav">People</span><span class="nav">Ledger</span>
+  <span class="r" id="date"></span>
+</header>
+<section class="left"><div class="map" id="map"></div></section>
+<section class="right">
+  <div class="nw" id="nw"></div>
+  <div class="sub"><span class="pnum up" id="chg"></span><span id="chgd"></span></div>
+  <div class="figs" id="figs"></div>
+  <div class="sec"><span class="t">HORIZON</span><span class="m" id="hzm"></span></div>
+  <div id="hz"></div>
+  <div class="sec"><span class="t">SEPTEMBER</span><span class="m" id="bm"></span></div>
+  <div class="bud" id="bud"></div>
+  <div class="sec"><span class="t">TAPE</span><span class="m" id="tm"></span></div>
+  <div id="tape"></div>
+</section>
+<footer class="status" id="status"></footer>
+<script src="../data.js"></script>
+<script src="../lib.js"></script>
+<script src="map.js"></script>
+<script src="horizon.js"></script>
+<script>
+  const { money, dayLabel, dash, attrib, alloc, pastDue, sum, accounts, budgets, spendByMonth, today, upcoming, tx, fx, positions } = N;
+  document.getElementById("date").textContent = new Date(today).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const M = WorthMap.render(document.getElementById("map"), 988, 820, { maxName: 64, maxVal: 22, head: 17 });
+  const s = money(dash.netWorth), d = s.lastIndexOf(".");
+  document.getElementById("nw").innerHTML = s.slice(0, d) + `<span class="p">${s.slice(d)}</span>`;
+  document.getElementById("chg").innerHTML = money(attrib.totalDeltaBase, "GBP", { signed: true }) + '<span class="fx">fx</span>';
+  document.getElementById("chgd").textContent = `since ${dayLabel(attrib.periodFrom)}, all exchange rate`;
+  const debt = accounts.filter((a) => a.type === "liability");
+  const fig = (k, v, st = "") => `<div><div class="k">${k}</div><div class="v pnum"${st}>${v}</div></div>`;
+  document.getElementById("figs").innerHTML =
+    fig("free, a day", money(alloc.dailyAllowance)) +
+    fig("unpaid, past date", money(sum(pastDue, (u) => u.baseEquivalent)), ' style="color:var(--warn)"') +
+    fig(debt[0].name.toLowerCase(), money(-debt[0].baseEquivalent), ' style="color:var(--neg)"');
+  document.getElementById("hzm").textContent = `${upcoming.length} bills, ${money(alloc.committedOut)} due to ${dayLabel(alloc.windowEnd)}`;
+  document.getElementById("hz").innerHTML = Horizon(404, 84);
+
+  const cur = today.slice(0, 7), spent = spendByMonth[cur] ?? {};
+  const W = 404, H = 190;
+  document.getElementById("bm").textContent = `${money(sum(Object.values(spent), (v) => v))} of ${money(sum(budgets, (b) => b.monthlyLimit))}`;
+  const bt = N.squarify(budgets.map((b) => ({ ...b, value: b.monthlyLimit })), 0, 0, W, H);
+  const bud = document.getElementById("bud"); bud.style.width = W + "px"; bud.style.height = H + "px";
+  bud.innerHTML = bt.map((b) => {
+    const sp = spent[b.category] ?? 0, un = upcoming.filter((u) => u.category === b.category && u.dueDate < today);
+    const x = b.x + 1, y = b.y + 1, w = b.w - 2, h = b.h - 2;
+    const label = b.category.replace(" / Mortgage", "");
+    const val = `${money(sp)}<span class="l">/${money(b.monthlyLimit).replace(/\.00$/, "")}</span>`;
+    const valLen = (money(sp) + "/" + money(b.monthlyLimit).replace(/\.00$/, "")).length * 6.3;
+    return `<div class="bt" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"><div class="f" style="height:${(sp / b.monthlyLimit * 100).toFixed(1)}%"></div>
+      ${label.length * 6.5 < w - 10 && h > 20 ? `<div class="n">${label}</div>` : ""}
+      ${valLen < w - 10 && h > 38 ? `<div class="v">${val}</div>` : ""}
+      ${un.length && h > 54 && 14 * 6.2 < w - 10 ? `<div class="u">${dayLabel(un[0].dueDate)} unpaid</div>` : ""}</div>`;
+  }).join("");
+
+  document.getElementById("tm").textContent = `${tx.length} rows`;
+  document.getElementById("tape").innerHTML = tx.slice(0, 10).map((t) => {
+    const f = t.currency !== "GBP";
+    return `<div class="tp"><span class="d">${dayLabel(t.date)}</span><span class="name">${t.description}</span><span class="pnum ${t.baseEquivalent < 0 ? "down" : "up"}">${f ? `<span style="color:var(--dim);font-size:10.5px;margin-right:8px">${money(t.nativeAmount, t.currency)}</span>` : ""}${money(t.baseEquivalent)}${f ? '<span class="fx">fx</span>' : ""}</span></div>`;
+  }).join("");
+
+  const tint = (p) => WorthMap.tint({ pct: p }) ?? "#2c313a";
+  document.getElementById("status").innerHTML =
+    `<span class="legend">20d <i style="background:${tint(-3)}"></i><i style="background:${tint(-1)}"></i><i style="background:#2c313a"></i><i style="background:${tint(1)}"></i><i style="background:${tint(3)}"></i></span>
+     <span>GBP/EUR ${fx.rates.EUR.toFixed(4)}</span><span>GBP/USD ${fx.rates.USD.toFixed(4)}</span><span>GBP/MYR ${fx.rates.MYR.toFixed(4)}</span>
+     <span>${positions.length} positions at cost</span><span class="r">1px² = ${money(1 / M.pxPerPound)}</span>`;
+</script>
+</body>
+</html>

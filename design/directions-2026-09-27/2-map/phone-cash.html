@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390">
+<title>Map, phone cash zoom</title>
+<link rel="stylesheet" href="map.css">
+<style>
+  body { width: 390px; height: 844px; overflow: hidden; position: relative; }
+  .safe { height: 47px; }
+  .crumb { display: flex; align-items: center; gap: 12px; padding: 6px 14px 12px; height: 86px; }
+  .mini { position: relative; width: 58px; height: 68px; flex: none; }
+  .mini .tile { background: #23272e !important; background-image: none !important; outline: none; }
+  .mini .grp .tile { font-size: 0; }
+  .mini .here { position: absolute; outline: 1.5px solid var(--accent); outline-offset: 0; background: rgba(54,214,231,0.25); }
+  .crumb .t { display: flex; flex-direction: column; gap: 5px; }
+  .crumb .g { font-size: 13px; font-weight: 700; font-stretch: 80%; letter-spacing: 0.08em; color: var(--dim); }
+  .crumb .v { font-family: var(--mono); font-size: 30px; font-weight: 500; letter-spacing: -0.02em; line-height: 1; }
+  .crumb .share { margin-left: auto; align-self: flex-start; padding-top: 4px; text-align: right; font-size: 11px; color: var(--dim); font-stretch: 85%; line-height: 1.5; }
+  .crumb .share .pnum { font-size: 12px; color: var(--text); }
+  #map .tile { justify-content: flex-start; align-items: flex-start; padding: 10px 11px; text-align: left; }
+  .foot { display: grid; grid-template-columns: 1fr 1fr; padding: 14px 14px 0; gap: 12px; }
+  .foot .k { font-size: 11px; color: var(--dim); font-stretch: 85%; }
+  .foot .v { font-size: 17px; margin-top: 4px; }
+  .foot .v2 { text-align: right; }
+  .loose { padding: 10px 14px 0; }
+  .lr { display: grid; grid-template-columns: minmax(0,1fr) auto 92px; column-gap: 10px; height: 26px; align-items: center; font-size: 12.5px; border-top: 1px solid var(--line); }
+  .lr .c { font-family: var(--mono); font-size: 10px; color: var(--faint); margin-left: 6px; }
+  .lr .n { font-size: 11px; color: var(--dim); }
+  .lr .a { text-align: right; color: var(--warn); font-size: 12px; }
+  .lr .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dock { position: absolute; left: 0; right: 0; bottom: 0; height: 84px; padding: 0 14px 30px; display: flex; align-items: center; gap: 4px; border-top: 1px solid var(--line); background: var(--bg); }
+  .tab { flex: 1 1 auto; height: 44px; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 600; font-stretch: 72%; letter-spacing: 0.05em; color: var(--faint); }
+  .tab.on { color: var(--text); } .tab.on span { border-bottom: 2px solid var(--accent); padding-bottom: 3px; }
+  .log { width: 50px; height: 50px; margin-left: 8px; border-radius: 4px; background: var(--accent); color: #062a2e; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 26px; }
+</style>
+</head>
+<body>
+<div class="safe"></div>
+<div class="crumb">
+  <div class="mini" id="mini"></div>
+  <div class="t"><span class="g">‹ CASH</span><span class="v" id="tot"></span></div>
+  <div class="share" id="share"></div>
+</div>
+<div class="map" id="map"></div>
+<div class="foot">
+  <div><div class="k">free to spend, a day</div><div class="v pnum" id="free"></div></div>
+  <div class="v2"><div class="k">unpaid, past their date</div><div class="v pnum" id="after" style="color:var(--warn)"></div></div>
+</div>
+<div class="loose" id="loose"></div>
+<nav class="dock">
+  <div class="tab">HOME</div><div class="tab on"><span>WORTH</span></div><div class="tab">SPENDING</div><div class="tab">UPCOMING</div><div class="tab">DIRECTORY</div>
+  <div class="log">+</div>
+</nav>
+<script src="../data.js"></script>
+<script src="../lib.js"></script>
+<script src="map.js"></script>
+<script>
+  const { money, dayLabel, dash, alloc, accounts, upcoming, today, sum, squarify, change20d } = N;
+  // mini-map: the whole map, with where you are outlined
+  const mini = document.getElementById("mini");
+  const MM = WorthMap.render(mini, 58, 68, { gap: 1, head: 0 });
+  const cashG = MM.groups.find((g) => g.name === "CASH");
+  mini.insertAdjacentHTML("beforeend", `<div class="here" style="left:${cashG.x}px;top:${cashG.y}px;width:${cashG.w}px;height:${cashG.h}px"></div>`);
+
+  const cash = accounts.filter((a) => a.type === "cash");
+  const total = sum(cash, (a) => a.baseEquivalent);
+  document.getElementById("tot").textContent = money(total);
+  document.getElementById("share").innerHTML = `<span class="pnum">${(total / MM.total * 100).toFixed(1)}%</span><br>of what you hold`;
+
+  const W = 390, H = 470;
+  const late = upcoming.filter((u) => u.dueDate < today);
+  const tiles = squarify(cash.map((a) => ({ key: a.name, name: a.name, value: a.baseEquivalent, cur: a.currency, native: a.balance, chg: change20d(a), id: a.id })), 0, 0, W, H);
+  const el = document.getElementById("map");
+  el.style.width = W + "px"; el.style.height = H + "px";
+  el.innerHTML = tiles.map((t0) => {
+    const t = { ...t0, x: t0.x + 1, y: t0.y + 1, w: t0.w - 2, h: t0.h - 2 };
+    const owe = late.filter((u) => u.accountId === t.id);
+    const ov = sum(owe, (u) => u.baseEquivalent);
+    const ch = ov > 0 ? (ov / t.value) * t.h : 0;
+    // text is laid out only in the part of the tile the cut-out leaves free
+    let html = WorthMap.tileHTML({ ...t, h: t.h - ch }, { maxName: 24, maxVal: 17 }).replace(/height:[\d.]+px/, `height:${t.h.toFixed(1)}px`);
+    if (ov > 0) {
+      const label = `${money(ov)} unpaid`;
+      const fits = (label.length + 1) * 6 < t.w - 8 && ch > 16;
+      html = html.replace(/<\/div>$/, `<div class="claim" style="width:${t.w}px;height:${ch.toFixed(1)}px">${fits ? `<span>${label}</span>` : ""}</div></div>`);
+    }
+    return html;
+  }).join("");
+
+  const owedNoAcc = late.filter((u) => !u.accountId);
+  const lateTotal = sum(late, (u) => u.baseEquivalent);
+  document.getElementById("free").textContent = money(alloc.dailyAllowance);
+  document.getElementById("after").textContent = money(lateTotal);
+  const byAcc = {};
+  for (const u of late) (byAcc[u.accountName ?? "No account set"] ??= []).push(u);
+  document.getElementById("loose").innerHTML = Object.entries(byAcc).map(([k, us]) => {
+    const curs = [...new Set(us.map((u) => u.currency))];
+    const nat = curs.length === 1 && curs[0] !== "GBP" ? money(sum(us, (u) => u.nativeAmount), curs[0]) : "";
+    return `<div class="lr"><span class="name">${k}<span class="c">${us.length}</span></span><span class="pnum n">${nat}</span><span class="pnum a">${money(sum(us, (u) => u.baseEquivalent))}${nat ? '<span class="fx">fx</span>' : ""}</span></div>`;
+  }).join("");
+</script>
+</body>
+</html>

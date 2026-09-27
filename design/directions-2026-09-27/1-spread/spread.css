@@ -1,0 +1,28 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=block");
+
+:root {
+  --bg: #000;
+  --band: #0a0a0a;
+  --line: #1c1c1b;
+  --line2: #2a2a28;
+  --text: #ecebe6;
+  --dim: #8b8a84;
+  --faint: #55544f;
+  --bid: #23c38e;
+  --ask: #ff5a6c;
+  --warn: #f0a63a;
+  --bid-depth: rgba(35, 195, 142, 0.17);
+  --ask-depth: rgba(255, 90, 108, 0.17);
+  --warn-depth: rgba(240, 166, 58, 0.16);
+  --accent: #f4f3ee;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  --sans: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+.pnum { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+.fx, .cost { font-family: var(--mono); font-size: 8px; letter-spacing: 0.02em; color: var(--faint); vertical-align: super; margin-left: 1px; }
+.dotted { text-decoration: underline dotted 1px; text-underline-offset: 3px; }
+.up { color: var(--bid); }
+.down { color: var(--ask); }
+.name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Spread, desktop</title>
+<link rel="stylesheet" href="spread.css">
+<style>
+  body { width: 1440px; height: 900px; overflow: hidden; display: grid;
+         grid-template-rows: 58px 1fr 26px; grid-template-columns: 344px 1fr 348px; }
+  .strip { grid-column: 1 / -1; display: flex; align-items: center; border-bottom: 1px solid var(--line); padding: 0 18px 0 16px; gap: 30px; }
+  .strip .mark { font-family: var(--mono); font-size: 11px; letter-spacing: 0.3em; color: var(--dim); width: 150px; }
+  .strip .nw { font-family: var(--mono); font-size: 24px; font-weight: 500; letter-spacing: -0.01em; }
+  .stat { display: flex; flex-direction: column; gap: 3px; }
+  .stat .k { font-family: var(--mono); font-size: 9.5px; color: var(--faint); letter-spacing: 0.06em; text-transform: uppercase; }
+  .stat .v { font-size: 12.5px; }
+  .strip .right { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--faint); }
+
+  .col { border-right: 1px solid var(--line); overflow: hidden; }
+  .col:last-of-type { border-right: 0; }
+  .book-h { display: grid; grid-template-columns: 46px 1fr auto; column-gap: 8px; padding: 10px 14px 6px; font-family: var(--mono); font-size: 9.5px; color: var(--faint); letter-spacing: 0.05em; }
+  .row { position: relative; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto auto; column-gap: 8px; align-items: center; height: 25px; padding: 0 14px; font-size: 12.5px; }
+  .row .depth { position: absolute; top: 2px; bottom: 2px; right: 0; }
+  .asks .depth { background: var(--ask-depth); }
+  .bids .depth { background: var(--bid-depth); }
+  .row.crossed .depth { background: var(--warn-depth); }
+  .row.promise .depth { background: none; border: 1px dotted rgba(35,195,142,0.55); border-right: 0; }
+  .row.goal .depth { background: none; border: 1px dotted rgba(255,90,108,0.5); border-right: 0; }
+  .row .depth.off::after { content: ""; position: absolute; left: 2px; top: 6px; bottom: 6px; width: 4px; border-left: 1.5px solid var(--bg); border-right: 1.5px solid var(--bg); transform: skewX(-22deg); }
+  .row > * { position: relative; }
+  .when { font-family: var(--mono); font-size: 10px; color: var(--dim); }
+  .native { font-size: 10.5px; color: var(--dim); text-align: right; }
+  .gbp { font-size: 12.5px; text-align: right; min-width: 84px; }
+  .asks .gbp { color: var(--ask); } .bids .gbp { color: var(--bid); }
+  .row.conv .gbp { opacity: 0.72; font-size: 11.5px; }
+  .row.crossed .gbp, .row.crossed .name { color: var(--warn); } .row.crossed .name { font-weight: 600; }
+  .spread { background: var(--band); border-top: 1px solid var(--line2); border-bottom: 1px solid var(--line2); padding: 10px 14px; margin: 3px 0; display: flex; justify-content: space-between; align-items: baseline; }
+  .spread .pnum.big { font-size: 22px; font-weight: 500; }
+  .spread .s { font-size: 11.5px; color: var(--dim); }
+
+  .center { display: grid; grid-template-rows: auto 330px auto 1fr; }
+  .tabsbar { display: flex; gap: 22px; padding: 11px 18px 0; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--faint); font-weight: 500; }
+  .tabsbar span { padding-bottom: 9px; position: relative; }
+  .tabsbar span.on { color: var(--accent); }
+  .tabsbar span.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--accent); }
+  .tabsbar .meta { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--faint); font-weight: 400; }
+  svg text { font-family: var(--mono); }
+  .tape { overflow: hidden; }
+  .tape table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .tape th { font-family: var(--mono); font-weight: 400; font-size: 9.5px; color: var(--faint); letter-spacing: 0.05em; text-align: left; padding: 8px 10px 6px; border-bottom: 1px solid var(--line); }
+  .tape th.r, .tape td.r { text-align: right; }
+  .tape td { padding: 0 10px; height: 24px; border-bottom: 1px solid #0f0f0e; white-space: nowrap; }
+  .tape td:first-child, .tape th:first-child { padding-left: 18px; }
+  .tape td.d { font-family: var(--mono); font-size: 10.5px; color: var(--dim); }
+  .tape td.c { color: var(--dim); font-size: 11.5px; }
+  .tape td.desc { max-width: 250px; overflow: hidden; text-overflow: ellipsis; }
+
+  .ticket { padding: 12px 16px 16px; border-bottom: 1px solid var(--line); }
+  .side { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--line2); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+  .side div { height: 34px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 600; color: var(--faint); gap: 6px; }
+  .side .on { background: var(--accent); color: #000; }
+  .side .g { font-family: var(--mono); }
+  .field { display: flex; justify-content: space-between; align-items: center; height: 38px; border: 1px solid var(--line2); border-radius: 3px; padding: 0 11px; margin-bottom: 7px; font-size: 13px; color: var(--faint); }
+  .field .u { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+  .field.caret { border-color: var(--accent); color: var(--text); }
+  .field.caret .cur { display: inline-block; width: 1.5px; height: 17px; background: var(--accent); vertical-align: middle; }
+  .seg { display: flex; gap: 5px; margin: 3px 0 12px; }
+  .seg span { flex: 1; font-size: 11.5px; height: 26px; display: flex; align-items: center; justify-content: center; color: var(--dim); border: 1px solid var(--line); border-radius: 3px; }
+  .seg span.on { color: var(--accent); border-color: var(--accent); }
+  .go { height: 42px; background: var(--accent); color: #000; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; }
+  .panel-h { display: flex; justify-content: space-between; padding: 12px 16px 7px; font-size: 13px; font-weight: 500; }
+  .panel-h .m { font-family: var(--mono); font-size: 10.5px; color: var(--faint); font-weight: 400; }
+  .mv { display: grid; grid-template-columns: minmax(0,1fr) auto 64px; column-gap: 10px; padding: 0 14px; height: 25px; align-items: center; font-size: 12.5px; }
+  .mv .bar { height: 7px; background: var(--bid); justify-self: end; }
+  .pp { display: grid; grid-template-columns: minmax(0,1fr) auto auto; column-gap: 10px; padding: 0 14px; height: 25px; align-items: center; font-size: 12.5px; }
+  .pp .age { font-family: var(--mono); font-size: 10px; color: var(--dim); }
+  .pos { display: grid; grid-template-columns: 62px 1fr auto; column-gap: 8px; padding: 0 16px; height: 25px; align-items: center; font-size: 12.5px; }
+  .pos .t { font-family: var(--mono); font-size: 11.5px; }
+  .pos .sh { font-size: 10.5px; color: var(--dim); }
+  .goal { padding: 5px 16px 5px; }
+  .goal .gt { display: flex; justify-content: space-between; font-size: 12.5px; }
+  .goal .gb { position: relative; height: 5px; margin-top: 5px; border: 1px dotted var(--faint); }
+  .goal .gb i { position: absolute; left: -1px; top: -1px; bottom: -1px; background: var(--dim); }
+  .goal .late { color: var(--warn); font-family: var(--mono); font-size: 10.5px; margin-left: 6px; }
+
+  .status { grid-column: 1 / -1; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 22px; padding: 0 16px; font-family: var(--mono); font-size: 10.5px; color: var(--dim); }
+  .status .live { color: var(--bid); }
+  .status .r { margin-left: auto; color: var(--faint); }
+</style>
+</head>
+<body>
+<header class="strip" id="strip"></header>
+
+<section class="col" id="bookcol">
+  <div class="book-h"><span>DUE</span><span>CLAIM</span><span>RUNNING</span></div>
+  <div class="book asks" id="asks"></div>
+  <div class="spread"><span class="pnum big" id="nw"></span><span class="s" id="free"></span></div>
+  <div class="book bids" id="bids"></div>
+  <div class="panel-h" style="margin-top:14px"><span>Moved</span><span class="m" id="mvm"></span></div>
+  <div id="moved"></div>
+  <div class="panel-h" style="margin-top:10px"><span>People</span><span class="m" id="pm"></span></div>
+  <div id="people"></div>
+</section>
+
+<section class="col center">
+  <div class="tabsbar"><span class="on">Flow</span><span>Worth</span><span>Budgets</span><span class="meta" id="range"></span></div>
+  <svg id="chart" width="748" height="330"></svg>
+  <div class="tabsbar"><span class="on">Tape</span><span>Upcoming</span><span>People</span><span class="meta" id="tapemeta"></span></div>
+  <div class="tape"><table id="tape"></table></div>
+</section>
+
+<section class="col">
+  <div class="ticket">
+    <div class="side"><div class="on"><span class="g">−</span>Spent</div><div><span class="g">+</span>Received</div></div>
+    <div class="field caret"><span><span class="cur"></span></span><span class="u">GBP</span></div>
+    <div class="field"><span>Merchant</span></div>
+    <div class="seg" id="accs"></div>
+    <div class="go">Log</div>
+  </div>
+  <div class="panel-h"><span>Positions</span><span class="m">at cost, no price feed</span></div>
+  <div id="pos"></div>
+  <div class="panel-h" style="margin-top:8px"><span>Goals</span><span class="m" id="gm"></span></div>
+  <div id="goals"></div>
+</section>
+
+<footer class="status" id="status"></footer>
+
+<script src="../data.js"></script>
+<script src="../lib.js"></script>
+<script src="book.js"></script>
+<script>
+  const { money, dayLabel, dash, attrib, alloc, today, tx, history, upcoming, positions, fx, pastDue, sum, accounts, D } = N;
+  const B = SpreadBook.build();
+  SpreadBook.render(document.getElementById("asks"), B.asks.slice().reverse(), B.scale, 344);
+  SpreadBook.render(document.getElementById("bids"), B.bids, B.scale, 344);
+  document.getElementById("nw").textContent = money(dash.netWorth);
+  document.getElementById("free").innerHTML = `<span class="pnum" style="color:var(--text)">${money(alloc.dailyAllowance)}</span>/day to ${dayLabel(alloc.windowEnd)}`;
+
+  const stat = (k, v, cls = "") => `<div class="stat"><span class="k">${k}</span><span class="v pnum ${cls}">${v}</span></div>`;
+  document.getElementById("strip").innerHTML =
+    `<span class="mark">NUMERIS</span>
+     ${stat(`since ${dayLabel(attrib.periodFrom)}`, money(attrib.totalDeltaBase, "GBP", { signed: true }) + '<span class="fx">fx</span>', "up")}
+     ${stat("liquid", money(dash.netLiquidity))}
+     ${stat("free / day", money(alloc.dailyAllowance))}
+     ${stat("due 30d", money(alloc.committedOut))}
+     ${stat("past due", money(sum(pastDue, (u) => u.baseEquivalent)), "")}
+     ${stat("owed, net", money(dash.owing.netBase, "GBP", { signed: true }))}
+     <span class="right">${new Date(today).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</span>`;
+  document.querySelectorAll(".stat")[4].querySelector(".v").style.color = "var(--warn)";
+
+  // ── Flow chart: every transaction and every pending bill on one date axis ──
+  const svg = document.getElementById("chart");
+  const W = 748, H = 330, L = 18, R = 60, T = 34, zero = 196, up = 150, down = 120;
+  const x0 = new Date("2026-06-01"), x1 = new Date(alloc.windowEnd);
+  const X = (iso) => L + ((new Date(iso) - x0) / (x1 - x0)) * (W - L - R);
+  const maxV = Math.max(...tx.filter((t) => t.type !== "transfer").map((t) => Math.abs(t.baseEquivalent)));
+  const Y = (v) => (v / maxV) * up;
+  let s = "";
+  for (const v of [500, 1000]) {
+    s += `<line x1="${L}" x2="${W - R}" y1="${zero - Y(v)}" y2="${zero - Y(v)}" stroke="#141413"/><text x="${W - R + 6}" y="${zero - Y(v) + 3}" font-size="9.5" fill="#55544f">${v.toLocaleString("en-GB")}</text>`;
+    s += `<line x1="${L}" x2="${W - R}" y1="${zero + Y(v)}" y2="${zero + Y(v)}" stroke="#141413"/>` + (zero + Y(v) < H - 8 ? `<text x="${W - R + 6}" y="${zero + Y(v) + 3}" font-size="9.5" fill="#55544f">−${v.toLocaleString("en-GB")}</text>` : "");
+  }
+  s += `<line x1="${L}" x2="${W - R}" y1="${zero}" y2="${zero}" stroke="#2a2a28"/>`;
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  for (const h of history.filter((h) => h.month >= "2026-06")) {
+    const xm = X(h.month + "-01");
+    s += `<line x1="${xm}" x2="${xm}" y1="${T - 8}" y2="${H - 6}" stroke="#1c1c1b"/>`;
+    s += `<text x="${xm + 6}" y="${T - 12}" font-size="10" fill="#8b8a84">${MON[+h.month.slice(5) - 1].toUpperCase()}</text>`;
+    const col = h.netSavings >= 0 ? "#23c38e" : "#ff5a6c";
+    s += `<text x="${xm + 6}" y="${T + 2}" font-size="11" fill="${col}">${money(h.netSavings, "GBP", { signed: true })}</text>`;
+  }
+  s += `<text x="${X("2026-10-01") + 6}" y="${T - 12}" font-size="10" fill="#55544f">OCT</text>`;
+  for (const t of tx) {
+    if (t.type === "transfer") continue;
+    const v = Math.abs(t.baseEquivalent), xx = X(t.date);
+    if (t.type === "income") s += `<rect x="${xx - 1.5}" y="${zero - Y(v)}" width="3" height="${Y(v)}" fill="#23c38e"/>`;
+    else s += `<rect x="${xx - 1.5}" y="${zero + 1}" width="3" height="${Math.max(Y(v), 1)}" fill="#ff5a6c"/>`;
+  }
+  for (const u of upcoming) {
+    const v = u.baseEquivalent, xx = X(u.dueDate), late = u.dueDate < today;
+    s += `<rect x="${xx - 1.5}" y="${zero + 1}" width="3" height="${Math.max(Y(v), 2)}" fill="none" stroke="${late ? "#f0a63a" : "#ff5a6c"}" stroke-width="1" stroke-dasharray="1.5 1.5"/>`;
+  }
+  const rent = upcoming.find((u) => u.baseEquivalent === Math.max(...upcoming.map((x) => x.baseEquivalent)));
+  s += `<text x="${X(rent.dueDate) + 6}" y="${zero + Y(rent.baseEquivalent) - 2}" font-size="10" fill="#f0a63a">${rent.description.split(" ").slice(0, 2).join(" ").toLowerCase()} ${money(rent.baseEquivalent)} unmarked</text>`;
+  const xt = X(today);
+  s += `<line x1="${xt}" x2="${xt}" y1="${T - 8}" y2="${H - 6}" stroke="#f4f3ee" stroke-width="1"/>`;
+  s += `<rect x="${xt - 23}" y="${H - 20}" width="46" height="16" fill="#f4f3ee"/><text x="${xt}" y="${H - 8.5}" font-size="10" fill="#000" text-anchor="middle">${dayLabel(today)}</text>`;
+  svg.innerHTML = s;
+  document.getElementById("range").textContent = `1 Jun – ${dayLabel(alloc.windowEnd)}`;
+
+  // ── Tape ──
+  const rows = tx.slice(0, 13);
+  document.getElementById("tapemeta").textContent = `${tx.length} rows`;
+  document.getElementById("tape").innerHTML = `<tr><th>DATE</th><th>DESCRIPTION</th><th>CATEGORY</th><th>ACCOUNT</th><th class="r">NATIVE</th><th class="r">GBP</th></tr>` +
+    rows.map((t) => {
+      const neg = t.baseEquivalent < 0, foreign = t.currency !== "GBP";
+      return `<tr><td class="d">${dayLabel(t.date)}</td><td class="desc">${t.description}</td><td class="c">${t.category}</td><td class="c">${t.accountName}</td>
+        <td class="r pnum" style="color:var(--dim);font-size:11.5px">${foreign ? money(t.nativeAmount, t.currency) : ""}</td>
+        <td class="r pnum ${t.type === "transfer" ? "" : neg ? "down" : "up"}"${foreign ? ' style="opacity:.75"' : ""}>${money(t.baseEquivalent, "GBP", { signed: !neg && t.type !== "transfer" })}${foreign ? '<span class="fx">fx</span>' : ""}</td></tr>`;
+    }).join("");
+
+  document.getElementById("accs").innerHTML = accounts.filter((a) => a.type === "cash").map((a, i) =>
+    `<span class="${i === 0 ? "on" : ""}">${a.name.split(" ")[0]}</span>`).join("");
+  document.getElementById("pos").innerHTML = positions.map((p) =>
+    `<div class="pos"><span class="t">${p.ticker}</span><span class="sh pnum">${p.shares} @ ${money(p.costPricePerShare, p.currency)}</span><span class="pnum">${money(p.costBasisValueBase)}<span class="cost">cost</span></span></div>`).join("");
+  const goals = D.goals;
+  document.getElementById("gm").textContent = `${money(alloc.goalClaim)} claimed, 30d`;
+  document.getElementById("goals").innerHTML = goals.filter((g) => g.current < g.target).slice(0, 5).map((g) => {
+    const late = g.deadline && g.deadline < today;
+    return `<div class="goal"><div class="gt"><span>${g.name}${late ? `<span class="late">due ${dayLabel(g.deadline)}</span>` : ""}</span><span class="pnum" style="font-size:11.5px"><span style="color:var(--text)">${money(g.current)}</span><span style="color:var(--faint)"> / ${money(g.target)}</span></span></div>
+      <div class="gb"><i style="width:${(g.current / g.target * 100).toFixed(1)}%"></i></div></div>`;
+  }).join("");
+
+  const parts = attrib.parts.flatMap((p) => p.accounts.map((a) => ({ ...a, kind: p.kind })));
+  const mx = Math.max(...parts.map((a) => a.amountBase));
+  document.getElementById("mvm").textContent = `${attrib.days} days, all rate`;
+  document.getElementById("moved").innerHTML = parts.map((a) =>
+    `<div class="mv"><span class="name">${a.name}</span><span class="pnum up">${money(a.amountBase, "GBP", { signed: true })}<span class="fx">fx</span></span><span class="bar" style="width:${Math.max(64 * a.amountBase / mx, 1).toFixed(1)}px"></span></div>`).join("");
+  const debts = D.debts.filter((d) => d.status === "pending");
+  document.getElementById("pm").textContent = `net ${money(dash.owing.netBase, "GBP", { signed: true })}`;
+  document.getElementById("people").innerHTML = debts.map((d) => {
+    const mine = d.direction === "they_owe_me", foreign = d.currency !== "GBP";
+    return `<div class="pp"><span class="name">${d.personName} <span class="age">${dash.owing.topPending.find((t) => t.name === d.personName)?.daysOutstanding ?? "—"}d</span></span>
+      <span class="pnum" style="color:var(--dim);font-size:11px">${foreign ? money(d.nativeAmount, d.currency) : ""}</span>
+      <span class="pnum ${mine ? "up" : "down"}">${money(mine ? d.baseEquivalent : -d.baseEquivalent, "GBP", { signed: mine })}${foreign ? '<span class="fx">fx</span>' : ""}</span></div>`;
+  }).join("");
+  const rate = (c) => fx.rates[c].toFixed(4);
+  document.getElementById("status").innerHTML =
+    `<span class="live">rates ${new Date(fx.updatedAt).toISOString().slice(11, 16)} UTC</span><span>GBP/EUR ${rate("EUR")}</span><span>GBP/USD ${rate("USD")}</span><span>GBP/MYR ${rate("MYR")}</span>
+     <span>${positions.length} positions at cost</span><span class="r">base GBP</span>`;
+</script>
+</body>
+</html>

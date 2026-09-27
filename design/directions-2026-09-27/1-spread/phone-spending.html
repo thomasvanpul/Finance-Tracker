@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=390">
+<title>Spread, phone spending</title>
+<link rel="stylesheet" href="spread.css">
+<style>
+  body { width: 390px; height: 844px; overflow: hidden; position: relative; }
+  .safe { height: 47px; }
+  .months { display: flex; gap: 2px; padding: 4px 12px 0; }
+  .m { flex: 1; height: 44px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px;
+       font-family: var(--mono); font-size: 11px; color: var(--faint); letter-spacing: 0.04em; position: relative; }
+  .m .v { font-size: 10px; color: var(--faint); }
+  .m.on { color: #000; background: var(--accent); border-radius: 3px; }
+  .m.on .v { color: #000; opacity: 0.7; }
+  .fig { padding: 18px 16px 6px; display: flex; align-items: baseline; gap: 10px; }
+  .fig .big { font-family: var(--mono); font-size: 40px; font-weight: 500; letter-spacing: -0.02em; color: var(--text); }
+  .fig .of { font-size: 13px; color: var(--dim); }
+  .pace { padding: 0 16px 14px; font-size: 12px; color: var(--dim); display: flex; gap: 14px; }
+  .pace b { font-family: var(--mono); font-weight: 500; color: var(--text); }
+
+  .ladder { border-top: 1px solid var(--line); }
+  .rung { height: 46px; padding: 7px 16px 0; border-bottom: 1px solid var(--line); position: relative; }
+  .rung .top { display: flex; justify-content: space-between; align-items: baseline; font-size: 13.5px; }
+  .rung .top .pnum { font-size: 12.5px; }
+  .rung .top .lim { color: var(--faint); font-size: 11px; margin-left: 6px; }
+  .rung .top .zero { color: var(--faint); }
+  .rung .top .unm { color: var(--warn); font-size: 11.5px; font-family: var(--mono); margin-left: 8px; }
+  .bar { position: absolute; left: 16px; bottom: 9px; height: 6px; border: 1px dotted var(--faint); }
+  .bar .fill { position: absolute; left: -1px; top: -1px; bottom: -1px; background: var(--ask); }
+  .bar .prev { position: absolute; top: -5px; bottom: -5px; width: 1.5px; background: var(--dim); }
+  .bar .today { position: absolute; bottom: -5px; width: 0; height: 0; border-left: 3px solid transparent; border-right: 3px solid transparent; border-bottom: 4px solid var(--text); margin-left: -3px; }
+
+  .tape { padding: 16px 16px 0; }
+  .tape .t { display: grid; grid-template-columns: 50px minmax(0,1fr) auto; column-gap: 8px; height: 28px; align-items: center; font-size: 13px; }
+  .tape .d { font-family: var(--mono); font-size: 10.5px; color: var(--dim); }
+  .tape .a { color: var(--ask); font-size: 12.5px; }
+
+  .keys { position: absolute; left: 0; right: 0; bottom: 84px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 16px; }
+  .key { height: 48px; border-radius: 3px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: 600; }
+  .key.primary { background: var(--accent); color: #000; }
+  .key.secondary { border: 1px solid var(--line2); color: var(--accent); }
+  .key .g { font-family: var(--mono); font-weight: 500; font-size: 17px; }
+  .key.primary .g { color: #c8263a; }
+  .key.secondary .g { color: var(--bid); }
+  .tabs { position: absolute; left: 0; right: 0; bottom: 0; height: 76px; border-top: 1px solid var(--line);
+          display: grid; grid-template-columns: repeat(5, 1fr); padding-bottom: 30px; }
+  .tab { display: flex; align-items: center; justify-content: center; font-size: 10.5px; letter-spacing: 0.05em; color: var(--faint); font-weight: 500; position: relative; }
+  .tab.on { color: var(--accent); }
+  .tab.on::before { content: ""; position: absolute; top: -1px; left: 18%; right: 18%; height: 2px; background: var(--accent); }
+</style>
+</head>
+<body>
+<div class="safe"></div>
+<div class="months" id="months"></div>
+<div class="fig"><span class="big pnum" id="spent"></span><span class="of" id="of"></span></div>
+<div class="pace" id="pace"></div>
+<div class="ladder" id="ladder"></div>
+<div class="tape" id="tape"></div>
+<div class="keys"><div class="key primary"><span class="g">−</span>Spent</div><div class="key secondary"><span class="g">+</span>Received</div></div>
+<nav class="tabs"><div class="tab">HOME</div><div class="tab">WORTH</div><div class="tab on">SPENDING</div><div class="tab">UPCOMING</div><div class="tab">DIRECTORY</div></nav>
+<script src="../data.js"></script>
+<script src="../lib.js"></script>
+<script>
+  const { money, dayLabel, history, spendByMonth, budgets, tx, today, upcoming, sum } = N;
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const cur = today.slice(0, 7);
+  const months = history.filter((h) => h.expenses > 0 || h.income > 0);
+  document.getElementById("months").innerHTML = months.map((h) =>
+    `<div class="m${h.month === cur ? " on" : ""}">${MON[+h.month.slice(5) - 1].toUpperCase()}<span class="v">${money(h.expenses)}</span></div>`).join("");
+  const thisM = history.find((h) => h.month === cur);
+  const prevKey = months[months.indexOf(thisM) - 1].month;
+  const budgetTotal = sum(budgets, (b) => b.monthlyLimit);
+  document.getElementById("spent").textContent = money(thisM.expenses);
+  document.getElementById("of").textContent = "of " + money(budgetTotal);
+  const dim = new Date(+cur.slice(0, 4), +cur.slice(5), 0).getDate();
+  const dayN = +today.slice(8);
+  document.getElementById("pace").innerHTML =
+    `<span>in <b>${money(thisM.income)}</b></span><span>${MON[+prevKey.slice(5) - 1]} out <b>${money(history.find((h) => h.month === prevKey).expenses)}</b></span><span>day <b>${dayN}/${dim}</b></span>`;
+
+  const W = 358;
+  const maxB = Math.max(...budgets.map((b) => b.monthlyLimit));
+  const now = spendByMonth[cur] ?? {}, prev = spendByMonth[prevKey] ?? {};
+  const unmarked = (cat) => upcoming.filter((u) => u.category === cat && u.dueDate < today);
+  document.getElementById("ladder").innerHTML = budgets.slice().sort((a, b) => b.monthlyLimit - a.monthlyLimit).map((b) => {
+    const s = now[b.category] ?? 0, p = prev[b.category] ?? 0;
+    const w = (b.monthlyLimit / maxB) * W;
+    const um = unmarked(b.category);
+    return `<div class="rung"><div class="top"><span>${b.category}${um.length ? `<span class="unm">${dayLabel(um[0].dueDate)} unmarked</span>` : ""}</span>
+      <span><span class="pnum ${s ? "" : "zero"}">${money(s)}</span><span class="pnum lim">/${money(b.monthlyLimit).replace(/\.00$/, "")}</span></span></div>
+      <div class="bar" style="width:${w.toFixed(1)}px"><div class="fill" style="width:${((s / maxB) * W).toFixed(1)}px"></div>
+      ${p ? `<div class="prev" style="left:${((p / maxB) * W - 1).toFixed(1)}px"></div>` : ""}
+      <div class="today" style="left:${(w * dayN / dim).toFixed(1)}px"></div></div></div>`;
+  }).join("");
+  const rows = tx.filter((t) => t.date.startsWith(cur) && t.type === "expense");
+  document.getElementById("tape").innerHTML = rows.map((t) =>
+    `<div class="t"><span class="d">${dayLabel(t.date)}</span><span class="name">${t.description}</span><span class="a pnum">${money(t.baseEquivalent)}</span></div>`).join("");
+</script>
+</body>
+</html>
