@@ -4,8 +4,6 @@ import {
   closestCenter,
   pointerWithin,
   PointerSensor,
-  TouchSensor,
-  MouseSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -18,7 +16,6 @@ import {
   useSortable,
   arrayMove,
   verticalListSortingStrategy,
-  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -45,33 +42,30 @@ import { TopMerchantsWidget } from "@/components/widgets/top-merchants";
 import { SmartAlertsWidget } from "@/components/widgets/smart-alerts";
 import { DecisionEngineWidget } from "@/components/widgets/decision-engine";
 import { CashRunwayWidget } from "@/components/widgets/cash-runway";
-import { COMPACT_WIDGET_COMPONENTS, COMPACT_WIDGET_FULL_WIDTH } from "@/components/widgets/compact-tiles";
-import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard, useGetAccountsChangeAttribution } from "@workspace/api-client-react";
-import { Link } from "wouter";
-import { formatBaseMoney, formatMoney, formatNative } from "@/lib/utils";
+import { useListAccounts, useListTransactions, useListUpcoming, useGetDashboard } from "@workspace/api-client-react";
+
+import { formatBaseMoney, formatNative } from "@/lib/utils";
 import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useLocation } from "wouter";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
-import { Zap, RefreshCw, X, LayoutGrid } from "lucide-react";
+import { Zap, RefreshCw, X } from "lucide-react";
 import { useState, useMemo, useEffect, useLayoutEffect, useRef, memo } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
 import { useToast } from "@/hooks/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { oneShotInsight } from "@/lib/ai-chat-client";
 import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboard-customize-context";
-import { categoryTransactionsHref, entityHref, ledgerHref, merchantTransactionsHref, recurringSeriesHref, thisMonthRange } from "@/lib/entity-href";
-import { Drill, DrillTarget } from "@/components/drill";
-import { attributionView } from "@/lib/change-attribution-view";
+import { entityHref, ledgerHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
+import { Drill } from "@/components/drill";
 import { useProtoDesign } from "@/lib/use-proto-design";
 import { topRegionVariant } from "@/lib/proto-design";
 import { ProtoDashboard } from "@/components/proto";
 import { ProtoTopRegion } from "@/components/proto/top-region";
 import { DashboardTopRegion, Insights, RULE } from "@/components/dashboard/top-region";
-import { signedAccountAmount } from "@/lib/account-sign";
+
 import { cashAccountsTotal } from "@/lib/liquidity";
 import { samePointSpend, sameDayLabel } from "@/lib/same-point-spend";
 import { closeTagText, sinceCloseLabel } from "@/components/FixingMark";
@@ -1468,35 +1462,6 @@ function ExpandButton({ onExpand, right, onPointerDown }: {
 
 // ── View-mode widget (read-only, no DnD, just expand on hover) ────────────────
 
-function ViewModeWidget({ id, onExpand }: { id: WidgetId; onExpand: () => void }) {
-  const [hovered, setHovered] = useState(false);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const expandRight = useExpandOffset(wrapRef, hovered);
-  const isMobile = useIsMobile();
-
-  // On mobile use compact tiles — purpose-built for ~183px columns
-  if (isMobile) {
-    const CompactComponent = COMPACT_WIDGET_COMPONENTS[id];
-    if (CompactComponent) return <CompactComponent />;
-  }
-
-  const Component = WIDGET_COMPONENTS[id];
-  if (!Component) return null;
-
-  return (
-    <div
-      ref={wrapRef}
-      className={registerClass(id)}
-      style={{ position: "relative" }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <Component />
-      {hovered && <ExpandButton onExpand={onExpand} right={expandRight} />}
-    </div>
-  );
-}
-
 // ── View-mode widget with long-press drag (desktop only, no editing controls) ──
 
 function LongPressDraggableWidget({ id, anyDragging, onExpand }: { id: WidgetId; anyDragging: boolean; onExpand: () => void }) {
@@ -1616,100 +1581,6 @@ function DragPreview({ id, width }: { id: WidgetId; width: number | null }) {
       pointerEvents: "none",
     }}>
       <Component />
-    </div>
-  );
-}
-
-// ── Mobile compact tile with drag handle (used in customize mode on mobile) ───
-
-function SortableCompactTile({ id, onRemove, isFullWidth, activeId }: { id: WidgetId; onRemove: () => void; isFullWidth?: boolean; activeId?: WidgetId | null }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useSortable({ id, animateLayoutChanges: () => false });
-  const CompactComponent = COMPACT_WIDGET_COMPONENTS[id];
-  const def = WIDGET_DEF_MAP[id];
-  const anyDragging = activeId != null;
-
-  // gridColumn is on the setNodeRef element so dnd-kit measures the actual grid cell
-  const outerStyle: React.CSSProperties = {
-    gridColumn: isFullWidth ? "1 / -1" : "auto",
-    minWidth: 0,
-    overflow: "hidden",
-    position: "relative",
-    transform: CSS.Transform.toString(
-      transform ? { ...transform, scaleX: 1, scaleY: 1 } : { x: 0, y: 0, scaleX: 1, scaleY: 1 }
-    ),
-    transition: isDragging ? "none" : "transform 0.12s ease",
-    opacity: isDragging ? 0 : anyDragging ? 0.8 : 1,
-    willChange: isDragging ? "transform" : "auto",
-    zIndex: isDragging ? 0 : "auto",
-  };
-
-  return (
-    <div ref={setNodeRef} style={outerStyle}>
-      {CompactComponent && <CompactComponent />}
-      {/* Customize strip — the whole strip is the drag handle; remove button stops propagation */}
-      <div
-        {...attributes}
-        {...listeners}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          background: isDragging ? "var(--ft-surface)" : "var(--ft-raised)",
-          borderTop: "1px solid var(--ft-border)",
-          height: 36,
-          cursor: "grab",
-          touchAction: "none",
-          userSelect: "none",
-        }}
-      >
-        <span style={{
-          flex: "0 0 auto",
-          fontFamily: "var(--font-mono)",
-          fontSize: 16,
-          color: "var(--ft-accent)",
-          padding: "0 10px",
-          display: "flex",
-          alignItems: "center",
-          opacity: 0.8,
-        }}>
-          ⠿
-        </span>
-        <span style={{
-          flex: 1,
-          fontFamily: "var(--font-mono)",
-          fontSize: 9,
-          color: "var(--ft-muted)",
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          textAlign: "center",
-          padding: "0 4px",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          pointerEvents: "none",
-        }}>
-          {def?.label ?? id}
-        </span>
-        <button
-          onClick={e => { e.stopPropagation(); onRemove(); }}
-          onPointerDown={e => e.stopPropagation()}
-          style={{
-            flex: "0 0 auto",
-            background: "transparent",
-            border: "none",
-            borderLeft: "1px solid var(--ft-border)",
-            color: "var(--ft-red)",
-            cursor: "pointer",
-            fontFamily: "var(--font-mono)",
-            fontSize: 11,
-            padding: "0 12px",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          ✕
-        </button>
-      </div>
     </div>
   );
 }
@@ -1933,88 +1804,12 @@ function WidgetPickerRow({ id, onAdd, onHover }: {
 function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: (id: WidgetId) => void }) {
   const [open, setOpen] = useState(false);
   const [hoveredId, setHoveredId] = useState<WidgetId | null>(null);
-  const isMobile = useIsMobile();
 
   if (disabledIds.length === 0) return null;
 
   const previewId = hoveredId ?? disabledIds[0];
   const PreviewComponent = previewId ? WIDGET_COMPONENTS[previewId] : null;
   const previewDef = previewId ? WIDGET_DEF_MAP[previewId] : null;
-
-  if (isMobile) {
-    return (
-      <div style={{ marginTop: 12 }}>
-        <button
-          onClick={() => setOpen(o => !o)}
-          style={{
-            background: "none",
-            border: "1px dashed var(--ft-border2)",
-            color: open ? "var(--ft-accent)" : "var(--ft-dim)",
-            fontFamily: "var(--font-sans)",
-            fontSize: 11,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            padding: "8px 14px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            width: "100%",
-            justifyContent: "center",
-            touchAction: "manipulation",
-          }}
-        >
-          <Text as="span" size={16} lineHeight={1}>{open ? "−" : "+"}</Text>
-          {open ? "Close" : `Add widgets (${disabledIds.length})`}
-        </button>
-        {open && (
-          <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            {disabledIds.map(id => {
-              const def = WIDGET_DEF_MAP[id];
-              const isFull = COMPACT_WIDGET_FULL_WIDTH.has(id);
-              return (
-                <button
-                  key={id}
-                  onClick={() => { onAdd(id); }}
-                  style={{
-                    background: "var(--ft-surface)",
-                    border: "1px solid var(--ft-border)",
-                    borderTop: `2px solid var(--ft-accent)`,
-                    padding: "10px 10px 8px",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 4,
-                    touchAction: "manipulation",
-                    gridColumn: isFull ? "1 / -1" : "auto",
-                    WebkitTapHighlightColor: "transparent",
-                  }}
-                  onTouchStart={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-accent)"; }}
-                  onTouchEnd={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-border)"; }}
-                >
-                  <HStack align="center" justify="between">
-                    <Text as="span" mono size={11} weight={700} color="var(--ft-text)" letterSpacing="0.04em">
-                      {def?.label ?? id}
-                    </Text>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.06em", border: "1px solid color-mix(in srgb, var(--ft-accent) 30%, transparent)", padding: "1px 4px" }}>
-                      {isFull ? "FULL" : "HALF"}
-                    </span>
-                  </HStack>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
-                    {def?.description ?? ""}
-                  </span>
-                  <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-accent)", letterSpacing: "0.04em", marginTop: 2 }}>
-                    ＋ Add
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -2224,591 +2019,11 @@ function DashboardEmptyState() {
 }
 
 /**
- * The page's one number. 48px was the floor the rebuild specified;
- * `3.6vw` puts it at 52px at 1440 — against 15px for its trend and 13px
- * for everything demoted below it. That is a ladder. What preceded it
- * was 25px against 18px, a 1.39x step that reads as "six figures, one
- * of them slightly bigger" rather than as a headline.
- *
- * No colour of its own: the cell supplies it, and NET_WORTH now supplies
- * --ft-text. See the note on that cell for why the blue went.
- */
-const NET_WORTH_HERO_STYLE: React.CSSProperties = {
-  display: "block",
-  fontFamily: "var(--font-mono)",
-  fontSize: "clamp(34px, 3.6vw, 52px)",
-  fontWeight: 700,
-  letterSpacing: "-0.035em",
-  lineHeight: 1,
-  fontVariantNumeric: "tabular-nums",
-  whiteSpace: "nowrap",
-};
-
-/**
- * The trend under the hero — what has already moved the figure above it,
- * and over what window. Reuses the change-attribution report the phone also
- * renders in full on MobileHome; the query is shared, so this costs no
- * second request.
- *
- * It states the total, its sign and the window, and stops. The
- * decomposition — how much was the rate, how much was spending — is not
- * repeated here, which would make the header a second copy of that surface
- * instead of a headline with a direction. On desktop that decomposition is
- * now the top region's middle band; this component reaches only the phone.
- *
- * Renders nothing when the report is insufficient. A headline figure
- * with an invented "+£0.00" under it would be the fabrication CLAUDE.md
- * forbids: an unmeasured zero and a measured one are different claims.
- */
-function NetWorthTrend() {
-  const { data } = useGetAccountsChangeAttribution();
-  const view = attributionView(data);
-  if (data == null || view == null || view.status !== "ok") return null;
-
-  const value = view.totalBase;
-  // A zero movement is --ft-muted, not green: nothing happened is not a
-  // gain. Sign carries direction alongside hue (DESIGN.md §7).
-  const colour = value === 0
-    ? "var(--ft-muted)"
-    : value > 0 ? "var(--ft-green)" : "var(--ft-red)";
-
-  return (
-    <HStack align="baseline" gap={8} marginTop={11}>
-      <DrillTarget href="/net-worth" title="Net worth — what moved it over this window">
-        {/* Colour on a wrapper: inline on .ft-drill it would beat the hover accent. */}
-        <span style={{ color: colour }}>
-          <span className="pnum ft-drill" style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 15,
-            fontWeight: 700,
-            letterSpacing: "-0.01em",
-            fontVariantNumeric: "tabular-nums",
-            whiteSpace: "nowrap",
-          }}>
-            {value > 0 ? "+" : ""}{formatMoney(value, data.baseCurrency)}
-          </span>
-        </span>
-      </DrillTarget>
-      <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.10em" nowrap>
-        net {view.windowLabel}
-      </Text>
-    </HStack>
-  );
-}
-
-/**
  * One row of the motion block. The glyph carries the direction and the
  * colour agrees with it, so the row stays legible without hue
  * (DESIGN.md §7). A zero is --ft-dim rather than green: nothing expected
  * is not income.
  */
-function MotionRow({ label, value, sign, href }: { label: string; value: number; sign: "+" | "−"; href: string }) {
-  const colour = value === 0
-    ? "var(--ft-dim)"
-    : sign === "+" ? "var(--ft-green)" : "var(--ft-red)";
-  return (
-    <HStack align="baseline" justify="between" gap={16} wide paddingY={3}>
-      <span style={{ color: "var(--ft-text)", minWidth: 0 }}>
-        <Drill href={href} title={`${label} — the items this is the sum of`} style={{ fontSize: 11, fontWeight: 500 }}>
-          {label}
-        </Drill>
-      </span>
-      {/* shrink is not offered to the figure: "in full or not at all". */}
-      <Text as="span" mono size={13} weight={600} color={colour} numeric nowrap>
-        {sign}{formatBaseMoney(Math.abs(value))}
-      </Text>
-    </HStack>
-  );
-}
-
-/**
- * Money in motion — the second priority in the header, and the only
- * forward-looking thing in it. Net worth answers "am I okay"; this
- * answers "is that about to change", which is the other half of the
- * question a person opens a finance app with, and it was previously
- * reachable only by scrolling to a half-width widget.
- *
- * Anchored on NET WORTH, deliberately. `CashFlowPreviewPanel` — the
- * widget, which keeps its place — projects the same two committed sums
- * forward from the CASH balance. This block projects them forward from
- * net worth instead, so its third line is a figure the widget does not
- * carry and the two surfaces answer different questions rather than
- * printing one answer twice. The two inputs are shared; a shared input
- * read under two different subjects is not the page repeating itself.
- *
- * Nothing here is fabricated. An upcoming item with no base-currency
- * equivalent is skipped from the roll-up exactly as the widget skips it,
- * the committed COUNT is printed so "nothing is committed" and "we have
- * no upcoming data" stay distinguishable, and when there is no net worth
- * to project from the projection renders an em dash rather than
- * projecting from zero.
- */
-function MoneyInMotion({ netWorth }: { netWorth: number | null }) {
-  const { data: upcoming } = useListUpcoming();
-
-  const { inflows, outflows, count } = useMemo(() => {
-    const now = new Date();
-    const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-    const items = (upcoming ?? []).filter((item) => {
-      const due = new Date(item.dueDate);
-      return due >= now && due <= in30Days && item.status === "pending";
-    });
-    return {
-      inflows: items.filter((i) => i.type === "income").reduce((sum, i) => sum + (i.baseEquivalent ?? 0), 0),
-      outflows: items.filter((i) => i.type === "expense").reduce((sum, i) => sum + (i.baseEquivalent ?? 0), 0),
-      count: items.length,
-    };
-  }, [upcoming]);
-
-  const projected = netWorth == null ? null : netWorth + inflows - outflows;
-
-  return (
-    <VStack minWidth={300} maxWidth={430} grow>
-      <HStack align="baseline" justify="between" gap={12} wide marginBottom={10}>
-        <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.10em" nowrap>
-          Money in motion · next 30 days
-        </Text>
-        <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.08em" nowrap>
-          <Text as="span" numeric size={9}>{count}</Text> committed
-        </Text>
-      </HStack>
-
-      <MotionRow label="Expected in" value={inflows} sign="+" href="/upcoming" />
-      <MotionRow label="Committed out" value={outflows} sign="−" href="/upcoming" />
-
-      {/* The projection sits under a hairline because it is the SUM of the
-          two rows above, not a third peer of them. A one-off surface
-          treatment stays inline rather than being folded into a
-          primitive: Stack owns layout and PanelBox always paints a fill
-          and four borders, which is a frame, and this is structure
-          (CLAUDE.md, DESIGN.md §6). */}
-      <div style={{ borderTop: "1px solid var(--ft-border)", marginTop: 8, paddingTop: 8 }}>
-        <HStack align="baseline" justify="between" gap={16} wide>
-          <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.12em" nowrap>
-            Projected worth
-          </Text>
-          {/* 20px, against 13px for the two rows it sums and 52px for the
-              hero. It is the page's SECOND figure and now reads as one:
-              net worth once everything already committed has happened,
-              which is the whole of "is anything about to change that". At
-              13px it was the same size as its own inputs and the answer
-              was quieter than the working. */}
-          {projected == null ? (
-            <Text as="span" mono size={20} weight={700} color="var(--ft-dim)">—</Text>
-          ) : (
-            <Text as="span" mono size={20} weight={700} color="var(--ft-text)"
-              letterSpacing="-0.02em" numeric nowrap>
-              {formatBaseMoney(projected)}
-            </Text>
-          )}
-        </HStack>
-      </div>
-    </VStack>
-  );
-}
-
-/**
- * A demoted cell. 13px against the hero's 52px, and the label above it
- * unchanged at 9px.
- *
- * These are not peers of the headline and no longer render as if they
- * were. Three of the five on a seeded "full" account currently have
- * nothing to say — MONTHLY INCOME, SAVINGS RATE and MoM SPEND all print
- * an en dash — and a metric with nothing to say does not belong at the
- * top of the page at the same size as the one number the page exists to
- * state.
- */
-function DemotedCell({ cell, divided }: { cell: KpiCellData; divided?: boolean }) {
-  // T7. 13px/700 -> 12px/600, matching the reading value in the status
-  // strip of the prototype. The step down from the hero is unchanged in
-  // kind and one notch deeper in degree.
-  const value = (
-    <span className={cell.href ? "pnum ft-drill" : "pnum"} style={{
-      display: "block",
-      fontFamily: "var(--font-mono)",
-      fontSize: 12,
-      fontWeight: 600,
-      letterSpacing: "-0.01em",
-      lineHeight: 1,
-      fontVariantNumeric: "tabular-nums",
-      whiteSpace: "nowrap",
-    }}>{cell.value}</span>
-  );
-  // The rule and the padding come from the strip rather than from a gap:
-  // 5px 12px in StatusStrip, 6/14 here because these cells stack a label,
-  // a value and a delta rather than sitting on one baseline. A one-off
-  // surface treatment stays inline rather than being folded into a
-  // primitive — Stack owns layout, and a left rule is surface (CLAUDE.md,
-  // the primitives split).
-  return (
-    <div style={{
-      borderLeft: divided === true ? "1px solid var(--ft-border)" : undefined,
-      padding: "6px 14px",
-      flexShrink: 0,
-      minWidth: 104,
-    }}>
-    <VStack gap={5}>
-      <Text as="span" mono size={8} weight={600} upper color="var(--ft-dim)" letterSpacing="0.14em" lineHeight={1.2}>
-        {cell.label}
-      </Text>
-      {/* The semantic colour sits on the wrapper, never on .ft-drill —
-          an inline colour there would beat the accent it takes on hover. */}
-      <span style={{ color: cell.valueColor ?? "var(--ft-text)" }}>
-        {cell.href ? (
-          <DrillTarget href={cell.href} title={`${cell.label} — open what it is made of`}>{value}</DrillTarget>
-        ) : value}
-      </span>
-      {/* Reserved whether or not the cell carries a delta, so the run of
-          values keeps one baseline. */}
-      <span className="pnum" aria-hidden={cell.delta ? undefined : true} style={{
-        fontFamily: "var(--font-mono)",
-        fontSize: 9,
-        fontWeight: 600,
-        lineHeight: 1.2,
-        minHeight: 11,
-        color: cell.deltaColor ?? "var(--ft-dim)",
-        fontVariantNumeric: "tabular-nums",
-        whiteSpace: "nowrap",
-      }}>{cell.delta ?? ""}</span>
-    </VStack>
-    </div>
-  );
-}
-
-function DashboardKpiBar({
-  cells,
-  onCustomize,
-  isCustomizing,
-  dashboardLabel,
-  isMobile,
-  netWorth,
-}: {
-  cells: KpiCellData[];
-  onCustomize: () => void;
-  isCustomizing: boolean;
-  dashboardLabel: string;
-  isMobile: boolean;
-  /** Base-currency net worth, or null when the dashboard has not
-   *  supplied one. Null projects nothing rather than projecting from a
-   *  fabricated zero. */
-  netWorth: number | null;
-}) {
-  // Narrow-viewport layout picks by POSITION, not label. Each persona's
-  // kpiCells array puts the primary figure at index 0 and two
-  // secondary figures at [1] and [2]; the mobile hero renders those
-  // three cells in that order. Prior code looked up cells by name
-  // (NET WORTH / SAVINGS RATE / MONTHLY SPEND) which meant market and
-  // social personas rendered an empty hero — those tuples do not
-  // contain those labels. Position-based makes every persona render
-  // whatever it declared its primary + secondary to be.
-  //
-  // Also drops the overflow:hidden + text-overflow:ellipsis on the
-  // hero .pnum. That combination clips financial figures, which
-  // CLAUDE.md and MOBILE-CONCEPT.md forbid: "A financial figure is
-  // shown in full or not at all." A too-long hero should shrink via
-  // clamp() or push the container width, not silently lose digits.
-  const heroCell = cells[0];
-  const secondary = cells.slice(1, 3);
-
-  if (isMobile) {
-    return (
-      // Structure, not a widget — DESIGN.md § 6, same as the desktop strip
-      // below. Unframed, seated by a hairline underneath.
-      <div style={{
-        borderBottom: "1px solid var(--ft-border)",
-        marginBottom: 10,
-      }}>
-        {/* Row 1: label + customize toggle */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderBottom: "1px solid var(--ft-border)",
-          height: 32,
-        }}>
-          <span style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            fontWeight: 600,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: "var(--ft-muted)",
-          }}>
-            {dashboardLabel}
-          </span>
-          {/* Same rename and the same glyph as the desktop control, so the
-              two surfaces name one feature. The phone keeps the full-height
-              divided cell rather than a bordered chip: at 32px the row IS
-              the button's frame, and a border inside a 32px cell would be a
-              box in a box. --ft-muted for the same reason as desktop —
-              --ft-dim made the only control in the row the quietest thing
-              in it. */}
-          <button
-            onClick={onCustomize}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
-              border: "none",
-              borderLeft: "1px solid var(--ft-border)",
-              color: isCustomizing ? "var(--ft-accent)" : "var(--ft-muted)",
-              fontFamily: "var(--font-mono)",
-              fontSize: 9,
-              fontWeight: 600,
-              letterSpacing: "0.10em",
-              textTransform: "uppercase",
-              padding: "0 14px",
-              height: "100%",
-              cursor: "pointer",
-              flexShrink: 0,
-              whiteSpace: "nowrap",
-            }}
-            title={isCustomizing ? "Finish editing" : "Edit layout — add, remove and rearrange widgets"}
-          >
-            <LayoutGrid size={10} aria-hidden />
-            {isCustomizing ? "Done" : "Edit layout"}
-          </button>
-        </div>
-        {/* Row 2: hero + secondary stats */}
-        <HStack align="stretch">
-          {/* Hero — cells[0] */}
-          <div style={{ flex: 1, padding: "12px 14px", borderRight: "1px solid var(--ft-border)", minHeight: 72, minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 6 }}>
-              {heroCell?.label ?? "—"}
-            </div>
-            <div className="pnum" style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "clamp(24px, 8vw, 34px)",
-              fontWeight: 700,
-              letterSpacing: "-0.03em",
-              color: heroCell?.valueColor ?? "var(--ft-blue)",
-              lineHeight: 1,
-              fontVariantNumeric: "tabular-nums",
-              whiteSpace: "nowrap",
-            }}>
-              {heroCell?.value ?? "—"}
-            </div>
-          </div>
-          {/* Secondary stats — cells[1..2] */}
-          <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-around", padding: "10px 12px 10px 14px", gap: 8, minHeight: 72, maxWidth: "48%", overflow: "hidden" }}>
-            {secondary.map((c) => (
-              <VStack key={c.label} gap={2} minWidth0>
-                <MonoLabel as="span" size={9} letterSpacing="0.12em">{c.label}</MonoLabel>
-                <span
-                  className="pnum"
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: c.valueColor ?? "var(--ft-text)",
-                    fontVariantNumeric: "tabular-nums",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {c.value}
-                </span>
-              </VStack>
-            ))}
-          </div>
-        </HStack>
-      </div>
-    );
-  }
-
-  // ── The header ────────────────────────────────────────────────────────────
-  //
-  // What this replaced, and why the replacement is structural rather than
-  // another pass of type work.
-  //
-  // The strip was `grid-template-columns: auto auto <n tracks>`: the page
-  // label, the Edit-layout control, then every KPI cell on ONE ROW at ONE
-  // BASELINE, 73px tall. Eight rounds of design adjusted borders, fills,
-  // rules and type inside that arrangement and Thomas said each time that
-  // the page still read the same, which is the correct reading — the
-  // arrangement was never the thing being changed. Measured on the strip
-  // as it stood: six values, five of them at 18px and NET WORTH at 25px,
-  // all six sharing y=92. A 1.39x step inside a single row is not a
-  // hierarchy; it is a row.
-  //
-  // Every well-regarded finance dashboard consulted for this rebuild —
-  // Mercury, Stripe, Ramp, Brex, Wise — leads with ONE number and demotes
-  // the rest, on the stated grounds that a dashboard which does not answer
-  // the user's first question in about two seconds gets skipped. So:
-  //
-  //   1. the hero is the page — one figure, 52px at 1440, with its trend;
-  //   2. money in motion is second — what is about to change that figure;
-  //   3. everything else drops a level, to 13px, below both.
-  //
-  // Structure, not a widget (DESIGN.md §6). Nothing here is framed and
-  // nothing paints --ft-surface: it cannot be dragged, removed or
-  // reordered, so it sits on --ft-base and hairlines and spacing do the
-  // whole of its separation.
-  //
-  // The hero is `lead` if any cell declares it and cells[0] otherwise,
-  // which is how the four non-"full" personas keep working — market
-  // declares no lead and opens on PORTFOLIO_DAY, so that becomes its
-  // headline rather than a net worth it does not show.
-
-  const heroFigure = cells.find((c) => c.lead) ?? cells[0];
-  const demoted = cells.filter((c) => c !== heroFigure);
-  // The trend component states a NET WORTH movement over a window. Under
-  // a hero that is not net worth — market's 24H delta — that sentence
-  // would be about a different figure than the one above it, so the cell
-  // falls back to whatever delta it declared for itself.
-  const heroIsNetWorth = heroFigure?.href === "/net-worth";
-
-  return (
-    <VStack marginBottom={14}>
-      {/* Chrome: the page names itself, and the control that edits it sits
-          at the other end. Both are 9px mono — neither is a headline, and
-          before this rebuild they occupied two of the eight tracks in the
-          same row as net worth, which is part of why that row read as a
-          strip of equals rather than as a page with a subject. */}
-      <HStack align="center" justify="between" gap={12} wide paddingY={9}>
-        <Text as="span" mono upper size={9} weight={700} color="var(--ft-muted)" letterSpacing="0.10em" nowrap>
-          {dashboardLabel}
-        </Text>
-        {/* Unchanged from the strip it came out of: an edge and a radius so
-            it reads as pressable, --ft-muted so it is not the quietest
-            thing in its row, a LayoutGrid glyph because what it edits is
-            the arrangement of the page, and "Edit layout" because
-            "Customize" does not say customise what. Not an --ft-accent
-            fill — the accent means "you can press this" and a permanently
-            accented control up here would outrank the hero. */}
-        <button
-          onClick={onCustomize}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            height: 26,
-            background: isCustomizing ? "color-mix(in srgb, var(--ft-accent) 12%, transparent)" : "transparent",
-            border: `1px solid ${isCustomizing ? "var(--ft-accent)" : "var(--ft-border2)"}`,
-            borderRadius: 2,
-            color: isCustomizing ? "var(--ft-accent)" : "var(--ft-muted)",
-            fontFamily: "var(--font-mono)",
-            fontSize: 9,
-            fontWeight: 600,
-            letterSpacing: "0.10em",
-            textTransform: "uppercase",
-            padding: "0 10px",
-            cursor: "pointer",
-            flexShrink: 0,
-            transition: "color 0.1s, background 0.1s, border-color 0.1s",
-            whiteSpace: "nowrap",
-          }}
-          onMouseEnter={e => {
-            if (isCustomizing) return;
-            e.currentTarget.style.color = "var(--ft-accent)";
-            e.currentTarget.style.borderColor = "var(--ft-accent)";
-          }}
-          onMouseLeave={e => {
-            if (isCustomizing) return;
-            e.currentTarget.style.color = "var(--ft-muted)";
-            e.currentTarget.style.borderColor = "var(--ft-border2)";
-          }}
-          title={isCustomizing
-            ? "Finish editing — the layout is saved as you go"
-            : "Edit layout — add, remove, resize and rearrange the widgets on this page"}
-        >
-          <LayoutGrid size={11} aria-hidden />
-          {isCustomizing ? "Done" : "Edit layout"}
-        </button>
-      </HStack>
-
-      {/* The two things the page is for, side by side and nothing else in
-          the row. `wrap` drops money-in-motion beneath the hero under
-          about 760px rather than squeezing a 52px figure and three rows of
-          committed movement into half a narrow viewport each. */}
-      {/* `justify` is deliberately NOT `between`. The first build of this
-          header pushed the hero to the left edge and money-in-motion to the
-          right, which at 1440 put about 380px of nothing between them and
-          sent the eye 1000px across the page to answer the second half of
-          the question. Measured against the rebuild's own test — "how much
-          am I worth and is anything about to change that" — the first half
-          landed immediately and the second did not. They are one thought,
-          so they are now adjacent, with a rule between them doing the
-          separating that distance was doing badly. */}
-      <HStack
-        align="stretch"
-        gap={40}
-        wrap
-        wide
-        paddingY={4}
-        marginBottom={16}
-      >
-        <VStack shrink={false} minWidth={280} maxWidth={520} grow>
-          <Text as="span" mono size={9} weight={600} upper color="var(--ft-dim)" letterSpacing="0.14em" mb={10} nowrap>
-            {heroFigure?.label ?? "NET WORTH"}
-          </Text>
-          {/* No overflow:hidden and no ellipsis anywhere on this figure.
-              It is the largest number in the product and a clipped
-              £229,792.65 that reads as £2 is the worst defect this app
-              can ship (CLAUDE.md). clamp() lets it shrink; it never
-              crops. */}
-          <span style={{ color: heroFigure?.valueColor ?? "var(--ft-text)" }}>
-            {heroFigure?.href ? (
-              <DrillTarget href={heroFigure.href} title={`${heroFigure.label} — open what it is made of`}>
-                <span className="pnum ft-drill" style={NET_WORTH_HERO_STYLE}>{heroFigure.value}</span>
-              </DrillTarget>
-            ) : (
-              <span className="pnum" style={NET_WORTH_HERO_STYLE}>{heroFigure?.value ?? "—"}</span>
-            )}
-          </span>
-
-          {heroIsNetWorth ? <NetWorthTrend /> : heroFigure?.delta ? (
-            <HStack align="baseline" gap={8} marginTop={11}>
-              <span className="pnum" style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 15,
-                fontWeight: 700,
-                letterSpacing: "-0.01em",
-                color: heroFigure.deltaColor ?? "var(--ft-dim)",
-                fontVariantNumeric: "tabular-nums",
-                whiteSpace: "nowrap",
-              }}>{heroFigure.delta}</span>
-            </HStack>
-          ) : null}
-        </VStack>
-
-        {/* The rule appears only above 900px. Below that the row wraps and
-            a "vertical" divider would be a stray horizontal line between
-            two stacked blocks. */}
-        <div className="ft-header-divide" style={{ width: 1, background: "var(--ft-border)", flexShrink: 0 }} />
-
-        <MoneyInMotion netWorth={netWorth} />
-      </HStack>
-
-      {/* Everything else, a level down. One quiet run of 13px figures
-          seated between two hairlines — present, readable, drillable, and
-          no longer competing with the number above it. overflowX so a
-          narrow viewport scrolls this run rather than shrinking a figure
-          into a crop. */}
-      {/* T6. Was gap: 34. The status strip in the prototype divides its
-          readings with borderLeft and no gap at all (iter-terminal.tsx,
-          StatusStrip) — a gap says "these are separate", a rule says
-          "these are adjacent", and on a strip of readings adjacency is
-          the whole idea. Same cells, same order, nothing moved: only
-          what sits between them changed. */}
-      {demoted.length > 0 && (
-        <div style={{
-          display: "flex",
-          gap: 0,
-          borderTop: "1px solid var(--ft-border)",
-          borderBottom: "1px solid var(--ft-border)",
-          overflowX: "auto",
-          scrollbarWidth: "none",
-        }}>
-          {demoted.map((cell, i) => (
-            <DemotedCell key={cell.label} cell={cell} divided={i > 0} />
-          ))}
-        </div>
-      )}
-    </VStack>
-  );
-}
-
 // ── Terminal Three-Zone Default Layout ────────────────────────────────────────
 
 // This layout is the desktop no-widgets fallback, so it no longer carries an
@@ -2968,240 +2183,6 @@ function RecentTransactionsWidgetInline() {
   );
 }
 
-// ── Dashboard Overview (default view) ────────────────────────────────────────
-
-const OV_MONO: React.CSSProperties = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
-const OV_LABEL: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.13em", textTransform: "uppercase" as const };
-const OV_SURFACE: React.CSSProperties = {};
-const OV_CLIP: React.CSSProperties = { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const, minWidth: 0 };
-
-function DashboardOverview() {
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-  const { data: dash } = useGetDashboard();
-  const { data: accounts = [] } = useListAccounts({});
-  const now = useMemo(() => new Date(), []);
-  const monthStart = useMemo(() => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`, [now]);
-  const { data: recentTxs = [] } = useListTransactions({ dateFrom: monthStart } as Parameters<typeof useListTransactions>[0]);
-  const { data: upcoming = [] } = useListUpcoming();
-
-  // No isDemo/DEMO_* fabrications. netWorth null → "—" (existing honest
-  // path at :2270). income === 0 hides the this-month strip via existing
-  // `income > 0` gates. sortedAccounts/txRows/upcomingBills empty → each
-  // panel below already renders its own honest empty state.
-  const netWorth = dash?.netWorth ?? null;
-  const income = dash?.thisMonth?.income ?? 0;
-  const expenses = dash?.thisMonth?.expenses ?? 0;
-  const savingsRate = dash?.thisMonth?.savingsRate ?? 0;
-  const net = income - expenses;
-  const netColor = net > 0 ? "var(--ft-green)" : net < 0 ? "var(--ft-red)" : "var(--ft-muted)";
-
-  // Sort on the SIGNED figure, the one the row actually prints. Sorting the
-  // stored magnitude put a £6,800 loan between £8,100 and £2,450 in a column
-  // that is supposed to descend. Unconvertible accounts still sort to the
-  // bottom (-Infinity), so the top-6 slice surfaces the largest real
-  // holdings without a rate outage shuffling them.
-  const sortedAccounts = useMemo(
-    () => [...accounts]
-      .sort((a, b) =>
-        (signedAccountAmount(b.type, b.baseEquivalent) ?? -Infinity) -
-        (signedAccountAmount(a.type, a.baseEquivalent) ?? -Infinity))
-      .slice(0, 6),
-    [accounts]
-  );
-  const txRows = useMemo(
-    () => recentTxs.slice(0, 6) as Array<{ id: string | number; description: string; baseEquivalent: number | null; type: string; date: string; category?: string }>,
-    [recentTxs]
-  );
-  const upcomingBills = useMemo(
-    () => (upcoming as Array<{ id: string | number; description: string; baseEquivalent: number; dueDate: string; type: string }>)
-      .filter(u => u.type === "expense")
-      .slice(0, 4),
-    [upcoming]
-  );
-
-  const C = (color: string) => ({ color });
-
-  return (
-    <VStack gap={8} marginTop={8}>
-
-      {/* ── Hero: Net Worth ── */}
-      <Link href="/net-worth">
-        <div
-          style={{ ...OV_SURFACE, padding: "14px 16px", cursor: "pointer" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
-          onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
-          onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
-        >
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-            <div>
-              <div style={{ ...OV_LABEL, marginBottom: 3 }}>NET WORTH</div>
-              {/* The whole card is already a Link to /net-worth; §14 asks
-                  that the figure itself say so, so it carries the underline
-                  the rest of the product uses. */}
-              <div className="pnum ft-drill" style={{ ...OV_MONO, fontSize: isMobile ? 34 : 36, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "-0.03em", lineHeight: 1 }}>
-                {netWorth === null ? "—" : formatBaseMoney(netWorth)}
-              </div>
-            </div>
-            {income > 0 && (
-              <HStack gap={16} align="start">
-                <div>
-                  <div style={{ ...OV_LABEL, marginBottom: 3 }}>THIS MONTH</div>
-                  {/* Flat, deliberately: this figure sits inside the hero
-                      card, which is one Link to /net-worth. A drill here
-                      would signal "the month's rows" and deliver the net
-                      worth screen — §14 calls that worse than flat. The
-                      same number is drillable on the KPI strip above. */}
-                  <div className="pnum" style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, ...C(netColor) }}>
-                    {net >= 0 ? "+" : ""}{formatBaseMoney(net)}
-                  </div>
-                </div>
-                {savingsRate > 0 && (
-                  <div>
-                    <div style={{ ...OV_LABEL, marginBottom: 3 }}>SAVED</div>
-                    <div className="pnum" style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, color: "var(--ft-green)" }}>
-                      {savingsRate.toFixed(0)}%
-                    </div>
-                  </div>
-                )}
-              </HStack>
-            )}
-          </div>
-          {income > 0 && (
-            <div style={{ display: "flex", gap: 16, marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
-              <span className="pnum" style={{ ...OV_MONO, fontSize: 11, ...C("var(--ft-green)") }}>▲ {formatBaseMoney(income)} in</span>
-              <span className="pnum" style={{ ...OV_MONO, fontSize: 11, ...C("var(--ft-red)") }}>▼ {formatBaseMoney(expenses)} out</span>
-            </div>
-          )}
-        </div>
-      </Link>
-
-      {/* ── Middle: Accounts + Recent Transactions ── */}
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
-
-        {/* Accounts */}
-        <div style={{ ...OV_SURFACE, overflow: "hidden" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: isMobile ? 12 : 14, paddingRight: 4, height: 34 }}>
-            <span style={{ ...OV_LABEL }}>ACCOUNTS</span>
-            <Link href="/accounts" style={{ textDecoration: "none" }}>
-              <span style={{ ...C("var(--ft-cyan)") }}>
-                <span className="ft-drill" style={{ ...OV_MONO, fontSize: 9, fontWeight: 600, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>
-                  {accounts.length} LINKED →
-                </span>
-              </span>
-            </Link>
-          </div>
-          {sortedAccounts.length === 0 ? (
-            <div style={{ ...OV_MONO, fontSize: 11, ...C("var(--ft-muted)"), padding: "12px 14px" }}>No accounts linked</div>
-          ) : sortedAccounts.map((acc, i) => (
-            <div key={acc.id ?? i} style={{ display: "flex", alignItems: "center", gap: 8, padding: isMobile ? "10px 12px" : "7px 14px", borderBottom: i < sortedAccounts.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: isMobile ? 13 : 11, fontWeight: isMobile ? 500 : 400, ...C("var(--ft-text)") }}><Drill href={entityHref("account", acc.id)} title={`${acc.name} — open the account`}>{acc.name}</Drill></div>
-                <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)"), letterSpacing: "0.06em", textTransform: "uppercase" as const, marginTop: isMobile ? 2 : 0 }}>{(acc as any).currency ?? ""}</div>
-              </div>
-              <span className="pnum" style={{ ...OV_MONO, fontSize: isMobile ? 16 : 11, fontWeight: 700, letterSpacing: "-0.02em", ...C(acc.baseEquivalent == null ? "var(--ft-dim)" : acc.baseEquivalent >= 0 ? "var(--ft-text)" : "var(--ft-red)"), flexShrink: 0 }}>
-                {/* "—" for unconvertible accounts; the currency label
-                    above still names the account's own currency. */}
-                {acc.baseEquivalent == null ? "—" : formatBaseMoney(signedAccountAmount(acc.type, acc.baseEquivalent))}
-              </span>
-            </div>
-          ))}
-          {accounts.length > 6 && (
-            <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)"), textAlign: "right", padding: "5px 12px", borderTop: "1px solid var(--ft-border)" }}>
-              +{accounts.length - 6} more →
-            </div>
-          )}
-        </div>
-
-        {/* Recent Transactions */}
-        <div style={{ ...OV_SURFACE, overflow: "hidden" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--ft-border)", paddingLeft: isMobile ? 12 : 14, paddingRight: 4, height: 34 }}>
-            <span style={{ ...OV_LABEL }}>RECENT TRANSACTIONS</span>
-            <Link href="/transactions" style={{ textDecoration: "none" }}>
-              <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-blue)"), fontWeight: 600, letterSpacing: "0.05em", padding: "0 12px", height: 34, display: "flex", alignItems: "center" }}>VIEW ALL →</span>
-            </Link>
-          </div>
-          {txRows.length === 0 ? (
-            <div style={{ ...OV_MONO, fontSize: 11, ...C("var(--ft-muted)"), padding: "12px 14px" }}>No transactions this month</div>
-          ) : txRows.map((tx, i) => {
-            const txTypeColor = tx.type === "income" ? "var(--ft-green)" : tx.type === "expense" ? "var(--ft-red)" : "var(--ft-amber)";
-            const today2 = new Date(); const yesterday2 = new Date(today2); yesterday2.setDate(today2.getDate() - 1);
-            const txDate2 = tx.date ? new Date(tx.date + "T00:00:00") : null;
-            const dateLabel = txDate2
-              ? txDate2.toDateString() === today2.toDateString() ? "Today"
-              : txDate2.toDateString() === yesterday2.toDateString() ? "Yesterday"
-              : txDate2.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
-              : tx.date?.slice(5).replace("-", "/") ?? "";
-            if (isMobile) return (
-              <div key={tx.id ?? i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderBottom: i < txRows.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
-                <div style={{ flexShrink: 0, width: 36, height: 36, borderRadius: "50%", background: `color-mix(in srgb, ${txTypeColor} 15%, var(--ft-raised))`, border: `1.5px solid ${txTypeColor}44`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ ...OV_MONO, fontSize: 13, fontWeight: 700, color: txTypeColor }}>{(tx.category ?? tx.type ?? "?")[0].toUpperCase()}</span>
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 13, fontWeight: 500, ...C("var(--ft-text)"), marginBottom: 2 }}>{tx.description ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}>{tx.description}</Drill> : tx.description}</div>
-                  <div style={{ ...OV_MONO, fontSize: 11, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? <>{" · "}<Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill></> : null}</div>
-                </div>
-                <span className="pnum" style={{ ...OV_MONO, fontSize: 16, fontWeight: 700, letterSpacing: "-0.02em", ...C(tx.baseEquivalent == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0 }}>
-                  {tx.baseEquivalent == null
-                    ? "—"
-                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
-                </span>
-              </div>
-            );
-            return (
-              <div key={tx.id ?? i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 14px", borderBottom: i < txRows.length - 1 ? "1px solid var(--ft-border)" : "none" }}>
-                <VStack minWidth0>
-                  <span style={{ ...OV_MONO, ...OV_CLIP, fontSize: 11, ...C("var(--ft-text)") }}>{tx.description ? <Drill href={merchantTransactionsHref(tx.description)} title={`Every ${tx.description} transaction`}>{tx.description}</Drill> : tx.description}</span>
-                  <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-dim)") }}>{dateLabel}{tx.category ? <>{" · "}<Drill href={categoryTransactionsHref(tx.category)} title={`Everything in ${tx.category}`}>{tx.category}</Drill></> : null}</span>
-                </VStack>
-                <span className="pnum" style={{ ...OV_MONO, fontSize: 11, fontWeight: 600, ...C(tx.baseEquivalent == null ? "var(--ft-dim)" : txTypeColor), flexShrink: 0, paddingLeft: 8 }}>
-                  {tx.baseEquivalent == null
-                    ? "—"
-                    : `${tx.type === "income" ? "+" : tx.type === "expense" ? "−" : ""}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Upcoming Bills ── */}
-      {upcomingBills.length > 0 && (
-        <Link href="/upcoming">
-          <div
-            style={{ ...OV_SURFACE, padding: "12px 14px", cursor: "pointer" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
-            onTouchStart={e => { (e.currentTarget as HTMLDivElement).style.background = "var(--ft-raised)"; }}
-            onTouchEnd={e => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 9 }}>
-              <span style={{ ...OV_LABEL, borderBottom: "1px solid var(--ft-border)", paddingBottom: 2 }}>UPCOMING BILLS</span>
-              <span style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-amber)"), fontWeight: 600 }}>VIEW ALL →</span>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(upcomingBills.length, isMobile ? 2 : 4)}, 1fr)`, gap: 8 }}>
-              {upcomingBills.map((bill, i) => (
-                <div key={bill.id ?? i} style={{ padding: "9px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)" }}>
-                  <div style={{ ...OV_MONO, ...OV_CLIP, fontSize: 9, ...C("var(--ft-dim)"), marginBottom: 4 }}>{bill.description ? <Drill href={recurringSeriesHref(bill.description)} title={`${bill.description} — the series this bill belongs to`}>{bill.description}</Drill> : bill.description}</div>
-                  <div className="pnum" style={{ ...OV_MONO, fontSize: 16, fontWeight: 700, ...C("var(--ft-text)"), marginBottom: 3 }}>
-                    {formatBaseMoney(bill.baseEquivalent)}
-                  </div>
-                  {bill.dueDate && (
-                    <div style={{ ...OV_MONO, fontSize: 9, ...C("var(--ft-amber)") }}>
-                      {bill.dueDate.slice(5).replace("-", "/")}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </Link>
-      )}
-
-    </VStack>
-  );
-}
-
 // ── Saved View Row ────────────────────────────────────────────────────────────
 
 function ViewRow({ view, onLoad, onDelete }: {
@@ -3350,17 +2331,10 @@ export default function Dashboard() {
   const [isCustomizing, setIsCustomizing] = useState(
     () => localStorage.getItem(CUSTOMIZE_MODE_KEY) === "1"
   );
-  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   // PROTOTYPE ONLY. Null in every real session — nothing in the app writes
   // data-proto; only the screenshot harness does, under SCREENSHOT_PROTO.
   // See lib/proto-design.ts.
   const protoDesign = useProtoDesign();
-
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
 
   const dashboardLabel = useMemo(() => {
     const ids = loadPersonaIds();
@@ -3372,11 +2346,6 @@ export default function Dashboard() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
-  );
-
-  const mobileSensors = useSensors(
-    useSensor(TouchSensor, { activationConstraint: { delay: 100, tolerance: 8 } }),
-    useSensor(MouseSensor, { activationConstraint: { distance: 6 } })
   );
 
   // Long-press sensors for view-mode drag (hold 250ms anywhere on widget)
@@ -3478,37 +2447,6 @@ export default function Dashboard() {
     const newColIds = arrayMove(colIds, oldIdx, newIdx);
     // Reconstruct flat enabled order: left column first, then right column
     const newEnabled = aIsRight ? [...leftIds, ...newColIds] : [...newColIds, ...rightIds];
-    setOrder([...newEnabled, ...disabledIds]);
-  }
-
-  function handleDragOverMobile(event: DragOverEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const aId = active.id as WidgetId;
-    const oId = over.id as WidgetId;
-    const key = `${aId}→${oId}`;
-    if (lastOverRef.current === key) return;
-    lastOverRef.current = key;
-    const oldIdx = enabledIds.indexOf(aId);
-    const newIdx = enabledIds.indexOf(oId);
-    if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
-    const newEnabled = arrayMove(enabledIds, oldIdx, newIdx);
-    setOrder([...newEnabled, ...disabledIds]);
-  }
-
-  function handleDragEndMobile(event: DragEndEvent) {
-    setActiveId(null);
-    lastOverRef.current = null;
-    // Order is fully managed by handleDragOverMobile (live reorder).
-    // Only apply here if over fired a final position that wasn't caught by over.
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const aId = active.id as WidgetId;
-    const oId = over.id as WidgetId;
-    const oldIdx = enabledIds.indexOf(aId);
-    const newIdx = enabledIds.indexOf(oId);
-    if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
-    const newEnabled = arrayMove(enabledIds, oldIdx, newIdx);
     setOrder([...newEnabled, ...disabledIds]);
   }
 
@@ -3846,9 +2784,9 @@ export default function Dashboard() {
   // re-opened a question that is already answered. `topRegion` is non-null
   // for exactly those, and null in every real session for the same reason
   // protoDesign is.
-  const topRegion = isMobile ? null : topRegionVariant(protoDesign);
+  const topRegion = topRegionVariant(protoDesign);
 
-  if (protoDesign !== null && topRegion === null && !isMobile) {
+  if (protoDesign !== null && topRegion === null) {
     return <ProtoDashboard design={protoDesign} cells={kpiCells} dashboardLabel={dashboardLabel} />;
   }
 
@@ -3897,20 +2835,6 @@ export default function Dashboard() {
           netWorth={dashData?.netWorth ?? null}
           isCustomizing={isCustomizing}
           onCustomize={handleCustomizeToggle}
-        />
-      ) : isMobile ? (
-        /* The phone keeps DashboardKpiBar. Its narrow branch is a different
-           design under a different spec (the Mobile Amendment), the six
-           arrangements were all captured at 1440, and adopting a desktop
-           answer for a screen it was never tested at is how the last three
-           rounds of this went wrong. */
-        <DashboardKpiBar
-          cells={kpiCells}
-          onCustomize={handleCustomizeToggle}
-          isCustomizing={isCustomizing}
-          dashboardLabel={dashboardLabel}
-          isMobile={isMobile}
-          netWorth={dashData?.netWorth ?? null}
         />
       ) : (
         /* The adopted top region. One block, three bands, no whitespace
@@ -4019,49 +2943,6 @@ export default function Dashboard() {
                 No widgets enabled — add one below
               </div>
             </VStack>
-          ) : isMobile ? (
-            /* Mobile: compact tile DnD — matches view mode exactly, just adds grip + remove strip */
-            <DndContext sensors={mobileSensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragOver={handleDragOverMobile} onDragEnd={handleDragEndMobile} onDragCancel={() => { setActiveId(null); setActiveWidth(null); lastOverRef.current = null; if (preDragOrderRef.current.length) setOrder(preDragOrderRef.current); }}>
-              <div className="ft-mobile-widget-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <SortableContext items={enabledIds} strategy={rectSortingStrategy}>
-                  {enabledIds.map(id => (
-                    <SortableCompactTile key={id} id={id} onRemove={() => toggle(id)} isFullWidth={COMPACT_WIDGET_FULL_WIDTH.has(id)} activeId={activeId} />
-                  ))}
-                </SortableContext>
-              </div>
-              <DragOverlay dropAnimation={{ duration: 200, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }}>
-                {activeId ? (() => {
-                  const CompactPreview = COMPACT_WIDGET_COMPONENTS[activeId];
-                  return (
-                    <div style={{
-                      background: "var(--ft-surface)",
-                      border: "1px solid var(--ft-accent)",
-                      boxShadow: "0 12px 40px rgba(0,0,0,0.55)",
-                      cursor: "grabbing",
-                      opacity: 0.92,
-                      overflow: "hidden",
-                      borderRadius: 2,
-                    }}>
-                      {CompactPreview && <CompactPreview />}
-                      <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        background: "var(--ft-raised)",
-                        borderTop: "1px solid var(--ft-accent)",
-                        height: 36,
-                        paddingLeft: 10,
-                        gap: 8,
-                      }}>
-                        <Text as="span" mono size={16} color="var(--ft-accent)">⠿</Text>
-                        <MonoLabel as="span" size={9} color="var(--ft-accent)" letterSpacing="0.1em">
-                          {WIDGET_DEF_MAP[activeId]?.label ?? activeId}
-                        </MonoLabel>
-                      </div>
-                    </div>
-                  );
-                })() : null}
-              </DragOverlay>
-            </DndContext>
           ) : (
             /* Desktop: drag-and-drop two-column grid */
             <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); setActiveWidth(null); lastOverRef.current = null; if (preDragOrderRef.current.length) { setOrder(preDragOrderRef.current); setRightSet(preDragRightSetRef.current); } }}>
@@ -4100,35 +2981,8 @@ export default function Dashboard() {
         /* ── DEFAULT VIEW: widget grid (mirrors customize mode, read-only) ── */
         <div>
           {enabledIds.length === 0 ? (
-            /* No custom widgets — show terminal layout (desktop) or overview (mobile) */
-            isMobile ? <DashboardOverview /> : <TerminalLayout />
-          ) : isMobile ? (
-            <>
-              <AiInsightsPanel {...aiInsightsProps} />
-              <div
-                className="ft-mobile-widget-grid"
-                style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
-              >
-                {enabledIds.map(id => (
-                  <div
-                    key={id}
-                    style={{
-                      gridColumn: COMPACT_WIDGET_FULL_WIDTH.has(id) ? "1 / -1" : "auto",
-                      minWidth: 0,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <ViewModeWidget id={id} onExpand={() => setExpandedWidgetId(id)} />
-                  </div>
-                ))}
-                <CustomizeDiscoveryTile
-                  remaining={disabledIds.length}
-                  onEnter={handleCustomizeToggle}
-                  fullWidth
-                />
-              </div>
-              <AiInsightsStrip />
-            </>
+            /* No custom widgets — show the terminal layout */
+            <TerminalLayout />
           ) : (
             <>
               {/* The AI float is gone from the desktop grid. Its lines are
