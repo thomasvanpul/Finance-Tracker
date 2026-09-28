@@ -1981,7 +1981,9 @@ export function Layout({ children }: LayoutProps) {
                   opens the same place (DESIGN.md §14). */}
               <Drill href="/net-worth" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4, flex: 1 }} title="Net worth — open what it is made of">
                 <span style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em" }}>NET WORTH</span>
-                <PrivNum style={{ fontSize: 10, color: "var(--ft-text)", fontWeight: 700 }}>
+                {/* No colour on the figure: it inherits the body text, and
+                    anything inline here would beat .ft-drill:hover. */}
+                <PrivNum style={{ fontSize: 10, fontWeight: 700 }}>
                   {formatBaseMoney(dashboardData.netWorth)}
                 </PrivNum>
               </Drill>

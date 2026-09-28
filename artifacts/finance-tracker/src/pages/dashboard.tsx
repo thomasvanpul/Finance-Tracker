@@ -2275,16 +2275,18 @@ function NetWorthTrend() {
   return (
     <HStack align="baseline" gap={8} marginTop={11}>
       <DrillTarget href="/net-worth" title="Net worth — what moved it over this window">
-        <span className="pnum ft-drill" style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 15,
-          fontWeight: 700,
-          letterSpacing: "-0.01em",
-          color: colour,
-          fontVariantNumeric: "tabular-nums",
-          whiteSpace: "nowrap",
-        }}>
-          {value > 0 ? "+" : ""}{formatMoney(value, data.baseCurrency)}
+        {/* Colour on a wrapper: inline on .ft-drill it would beat the hover accent. */}
+        <span style={{ color: colour }}>
+          <span className="pnum ft-drill" style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 15,
+            fontWeight: 700,
+            letterSpacing: "-0.01em",
+            fontVariantNumeric: "tabular-nums",
+            whiteSpace: "nowrap",
+          }}>
+            {value > 0 ? "+" : ""}{formatMoney(value, data.baseCurrency)}
+          </span>
         </span>
       </DrillTarget>
       <Text as="span" mono size={9} upper color="var(--ft-dim)" letterSpacing="0.10em" nowrap>

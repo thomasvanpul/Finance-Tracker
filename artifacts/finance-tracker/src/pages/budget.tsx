@@ -225,9 +225,15 @@ interface BudgetKpiCellProps {
    * days. Pressing those would promise a list that does not exist.
    */
   href?: string;
+  /**
+   * The figure's semantic colour. It goes on the wrapper, never inline on
+   * the value: `.ft-drill` inherits its colour so hover can turn it
+   * `--ft-accent`, and an inline colour inside the drill beats that.
+   */
+  valueColor?: string;
 }
 
-function BudgetKpiCell({ label, value, sub, extra, isPriv = false, href }: BudgetKpiCellProps) {
+function BudgetKpiCell({ label, value, sub, extra, isPriv = false, href, valueColor = "var(--ft-text)" }: BudgetKpiCellProps) {
   const [hov, setHov] = React.useState(false);
   return (
     <div
@@ -249,7 +255,7 @@ function BudgetKpiCell({ label, value, sub, extra, isPriv = false, href }: Budge
           neighbours on a narrow desktop. */}
       <div
         className={isPriv ? "pnum" : undefined}
-        style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(14px, 1.4vw, 18px)", fontWeight: 700, color: "var(--ft-text)", lineHeight: 1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}
+        style={{ fontFamily: "var(--font-mono)", fontSize: "clamp(14px, 1.4vw, 18px)", fontWeight: 700, color: valueColor, lineHeight: 1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}
       >
         {href ? <Drill href={href} title="Open the transactions this figure added up">{value}</Drill> : value}
       </div>
@@ -1726,7 +1732,7 @@ export default function Budget() {
           },
           {
             label: "Total Spent",
-            value: <Text as="span" color={totalSpent > totalBudgeted ? "var(--ft-red)" : "var(--ft-text)"}>{formatBaseMoney(totalSpent)}</Text>,
+            value: <>{formatBaseMoney(totalSpent)}</>,
             rawValue: formatBaseMoney(totalSpent),
             color: totalSpent > totalBudgeted ? "var(--ft-red)" : "var(--ft-text)",
             sub: `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`,
@@ -1738,7 +1744,7 @@ export default function Budget() {
             href: ledgerHref({ type: "expense", from: monthRange.from, to: monthRange.to }),
           },
         ].map((item) => (
-          <BudgetKpiCell key={item.label} label={item.label} value={item.value} sub={item.sub} isPriv={item.isPriv} href={item.href} />
+          <BudgetKpiCell key={item.label} label={item.label} value={item.value} sub={item.sub} isPriv={item.isPriv} href={item.href} valueColor={item.color} />
         ))}
         <BudgetKpiCell
           label="Remaining"

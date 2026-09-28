@@ -1259,9 +1259,16 @@ interface KpiCellProps {
    * dead affordance, which §14 says is worse than a flat number.
    */
   href?: string;
+  /**
+   * The figure's semantic colour. It goes on the wrapper, never inline on
+   * the value: `.ft-drill` inherits its colour so that hover can turn it
+   * `--ft-accent`, and an inline colour on or inside the drill beats that
+   * and leaves the digits green while only the underline answers.
+   */
+  valueColor?: string;
 }
 
-function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false, isLast = false, href }: KpiCellProps) {
+function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false, isLast = false, href, valueColor = "var(--ft-text)" }: KpiCellProps) {
   // The `accent` prop is deliberately ignored (renamed `_accent`).
   // Rainbow per-cell colour was decoration; per docs/MOBILE-CONCEPT.md
   // § Desktop port, colour is semantic or absent. Icon renders in
@@ -1296,7 +1303,7 @@ function KpiCell({ label, value, sub, accent: _accent, icon, isFinancial = false
           when the figure is very wide. */}
       <div
         className={isFinancial ? "pnum" : undefined}
-        style={{ fontSize: "clamp(14px, 1.3vw, 18px)", fontWeight: 700, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap", minWidth: 0 }}
+        style={{ fontSize: "clamp(14px, 1.3vw, 18px)", fontWeight: 700, color: valueColor, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", lineHeight: 1, whiteSpace: "nowrap", minWidth: 0 }}
       >
         {href ? (
           <DrillTarget href={href} title={`${label} — open what it is made of`}>
@@ -2370,7 +2377,8 @@ export default function Accounts() {
               >
               <KpiCell
                 label={liabilitiesTotal !== 0 ? "Accounts, net of debt" : "Accounts"}
-                value={<span className="pnum" style={{ color: totalCash < 0 ? "var(--ft-red)" : "var(--ft-green)" }}>{formatBaseMoney(totalCash)}</span>}
+                value={<span className="pnum">{formatBaseMoney(totalCash)}</span>}
+                valueColor={totalCash < 0 ? "var(--ft-red)" : "var(--ft-green)"}
                 sub={
                   unconvertibleCount > 0
                     ? <span style={{ color: "var(--ft-amber)" }}>{unconvertibleCount} account{unconvertibleCount !== 1 ? "s" : ""} without FX — not in total</span>
@@ -2388,7 +2396,8 @@ export default function Accounts() {
               <KpiCell
                 label="Total Portfolio"
                 href="/investments"
-                value={<span className="pnum" style={{ color: "var(--ft-cyan)" }}>{formatBaseMoney(portfolioVal)}</span>}
+                value={<span className="pnum">{formatBaseMoney(portfolioVal)}</span>}
+                valueColor="var(--ft-cyan)"
                 sub="investments (GBP)"
                 accent="var(--ft-cyan)"
                 icon={<TrendingUp className="w-3.5 h-3.5" />}
@@ -2398,8 +2407,9 @@ export default function Accounts() {
                 label="Net Worth"
                 href="/net-worth"
                 value={netWorth == null
-                  ? <span style={{ color: "var(--ft-dim)" }}>—</span>
-                  : <span className="pnum" style={{ color: netWorth >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>{formatBaseMoney(netWorth)}</span>}
+                  ? "—"
+                  : <span className="pnum">{formatBaseMoney(netWorth)}</span>}
+                valueColor={netWorth == null ? "var(--ft-dim)" : netWorth >= 0 ? "var(--ft-amber)" : "var(--ft-red)"}
                 // Net worth inherits Total Cash's `?? 0` shortfall
                 // when any account has a null baseEquivalent — the
                 // Total Cash cell already announces the count, but
@@ -2420,7 +2430,7 @@ export default function Accounts() {
               <KpiCell
                 label="Most Active"
                 href={mostRecentAccount ? entityHref("account", mostRecentAccount.account.id) : undefined}
-                value={<span style={{ fontSize: 13, color: "var(--ft-text)", whiteSpace: "nowrap", display: "block", minWidth: 0 }}>{mostRecentAccount ? mostRecentAccount.account.name.split(" ").slice(0, 2).join(" ") : "—"}</span>}
+                value={<span style={{ fontSize: 13, whiteSpace: "nowrap", display: "block", minWidth: 0 }}>{mostRecentAccount ? mostRecentAccount.account.name.split(" ").slice(0, 2).join(" ") : "—"}</span>}
                 sub={mostRecentAccount ? `last txn ${mostRecentAccount.lastTxDate}` : "no transactions"}
                 accent="var(--ft-blue)"
                 icon={<Landmark className="w-3.5 h-3.5" />}

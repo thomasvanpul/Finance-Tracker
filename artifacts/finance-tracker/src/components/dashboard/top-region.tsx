@@ -133,11 +133,14 @@ export function Reading({ cell, valueSize = 12 }: { cell: TopRegionCell; valueSi
   // pair, not of any one metric: PORTFOLIO with a zero value and a non-zero
   // P&L had the identical defect waiting on different data.
   const delta = isUnknown(cell.value) ? undefined : cell.delta;
+  // The semantic colour sits on a wrapper, never on .ft-drill itself: an
+  // inline colour there beats the accent .ft-drill:hover gives the figure.
   const figure = (
-    <Text as="span" numeric size={valueSize} weight={600}
-      color={cell.valueColor ?? "var(--ft-text)"} className={cell.href ? "ft-drill" : undefined} nowrap>
-      {cell.value}
-    </Text>
+    <span style={{ color: cell.valueColor ?? "var(--ft-text)" }}>
+      <Text as="span" numeric size={valueSize} weight={600} className={cell.href ? "ft-drill" : undefined} nowrap>
+        {cell.value}
+      </Text>
+    </span>
   );
   return (
     <HStack align="baseline" gap={6} padding="5px 12px" shrink={false}>
@@ -348,11 +351,13 @@ function Causes({ rows, currency }: { rows: AttributionRow[]; currency: string }
               a block inside a clause breaks the sentence onto two lines. Here
               the figure IS the target, so the inline drill is also the right
               §14 shape. */}
-          <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`}>
-            <Text as="span" numeric size={12} weight={600} color={signColour(row.amountBase)} nowrap>
-              {signedMoney(row.amountBase, currency)}
-            </Text>
-          </Drill>
+          <span style={{ color: signColour(row.amountBase) }}>
+            <Drill href={row.drillHref} title={`Open what is behind "${row.label}"`}>
+              <Text as="span" numeric size={12} weight={600} nowrap>
+                {signedMoney(row.amountBase, currency)}
+              </Text>
+            </Drill>
+          </span>
         </Fragment>
       ))}
     </Text>
