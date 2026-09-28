@@ -90,7 +90,7 @@ function TxRow({ tx, isExpanded }: { tx: TxRecord; isExpanded?: boolean }) {
           {tx.category}
         </Drill>
       </span>
-      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: tx.baseEquivalent == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", flexShrink: 0, width: 72, textAlign: "right" }}>
+      <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: tx.baseEquivalent == null ? "var(--ft-dim)" : TYPE_COLOR[tx.type] ?? "var(--ft-muted)", flexShrink: 0, minWidth: 72, textAlign: "right" }}>
         {tx.baseEquivalent == null ? "—" : `${TYPE_PREFIX[tx.type]}${formatBaseMoney(Math.abs(tx.baseEquivalent))}`}
       </span>
     </div>

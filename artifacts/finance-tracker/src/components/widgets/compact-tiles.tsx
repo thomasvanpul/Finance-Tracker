@@ -297,7 +297,7 @@ function CompactQuoteRow({ sym, name, price, pctStr, col, dir, isUp, isLast }: C
     >
       <span style={{ ...MONO, fontSize: 11, fontWeight: 600, color: "var(--ft-text)", width: 36, flexShrink: 0 }}>{sym}</span>
       <span style={{ ...MONO, ...CLIP, fontSize: 11, color: "var(--ft-dim)", flex: 1 }}>{name}</span>
-      <span className="pnum" style={{ ...MONO, fontSize: 11, fontWeight: 600, color: "var(--ft-text)", width: 58, textAlign: "right" as const, flexShrink: 0, letterSpacing: "-0.01em" }}>{price}</span>
+      <span className="pnum" style={{ ...MONO, fontSize: 11, fontWeight: 600, color: "var(--ft-text)", minWidth: 58, textAlign: "right" as const, flexShrink: 0, letterSpacing: "-0.01em" }}>{price}</span>
       <span style={{
         ...MONO, fontSize: 11, fontWeight: 600,
         color: col,

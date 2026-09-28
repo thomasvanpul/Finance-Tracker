@@ -509,10 +509,10 @@ function CategoryRow({ row, rank }: CategoryRowProps) {
           opacity: 0.75,
         }} />
       </div>
-      <div className="pnum" style={{ ...mono, fontSize: 10, color, width: 46, textAlign: "right", fontWeight: 700, flexShrink: 0 }}>
+      <div className="pnum" style={{ ...mono, fontSize: 10, color, minWidth: 46, textAlign: "right", fontWeight: 700, flexShrink: 0 }}>
         {row.pct.toFixed(1)}%
       </div>
-      <div className="pnum" style={{ ...mono, fontSize: 11, color: "var(--ft-muted)", width: 76, textAlign: "right", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+      <div className="pnum" style={{ ...mono, fontSize: 11, color: "var(--ft-muted)", minWidth: 76, textAlign: "right", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
         {formatBaseMoney(row.val)}
       </div>
     </div>

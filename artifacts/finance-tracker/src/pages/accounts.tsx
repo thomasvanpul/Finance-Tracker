@@ -1338,6 +1338,8 @@ interface AccountRowProps {
   deleteConfirmId: number | null;
   baseCurrency: string;
   privacyStyle: React.CSSProperties;
+  /** Width of the base-balance column, shared with the header and footer. */
+  balanceColW: number;
   accountMeta: Record<string, AccountMeta>;
   healthTxs: { accountName: string; date: string; type: string; baseEquivalent: number; nativeAmount: number; currency: string; category: string; description: string; id: number }[] | undefined;
   onToggleExpand: (id: number) => void;
@@ -1355,6 +1357,7 @@ function AccountTableRow({
   deleteConfirmId,
   baseCurrency,
   privacyStyle,
+  balanceColW,
   accountMeta,
   healthTxs,
   onToggleExpand,
@@ -1491,7 +1494,7 @@ function AccountTableRow({
         {/* Native balance */}
         <div
           className="pnum ft-hide-mobile"
-          style={{ width: 160, minWidth: 160, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", fontFamily: "var(--font-mono)", textAlign: "right" }}
+          style={{ flexShrink: 0, minWidth: 160, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", fontFamily: "var(--font-mono)", textAlign: "right" }}
         >
           <div style={{ color: account.balance < 0 ? "var(--ft-red)" : "var(--ft-text)", fontSize: 13, fontWeight: 700, letterSpacing: "-0.02em", fontVariantNumeric: "tabular-nums", ...privacyStyle }}>
             {formatNative(account.balance, account.currency)}
@@ -1503,7 +1506,7 @@ function AccountTableRow({
             figure in the account's own currency. */}
         <div
           className="pnum"
-          style={{ width: isMobile ? undefined : 130, minWidth: isMobile ? undefined : 130, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.baseEquivalent == null ? "var(--ft-dim)" : signedAccountAmount(account.type, account.baseEquivalent) < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", ...privacyStyle }}
+          style={{ flexShrink: isMobile ? undefined : 0, minWidth: isMobile ? undefined : balanceColW, padding: isMobile ? "10px 10px" : "7px 12px", borderRight: "1px solid var(--ft-raised)", color: account.baseEquivalent == null ? "var(--ft-dim)" : signedAccountAmount(account.type, account.baseEquivalent) < 0 ? "var(--ft-red)" : "var(--ft-green)", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em", textAlign: "right", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", ...privacyStyle }}
         >
           {account.baseEquivalent == null ? "—" : formatBaseMoney(signedAccountAmount(account.type, account.baseEquivalent))}
         </div>
@@ -1824,6 +1827,22 @@ export default function Accounts() {
     else if (accountSort === "currency") list = [...list].sort((a, b) => a.currency.localeCompare(b.currency));
     return list;
   }, [accounts, accountFilter, accountSearch, accountSort]);
+
+  // The base-balance column is as wide as its widest figure, so a 7-figure
+  // balance widens the whole column instead of running into HEALTH or
+  // pushing one row out of line with the rest (DESIGN.md §8: the slot gives,
+  // the digits do not). The ledger's recipe (transactions.tsx amountColW) at
+  // this column's 18px mono: 10.8px advance, 24px of cell padding. The floor
+  // is the old fixed width. Measured 2026-09-28: `£156,945.29` renders 140px
+  // and was clipped to a 130px slot.
+  const balanceColW = useMemo(() => {
+    let widest = 0;
+    for (const a of filteredAccounts) {
+      if (a.baseEquivalent == null) continue;
+      widest = Math.max(widest, formatBaseMoney(signedAccountAmount(a.type, a.baseEquivalent)).length);
+    }
+    return Math.max(130, Math.ceil(widest * 10.8) + 24);
+  }, [filteredAccounts]);
 
   const [addOpen, setAddOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -2827,7 +2846,7 @@ export default function Accounts() {
               ["TYPE", "100px", "ft-hide-mobile"],
               ["CURRENCY", "90px", "ft-hide-mobile"],
               ["BALANCE (NATIVE)", "160px", "ft-hide-mobile"],
-              [`BALANCE (${baseCurrency})`, "130px", ""],
+              [`BALANCE (${baseCurrency})`, `${balanceColW}px`, ""],
               ["HEALTH", "200px", "ft-hide-mobile"],
               ["LAST SYNC", "120px", "ft-hide-mobile"],
               ["ACTIONS", "90px", ""],
@@ -2872,6 +2891,7 @@ export default function Accounts() {
                   deleteConfirmId={deleteConfirmId}
                   baseCurrency={baseCurrency}
                   privacyStyle={privacyStyle}
+                  balanceColW={balanceColW}
                   accountMeta={accountMeta}
                   healthTxs={healthTxs as AccountRowProps["healthTxs"]}
                   onToggleExpand={toggleExpand}
@@ -2954,8 +2974,8 @@ export default function Accounts() {
               <div
                 className="pnum"
                 style={{
-                  width: 130,
-                  minWidth: 130,
+                  flexShrink: 0,
+                  minWidth: balanceColW,
                   padding: "6px 12px",
                   color: "var(--ft-green)",
                   fontSize: 12,

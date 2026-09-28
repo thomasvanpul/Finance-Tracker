@@ -711,7 +711,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
                   <span style={{ color: "var(--ft-text)", fontWeight: 600, fontSize: 12 }}>{row.assetClass}</span>
                 </div>
                 {/* Current value */}
-                <div className="pnum" style={{ ...RTBD, width: 130, minWidth: 130, textAlign: "right", color: "var(--ft-text)" }}>
+                <div className="pnum" style={{ ...RTBD, flexShrink: 0, minWidth: 130, textAlign: "right", color: "var(--ft-text)" }}>
                   {formatBaseMoney(row.currentValue)}
                 </div>
                 {/* Current % */}
@@ -766,7 +766,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
             <div style={{ ...RTBD, flex: 1, color: "var(--ft-dim)", fontWeight: 700, fontSize: 10, letterSpacing: "0.4px", textTransform: "uppercase" }}>
               TOTAL
             </div>
-            <div className="pnum" style={{ ...RTBD, width: 130, minWidth: 130, textAlign: "right", color: "var(--ft-text)", fontWeight: 700 }}>
+            <div className="pnum" style={{ ...RTBD, flexShrink: 0, minWidth: 130, textAlign: "right", color: "var(--ft-text)", fontWeight: 700 }}>
               {formatBaseMoney(totalCurrentValue)}
             </div>
             <div style={{ ...RTBD, width: 100, minWidth: 100, textAlign: "right", color: "var(--ft-muted)", fontWeight: 700 }}>

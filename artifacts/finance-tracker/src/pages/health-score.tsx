@@ -652,7 +652,7 @@ function RecRow({ rec, rank, priorityLabel, priorityColor, isLast }: RecRowProps
         transition: "background 0.1s",
       }}>
       {/* Rank */}
-      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: rec.color, opacity: 0.5, flexShrink: 0, width: 20, textAlign: "center" as const }}>
+      <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 16, fontWeight: 700, color: rec.color, opacity: 0.5, flexShrink: 0, minWidth: 20, textAlign: "center" as const }}>
         {rank}
       </div>
       {/* Text */}

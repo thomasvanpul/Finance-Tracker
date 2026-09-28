@@ -2941,7 +2941,7 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
                         <div style={{ flex: 1, height: 3, background: "var(--ft-border)" }}>
                           <div style={{ height: "100%", width: `${Math.round(sharePct)}%`, background: "var(--ft-red)", opacity: 0.7 }} />
                         </div>
-                        <span className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", width: 32, textAlign: "right" }}>{sharePct.toFixed(0)}%</span>
+                        <span className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", flexShrink: 0, minWidth: 32, textAlign: "right" }}>{sharePct.toFixed(0)}%</span>
                       </HStack>
                     </td>
                   )}

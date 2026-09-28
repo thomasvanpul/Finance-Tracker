@@ -1097,7 +1097,7 @@ function DisplayAndMotionPanel() {
             <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", width: 46 }}>Minimal</span>
             <input type="range" min={0} max={100} value={intensity} onChange={e => setIntensityVal(Number(e.target.value))} style={{ flex: 1, accentColor: "var(--ft-accent)" }} />
             <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", width: 30, textAlign: "right" }}>Rich</span>
-            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", width: 32, textAlign: "right" }}>{intensity}</span>
+            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-accent)", flexShrink: 0, minWidth: 32, textAlign: "right" }}>{intensity}</span>
           </HStack>
           <Text as="div" size={10} color="var(--ft-dim)" mt={6}>Affects particle density and opacity. Some effects require a page refresh.</Text>
         </div>
