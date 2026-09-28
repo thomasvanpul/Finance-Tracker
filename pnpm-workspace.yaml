@@ -89,6 +89,18 @@ catalog:
 
 autoInstallPeers: false
 
+# node_modules is a symlink shared across the main checkout and every git
+# worktree under .orchestra/tasks/ and .claude/worktrees/ (see CLAUDE.md).
+# pnpm 11's default verifyDepsBeforeRun: install reruns `pnpm install` from
+# whichever cwd invoked the failing command, which regenerates
+# node_modules/.bin/* shims with paths relative to THAT cwd — corrupting them
+# for every other checkout sharing the same physical node_modules, and
+# aborting outright with ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY when no
+# TTY is attached (every non-interactive session, including the gate hook).
+# This key is only honoured from pnpm-workspace.yaml, not from .npmrc — an
+# .npmrc verify-deps-before-run=false here is silently ignored by pnpm 11.19.
+verifyDepsBeforeRun: false
+
 # pnpm 11 removed `onlyBuiltDependencies` and `ignoredBuiltDependencies` and
 # replaced both with `allowBuilds`, a dictionary. The old keys are silently
 # ignored, and with strictDepBuilds now defaulting to true any unapproved build
