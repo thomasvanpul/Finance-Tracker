@@ -495,10 +495,48 @@ interface YahooRead<T> {
   isIndex: boolean;
 }
 
+/** The previous close a day change is measured against: the close of the
+ *  newest dated row before the session `regularMarketTime` falls in.
+ *  Exported for its test.
+ *
+ *  Not meta.chartPreviousClose. That is the close before the request
+ *  WINDOW's first bar, so on a 5-day window it is about six days old for a
+ *  24/7 crypto leg and several sessions old for an equity (measured on AAPL
+ *  on 2026-09-16: 326.57 against a true 333.08, see market-eod.ts). Null
+ *  rather than a substitute when no bar qualifies — a wrong previous close
+ *  renders as a wrong day-change percentage, which is a fabricated number
+ *  in the sense CLAUDE.md forbids. Sessions are dated in UTC, the frame
+ *  yahooDailyBars and market-eod already use. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function previousSessionClose(meta: any, quotes: unknown): number | null {
+  const at = toDate(meta?.regularMarketTime);
+  if (!at || !Array.isArray(quotes)) return null;
+  const session = sessionDateUtc(at);
+  // The newest row before the session decides, with or without a close.
+  // Yahoo returns rows with a null close (BTC-USD, 27 Sep 2026); stepping
+  // past one would label a two-day change as the day change.
+  let prior: { date: string; close: unknown } | null = null;
+  for (const r of quotes) {
+    const d = toDate(r?.date);
+    if (!d) continue;
+    const date = sessionDateUtc(d);
+    if (date >= session) continue;
+    if (!prior || date > prior.date) prior = { date, close: r.close };
+  }
+  const close = prior?.close;
+  return typeof close === "number" && Number.isFinite(close) && close > 0 ? close : null;
+}
+
+function toDate(v: unknown): Date | null {
+  if (v === null || v === undefined) return null;
+  const d = v instanceof Date ? v : new Date(v as string | number);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 async function yahooChartPrice(ticker: string): Promise<YahooRead<StockPriceData>> {
   // A 5-day window is the smallest that reliably contains a previous
-  // close across a weekend or a public holiday. We read `meta` only; the
-  // quote rows are not requested for a price lookup.
+  // close across a weekend or a public holiday. The price comes from
+  // `meta`; the previous close from the dated rows (previousSessionClose).
   const period1 = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chart: any = await yahooFinance.chart(ticker, { period1, interval: "1d" });
@@ -507,16 +545,7 @@ async function yahooChartPrice(ticker: string): Promise<YahooRead<StockPriceData
   if (typeof price !== "number" || price <= 0) {
     throw new Error(`yahoo returned no price for ${ticker}`);
   }
-  // chartPreviousClose is the close of the session before the window's
-  // first bar. Null rather than a substitute if absent — a wrong previous
-  // close renders as a wrong day-change percentage, which is a fabricated
-  // number in the sense CLAUDE.md forbids.
-  const previousClose =
-    typeof meta?.chartPreviousClose === "number" && meta.chartPreviousClose > 0
-      ? meta.chartPreviousClose
-      : typeof meta?.previousClose === "number" && meta.previousClose > 0
-        ? meta.previousClose
-        : null;
+  const previousClose = previousSessionClose(meta, chart?.quotes);
   return {
     data: {
       ticker,

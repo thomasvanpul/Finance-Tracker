@@ -98,6 +98,9 @@ describe("no market export escapes the list above", () => {
     // on its first run — which is the argument for enumerating exports
     // rather than keeping a list by hand.)
     "sessionDateUtc", "utcDayBefore", "getYahooRichQuoteStatus", "filterNewsForUser",
+    // previousSessionClose reads a chart response ALREADY fetched by the
+    // gated price lane; it has no transport of its own.
+    "previousSessionClose",
     // Test seams.
     "__setFxCacheForTesting", "__setYahooForTesting",
   ];

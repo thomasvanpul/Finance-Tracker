@@ -29,20 +29,27 @@ process.env.ENABLE_MARKET_DATA = "1";
 // one it always was, on the same values.
 //
 // The table is still written in quote() field names so the cases stay
-// readable; the adapter below renames them to their chart `meta` equivalents
-// (regularMarketPreviousClose → chartPreviousClose) exactly as Yahoo does.
+// readable; the adapter below turns them into the chart shape. Since
+// 2026-09-28 the lane reads the previous close from the dated row before the
+// current session, not from meta.chartPreviousClose (the close before the
+// request window, days stale), so regularMarketPreviousClose becomes
+// yesterday's row and the price today's.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const yahooWith = (byTicker: Record<string, any>) => ({
   chart: async (t: string) => {
     const row = byTicker[t];
     if (!row) return Promise.reject(new Error(`no ${t}`));
+    const today = new Date("2026-09-25T20:00:00Z");
     return {
       meta: {
         regularMarketPrice: row.regularMarketPrice,
-        chartPreviousClose: row.regularMarketPreviousClose,
+        regularMarketTime: today,
         currency: row.currency,
       },
-      quotes: [],
+      quotes: [
+        { date: new Date("2026-09-24T13:30:00Z"), close: row.regularMarketPreviousClose ?? null },
+        { date: new Date("2026-09-25T13:30:00Z"), close: row.regularMarketPrice },
+      ],
     };
   },
   quote: async (t: string) => byTicker[t] ?? Promise.reject(new Error(`no ${t}`)),
