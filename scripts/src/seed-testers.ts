@@ -4,10 +4,17 @@
 // account whose email already exists is left untouched and skipped, so
 // re-running after adding testers only creates the new ones.
 //
-// Generated passwords are written once, at creation, to
-// ~/.atrium/numeris-testers.txt (mode 600) and never printed or logged.
-// There is nothing to re-derive a lost password from; delete the tester's
-// user row (cascades) and re-run to reissue one.
+// Generated passwords are appended to ~/.atrium/numeris-testers.txt (mode
+// 600, never printed or logged) the moment that account's sign-up succeeds,
+// one `branch<TAB>email<TAB>password` line each. Not after the loop: on 28 Sep
+// a prod run died at tester4 and took tester1-3's already-created passwords
+// with it. There is nothing to re-derive a lost password from, and the app has
+// no admin set-password path (see .review/archive 2026-09-28 prod-testers).
+//
+// better-auth, in production, allows 3 sign-ups per IP and only resets that
+// count after 10s with none (rate-limiter/index.mjs getDefaultSpecialRules,
+// decideConsume). Seeding a tester takes less than that, so the 4th sign-up
+// got 429. signUp() waits out X-Retry-After and tries again.
 //
 // Each tester is stamped onboarded (app_settings.onboarded_at, persona
 // "full") at creation, the same effect the first PUT /api/settings/persona
@@ -110,29 +117,49 @@ function generatePassword(): string {
 }
 
 // ── Credentials file: append-only, mode 600, never logged ──────────────────
+// Lines written before 28 Sep carry no branch column; they are all from the
+// 00:51 dev run. verify-tester-logins.ts reads both shapes.
 const CREDENTIALS_DIR = join(homedir(), ".atrium");
 const CREDENTIALS_PATH = join(CREDENTIALS_DIR, "numeris-testers.txt");
 
-function writeCredentials(creds: { email: string; password: string }[]): void {
-  if (creds.length === 0) return;
+function appendCredential(branch: "dev" | "prod", email: string, password: string): void {
   if (!existsSync(CREDENTIALS_DIR)) mkdirSync(CREDENTIALS_DIR, { mode: 0o700 });
-  const lines = creds.map((c) => `${c.email}\t${c.password}`).join("\n") + "\n";
-  appendFileSync(CREDENTIALS_PATH, lines, { mode: 0o600 });
+  appendFileSync(CREDENTIALS_PATH, `${branch}\t${email}\t${password}\n`, { mode: 0o600 });
   chmodSync(CREDENTIALS_PATH, 0o600);
-  console.log(`[seed-testers] wrote ${creds.length} credential(s) to ${CREDENTIALS_PATH} (mode 600, not printed)`);
+  console.log(`[seed-testers] ${email}: login saved to ${CREDENTIALS_PATH} (mode 600, not printed)`);
 }
 
 // ── Create one tester via better-auth HTTP endpoint (owns the password hash) ─
-async function signUp(apiBase: string, origin: string, email: string, password: string, name: string): Promise<string> {
-  const res = await fetch(`${apiBase}/api/auth/sign-up/email`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Origin": origin },
-    body: JSON.stringify({ email, password, name }),
-  });
-  if (!res.ok) {
+const SIGNUP_MAX_ATTEMPTS = 4;
+const RETRY_MARGIN_MS = 1000;
+
+async function postSignUp(apiBase: string, origin: string, email: string, password: string, name: string): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    const res = await fetch(`${apiBase}/api/auth/sign-up/email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Origin": origin },
+      body: JSON.stringify({ email, password, name }),
+    });
+    if (res.ok) return;
     const body = await res.text();
+    if (res.status === 429 && attempt < SIGNUP_MAX_ATTEMPTS) {
+      const retryAfterS = Number(res.headers.get("x-retry-after") ?? res.headers.get("retry-after") ?? "10");
+      const waitMs = (Number.isFinite(retryAfterS) ? retryAfterS * 1000 : 10_000) + RETRY_MARGIN_MS;
+      console.log(`[seed-testers] ${email}: sign-up rate-limited (429), waiting ${Math.ceil(waitMs / 1000)}s`);
+      await new Promise((r) => setTimeout(r, waitMs));
+      continue;
+    }
     throw new Error(`sign-up failed for ${email}: ${res.status} ${res.statusText}\n${body}`);
   }
+}
+
+async function signUp(
+  branch: "dev" | "prod", apiBase: string, origin: string, email: string, password: string, name: string,
+): Promise<string> {
+  await postSignUp(apiBase, origin, email, password, name);
+  // The account now exists with this password. Save it before anything
+  // else can fail.
+  appendCredential(branch, email, password);
   const row = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email));
   if (row.length === 0) throw new Error(`user row missing after sign-up for ${email}`);
   // REQUIRE_EMAIL_VERIFICATION is on and testers have no inbox reachable
@@ -168,7 +195,6 @@ async function main(): Promise<void> {
 
   let created = 0;
   let skipped = 0;
-  const newCredentials: { email: string; password: string }[] = [];
   let confirmed = false;
 
   for (let i = 1; i <= count; i++) {
@@ -189,15 +215,12 @@ async function main(): Promise<void> {
       confirmed = true;
     }
     const password = generatePassword();
-    const userId = await signUp(apiBase, origin, email, password, `Tester ${i}`);
+    const userId = await signUp(branch, apiBase, origin, email, password, `Tester ${i}`);
     await seedDemoData(userId);
     await markOnboarded(userId);
-    newCredentials.push({ email, password });
     created++;
     console.log(`[seed-testers] ${email}: created (${userId})`);
   }
-
-  if (!dryRun) writeCredentials(newCredentials);
 
   console.log(`\n[seed-testers] done. ${created} created, ${skipped} already existed.`);
   process.exit(0);

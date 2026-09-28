@@ -20,6 +20,9 @@ import { assertRendered } from "./screenshot.js";
 const FRONTEND = process.env.SCREENSHOT_FRONTEND ?? "http://localhost:4321";
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
 const CREDENTIALS_PATH = join(homedir(), ".atrium", "numeris-testers.txt");
+// Which branch's testers to check. The file holds both; the defaults above
+// point at the local (dev) stack, so dev is the default here too.
+const BRANCH = process.env.TESTERS_BRANCH ?? "dev";
 
 // Same two viewports every capture script in this repo uses (screenshot.ts
 // VIEWPORTS.mobile / .desktop) — kept literal here rather than imported
@@ -38,10 +41,16 @@ function loadTesters(): Tester[] {
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
     .map((line) => {
-      const [email, password] = line.split("\t");
-      if (!email || !password) throw new Error(`malformed credentials line: "${line}"`);
-      return { email, password };
-    });
+      // `branch email password` since 28 Sep; the older two-column lines all
+      // came from the 00:51 dev run (seed-testers.ts).
+      const fields = line.split("\t");
+      const [branch, email, password] = fields.length === 2 ? ["dev", ...fields] : fields;
+      // Never echo the line: it carries a password.
+      if (!email || !password) throw new Error(`malformed credentials line (${fields.length} fields)`);
+      return { branch, email, password };
+    })
+    .filter((t) => t.branch === BRANCH)
+    .map(({ email, password }) => ({ email, password }));
 }
 
 // Same cookie dance as screenshot.ts's signIn(): sign in against the API
@@ -84,7 +93,7 @@ async function checkOne(browser: Browser, tester: Tester, viewportName: keyof ty
 async function main(): Promise<void> {
   const testers = loadTesters();
   if (testers.length === 0) {
-    console.error(`[verify-tester-logins] no credentials in ${CREDENTIALS_PATH}`);
+    console.error(`[verify-tester-logins] no ${BRANCH} credentials in ${CREDENTIALS_PATH}`);
     process.exit(1);
   }
   console.log(`[verify-tester-logins] frontend: ${FRONTEND}`);
