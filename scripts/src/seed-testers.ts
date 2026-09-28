@@ -28,13 +28,29 @@
 //
 //   pnpm --filter @workspace/scripts run seed:testers:dev [-- --count=6] [-- --dry-run]
 //   pnpm --filter @workspace/scripts run seed:testers:prod   # writes to PRODUCTION
+//
+// --reissue <email> (repeatable): rewrite that tester's stored password in
+// place — deletes nothing, creates nothing. Refuses any email that isn't
+// tester<N>@numeris.local. The new password is hashed with better-auth's own
+// hashPassword() (better-auth/crypto) — never a hand-rolled hash — and
+// written straight to that user's "credential" row in the account table, the
+// same row better-auth's own updatePassword() targets (userId + providerId
+// "credential"). This bypasses the HTTP sign-up/reset-password endpoints on
+// purpose: better-auth's admin plugin (which would give an HTTP path for
+// this) isn't enabled here, and there is no other endpoint that sets a
+// user's password without the old one. Dry-run by default — pass --yes to
+// actually write. A reissue run ignores --count and does not touch any
+// account whose email wasn't named.
+//
+//   pnpm --filter @workspace/scripts run seed:testers:dev -- --reissue=tester7@numeris.local --yes
 
 import { randomBytes } from "node:crypto";
 import { appendFileSync, chmodSync, existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { eq } from "drizzle-orm";
-import { db, userTable, appSettingsTable } from "@workspace/db";
+import { hashPassword } from "better-auth/crypto";
+import { and, eq } from "drizzle-orm";
+import { db, userTable, appSettingsTable, accountTable } from "@workspace/db";
 
 import { seedDemoData } from "./seed-demo-data.js";
 
@@ -44,10 +60,16 @@ const PROD_DB_HOST = "ep-dark-hall-ab7g28of";
 
 const DEFAULT_TESTER_COUNT = 6;
 
+// tester<N>@numeris.local only — --reissue refuses anything else, however it
+// arrived (typo, wrong env, copy-paste from a real account).
+const TESTER_EMAIL_RE = /^tester[1-9][0-9]*@numeris\.local$/;
+
 interface Args {
   branch: "dev" | "prod";
   count: number;
   dryRun: boolean;
+  reissue: string[];
+  yes: boolean;
 }
 
 function parseArgs(): Args {
@@ -55,7 +77,7 @@ function parseArgs(): Args {
   const branchFlag = args.find((a) => a.startsWith("--branch="));
   const branch = branchFlag?.split("=")[1];
   if (branch !== "dev" && branch !== "prod") {
-    console.error("Usage: seed-testers --branch=dev|prod [--count=N] [--dry-run]");
+    console.error("Usage: seed-testers --branch=dev|prod [--count=N] [--dry-run] [--reissue=email]... [--yes]");
     process.exit(1);
   }
   const countFlag = args.find((a) => a.startsWith("--count="));
@@ -64,7 +86,16 @@ function parseArgs(): Args {
     console.error(`[seed-testers] --count must be a positive integer, got "${countFlag}"`);
     process.exit(1);
   }
-  return { branch, count, dryRun: args.includes("--dry-run") };
+  const reissue = args
+    .filter((a) => a.startsWith("--reissue="))
+    .map((a) => a.slice("--reissue=".length));
+  for (const email of reissue) {
+    if (!TESTER_EMAIL_RE.test(email)) {
+      console.error(`[seed-testers] --reissue refuses "${email}" — must match tester<N>@numeris.local`);
+      process.exit(1);
+    }
+  }
+  return { branch, count, dryRun: args.includes("--dry-run"), reissue, yes: args.includes("--yes") };
 }
 
 function assertBranch(branch: "dev" | "prod"): void {
@@ -79,12 +110,11 @@ function assertBranch(branch: "dev" | "prod"): void {
   }
 }
 
-async function confirmProd(count: number): Promise<void> {
+async function confirmProd(action: string): Promise<void> {
   console.log("");
   console.log("╔══════════════════════════════════════════════════════════╗");
   console.log("║  About to WRITE to PRODUCTION.                            ║");
-  console.log(`║  This will create up to ${String(count).padEnd(2)} tester account(s) and    ║`);
-  console.log("║  their demo data on the live database.                    ║");
+  console.log(`║  ${action.padEnd(58)}║`);
   console.log("║  Sleeping 3s. Ctrl-C to abort.                             ║");
   console.log("╚══════════════════════════════════════════════════════════╝");
   await new Promise((r) => setTimeout(r, 3000));
@@ -181,9 +211,71 @@ async function markOnboarded(userId: string): Promise<void> {
     });
 }
 
+// Rewrite one tester's stored password in place. Returns true on success
+// (including a dry-run preview), false if the email can't be reissued —
+// caller counts failures and exits non-zero rather than throwing, so one bad
+// email in a --reissue list doesn't abort the rest.
+async function reissueOne(branch: "dev" | "prod", email: string, live: boolean): Promise<boolean> {
+  const userRow = await db.select({ id: userTable.id }).from(userTable).where(eq(userTable.email, email));
+  if (userRow.length === 0) {
+    console.error(`[seed-testers] --reissue ${email}: no such user, skipping`);
+    return false;
+  }
+  const userId = userRow[0].id;
+  const credRow = await db
+    .select({ id: accountTable.id })
+    .from(accountTable)
+    .where(and(eq(accountTable.userId, userId), eq(accountTable.providerId, "credential")));
+  if (credRow.length === 0) {
+    console.error(`[seed-testers] --reissue ${email}: no credential (password) account row, skipping`);
+    return false;
+  }
+  if (!live) {
+    console.log(`[seed-testers] ${email}: would reissue password (user ${userId})`);
+    return true;
+  }
+  const password = generatePassword();
+  const hashed = await hashPassword(password);
+  await db
+    .update(accountTable)
+    .set({ password: hashed })
+    .where(and(eq(accountTable.userId, userId), eq(accountTable.providerId, "credential")));
+  // Save it the moment the write lands, same reasoning as signUp(): nothing
+  // to re-derive a lost password from afterwards.
+  appendCredential(branch, email, password);
+  console.log(`[seed-testers] ${email}: password reissued (user ${userId})`);
+  return true;
+}
+
+async function runReissue(branch: "dev" | "prod", emails: string[], yes: boolean): Promise<void> {
+  console.log(`[seed-testers] target:  ${branch} branch`);
+  console.log(`[seed-testers] reissue: ${emails.join(", ")}`);
+  if (!yes) console.log("[seed-testers] dry-run (default) — pass --yes to actually rewrite passwords");
+
+  if (yes && branch === "prod") {
+    await confirmProd(`This will rewrite the password for ${emails.length} tester account(s).`);
+  }
+
+  let ok = 0;
+  let failed = 0;
+  for (const email of emails) {
+    const succeeded = await reissueOne(branch, email, yes);
+    if (succeeded) ok++;
+    else failed++;
+  }
+
+  console.log(`\n[seed-testers] reissue done. ${ok} ok, ${failed} failed.`);
+  process.exit(failed > 0 ? 1 : 0);
+}
+
 async function main(): Promise<void> {
-  const { branch, count, dryRun } = parseArgs();
+  const { branch, count, dryRun, reissue, yes } = parseArgs();
   assertBranch(branch);
+
+  if (reissue.length > 0) {
+    await runReissue(branch, reissue, yes);
+    return;
+  }
 
   const apiBase = apiBaseFor(branch);
   const origin = originFor(branch);
@@ -211,7 +303,7 @@ async function main(): Promise<void> {
       continue;
     }
     if (branch === "prod" && !confirmed) {
-      await confirmProd(count - skipped);
+      await confirmProd(`This will create up to ${count - skipped} tester account(s) and their demo data.`);
       confirmed = true;
     }
     const password = generatePassword();

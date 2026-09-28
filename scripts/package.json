@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
+    "better-auth": "^1.6.23",
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
