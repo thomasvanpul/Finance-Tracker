@@ -185,7 +185,7 @@ const INPUT_STYLE: React.CSSProperties = {
 };
 
 const BTN_ACCENT: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 10,
   letterSpacing: "0.06em",
   textTransform: "uppercase" as const,
@@ -198,7 +198,7 @@ const BTN_ACCENT: React.CSSProperties = {
 };
 
 const BTN_GHOST: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 10,
   letterSpacing: "0.06em",
   textTransform: "uppercase" as const,
@@ -308,7 +308,7 @@ function HealthSummaryChip({ category, spent: _spent, effectiveLimit: _eff, pct,
           `.ft-drill` inherits it and the accent still wins on hover. */}
       <span style={{ color: isOver ? "var(--ft-red)" : "var(--ft-text)" }}>
         <Drill href={href} title={`Open the ${category} transactions this chip summed`}>
-          <Text as="span" mono size={10} weight={isOver ? 700 : 400} nowrap>
+          <Text as="span" size={10} weight={isOver ? 700 : 400} nowrap>
             {category}
           </Text>
         </Drill>
@@ -343,7 +343,7 @@ function ForecastAtRiskRow({ category, effectiveLimit, projectedSpend, projected
         display: "flex",
         alignItems: "center",
         gap: 8,
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-surface))" : "transparent",
         transition: "background 0.1s",
@@ -382,7 +382,7 @@ function UnbudgetedCategoryBtn({ displayCat, amount, onClick }: UnbudgetedCatego
     <button
       onClick={onClick}
       style={{
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         padding: "3px 8px",
         border: `1px solid ${hov ? "var(--ft-amber)" : "var(--ft-border2)"}`,
@@ -423,7 +423,7 @@ function CopyCandidateRow({ candidate: c, index, onChange }: CopyCandidateRowPro
         alignItems: "center",
         gap: 10,
         cursor: "pointer",
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 11,
         color: c.confirmed ? "var(--ft-text)" : "var(--ft-dim)",
         padding: "3px 6px",
@@ -552,13 +552,13 @@ function AiBudgetInsight(_props: AiBudgetInsightProps) {
             }}
           />
         ) : insight === null && error !== null ? (
-          <Text as="div" mono size={11} color="var(--ft-red)" lineHeight={1.6}>
+          <Text as="div" size={11} color="var(--ft-red)" lineHeight={1.6}>
             {error}
           </Text>
         ) : (
           <div
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               color: "var(--ft-muted)",
               lineHeight: 1.6,
@@ -590,7 +590,7 @@ function BudgetTooltip({
         background: "var(--ft-raised)",
         border: "1px solid var(--ft-border2)",
         padding: "8px 12px",
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 11,
         borderRadius: 0,
       }}
@@ -690,7 +690,7 @@ function BudgetTableRow({
         {/* Left: category + bar + spent/limit */}
         <div style={{ minWidth: 0 }}>
           <HStack gap={6} align="center" marginBottom={5}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: isOver ? "var(--ft-red)" : "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: isOver ? "var(--ft-red)" : "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               <Drill href={categoryHref} title={`Open the ${budget.category} transactions this row added up`}>{budget.category}</Drill>
             </span>
             {health.status !== "empty" && (
@@ -721,7 +721,7 @@ function BudgetTableRow({
           </div>
           <button
             onClick={() => onStartEdit(budget.category, budget.limit)}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "none", border: "1px solid var(--ft-border2)", padding: "2px 6px", cursor: "pointer" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", background: "none", border: "1px solid var(--ft-border2)", padding: "2px 6px", cursor: "pointer" }}
           >
             Edit
           </button>
@@ -776,7 +776,7 @@ function BudgetTableRow({
         <HStack gap={6} align="center" minWidth0>
           <div
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               fontWeight: 600,
               color: isOver ? "var(--ft-red)" : "var(--ft-text)",
@@ -1011,7 +1011,7 @@ function BudgetTableRow({
           onClick={() => onToggleRollover(budget.category)}
           title={rolloverEnabled ? "Disable rollover" : "Enable rollover — unused budget carries to next month"}
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 9,
             letterSpacing: "0.04em",
             padding: "3px 6px",
@@ -1030,7 +1030,7 @@ function BudgetTableRow({
             onClick={() => onResetRollover(budget.category)}
             title="Reset accumulated rollover to zero"
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 8,
               letterSpacing: "0.04em",
               padding: "2px 6px",
@@ -1065,7 +1065,7 @@ function BudgetTableRow({
             border: "none",
             color: deleteConfirmId === budget.id ? "var(--ft-base)" : "var(--ft-dim)",
             cursor: "pointer",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: deleteConfirmId === budget.id ? 8 : 14,
             fontWeight: deleteConfirmId === budget.id ? 700 : undefined,
             lineHeight: 1,
@@ -1554,7 +1554,7 @@ export default function Budget() {
 
             <div
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 11,
                 fontWeight: 700,
                 color: "var(--ft-text)",
@@ -1568,7 +1568,7 @@ export default function Budget() {
             </div>
             <div
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 10,
                 color: "var(--ft-dim)",
                 textAlign: "center" as const,
@@ -1593,7 +1593,7 @@ export default function Budget() {
             >
               <div
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 8,
                   color: "var(--ft-dim)",
                   width: "100%",
@@ -1610,7 +1610,7 @@ export default function Budget() {
                   key={cat}
                   onClick={() => setFormCategory(cat)}
                   style={{
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     fontSize: 9,
                     padding: "3px 8px",
                     border: formCategory === cat ? "1px solid var(--ft-accent)" : "1px solid var(--ft-border2)",
@@ -1646,7 +1646,7 @@ export default function Budget() {
                 onChange={(e) => setFormCategory(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddBudget()}
                 placeholder="Category (e.g. Groceries)"
-                style={{ ...INPUT_STYLE, flex: 2, minWidth: 180 }}
+                style={{ ...INPUT_STYLE, fontFamily: "var(--font-sans)", flex: 2, minWidth: 180 }}
               />
               <datalist id="budget-category-suggestions">
                 {categorySuggestions.map(c => <option key={c} value={c} />)}
@@ -1665,7 +1665,7 @@ export default function Budget() {
             <div
               style={{
                 marginTop: 16,
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 9,
                 color: "var(--ft-dim)",
                 textAlign: "center" as const,
@@ -1800,7 +1800,7 @@ export default function Budget() {
         </div>
         <button
           onClick={() => setZbEnabled((v) => !v)}
-          style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase" as const, padding: "5px 12px", border: `1px solid ${zbEnabled ? "var(--ft-cyan)" : "var(--ft-border2)"}`, background: zbEnabled ? "color-mix(in srgb, var(--ft-cyan) 10%, transparent)" : "transparent", color: zbEnabled ? "var(--ft-cyan)" : "var(--ft-dim)", cursor: "pointer", borderRadius: 0 }}
+          style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.05em", textTransform: "uppercase" as const, padding: "5px 12px", border: `1px solid ${zbEnabled ? "var(--ft-cyan)" : "var(--ft-border2)"}`, background: zbEnabled ? "color-mix(in srgb, var(--ft-cyan) 10%, transparent)" : "transparent", color: zbEnabled ? "var(--ft-cyan)" : "var(--ft-dim)", cursor: "pointer", borderRadius: 0 }}
         >
           {zbEnabled ? "ZBB On" : "ZBB"}
         </button>
@@ -1820,7 +1820,7 @@ export default function Budget() {
           if (!msg) return null;
           const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
           return (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", border: `1px solid ${color}`, background: "color-mix(in srgb, var(--ft-surface) 90%, transparent)", padding: "4px 10px", display: "flex", gap: 6, alignItems: "center", borderRadius: 0 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", border: `1px solid ${color}`, background: "color-mix(in srgb, var(--ft-surface) 90%, transparent)", padding: "4px 10px", display: "flex", gap: 6, alignItems: "center", borderRadius: 0 }}>
               <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
               <Text as="span" letterSpacing="0.04em">{msg}</Text>
             </div>
@@ -1910,7 +1910,7 @@ export default function Budget() {
               display: "flex",
               alignItems: "center",
               gap: 20,
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               flexWrap: "wrap",
             }}
           >
@@ -1997,7 +1997,7 @@ export default function Budget() {
                   )}
                 </div>
               }>Month-End Forecast</PanelHeader>
-            <div style={{ padding: "8px 14px", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+            <div style={{ padding: "8px 14px", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>
               Day {dayOfMonth} of {daysInMonth} · current burn rate extrapolated
             </div>
             {atRisk.length > 0 && (
@@ -2027,7 +2027,7 @@ export default function Budget() {
           <div
             style={{
               padding: "28px 14px",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               textAlign: "center" as const,
               display: "flex",
               flexDirection: "column" as const,
@@ -2158,7 +2158,7 @@ export default function Budget() {
         <div style={{ padding: "12px 14px" }}>
           <HStack gap={8} align="end" wrap>
             <div style={{ flex: 2, minWidth: 180 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 4, fontWeight: 600 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 4, fontWeight: 600 }}>
                 Category
               </div>
               <input
@@ -2167,7 +2167,7 @@ export default function Budget() {
                 onChange={(e) => setFormCategory(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddBudget()}
                 placeholder="e.g. Groceries"
-                style={INPUT_STYLE}
+                style={{ ...INPUT_STYLE, fontFamily: "var(--font-sans)" }}
               />
               <datalist id="category-suggestions">
                 {categorySuggestions.map((cat) => (
@@ -2176,7 +2176,7 @@ export default function Budget() {
               </datalist>
             </div>
             <div style={{ flex: 1, minWidth: 120 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 4, fontWeight: 600 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 4, fontWeight: 600 }}>
                 Monthly Limit (£)
               </div>
               <input
@@ -2284,7 +2284,7 @@ export default function Budget() {
                   type="category"
                   dataKey="category"
                   width={100}
-                  tick={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "var(--ft-muted)" }}
+                  tick={{ fontFamily: "var(--font-sans)", fontSize: 10, fill: "var(--ft-muted)" }}
                   tickLine={false}
                   axisLine={false}
                 />
