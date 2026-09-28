@@ -70,11 +70,19 @@ export const FRESH_MS_USER_DATA = 5 * 60 * 1000;      // 5 min for user's own ro
 export const FRESH_MS_SHARED    = 30 * 1000;          // 30 s for shared expenses — someone else's actions
 export const FRESH_MS_MARKET    = 60 * 1000;          // 1 min for market data (chain handles its own stale)
 
-// gcTime: how long an idle query stays in memory (and thus is available
-// for persister lookup after remount). 30 days keeps a returning user's
-// data available after a fortnight abroad; longer risks schema-drift
-// bugs where a field removed server-side lingers in cache.
-export const GC_TIME_MS = 30 * 24 * 60 * 60 * 1000;
+// How long a persisted entry stays usable in IndexedDB. 30 days keeps a
+// returning user's data available after a fortnight abroad; longer risks
+// schema-drift bugs where a field removed server-side lingers in cache.
+// The persister compares this against a stored timestamp, so any length
+// is safe here.
+export const PERSIST_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+// gcTime: how long an idle query stays in memory. query-core hands it
+// straight to setTimeout, which treats any delay above 2^31-1 ms (~24.8
+// days) as 1 ms, so 30 days here evicted every unobserved query the
+// moment it settled. Capped at the largest delay a timer can hold.
+const MAX_TIMER_DELAY_MS = 2 ** 31 - 1;
+export const GC_TIME_MS = Math.min(PERSIST_MAX_AGE_MS, MAX_TIMER_DELAY_MS);
 
 // Persister storage prefix + buster. Bumping either wipes stale entries
 // on next boot; use on any breaking response-shape change.
@@ -263,7 +271,7 @@ export const queryPersister = experimental_createQueryPersister({
   storage: idbStorage,
   prefix: PERSISTER_PREFIX,
   buster: CACHE_VERSION,
-  maxAge: GC_TIME_MS,
+  maxAge: PERSIST_MAX_AGE_MS,
   // refetchOnRestore: false means a restored query is treated as fresh.
   // We don't want the very act of restoring cached data to trigger a
   // background refetch that fails offline and could confuse

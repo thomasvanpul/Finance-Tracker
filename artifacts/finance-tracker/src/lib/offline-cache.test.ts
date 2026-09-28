@@ -13,6 +13,7 @@
 //      the load-bearing design choice.
 
 import { describe, it, expect } from "vitest";
+import { QueryClient } from "@tanstack/react-query";
 import {
   queryPersister,
   isBlacklistedForTests,
@@ -22,6 +23,7 @@ import {
   FRESH_MS_SHARED,
   FRESH_MS_USER_DATA,
   FRESH_MS_MARKET,
+  GC_TIME_MS,
 } from "./offline-cache";
 
 // The persister's `filters.predicate` runs on Query-shaped inputs. We
@@ -184,5 +186,24 @@ describe("offline-cache · staleTimeFor", () => {
     // aggressively stale" rationale collapses. Lock so a well-meaning
     // "let's unify the timings" refactor fails here first.
     expect(FRESH_MS_SHARED).toBeLessThan(FRESH_MS_USER_DATA);
+  });
+});
+
+describe("offline-cache · gcTime fits a timer", () => {
+  // query-core hands gcTime straight to setTimeout, which treats any delay
+  // above 2^31-1 ms as 1 ms. A 30-day gcTime therefore evicted every
+  // unobserved query the moment it settled.
+  it("GC_TIME_MS is within setTimeout's maximum delay", () => {
+    expect(GC_TIME_MS).toBeLessThanOrEqual(2 ** 31 - 1);
+  });
+
+  it("an unobserved fetchQuery result stays in the cache", async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { gcTime: GC_TIME_MS } },
+    });
+    await client.fetchQuery({ queryKey: ["gc-probe"], queryFn: async () => 1 });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(client.getQueryCache().find({ queryKey: ["gc-probe"] })).toBeDefined();
+    client.clear();
   });
 });
