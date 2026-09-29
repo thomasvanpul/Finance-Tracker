@@ -103,7 +103,7 @@ router.post("/connections", async (req, res): Promise<void> => {
       format,
     })
     .onConflictDoUpdate({
-      target: [connectionsTable.userId, connectionsTable.provider],
+      target: [connectionsTable.userId, connectionsTable.provider, connectionsTable.externalId],
       set: {
         label: displayLabel,
         status: "active",

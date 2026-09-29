@@ -137,10 +137,13 @@ router.get("/connections/enable-banking/callback", async (req, res): Promise<voi
       sessionId: session.session_id,
       validUntil: session.access?.valid_until ?? pending.validUntil,
     });
-    const label =
-      session.aspsp?.name
-        ? `${session.aspsp.name}${session.aspsp.country ? ` (${session.aspsp.country})` : ""}`
-        : `${pending.aspspName} (${pending.aspspCountry})`;
+    const aspspName = session.aspsp?.name ?? pending.aspspName;
+    const aspspCountry = session.aspsp?.country ?? pending.aspspCountry;
+    const label = `${aspspName}${aspspCountry ? ` (${aspspCountry})` : ""}`;
+    // Identifies the institution, not the session: reconnecting to the
+    // SAME bank (a fresh session_id, same aspsp) upserts the existing
+    // row; a DIFFERENT bank gets its own row. See connections.ts schema.
+    const externalId = `${aspspName}:${aspspCountry}`.toLowerCase();
 
     const [row] = await db
       .insert(connectionsTable)
@@ -151,9 +154,10 @@ router.get("/connections/enable-banking/callback", async (req, res): Promise<voi
         status: "active",
         credentialCiphertext: encryptCredential(credential),
         lastError: null,
+        externalId,
       })
       .onConflictDoUpdate({
-        target: [connectionsTable.userId, connectionsTable.provider],
+        target: [connectionsTable.userId, connectionsTable.provider, connectionsTable.externalId],
         set: {
           label,
           status: "active",
