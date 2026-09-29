@@ -301,6 +301,7 @@ router.delete("/transactions/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: params.error.message });
     return;
   }
+  const baseCurrency = await getBaseCurrency(userId);
   const txRow = await db.transaction(async (dbTx) => {
     const [row] = await dbTx
       .delete(transactionsTable)
@@ -316,6 +317,7 @@ router.delete("/transactions/:id", async (req, res): Promise<void> => {
       true,
       dbTx,
       row.transferDirection ?? undefined,
+      { nativeToBaseRate: row.nativeToBaseRate, baseCurrency },
     );
     // If this was a linked transfer leg, also delete the paired leg so
     // we don't leave an orphan that would under-count or over-count the balance.
@@ -337,6 +339,7 @@ router.delete("/transactions/:id", async (req, res): Promise<void> => {
           true,
           dbTx,
           paired.transferDirection ?? undefined,
+          { nativeToBaseRate: paired.nativeToBaseRate, baseCurrency },
         );
       }
     }

@@ -2,7 +2,7 @@ import { and, eq, sql, type ExtractTablesWithRelations } from "drizzle-orm";
 import { type PgTransaction } from "drizzle-orm/pg-core";
 import { type NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
 import { db, accountsTable } from "@workspace/db";
-import { toGbp, gbpTo } from "./market";
+import { toGbp, gbpTo, toBase } from "./market";
 import { logger } from "./logger";
 
 // Covers both `db` (NodePgDatabase) and the transaction object inside db.transaction()
@@ -46,6 +46,16 @@ export async function isAccountOwnedBy(
  * Pass reverse=true to undo a previous adjustment (e.g. on delete).
  * Pass a Drizzle transaction object as dbOrTx to run atomically.
  *
+ * Pass `storedRate` when reversing or reapplying a transaction that was
+ * actually written to the ledger (delete, or an edit that deletes and
+ * re-inserts) — its `nativeToBaseRate`/`rateAsOf` were frozen at write
+ * time specifically so a later FX move doesn't change what that
+ * transaction is worth. Without it, a foreign-currency transaction's
+ * balance effect is computed at whatever the live rate is *right now*,
+ * so deleting a six-month-old transaction moves the balance by today's
+ * rate instead of the rate that applied when it was created.
+ *
+
  * `userId` is REQUIRED and is not a courtesy argument. Until 10-Sep this
  * function looked the account up by id alone, and so did its UPDATE, in a
  * multi-tenant app — so any route that passed an id it had not checked
@@ -72,6 +82,7 @@ export async function adjustAccountBalance(
   reverse = false,
   dbOrTx: DbOrTx = db,
   transferDirection?: string | null,
+  storedRate?: { nativeToBaseRate: string | null; baseCurrency: string } | null,
 ): Promise<void> {
   if (txType === "transfer" && !transferDirection) return;
 
@@ -88,6 +99,22 @@ export async function adjustAccountBalance(
   let delta: number;
   if (currency === acct.currency) {
     delta = nativeAmount;
+  } else if (storedRate?.nativeToBaseRate != null) {
+    // Reversing/reapplying a real transaction row: convert through the
+    // rate frozen on it at write time, not today's live rate.
+    const nativeInBase = nativeAmount * parseFloat(storedRate.nativeToBaseRate);
+    const converted =
+      acct.currency === storedRate.baseCurrency
+        ? nativeInBase
+        : await toBase(nativeInBase, storedRate.baseCurrency, acct.currency);
+    if (converted == null) {
+      logger.warn(
+        { accountId, currency, targetCurrency: acct.currency, baseCurrency: storedRate.baseCurrency },
+        "adjustAccountBalance: FX rate unavailable for stored-rate leg, skipping balance update",
+      );
+      return;
+    }
+    delta = converted;
   } else {
     const gbp = await toGbp(nativeAmount, currency);
     const converted = gbp == null ? null : await gbpTo(gbp, acct.currency);
