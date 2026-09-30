@@ -6,6 +6,7 @@ import { PanelHeader } from "@/components/primitives/panel-header";
 import { PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useListAccounts } from "@workspace/api-client-react";
 
 const qsDismissedKey = (id: string) => `ft-qs-dismissed-${id}`;
 const qsDoneKey = (id: string) => `ft-qs-done-${id}`;
@@ -35,7 +36,7 @@ export const PERSONA_QS_STEPS: Record<PersonaId, QsStep[]> = {
   ],
   full: [
     { id: "full-account", label: "Add your first account", desc: "Connect bank account, investments, or property", href: "/accounts" },
-    { id: "full-portfolio", label: "Explore the market terminal", desc: "Live quotes, P&L, and portfolio analytics", href: "/investments" },
+    { id: "full-portfolio", label: "Look at your portfolio", desc: "Holdings, cost basis and allocation", href: "/investments" },
     { id: "full-health", label: "Check financial health", desc: "Your comprehensive financial wellness score", href: "/health-score" },
   ],
 };
@@ -59,8 +60,15 @@ export function PersonaQuickStart() {
   });
 
   const allDone = steps.every(s => done.has(s.id));
+  // A first-run surface, so it is for an account with nothing in it. Its
+  // steps are only ever ticked by clicking them, never by the data, so an
+  // account that already held eight accounts and a month of spending was
+  // told "0/3 DONE — Add your first account" (tester walk, 30 Sep). Until the
+  // list has answered it is not shown at all, rather than flashing in and out.
+  const { data: accounts } = useListAccounts({});
+  const hasAccounts = accounts === undefined || accounts.length > 0;
 
-  if (dismissed || allDone || !persona) return null;
+  if (dismissed || allDone || !persona || hasAccounts) return null;
   if (!localStorage.getItem("ft-onboarding-complete")) return null;
 
   const completeStep = (id: string, href: string) => {
