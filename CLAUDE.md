@@ -74,12 +74,12 @@ processes running.
 | `docs/` | see the index at the bottom of this file |
 
 Deploy: Vercel serves the SPA, with its project **root directory set to
-`artifacts/finance-tracker`**, so that package's `vercel.json` is the live one
-and the repo-root `vercel.json` is dead config (still pointing at the old
-Railway URL, tracked in BACKLOG § G3). The API is on **Render** at
+`artifacts/finance-tracker`**, so that package's `vercel.json` is the live
+one (the repo-root `vercel.json`, dead config still pointing at the old
+Railway URL, was deleted 2026-09-30 — BACKLOG § G3). The API is on **Render** at
 `https://numeris-api.onrender.com` — the Railway migration completed and the
 Railway subscription is gone; Railway URLs anywhere in the repo (footer,
-root vercel.json, doc examples) are stale references, not active hosts.
+doc examples) are stale references, not active hosts.
 Verify with `curl -D- https://financetracker.work/api/auth/get-session` — the
 response carries `x-render-origin-server`. The database is Neon
 (`eu-west-2`), an independent free-tier account that survives any provider

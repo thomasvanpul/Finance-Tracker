@@ -124,7 +124,7 @@ cap can be re-imposed per phase rather than across the whole tier.
 | F18 | Watch non-technical users use it | TODO | NOT YET |
 | G1 | Motion tokens vs the 150ms cap | DECIDE | NOT YET |
 | G2 | Recharts MonoTooltip | DONE | — |
-| G3 | Dead root vercel.json | TODO | NOT YET |
+| G3 | Dead root vercel.json | DONE | — |
 | G4 | CORS rejections return 403 | DONE | — |
 | G5 | mockup-sandbox framer-motion | DONE | — |
 | G6 | sslmode=require does not verify certificates | TODO | NOT YET |
@@ -952,13 +952,16 @@ From the planning docs:
   `year-review.tsx` 614 / 711 now consume it through `<Tooltip content={…}>`
   instead of the `formatter` array path, so tabular figures and privacy blur
   apply.
-- **G3 · Dead root `vercel.json`.** Vercel's project root is
-  `artifacts/finance-tracker`, so the repo-root file is never read. Confirm no
-  second Vercel project points at the repo root before deleting it.
-  **TODO · NOT YET.** *13 Sep 2026:* still present, still pointing at Railway.
-  The check is not a formality — gitignored `.vercel/project.json` files at the
-  repo root and in `artifacts/finance-tracker` both link a project named
-  `finance-tracker-api-server`.
+- **G3 · Dead root `vercel.json` — DONE (2026-09-30).** Vercel's project root
+  is `artifacts/finance-tracker`, so the repo-root file was never read for
+  git-triggered deploys. The "second Vercel project" check resolves clean:
+  the gitignored `.vercel/project.json` at the repo root and the one in
+  `artifacts/finance-tracker` link the identical `projectId`
+  (`prj_0iJOwdCm3xIfuyOJrlvZDvEvScxM`, `finance-tracker-api-server`) — one
+  project, not two, so there was no second project to conflict with. Deleted
+  the repo-root `vercel.json` outright rather than leaving it as a manual-CLI
+  footgun (a `vercel deploy` run from the repo root would have read it and
+  pushed the dead Railway rewrite to the live project).
 - **G4 · CORS rejections return 500 — DONE (`f194d74`).** Already fixed in the
   cited commit: `class CorsError extends Error` sentinel plus an error middleware
   right after `cors()` maps it to 403 JSON with no stack. Backlog was stale;
