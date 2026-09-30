@@ -125,8 +125,11 @@ describe("source lock · adjustAccountBalance cannot be called without a userId"
         calls.push(`${f}: ${m[2]!.trim()}`);
       }
     }
-    // Seven call sites, every one of them passing userId second.
-    expect(calls).toHaveLength(7);
+    // Nine call sites, every one of them passing userId second. Seven
+    // until 30-Sep; PATCH /transactions/:id then gained two (reverse the
+    // old row, apply the edited one). A change to this count is a new or
+    // removed money write and should be read as one.
+    expect(calls).toHaveLength(9);
     for (const c of calls) expect(c.endsWith("userId")).toBe(true);
   });
 });

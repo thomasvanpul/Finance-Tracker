@@ -252,35 +252,84 @@ router.patch("/transactions/:id", async (req, res): Promise<void> => {
     return;
   }
   // A PATCH may re-point the row at another account. That id is
-  // user-supplied and was never checked, and although this handler moves
-  // no balance itself (see the note below), DELETE later reverses the row
-  // against whatever accountId it carries — so an unchecked id here is
-  // the delete path's hole, reached one request earlier.
+  // user-supplied, and the balance moves below are made against it, so it
+  // is checked before anything is read or written. DELETE later reverses
+  // the row against whatever accountId it carries, too.
   if (parsed.data.accountId !== undefined && !(await isAccountOwnedBy(parsed.data.accountId, userId))) {
     res.status(404).json({ error: `Account ${parsed.data.accountId} not found` });
+    return;
+  }
+
+  const rowScope = and(eq(transactionsTable.id, params.data.id), eq(transactionsTable.userId, userId));
+  const [current] = await db.select().from(transactionsTable).where(rowScope);
+  if (!current) {
+    res.status(404).json({ error: "Transaction not found" });
     return;
   }
 
   const updateData: Record<string, unknown> = { ...parsed.data };
   if (parsed.data.nativeAmount !== undefined) updateData.nativeAmount = String(parsed.data.nativeAmount);
 
-  // Rate is per-native-unit and depends only on currency. Amount
-  // edits leave the stored rate alone; a currency edit invalidates
-  // it (the old rate is for the wrong pair). Re-snapshot on
-  // currency change so the row stays honest without touching the
-  // original write's asOf semantics for the common amount-fix case.
-  if (parsed.data.currency !== undefined) {
-    const baseCurrency = await getBaseCurrency(userId);
-    const { rate, asOf } = await snapshotFxRate(parsed.data.currency, baseCurrency);
+  // "Changed" means the value differs from the stored one, not that the
+  // field is present: every client edit path sends the whole row back,
+  // currency included, so presence would re-price (and, below, move the
+  // balance of) a row whose only edit was its category.
+  const amountChanged =
+    parsed.data.nativeAmount !== undefined && parsed.data.nativeAmount !== parseFloat(current.nativeAmount);
+  const currencyChanged = parsed.data.currency !== undefined && parsed.data.currency !== current.currency;
+  const accountChanged = parsed.data.accountId !== undefined && parsed.data.accountId !== current.accountId;
+  const typeChanged = parsed.data.type !== undefined && parsed.data.type !== current.type;
+  const movesMoney = amountChanged || currencyChanged || accountChanged || typeChanged;
+
+  // A new amount, currency or account is a new ledger fact, so it takes
+  // a fresh rate the way creation does rather than inheriting a rate
+  // frozen for different figures. A type-only edit keeps the rate: the
+  // amount and pair it was frozen for are unchanged.
+  const baseCurrency = await getBaseCurrency(userId);
+  if (amountChanged || currencyChanged || accountChanged) {
+    const { rate, asOf } = await snapshotFxRate(parsed.data.currency ?? current.currency, baseCurrency);
     updateData.nativeToBaseRate = rate == null ? null : String(rate);
     updateData.rateAsOf = asOf;
   }
 
-  const [tx] = await db
-    .update(transactionsTable)
-    .set(updateData)
-    .where(and(eq(transactionsTable.id, params.data.id), eq(transactionsTable.userId, userId)))
-    .returning();
+  // Reverse the old row's effect at the rate frozen on it, write the
+  // edit, then apply the new row's effect at the rate now stored on it —
+  // the same reverse-at-stored-rate DELETE does, followed by what POST
+  // does. One edited row, one row's effect moved: a transfer leg edited
+  // here moves its own account only. Its paired leg's row is untouched,
+  // so its balance effect is too, and the balance stays the sum of rows.
+  const tx = await db.transaction(async (dbTx) => {
+    const [old] = await dbTx.select().from(transactionsTable).where(rowScope).for("update");
+    if (!old) return null;
+    if (movesMoney) {
+      await adjustAccountBalance(
+        old.accountId,
+        userId,
+        parseFloat(old.nativeAmount),
+        old.currency,
+        old.type,
+        true,
+        dbTx,
+        old.transferDirection ?? undefined,
+        { nativeToBaseRate: old.nativeToBaseRate, baseCurrency },
+      );
+    }
+    const [row] = await dbTx.update(transactionsTable).set(updateData).where(rowScope).returning();
+    if (movesMoney) {
+      await adjustAccountBalance(
+        row.accountId,
+        userId,
+        parseFloat(row.nativeAmount),
+        row.currency,
+        row.type,
+        false,
+        dbTx,
+        row.transferDirection ?? undefined,
+        { nativeToBaseRate: row.nativeToBaseRate, baseCurrency },
+      );
+    }
+    return row;
+  });
   if (!tx) {
     res.status(404).json({ error: "Transaction not found" });
     return;
