@@ -47,6 +47,19 @@ function hostnameOf(origin: string, fallback: string): string {
   }
 }
 
+// EMAIL_FROM is the real knob (see the comment at its use below) and Resend
+// rejects an unverified sender only at send time, never at boot — so an
+// unset EMAIL_FROM fails silently until the first password-reset or
+// verification email is attempted. Logging it here at module load (i.e.
+// server boot) makes the gap visible in deploy logs instead of only in a
+// user's undelivered inbox.
+if (!env("EMAIL_FROM")) {
+  logger.warn(
+    { fallback: `noreply@${hostnameOf(API_ORIGIN, "localhost")}` },
+    "EMAIL_FROM is not set; falling back to a derived sender address that Resend will reject unless that domain is verified there",
+  );
+}
+
 // Exported so the cutover behaviour is lockable in a test. Both are read at
 // import time from env, which is the point: a rename is a deploy-time change,
 // not a code change.
