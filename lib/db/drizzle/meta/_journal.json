@@ -169,6 +169,13 @@
       "when": 1790671170397,
       "tag": "0023_loud_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790810667629,
+      "tag": "0024_charming_siren",
+      "breakpoints": true
     }
   ]
 }

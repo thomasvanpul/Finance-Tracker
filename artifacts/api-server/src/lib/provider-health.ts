@@ -58,6 +58,107 @@
 
 import { logger } from "./logger";
 
+// ── Durable mirror ───────────────────────────────────────────────────────
+// Schema and full reasoning: lib/db/src/schema/provider-health.ts. Only the
+// breaker-relevant fields are persisted (see that file for what is
+// deliberately left out).
+//
+// Loaded via dynamic import, guarded on DATABASE_URL, rather than a static
+// top-level `import { db } from "@workspace/db"`. This module is imported
+// by plain unit tests (provider-health.test.ts, market-providers.test.ts,
+// frankfurter-forex.test.ts, ai-providers/chain.test.ts, …) that run in the
+// gate without a database, and @workspace/db throws at MODULE LOAD if
+// DATABASE_URL is unset — a static import would take every one of those
+// suites down with it. Mirrors the pattern in
+// account-deletion.integration.test.ts, which dynamic-imports the same
+// package for the same reason.
+let dbModulePromise: Promise<typeof import("@workspace/db")> | null = null;
+function getDbModule(): Promise<typeof import("@workspace/db")> | null {
+  if (!process.env.DATABASE_URL) return null;
+  dbModulePromise ??= import("@workspace/db");
+  return dbModulePromise;
+}
+
+// Rate-limited so a genuinely broken DB doesn't fill the log with the same
+// line on every provider call. Same discipline as request-metrics.ts.
+let lastPersistWarnAt = 0;
+const PERSIST_WARN_INTERVAL_MS = 60_000;
+function warnPersistFailure(err: unknown): void {
+  const now = Date.now();
+  if (now - lastPersistWarnAt < PERSIST_WARN_INTERVAL_MS) return;
+  lastPersistWarnAt = now;
+  logger.warn(
+    { err: err instanceof Error ? err.message : String(err) },
+    "provider-health: persistence failed (subsequent failures suppressed for 60s)",
+  );
+}
+
+interface PersistValues {
+  name: string;
+  breaker: BreakerState;
+  consecutiveFailures: number;
+  cooldownUntil: Date | null;
+  lastOk: Date | null;
+  lastErrorMessage: string | null;
+  lastErrorAt: Date | null;
+}
+
+// Serializes writes per provider, one promise chain each, so concurrent
+// breaker transitions on the SAME provider land in Postgres in the order
+// they happened rather than whatever order their individual network
+// round-trips finish in. This is not a hypothetical: a fan-out batch
+// calling withProvider once per ticker (see the half-open note above)
+// fires several failures on the same provider within the same tick, each
+// queuing its own write. Without serializing, an EARLIER write (say,
+// consecutiveFailures=1) that happens to take longer on the wire than a
+// LATER one (consecutiveFailures=3) can complete last and silently
+// overwrite the more current, more severe state with a stale one — which
+// is exactly the evidence this table exists to keep. Measured hitting
+// this directly: three failures fired in a tight loop against the real
+// Neon dev branch, unserialized, persisted `breaker: "closed"` — the
+// FIRST failure's snapshot — instead of "open".
+const persistChains = new Map<string, Promise<void>>();
+
+// Fire-and-forget from the caller's point of view. Persistence capture
+// MUST NOT be able to fail or delay a provider call — same rule
+// request-metrics.ts states for its insert. The snapshot itself,
+// though, is taken SYNCHRONOUSLY, right here, before any await — not
+// re-read later inside the async write, where a microtask-queue
+// reordering could pick up a DIFFERENT mutation of the same shared,
+// mutable state object than the one that triggered this call.
+function persistState(name: string): void {
+  const state = providers.get(name);
+  if (!state) return;
+  const values: PersistValues = {
+    name,
+    breaker: state.breaker,
+    consecutiveFailures: state.consecutiveFailures,
+    cooldownUntil: state.cooldownUntil !== null ? new Date(state.cooldownUntil) : null,
+    lastOk: state.lastOk !== null ? new Date(state.lastOk) : null,
+    lastErrorMessage: state.lastError?.message ?? null,
+    lastErrorAt: state.lastError !== null ? new Date(state.lastError.ts) : null,
+  };
+  const prior = persistChains.get(name) ?? Promise.resolve();
+  // .catch here, not on the outer chain: it must settle to fulfilled
+  // (never stay rejected) so ONE failed write does not permanently wedge
+  // every later write for this provider behind a rejected `prior`.
+  const next = prior.then(() => persistValues(values)).catch(warnPersistFailure);
+  persistChains.set(name, next);
+}
+
+async function persistValues(values: PersistValues): Promise<void> {
+  const modPromise = getDbModule();
+  if (!modPromise) return;
+  const { db, providerHealthTable } = await modPromise;
+  await db
+    .insert(providerHealthTable)
+    .values(values)
+    .onConflictDoUpdate({
+      target: providerHealthTable.name,
+      set: { ...values, updatedAt: new Date() },
+    });
+}
+
 export type BreakerState = "closed" | "open" | "half";
 
 interface ProviderState {
@@ -231,6 +332,7 @@ export async function withProvider<T>(
     state.cooldownUntil = null;
     state.probeInFlight = false;
     state.lastOk = new Date().toISOString();
+    persistState(providerName);
     return result;
   } catch (err) {
     if (isProbe) state.probeInFlight = false;
@@ -248,6 +350,7 @@ export async function withProvider<T>(
         "provider circuit opened",
       );
     }
+    persistState(providerName);
     throw err;
   }
 }
@@ -290,6 +393,48 @@ export function getProviderHealth(): ProviderHealthSnapshot[] {
   // may sort differently but this makes the JSON diff-friendly.
   out.sort((a, b) => a.name.localeCompare(b.name));
   return out;
+}
+
+// Called once at boot (index.ts), AFTER every registerProvider() call has
+// already run — those happen as a module-load side effect in market.ts and
+// ai-config.ts, which are imported (and therefore fully evaluated) before
+// index.ts's top-level await reaches this call. Only overlays state onto
+// providers that are ALREADY registered; a persisted row for a provider
+// this build no longer registers is left alone rather than resurrected.
+//
+// Deliberately non-fatal: a failure here must not stop the server from
+// booting and serving quotes, it just means evidence of the PREVIOUS
+// outage (if any) starts over at this restart, same as before this
+// table existed. index.ts should log and continue, not process.exit(1).
+export async function hydrateProviderHealth(): Promise<void> {
+  const modPromise = getDbModule();
+  if (!modPromise) return;
+  try {
+    const { db, providerHealthTable } = await modPromise;
+    const rows = await db.select().from(providerHealthTable);
+    for (const row of rows) {
+      const state = providers.get(row.name);
+      if (!state) continue;
+      state.breaker = row.breaker as BreakerState;
+      state.consecutiveFailures = row.consecutiveFailures;
+      state.cooldownUntil = row.cooldownUntil !== null ? row.cooldownUntil.getTime() : null;
+      state.lastOk = row.lastOk !== null ? row.lastOk.toISOString() : null;
+      state.lastError =
+        row.lastErrorMessage !== null && row.lastErrorAt !== null
+          ? { message: row.lastErrorMessage, ts: row.lastErrorAt.toISOString() }
+          : null;
+    }
+    // A restored "open" breaker may have had its cooldown elapse while the
+    // process was down. Route it through the same check every read already
+    // goes through rather than duplicating the half-open transition here.
+    const now = Date.now();
+    for (const state of providers.values()) {
+      maybeCloseBreaker(state, now);
+    }
+    logger.info({ restored: rows.length }, "provider health: restored from last known state");
+  } catch (err) {
+    warnPersistFailure(err);
+  }
 }
 
 // Test helper: reset runtime state (breaker, credits, lastOk/lastError)

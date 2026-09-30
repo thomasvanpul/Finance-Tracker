@@ -13,6 +13,33 @@
 // failures. The tests below lock both.
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+
+// Mock @workspace/db BEFORE importing provider-health.ts — hoisted above
+// the static import below by Vitest's transform either way, but stated
+// explicitly since provider-health.ts reaches this module via a dynamic
+// import() rather than a static one (see its "Durable mirror" comment for
+// why). Capture insert/select calls the same way request-metrics.test.ts
+// does, so the persistence tests can assert on what was written or read
+// without a real Postgres connection.
+const insertValuesCalls: Array<Record<string, unknown>> = [];
+const insertMock = vi.fn(() => ({
+  values: vi.fn((v: Record<string, unknown>) => {
+    insertValuesCalls.push(v);
+    return { onConflictDoUpdate: vi.fn(() => Promise.resolve()) };
+  }),
+}));
+let selectRows: Array<Record<string, unknown>> = [];
+const selectMock = vi.fn(() => ({
+  from: vi.fn(() => Promise.resolve(selectRows)),
+}));
+vi.mock("@workspace/db", () => ({
+  db: { insert: insertMock, select: selectMock },
+  // Opaque placeholder — the real column reference is only ever passed
+  // through to onConflictDoUpdate's `target`, never introspected by this
+  // module's own code.
+  providerHealthTable: { name: "name" },
+}));
+
 import {
   registerProvider,
   withProvider,
@@ -21,7 +48,23 @@ import {
   ProviderUnavailableError,
   CreditBudgetExhaustedError,
   __resetProviderHealthForTesting,
+  hydrateProviderHealth,
 } from "./provider-health";
+
+// persistState() is fire-and-forget (`void persistStateAsync(...)`), so a
+// test that just triggered a breaker transition must let the microtask
+// queue drain before asserting on insertValuesCalls.
+async function flushMicrotasks(): Promise<void> {
+  // provider-health.ts reaches @workspace/db via dynamic import(), which
+  // takes an extra microtask hop or two beyond a plain Promise chain the
+  // first time it resolves in a given test run. Awaiting the same
+  // (mocked) specifier here settles that hop before the plain
+  // Promise.resolve() chain unwinds persistStateAsync's own await.
+  await import("@workspace/db").catch(() => undefined);
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+}
 
 // Use a test-only provider name so no other test's registration state
 // interferes. registerProvider is idempotent for re-registration.
@@ -234,5 +277,117 @@ describe("configured gate", () => {
     // missing from the endpoint response.
     expect(health).toBeDefined();
     expect(health!.configured).toBe(false);
+  });
+});
+
+// ── Durable mirror ──────────────────────────────────────────────────────────
+// The finding this closes: a Render cold start wipes the in-process Map, so
+// consecutiveFailures/lastOk/lastError reset to zero mid-outage and the
+// endpoint /api/market/providers exposes lies about a lane that is still
+// down. These tests lock (a) that a call is never persisted without
+// DATABASE_URL set, (b) what gets written on success and on failure, and
+// (c) that hydrateProviderHealth() restores it onto an already-registered
+// provider and leaves an unregistered one alone.
+describe("durable mirror (provider_health)", () => {
+  beforeEach(() => {
+    insertValuesCalls.length = 0;
+    selectRows = [];
+    insertMock.mockClear();
+    selectMock.mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("never attempts to persist when DATABASE_URL is unset", async () => {
+    expect(process.env.DATABASE_URL).toBeUndefined();
+    await withProvider(TEST_PROVIDER, async () => "ok");
+    await flushMicrotasks();
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+
+  it("persists breaker state after a successful call", async () => {
+    vi.stubEnv("DATABASE_URL", "postgres://test/db");
+    await withProvider(TEST_PROVIDER, async () => "ok");
+    await flushMicrotasks();
+    expect(insertMock).toHaveBeenCalledOnce();
+    const written = insertValuesCalls[0];
+    expect(written?.name).toBe(TEST_PROVIDER);
+    expect(written?.breaker).toBe("closed");
+    expect(written?.consecutiveFailures).toBe(0);
+    expect(written?.lastOk).toBeInstanceOf(Date);
+    expect(written?.lastErrorMessage).toBeNull();
+  });
+
+  it("persists consecutiveFailures and lastError after a failing call", async () => {
+    vi.stubEnv("DATABASE_URL", "postgres://test/db");
+    await expect(
+      withProvider(TEST_PROVIDER, async () => { throw new Error("boom"); }),
+    ).rejects.toThrow("boom");
+    await flushMicrotasks();
+    expect(insertMock).toHaveBeenCalledOnce();
+    const written = insertValuesCalls[0];
+    expect(written?.name).toBe(TEST_PROVIDER);
+    expect(written?.breaker).toBe("closed"); // one failure, not yet at threshold
+    expect(written?.consecutiveFailures).toBe(1);
+    expect(written?.lastErrorMessage).toBe("boom");
+    expect(written?.lastErrorAt).toBeInstanceOf(Date);
+  });
+
+  it("persists the open breaker and its cooldown once the threshold trips", async () => {
+    vi.stubEnv("DATABASE_URL", "postgres://test/db");
+    for (let i = 0; i < 3; i += 1) {
+      await expect(
+        withProvider(TEST_PROVIDER, async () => { throw new Error("down"); }),
+      ).rejects.toThrow();
+    }
+    await flushMicrotasks();
+    const last = insertValuesCalls[insertValuesCalls.length - 1];
+    expect(last?.breaker).toBe("open");
+    expect(last?.consecutiveFailures).toBe(3);
+    expect(last?.cooldownUntil).toBeInstanceOf(Date);
+  });
+
+  it("restores consecutiveFailures/lastError onto an already-registered provider", async () => {
+    vi.stubEnv("DATABASE_URL", "postgres://test/db");
+    const pastCooldown = new Date(Date.now() - 1_000);
+    selectRows = [
+      {
+        name: TEST_PROVIDER,
+        breaker: "open",
+        consecutiveFailures: 19,
+        cooldownUntil: pastCooldown,
+        lastOk: null,
+        lastErrorMessage: "yahoo returned no FX rates",
+        lastErrorAt: new Date(Date.now() - 60_000),
+      },
+    ];
+    await hydrateProviderHealth();
+    const health = getProviderHealth().find((p) => p.name === TEST_PROVIDER)!;
+    // The evidence itself is restored...
+    expect(health.consecutiveFailures).toBe(19);
+    expect(health.lastError?.message).toBe("yahoo returned no FX rates");
+    expect(health.lastOk).toBeNull();
+    // ...and a cooldown that already elapsed while the process was down is
+    // caught up to half-open immediately, not left stuck "open" forever.
+    expect(health.breaker).toBe("half");
+  });
+
+  it("ignores a persisted row for a provider this build no longer registers", async () => {
+    vi.stubEnv("DATABASE_URL", "postgres://test/db");
+    selectRows = [
+      {
+        name: "retired-provider",
+        breaker: "open",
+        consecutiveFailures: 9,
+        cooldownUntil: null,
+        lastOk: null,
+        lastErrorMessage: "gone",
+        lastErrorAt: new Date(),
+      },
+    ];
+    await expect(hydrateProviderHealth()).resolves.toBeUndefined();
+    expect(getProviderHealth().some((p) => p.name === "retired-provider")).toBe(false);
   });
 });

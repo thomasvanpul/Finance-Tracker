@@ -6,6 +6,7 @@ import { verifyProvidersAtBoot } from "./lib/ai-config";
 import { migrateAtBoot } from "./lib/migrate";
 import { verifySchemaAtBoot } from "./lib/verify-schema";
 import { pruneRequestMetrics, REQUEST_METRICS_RETENTION_DAYS } from "./lib/request-metrics";
+import { hydrateProviderHealth } from "./lib/provider-health";
 
 const rawPort = process.env["PORT"];
 
@@ -56,6 +57,13 @@ try {
   );
   process.exit(1);
 }
+
+// Restores circuit-breaker state (consecutiveFailures/lastOk/lastError) from
+// its last known values before this restart. Deliberately NOT in a try/catch
+// that exits — hydrateProviderHealth() already swallows its own failures,
+// because losing last restart's evidence is not a reason to refuse this
+// one's traffic. See lib/provider-health.ts.
+await hydrateProviderHealth();
 
 app.listen(port, (err) => {
   if (err) {
