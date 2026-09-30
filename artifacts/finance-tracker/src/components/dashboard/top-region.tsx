@@ -143,7 +143,7 @@ export function Reading({ cell, valueSize = 12 }: { cell: TopRegionCell; valueSi
     </span>
   );
   return (
-    <HStack align="baseline" gap={6} padding="5px 12px" shrink={false}>
+    <HStack align="baseline" gap={6} padding="5px 10px" shrink={false}>
       <Text as="span" mono size={8} upper letterSpacing="0.14em" color="var(--ft-dim)" nowrap>{cell.label}</Text>
       {cell.href
         ? <DrillTarget href={cell.href} title={`${cell.label} — open what it is made of`}>{figure}</DrillTarget>
@@ -219,11 +219,19 @@ export function EditLayout({ register, isCustomizing, onCustomize }: {
   const style: CSSProperties = register === "chip"
     ? { ...shared, height: 26, border: `1px solid ${isCustomizing ? "var(--ft-accent)" : "var(--ft-border2)"}`, borderRadius: 2, padding: "0 10px" }
     : { ...shared, border: "none", padding: "6px 12px", alignSelf: "stretch" };
+  // In the `cell` register at rest the control is its icon alone. The six
+  // readings of the full persona measure 1,103px and at 1440 the run beside
+  // this cell had 1,068px while the words "Edit layout" took 112px of it
+  // (tester walk, 30 Sep) — so the words cost PORTFOLIO its line. The name
+  // is still the button's accessible name and its tooltip. "Done" stays a
+  // word: in edit mode it is the one control that ends the mode.
+  const iconOnly = register === "cell" && !isCustomizing;
   return (
     <button onClick={onCustomize} style={style}
+      aria-label={isCustomizing ? "Done editing layout" : "Edit layout"}
       title={isCustomizing ? "Finish editing" : "Edit layout — add, remove, resize and rearrange the widgets on this page"}>
-      <LayoutGrid size={register === "chip" ? 11 : 10} aria-hidden />
-      {isCustomizing ? "Done" : "Edit layout"}
+      <LayoutGrid size={register === "chip" ? 11 : iconOnly ? 13 : 10} aria-hidden />
+      {iconOnly ? null : isCustomizing ? "Done" : "Edit layout"}
     </button>
   );
 }
@@ -441,14 +449,22 @@ export function DashboardTopRegion({ cells, dashboardLabel, isCustomizing, onCus
 
   return (
     <VStack marginBottom={14}>
-      <Strip>
-        <Divided first><HStack align="center" padding="5px 12px" shrink={false}><PageLabel label={dashboardLabel} /></HStack></Divided>
-        {cells.map((cell) => (
-          <Divided key={cell.label} first={false}><Reading cell={cell} /></Divided>
-        ))}
-        <HStack grow />
+      {/* EDIT LAYOUT sits in its own column beside the run, not as the run's
+          last cell. As the last cell it wrapped with the readings: on the
+          full persona (six readings) at 1440 it fell to a second line on its
+          own, under NET WORTH, and the top of the page read as broken — one
+          of the things Thomas named on 30 Sep. In its own column it holds
+          the top-right corner at every width, and if the readings wrap they
+          wrap inside the run. */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", borderTop: RULE, borderBottom: RULE }}>
+        <Strip edges="none">
+          <Divided first><HStack align="center" padding="5px 12px" shrink={false}><PageLabel label={dashboardLabel} /></HStack></Divided>
+          {cells.map((cell) => (
+            <Divided key={cell.label} first={false}><Reading cell={cell} /></Divided>
+          ))}
+        </Strip>
         <Divided first={false}><EditLayout register="cell" isCustomizing={isCustomizing} onCustomize={onCustomize} /></Divided>
-      </Strip>
+      </div>
 
       <WhatChanged ok={ok} currency={currency} emptyReason={emptyReason} />
 
