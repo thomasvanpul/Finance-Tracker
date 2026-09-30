@@ -1626,6 +1626,8 @@ export interface ThemeSettings {
 export interface DeleteUserAccountInput {
   /** The account email, typed by the user as confirmation */
   email: string;
+  /** Current password, required when the account has one (not passkey-only or OAuth-only). Re-checked server-side against the stored hash before deletion proceeds. */
+  password?: string;
 }
 
 /**

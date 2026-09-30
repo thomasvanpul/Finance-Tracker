@@ -422,7 +422,14 @@ export default function Profile() {
   const [, navigate] = useLocation();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleteEmail, setDeleteEmail] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
   const [deleteProviders, setDeleteProviders] = useState<string[] | null>(null);
+  // Whether the account has a password to re-check. null = still loading;
+  // treated as "yes" until resolved so the button can't fire on a stale
+  // "no password needed" read. Passkey-only / OAuth-only accounts resolve
+  // to false and keep the typed-email-only bar, same as before this field
+  // existed.
+  const [deleteHasPassword, setDeleteHasPassword] = useState<boolean | null>(null);
   const deleteAccount = useDeleteUserAccount();
   const [activeTab, setActiveTab] = useState<"account" | "security" | "privacy">("account");
 
@@ -616,6 +623,8 @@ export default function Profile() {
   // stored on this device goes with it.
   const accountEmail = session?.user?.email ?? "";
   const deleteEmailMatches = deleteEmail.trim().toLowerCase() === accountEmail.toLowerCase() && accountEmail !== "";
+  const deletePasswordOk = deleteHasPassword === false || deletePassword.length > 0;
+  const deleteReady = deleteEmailMatches && deleteHasPassword !== null && deletePasswordOk;
   useEffect(() => {
     if (!confirmDelete) return;
     let cancelled = false;
@@ -623,6 +632,13 @@ export default function Profile() {
       .then(async (r) => (r.ok ? ((await r.json()) as { provider?: string }[]) : []))
       .then((rows) => { if (!cancelled) setDeleteProviders(rows.map((c) => c.provider ?? "").filter(Boolean)); })
       .catch(() => { if (!cancelled) setDeleteProviders([]); });
+    authClient.listAccounts()
+      .then((res) => {
+        if (cancelled) return;
+        const rows = (res?.data ?? []) as { providerId?: string }[];
+        setDeleteHasPassword(rows.some((a) => a.providerId === "credential"));
+      })
+      .catch(() => { if (!cancelled) setDeleteHasPassword(true); });
     return () => { cancelled = true; };
   }, [confirmDelete]);
 
@@ -644,9 +660,14 @@ export default function Profile() {
   }
 
   async function handleDeleteAccount() {
-    if (!deleteEmailMatches || deleteAccount.isPending) return;
+    if (!deleteReady || deleteAccount.isPending) return;
     try {
-      const result = await deleteAccount.mutateAsync({ data: { email: deleteEmail.trim() } });
+      const result = await deleteAccount.mutateAsync({
+        data: {
+          email: deleteEmail.trim(),
+          ...(deleteHasPassword ? { password: deletePassword } : {}),
+        },
+      });
       const { discardAccountStorage } = await import("@/lib/account-storage");
       discardAccountStorage();
       for (const key of Object.keys(localStorage)) {
@@ -1467,7 +1488,7 @@ export default function Profile() {
         </p>
         {!confirmDelete ? (
           <button
-            onClick={() => { setDeleteEmail(""); setConfirmDelete(true); }}
+            onClick={() => { setDeleteEmail(""); setDeletePassword(""); setDeleteHasPassword(null); setConfirmDelete(true); }}
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 10,
@@ -1514,9 +1535,20 @@ export default function Profile() {
                 onChange={e => setDeleteEmail(e.target.value)}
               />
             </VStack>
+            {deleteHasPassword && (
+              <VStack gap={4}>
+                <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Enter your current password to confirm</Label>
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  value={deletePassword}
+                  onChange={e => setDeletePassword(e.target.value)}
+                />
+              </VStack>
+            )}
             <HStack gap={8} wrap>
               <button
-                onClick={() => setConfirmDelete(false)}
+                onClick={() => { setConfirmDelete(false); setDeletePassword(""); }}
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: 10,
@@ -1532,7 +1564,7 @@ export default function Profile() {
               </button>
               <button
                 onClick={handleDeleteAccount}
-                disabled={!deleteEmailMatches || deleteAccount.isPending}
+                disabled={!deleteReady || deleteAccount.isPending}
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: 10,
@@ -1540,8 +1572,8 @@ export default function Profile() {
                   background: "var(--ft-red)",
                   border: "1px solid var(--ft-red)",
                   padding: "5px 14px",
-                  cursor: deleteEmailMatches && !deleteAccount.isPending ? "pointer" : "not-allowed",
-                  opacity: deleteEmailMatches && !deleteAccount.isPending ? 1 : 0.45,
+                  cursor: deleteReady && !deleteAccount.isPending ? "pointer" : "not-allowed",
+                  opacity: deleteReady && !deleteAccount.isPending ? 1 : 0.45,
                   flex: "1 1 auto",
                 }}
               >

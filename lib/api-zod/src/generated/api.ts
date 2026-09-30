@@ -1416,11 +1416,12 @@ export const DownloadBackupResponse = zod.object({
 
 
 /**
- * Irreversible. Removes the user row; every user-owned table cascades from it (accounts, transactions, upcoming, investments, debts, budgets, goals, subscriptions, connections and their encrypted credentials, snapshots, recurring patterns, shared expenses, sessions, passkeys, 2FA). Verification tokens are deleted by email; request metrics keep their timing rows with the user id removed. Rows in other users' data that named this user keep their text and lose the link. Third-party tokens (Wise, Alpaca, Kraken, OAuth grants) are destroyed here, not revoked at the provider. Confirmation is the account email, typed exactly.
+ * Irreversible. Removes the user row; every user-owned table cascades from it (accounts, transactions, upcoming, investments, debts, budgets, goals, subscriptions, connections and their encrypted credentials, snapshots, recurring patterns, shared expenses, sessions, passkeys, 2FA). Verification tokens are deleted by email; request metrics keep their timing rows with the user id removed. Rows in other users' data that named this user keep their text and lose the link. Third-party tokens (Wise, Alpaca, Kraken, OAuth grants) are destroyed here, not revoked at the provider. Confirmation is the account email, typed exactly, plus the current password for any account that has one — a valid session proves a device once signed in, not that this request is the owner acting now.
  * @summary Delete the signed-in user's account and everything they own
  */
 export const DeleteUserAccountBody = zod.object({
-  "email": zod.string().describe('The account email, typed by the user as confirmation')
+  "email": zod.string().describe('The account email, typed by the user as confirmation'),
+  "password": zod.string().optional().describe('Current password, required when the account has one (not passkey-only or OAuth-only). Re-checked server-side against the stored hash before deletion proceeds.')
 })
 
 export const DeleteUserAccountResponse = zod.object({

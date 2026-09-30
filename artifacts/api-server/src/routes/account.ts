@@ -1,13 +1,24 @@
 import { Router, type IRouter } from "express";
+import { and, eq } from "drizzle-orm";
+import { db, accountTable } from "@workspace/db";
+import { verifyPassword } from "better-auth/crypto";
 import { deleteUserAccount } from "../lib/account-deletion";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
-// Delete the signed-in user's account and everything they own. The
-// confirmation is the account email, typed by the user and checked here
-// against the session — the client-side check is a convenience, this is
-// the bar. Not a password: passkey-only and OAuth-only users have none.
+// Delete the signed-in user's account and everything they own. The typed
+// email is a mistake-guard, not a security bar — it is the same address
+// the session already carries and the page already shows, so it proves
+// nothing a stolen session cookie or bearer token didn't already have.
+// The real bar is the password re-check below: a valid session is proof a
+// device once signed in, not proof this request is the owner acting now.
+//
+// Passkey-only and OAuth-only users have no password to re-check — for
+// them the typed email remains the only bar, unchanged from before this
+// fix. better-auth's twoFactor plugin requires a password account to
+// enable 2FA (see lib/better-auth.ts), so a 2FA-enabled user always has
+// one and always hits the re-check.
 //
 // What this cannot do is make a third party forget a credential the user
 // pasted in (Wise, Alpaca, Kraken tokens; the Google/GitHub sign-in
@@ -16,12 +27,27 @@ const router: IRouter = Router();
 router.post("/account/delete", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
   const sessionUser = (req as any).user as { email?: string } | undefined;
-  const body = req.body as { email?: unknown } | undefined;
+  const body = req.body as { email?: unknown; password?: unknown } | undefined;
   const typed = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   if (!typed || !sessionUser?.email || typed !== sessionUser.email.toLowerCase()) {
     res.status(400).json({ error: "Type the account email exactly to confirm deletion" });
     return;
   }
+
+  const [credential] = await db
+    .select({ password: accountTable.password })
+    .from(accountTable)
+    .where(and(eq(accountTable.userId, userId), eq(accountTable.providerId, "credential")));
+  if (credential?.password) {
+    const typedPassword = typeof body?.password === "string" ? body.password : "";
+    const passwordOk = typedPassword.length > 0
+      && (await verifyPassword({ hash: credential.password, password: typedPassword }));
+    if (!passwordOk) {
+      res.status(400).json({ error: "Enter your current password to confirm deletion" });
+      return;
+    }
+  }
+
   const result = await deleteUserAccount(userId);
   if (!result) {
     res.status(404).json({ error: "Account not found" });

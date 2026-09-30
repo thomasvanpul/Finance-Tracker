@@ -1288,7 +1288,9 @@ paths:
         other users' data that named this user keep their text and lose the
         link. Third-party tokens (Wise, Alpaca, Kraken, OAuth grants) are
         destroyed here, not revoked at the provider. Confirmation is the
-        account email, typed exactly.
+        account email, typed exactly, plus the current password for any
+        account that has one — a valid session proves a device once signed
+        in, not that this request is the owner acting now.
       requestBody:
         required: true
         content:
@@ -1303,7 +1305,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteUserAccountResult"
         "400":
-          description: The typed email does not match the account
+          description: The typed email does not match the account, or the password is missing/wrong for an account that has one
 
   # ── SETTINGS (currency) ────────────────────────────────────────────────────
   /settings/currency:
@@ -3049,6 +3051,12 @@ components:
         email:
           type: string
           description: The account email, typed by the user as confirmation
+        password:
+          type: string
+          description: >-
+            Current password, required when the account has one (not
+            passkey-only or OAuth-only). Re-checked server-side against the
+            stored hash before deletion proceeds.
 
     DeleteUserAccountResult:
       type: object
