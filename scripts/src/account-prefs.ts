@@ -91,6 +91,21 @@ export interface AccountPrefs {
   /** Set the account persona. No-ops when already there. */
   setPersona: (persona: string) => Promise<void>;
   /**
+   * Set one key in the /settings/preferences blob (BACKLOG § G20/B) and
+   * restore it to whatever the account held before this run, the same
+   * guarantee as setTheme/setPersona. For anything account-level that has
+   * no dedicated endpoint of its own — e.g. nr-dismissed-insights, which a
+   * real control (a "dismiss" click) pushes here through the client's own
+   * sync engine (lib/account-storage.ts) with no chance for a script to
+   * intercept the write. insight-shot.ts (2026-09-07) leaked three
+   * dismissed ids into the seed account this way before it grew its own
+   * ad hoc reset; this is that fix made reusable, so the next harness that
+   * exercises a control like it gets a restore for free instead of having
+   * to relearn the hazard. Pass `null` to mean "absent", matching the
+   * PATCH endpoint's own semantics.
+   */
+  setPreference: (key: string, value: string | null) => Promise<void>;
+  /**
    * Clear the account's onboarded_at so the questionnaire renders again.
    *
    * Needs the api-server started with ENABLE_DEV_ROUTES=1 (and NODE_ENV not
@@ -131,6 +146,10 @@ export async function openAccountPrefs(ctx: BrowserContext, cookie: string): Pro
     const r = await ctx.request.get(`${API}${path}`, { headers });
     if (!r.ok()) throw new Error(`GET ${path} failed: ${r.status()} ${await r.text()}`);
     return (await r.json()) as T;
+  }
+  async function patch(path: string, body: unknown): Promise<void> {
+    const r = await ctx.request.patch(`${API}${path}`, { headers, data: body });
+    if (!r.ok()) throw new Error(`PATCH ${path} failed: ${r.status()} ${await r.text()}`);
   }
 
   const themeBefore = (await get<{ theme: string }>("/api/settings/theme")).theme;
@@ -193,6 +212,24 @@ export async function openAccountPrefs(ctx: BrowserContext, cookie: string): Pro
     }
   };
 
+  // Fetched lazily, on first setPreference() call, so a script that only
+  // ever touches theme/persona (most of them) does not pay for a GET it
+  // never needed.
+  let preferencesBefore: Record<string, string> | null = null;
+  const preferencesTouched = new Set<string>();
+
+  const setPreference = async (key: string, value: string | null): Promise<void> => {
+    if (preferencesBefore === null) {
+      preferencesBefore = (await get<{ preferences: Record<string, string> }>("/api/settings/preferences")).preferences;
+    }
+    await patch("/api/settings/preferences", { preferences: { [key]: value } });
+    if (!preferencesTouched.has(key)) {
+      preferencesTouched.add(key);
+      const before = preferencesBefore[key] ?? null;
+      restores.push(() => patch("/api/settings/preferences", { preferences: { [key]: before } }));
+    }
+  };
+
   const resetOnboarding = async (): Promise<void> => {
     await post("/api/dev/reset-onboarding");
   };
@@ -209,7 +246,7 @@ export async function openAccountPrefs(ctx: BrowserContext, cookie: string): Pro
     }
   };
 
-  return { setTheme, setPersona, resetOnboarding, restore };
+  return { setTheme, setPersona, setPreference, resetOnboarding, restore };
 }
 
 // The localStorage half. Seeds the first-paint caches so the capture

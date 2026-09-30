@@ -24,7 +24,7 @@
 // Usage: tsx scripts/src/insight-shot.ts <scenario>
 
 import { chromium } from 'playwright';
-import { SEED_EMAIL, SEED_PASSWORD } from './seed-credentials.js';
+import { signInSeedUser, openAccountPrefs, type AccountPrefs } from './account-prefs.js';
 
 const FRONTEND = 'http://localhost:4321';
 const API = 'http://localhost:3001';
@@ -125,27 +125,22 @@ async function proxy(ctx: import('playwright').BrowserContext) {
 // overwritten a moment later, and — worse — a dismiss click in one run
 // suppressed that insight in every run afterwards. That is what made the
 // reconciliation insight silently disappear on 2026-09-07. Set the server
-// copy instead, and clear it again when the run finishes.
-async function setDismissals(ctx: import('playwright').BrowserContext, ids: readonly string[]) {
-  const res = await ctx.request.patch(`${API}/api/settings/preferences`, {
-    headers: { 'Content-Type': 'application/json', Origin: FRONTEND },
-    data: { preferences: { 'nr-dismissed-insights': ids.length === 0 ? null : JSON.stringify(ids) } },
-  });
-  if (!res.ok()) console.log(`  (could not set dismissals: ${res.status()})`);
+// copy through account-prefs.ts's setPreference() instead, which reads the
+// true prior value once per context and restores it on prefs.restore() —
+// the same guarantee setTheme/setPersona already give every other capture
+// script, so this scenario's dismiss click (fx-fired) cannot leak past this
+// run the way it did before, and the next harness that needs the same kind
+// of control gets the restore for free instead of re-inventing this reset.
+async function setDismissals(prefs: AccountPrefs, ids: readonly string[]) {
+  await prefs.setPreference('nr-dismissed-insights', ids.length === 0 ? null : JSON.stringify(ids));
 }
 
 async function makePage(width: number, height: number) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 });
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { 'Content-Type': 'application/json', Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) { console.error('sign-in failed', res.status(), await res.text()); process.exit(1); }
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map(c => ({ ...c, name: c.name.replace(/^__Secure-/, ''), secure: false, sameSite: 'Lax' as const })));
+  const cookie = await signInSeedUser(ctx);
   await proxy(ctx);
-  await setDismissals(ctx, scenario.dismiss);
+  const prefs = await openAccountPrefs(ctx, cookie);
+  await setDismissals(prefs, scenario.dismiss);
   const page = await ctx.newPage();
   if (scenario.clock) await page.clock.setFixedTime(new Date(scenario.clock));
   await page.addInitScript(`try {
@@ -156,7 +151,7 @@ async function makePage(width: number, height: number) {
   } catch (e) {}`);
   page.on('pageerror', e => console.log('  PAGE ERROR:', String(e).slice(0, 200)));
   page.on('response', r => { if (r.url().includes('/api/') && !r.ok()) console.log(`  API ${r.status()} ${r.url().replace(FRONTEND, '')}`); });
-  return { ctx, page };
+  return { ctx, page, prefs };
 }
 
 // The phone screens render inline-styled placeholder bars, not a .ft-skeleton
@@ -178,7 +173,7 @@ async function slotText(page: import('playwright').Page): Promise<string> {
 
 // ── Phone: the three slots ─────────────────────────────────────────────────
 {
-  const { ctx, page } = await makePage(390, 844);
+  const { ctx, page, prefs } = await makePage(390, 844);
   for (const [path, name] of [['/', 'home'], ['/spending', 'spending'], ['/net-worth', 'worth']] as const) {
     await page.goto(`${FRONTEND}${path}`, { waitUntil: 'domcontentloaded' });
     await settle(page);
@@ -195,12 +190,13 @@ async function slotText(page: import('playwright').Page): Promise<string> {
     await page.screenshot({ path: `${OUT}/insight_${SCENARIO}_phone_${name}.png`, fullPage: false });
   }
   await page.unrouteAll({ behavior: 'ignoreErrors' });
+  await prefs.restore();
   await ctx.close();
 }
 
 // ── Desktop: the reconciliation panel, where (c)'s note lives ──────────────
 {
-  const { ctx, page } = await makePage(1440, 900);
+  const { ctx, page, prefs } = await makePage(1440, 900);
   await page.goto(`${FRONTEND}/accounts`, { waitUntil: 'domcontentloaded' });
   await settle(page);
   const state = await page.evaluate(() => {
@@ -219,18 +215,7 @@ async function slotText(page: import('playwright').Page): Promise<string> {
   await page.waitForTimeout(800);
   await page.screenshot({ path: `${OUT}/insight_${SCENARIO}_desktop_accounts.png`, fullPage: false });
   await page.unrouteAll({ behavior: 'ignoreErrors' });
-  await ctx.close();
-}
-
-// Leave the account as it was found: a dismissal made for a screenshot is
-// not the user's, and it would suppress the same insight in the next run.
-{
-  const ctx = await browser.newContext();
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { 'Content-Type': 'application/json', Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (res.ok()) await setDismissals(ctx, []);
+  await prefs.restore();
   await ctx.close();
 }
 
