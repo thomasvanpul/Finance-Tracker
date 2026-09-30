@@ -51,6 +51,7 @@ import { MobileSheet } from "@/components/mobile-sheet";
 import { useQueryParam } from "@/hooks/use-query-param";
 import { useLocation, useSearch } from "wouter";
 import { ledgerLocation, ledgerSearchMatches } from "@/lib/ledger-query";
+import { splitLineAmount } from "@/lib/split-amount";
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, entityHref, merchantTransactionsHref } from "@/lib/entity-href";
 import { HStack, PanelHeader, Text, VStack } from "@/components/primitives";
@@ -1258,7 +1259,7 @@ export default function Transactions() {
           description: tx.description,
           type: tx.type,
           category: first.category,
-          nativeAmount: tx.type === "income" ? parseFloat(first.amount) : -parseFloat(first.amount),
+          nativeAmount: splitLineAmount(first.amount),
           currency: tx.currency,
         },
       });
@@ -1271,7 +1272,7 @@ export default function Transactions() {
               type: tx.type,
               category: line.category,
               accountId: tx.accountId,
-              nativeAmount: tx.type === "income" ? parseFloat(line.amount) : -parseFloat(line.amount),
+              nativeAmount: splitLineAmount(line.amount),
               currency: tx.currency,
             },
           })
