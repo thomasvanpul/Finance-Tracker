@@ -33,6 +33,23 @@ export interface Box {
 export const DATA_SELECTOR = ".pnum, .ft-chart, .recharts-wrapper, canvas, svg";
 
 /**
+ * Surfaces the companion stands beside, never on: every panel, and each of
+ * the dashboard's two widget columns (as tall as its widgets, no taller),
+ * and the dashboard's INSIGHTS strip, which is unframed and so not a panel.
+ *
+ * The glyph sweep alone let it stand on data drawn as plain divs — on 30 Sep
+ * a tester walk caught it standing across the SPENDING BREAKDOWN bars, whose
+ * lengths are the figures (value is encoded by length, DESIGN.md) and carry
+ * no text and no class to find. Marking every bar in every widget would be
+ * dozens of edits that go stale; the panel a bar lives in is one selector.
+ * With this it walks the page's bare ground — the gutter under a short
+ * column, the space below the grid — and on a screen with none, `place`
+ * finds no spot and it is not drawn, which is the failure mode this module
+ * already chose.
+ */
+export const SOLID_SELECTOR = ".ft-panelbox, .ft-dashboard-two-col > *, .ft-dashboard-strip";
+
+/**
  * What counts as "a number" in running text.
  *
  * Two or more digits, so a lone "1" in a sentence does not fence the whole
@@ -119,7 +136,7 @@ export function collectObstacles(root: ParentNode = document): Obstacles {
   const box = (r: { left: number; top: number; width: number; height: number }): Box =>
     ({ x: r.left, y: r.top, w: r.width, h: r.height });
 
-  for (const el of Array.from(root.querySelectorAll(DATA_SELECTOR))) {
+  for (const el of Array.from(root.querySelectorAll(`${DATA_SELECTOR}, ${SOLID_SELECTOR}`))) {
     const r = el.getBoundingClientRect();
     if (!keep(r)) continue;
     numbers.push(box(r));

@@ -209,3 +209,22 @@ describe("safe zone · never cover a number", () => {
     for (const s of spots) expect(s.x + s.w).toBeLessThanOrEqual(100);
   });
 });
+
+describe("companion solid surfaces", () => {
+  it("names the class PanelBox actually paints, and the dashboard column class", async () => {
+    // SOLID_SELECTOR is two class names copied from elsewhere. If either is
+    // renamed at its source the cat walks back onto the bars without a
+    // single error, so the source is read rather than trusted.
+    const { readFileSync } = await import("node:fs");
+    const { resolve } = await import("node:path");
+    const { SOLID_SELECTOR } = await import("./safe-zone");
+    const src = (p: string) => readFileSync(resolve(__dirname, "..", "..", p), "utf-8");
+    const panelClass = /PANEL_BOX_CLASS = "([^"]+)"/.exec(src("components/primitives/panel-box.tsx"))?.[1];
+    expect(panelClass).toBeTruthy();
+    expect(SOLID_SELECTOR).toContain(`.${panelClass}`);
+    expect(src("pages/dashboard.tsx")).toContain('className="ft-dashboard-two-col"');
+    expect(SOLID_SELECTOR).toContain(".ft-dashboard-two-col > *");
+    expect(src("pages/dashboard.tsx")).toContain("ft-dashboard-strip");
+    expect(SOLID_SELECTOR).toContain(".ft-dashboard-strip");
+  });
+});
