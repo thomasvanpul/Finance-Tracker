@@ -1,0 +1,38 @@
+{
+  "_note": "MOCK, SAMPLE FIGURES. Shared by all three round-2 phone prototypes so they can be compared. Student-shaped (Plan 5 maintenance loan paid per term). Derived values computed in the session with: liquid = Monzo + EUR at 0.8702; bills to next income = rent x4 + (Spotify + Three + Gym) x3.5; perDay = (liquid - bills) / 104 days.",
+  "today": "2026-09-30",
+  "nextIncome": { "label": "Student loan, term 2", "date": "2027-01-12", "amountGBP": 4735.00, "daysAway": 104 },
+  "accounts": [
+    { "name": "Monzo", "currency": "GBP", "native": 6845.20, "gbp": 6845.20, "kind": "cash" },
+    { "name": "Revolut", "currency": "EUR", "native": 540.75, "gbp": 470.56, "kind": "cash", "fx": "0.8702 ECB 30 Sep" },
+    { "name": "Maybank", "currency": "MYR", "native": 2180.00, "gbp": 382.46, "kind": "cash", "fx": "0.17544 ECB 30 Sep", "readOnly": true },
+    { "name": "Alpaca", "currency": "USD", "native": 2450.00, "gbp": 1822.31, "kind": "invested", "fx": "0.74380 ECB 30 Sep" },
+    { "name": "Kraken", "currency": "GBP", "native": 1146.04, "gbp": 1146.04, "kind": "invested" }
+  ],
+  "netWorthGBP": 10666.57,
+  "liquidGBP": 7315.76,
+  "billsToNextIncomeGBP": 4011.43,
+  "freeToNextIncomeGBP": 3304.33,
+  "perDayGBP": 31.77,
+  "recentBurnPerDayGBP": 36.40,
+  "zeroDayAtRecentBurn": "2026-12-29",
+  "zeroDayNote": "At the last 14 days' pace the free money runs out 14 days before the loan arrives. At 31.77 a day it lasts exactly.",
+  "todaySpentGBP": 12.60,
+  "upcoming": [
+    { "name": "Rent", "date": "2026-10-01", "gbp": 960.00, "repeat": "monthly" },
+    { "name": "Spotify", "date": "2026-10-04", "gbp": 11.99, "repeat": "monthly" },
+    { "name": "Three", "date": "2026-10-08", "gbp": 12.00, "repeat": "monthly" },
+    { "name": "Gym", "date": "2026-10-12", "gbp": 24.99, "repeat": "monthly" },
+    { "name": "Rent", "date": "2026-11-01", "gbp": 960.00, "repeat": "monthly" },
+    { "name": "Rent", "date": "2026-12-01", "gbp": 960.00, "repeat": "monthly" },
+    { "name": "Flight LHR-PEN", "date": "2026-12-14", "gbp": 0, "note": "already paid; shown as a calendar event only" },
+    { "name": "Rent", "date": "2027-01-01", "gbp": 960.00, "repeat": "monthly" }
+  ],
+  "last14DaysByCategoryGBP": { "Groceries": 142.30, "Eating out": 186.40, "Transport": 58.20, "Societies": 45.00, "Books": 38.00, "Other": 39.70 },
+  "last14DaysTotalGBP": 509.60,
+  "places": [
+    { "name": "Tesco Express, Exhibition Rd", "visits14d": 9, "gbp14d": 71.20 },
+    { "name": "Imperial Union bar", "visits14d": 4, "gbp14d": 52.40 },
+    { "name": "TfL", "visits14d": 22, "gbp14d": 58.20 }
+  ]
+}

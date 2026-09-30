@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=390, user-scalable=no">
+<title>B Horizon, phone home (mock)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=block" rel="stylesheet">
+<style>
+/* Colour tokens copied from docs/research/special-2026-09/phone/A-reach.html (void theme).
+   Every colour in this file, canvas included, is read from these tokens. */
+:root {
+  --ft-base:#0A0D12; --ft-surface:#0F1318; --ft-raised:#141A22; --ft-border:#1C2530; --ft-border2:#243040;
+  --ft-text:#E8EDF2; --ft-muted:#71869D; --ft-dim:#556677; --ft-accent:#E8C14A; --ft-amber:#FFB300;
+  --ft-green:#00E5A0; --ft-red:#FF4757; --ft-blue:#73A1D6; --ft-cyan:#00D4FF;
+  --font-sans:"IBM Plex Sans", system-ui, sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--ft-base); color:var(--ft-text); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; }
+body { width:390px; height:844px; overflow:hidden; position:relative; touch-action:none; user-select:none; -webkit-user-select:none; }
+canvas { position:absolute; inset:0; width:390px; height:844px; display:block; }
+.pnum { font-family:var(--font-mono); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.status { position:absolute; top:0; left:0; right:0; height:40px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 16px 4px; font-size:11px; color:var(--ft-dim); pointer-events:none; }
+.status .mock { font-family:var(--font-mono); font-size:9px; letter-spacing:.06em; }
+/* Crosshair readout: follows the standing marker (x = 130). */
+.readout { position:absolute; top:44px; left:16px; right:16px; pointer-events:none; }
+.readout .date { font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; color:var(--ft-muted); text-transform:uppercase; white-space:nowrap; }
+.readout .fig { font-family:var(--font-mono); font-size:34px; font-weight:500; letter-spacing:-.01em; line-height:1.15; white-space:nowrap; }
+.readout .fig .p { color:var(--ft-dim); }
+.readout .fig.proj { text-decoration:underline dotted 2px; text-underline-offset:6px; text-decoration-color:var(--ft-dim); }
+.readout .fig.neg { color:var(--ft-red); }
+.readout .fig.none { font-family:var(--font-sans); font-size:20px; color:var(--ft-muted); line-height:1.9; }
+.readout .sub { font-size:12px; color:var(--ft-muted); margin-top:2px; white-space:nowrap; }
+.readout .sub b { font-weight:500; color:var(--ft-text); }
+.hint { position:absolute; left:16px; right:16px; bottom:10px; font-size:10px; font-family:var(--font-mono); letter-spacing:.04em; color:var(--ft-dim); display:flex; justify-content:space-between; pointer-events:none; }
+/* Cliff callout, shown when a cliff is tapped. */
+.callout { position:absolute; min-width:180px; padding:8px 10px 9px; background:var(--ft-base); border:1px solid var(--ft-accent); pointer-events:none; opacity:0; transition:opacity .18s; }
+.callout.on { opacity:1; }
+.callout .n { font-size:13px; font-weight:600; }
+.callout .l { font-size:11px; color:var(--ft-muted); margin-top:2px; white-space:nowrap; }
+.callout .a { font-family:var(--font-mono); font-size:15px; margin-top:4px; white-space:nowrap; }
+</style></head>
+<body>
+<canvas id="c" width="780" height="1688"></canvas>
+<div class="status"><span class="pnum">09:41</span><span class="mock">MOCK, SAMPLE FIGURES</span></div>
+<div class="readout" id="readout">
+  <div class="date" id="rDate"></div>
+  <div class="fig" id="rFig"></div>
+  <div class="sub" id="rSub"></div>
+</div>
+<div class="callout" id="callout"><div class="n" id="cName"></div><div class="a" id="cAmt"></div><div class="l" id="cLine"></div></div>
+<div class="hint"><span>DRAG SIDEWAYS TO WALK</span><span>UP / DOWN SETS PACE</span></div>
+<script>
+// ---------------------------------------------------------------------------
+// Sample data, inlined verbatim (subset) from round2/phone/sample-data.json.
+// MOCK, SAMPLE FIGURES.
+// ---------------------------------------------------------------------------
+const DATA = {
+  today: "2026-09-30",
+  nextIncome: { label: "Student loan, term 2", date: "2027-01-12", amountGBP: 4735.00, daysAway: 104 },
+  accounts: [
+    { name: "Monzo",   currency: "GBP", native: 6845.20, gbp: 6845.20, kind: "cash" },
+    { name: "Revolut", currency: "EUR", native: 540.75,  gbp: 470.56,  kind: "cash", fx: "0.8702 ECB 30 Sep" },
+    { name: "Maybank", currency: "MYR", native: 2180.00, gbp: 382.46,  kind: "cash", fx: "0.17544 ECB 30 Sep", readOnly: true },
+  ],
+  liquidGBP: 7315.76,
+  billsToNextIncomeGBP: 4011.43,
+  freeToNextIncomeGBP: 3304.33,
+  perDayGBP: 31.77,
+  recentBurnPerDayGBP: 36.40,
+  last14DaysTotalGBP: 509.60,
+  upcoming: [
+    { name: "Rent",    date: "2026-10-01", gbp: 960.00 },
+    { name: "Spotify", date: "2026-10-04", gbp: 11.99 },
+    { name: "Three",   date: "2026-10-08", gbp: 12.00 },
+    { name: "Gym",     date: "2026-10-12", gbp: 24.99 },
+    { name: "Rent",    date: "2026-11-01", gbp: 960.00 },
+    { name: "Rent",    date: "2026-12-01", gbp: 960.00 },
+    { name: "Flight LHR-PEN", date: "2026-12-14", gbp: 0, note: "already paid; shown as a calendar event only" },
+    { name: "Rent",    date: "2027-01-01", gbp: 960.00 },
+  ],
+};
+
+// ---------------------------------------------------------------------------
+// THE MODEL (all arithmetic on the sample data; nothing invented)
+//
+// d = whole days after today (30 Sep 2026). The wall is d = 104 (12 Jan 2027).
+//
+// Land (Y = free money):   free(d) = 3304.33 - pace * d
+//   freeToNextIncome already has every bill to 12 Jan subtracted
+//   (7315.76 liquid - 4011.43 bills), so bills do NOT dent the land.
+//   36.40/day: 3304.33 / 36.40 = 90.78 -> last dry day d = 90 = 29 Dec 2026,
+//              104 - 90 = 14 days short of the wall; at the wall 3304.33 - 3785.60 = -481.27.
+//   31.77/day: 3304.33 / 31.77 = 104.008 -> dry through d = 104 = 12 Jan 2027,
+//              3304.33 - 31.77 * 104 = 3304.33 - 3304.08 = 0.25 left at the wall.
+//
+// Promised line (dotted, above the land):  promised(d) = free(d) + stillOwed(d)
+//   stillOwed(d) = sum of listed upcoming bills dated after d
+//                + residual * (104 - d) / 104
+//   The sample's 4011.43 is rent x4 + (Spotify + Three + Gym) x 3.5. The listed
+//   bills sum to 960*4 + 11.99 + 12.00 + 24.99 = 3888.98, so the residual
+//   (later subscription months the sample prorates rather than lists) is
+//   4011.43 - 3888.98 = 122.45, spread evenly to the wall because it is itself
+//   a proration. promised(0) = 3304.33 + 4011.43 = 7315.76 = liquidGBP.
+//   Each listed bill is a named cliff where the promised line drops by its amount.
+//   The flight (0.00, already paid) is a marker, not a cliff.
+//
+// Past: the sample has no balance history, only a 14-day spend total, so the
+//   60 days before today are flat solid ground at today's level, labelled
+//   "history arrives with bank data". The readout shows no figure there.
+//
+// Strata (bedrock): cash accounts in native currency, thickness proportional
+//   to GBP value (6845.20 + 470.56 + 382.46 = 7698.22). Maybank is read-only
+//   and is not in liquidGBP (6845.20 + 470.56 = 7315.76), so it is hatched.
+// ---------------------------------------------------------------------------
+const DAY = 86400000;
+const T0 = Date.UTC(2026, 8, 30);
+const WALL = DATA.nextIncome.daysAway;           // 104
+const PAST = 60;
+const F = DATA.freeToNextIncomeGBP;
+const listedSum = DATA.upcoming.reduce((s, b) => s + b.gbp, 0);        // 3888.98
+const RESIDUAL = +(DATA.billsToNextIncomeGBP - listedSum).toFixed(2);  // 122.45
+const bills = DATA.upcoming.map(b => ({ ...b, d: Math.round((Date.parse(b.date) - T0) / DAY) }));
+
+const PACE_MIN = 20, PACE_MAX = 50, SNAPS = [DATA.perDayGBP, DATA.recentBurnPerDayGBP];
+let pace = DATA.recentBurnPerDayGBP;
+let marker = 0;           // day under the standing line
+let gamma = 0;            // device tilt, left/right
+let selected = -1;        // tapped cliff index
+
+const free = d => F - pace * d;
+function stillOwed(d) {
+  let s = 0;
+  for (const b of bills) if (b.d > d) s += b.gbp;
+  return s + RESIDUAL * Math.max(0, WALL - d) / WALL;
+}
+const promised = d => free(d) + stillOwed(d);
+const shoreDay = () => Math.floor(F / pace);             // last dry day
+const reachesWall = () => shoreDay() >= WALL;
+
+// ------------------------------- formatting --------------------------------
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const WD = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const dateOf = d => new Date(T0 + d * DAY);
+const fmtDate = d => { const t = dateOf(d); return `${WD[t.getUTCDay()]} ${t.getUTCDate()} ${MON[t.getUTCMonth()]} ${t.getUTCFullYear()}`; };
+const shortDate = d => { const t = dateOf(d); return `${t.getUTCDate()} ${MON[t.getUTCMonth()]}`; };
+const money = v => (v < 0 ? "−" : "") + "£" + Math.abs(v).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const moneyNative = (v, cur) => cur + " " + v.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// ------------------------------- geometry ----------------------------------
+const W = 390, H = 844, DPR = 2;
+const MX = 130;             // standing line, a third of the way in
+const PX = 7.2;             // px per day: 164 days = 1181 px, three screens wide
+const SEA = 598;            // y of zero
+const SEABED = 640;
+const TOP_VALUE = DATA.liquidGBP;          // promised(0) is the tallest thing
+const KY = (SEA - 218) / TOP_VALUE;        // px per pound
+const yOf = v => SEA - v * KY;
+const xOf = d => MX + (d - marker) * PX;
+const STRATA_TOP = SEABED, STRATA_H = 150;
+
+const cv = document.getElementById("c");
+const cx = cv.getContext("2d");
+cx.scale(DPR, DPR);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {};
+["base","surface","raised","border","border2","text","muted","dim","accent","amber","green","red","blue","cyan"].forEach(k => C[k] = css("--ft-" + k));
+function alpha(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
+
+function makePattern(draw, size) {
+  const p = document.createElement("canvas"); p.width = p.height = size * DPR;
+  const g = p.getContext("2d"); g.scale(DPR, DPR); draw(g, size);
+  return cx.createPattern(p, "repeat");
+}
+let DOTS, HATCH, HATCH_RO;
+
+const MONO = w => `${w} 10px "JetBrains Mono"`;
+const hit = [];             // cliff hit boxes in screen space
+
+// ------------------------------- drawing -----------------------------------
+function draw() {
+  cx.clearRect(0, 0, W, H);
+  cx.fillStyle = C.base; cx.fillRect(0, 0, W, H);
+  hit.length = 0;
+
+  // month gridlines
+  cx.font = MONO(400); cx.textBaseline = "alphabetic";
+  for (let d = -PAST; d <= WALL; d++) {
+    const t = dateOf(d);
+    if (t.getUTCDate() !== 1) continue;
+    const x = xOf(d);
+    cx.strokeStyle = C.border; cx.lineWidth = 1; cx.setLineDash([]);
+    cx.beginPath(); cx.moveTo(x + .5, 180); cx.lineTo(x + .5, SEABED); cx.stroke();
+    cx.fillStyle = C.dim; cx.fillText(MON[t.getUTCMonth()].toUpperCase() + (t.getUTCMonth() === 0 ? " 2027" : ""), x + 4, 190);
+  }
+
+  // past: flat solid ground at today's level
+  const xp0 = xOf(-PAST), xT = xOf(0);
+  cx.fillStyle = C.raised; cx.fillRect(xp0, yOf(F), xT - xp0, SEABED - yOf(F));
+  cx.strokeStyle = C.text; cx.lineWidth = 2; cx.setLineDash([]);
+  cx.beginPath(); cx.moveTo(xp0, yOf(F)); cx.lineTo(xT, yOf(F)); cx.stroke();
+  cx.fillStyle = C.muted; cx.font = `400 11px "IBM Plex Sans"`;
+  cx.textAlign = "right";
+  cx.fillText("history arrives", xT - 10, yOf(F) + 22);
+  cx.fillText("with bank data", xT - 10, yOf(F) + 37);
+  cx.textAlign = "left";
+  cx.fillStyle = C.dim; cx.font = MONO(400);
+  cx.fillText("60 DAYS AGO", xp0 + 8, yOf(F) - 8);
+
+  // future land, dotted fill
+  cx.beginPath(); cx.moveTo(xT, SEABED);
+  for (let d = 0; d <= WALL; d += .25) cx.lineTo(xOf(d), yOf(free(d)));
+  cx.lineTo(xOf(WALL), SEABED); cx.closePath();
+  cx.fillStyle = C.base; cx.fill();
+  cx.fillStyle = DOTS; cx.fill();
+  // future surface, dashed
+  cx.strokeStyle = C.text; cx.lineWidth = 2; cx.setLineDash([2, 4]);
+  cx.beginPath();
+  for (let d = 0; d <= WALL; d += .25) { const x = xOf(d), y = yOf(free(d)); d === 0 ? cx.moveTo(x, y) : cx.lineTo(x, y); }
+  cx.stroke(); cx.setLineDash([]);
+
+  // promised band: hatched between land and the promised line
+  cx.beginPath();
+  cx.moveTo(xT, yOf(free(0)));
+  for (let d = 0; d <= WALL; d += .25) cx.lineTo(xOf(d), yOf(promised(Math.floor(d)) - pace * (d - Math.floor(d))));
+  for (let d = WALL; d >= 0; d -= .25) cx.lineTo(xOf(d), yOf(free(d)));
+  cx.closePath(); cx.fillStyle = HATCH; cx.fill();
+  cx.strokeStyle = C.amber; cx.lineWidth = 1.25; cx.setLineDash([1, 3]);
+  cx.beginPath();
+  for (let d = 0; d <= WALL; d += .25) {
+    const v = promised(Math.floor(d)) - pace * (d - Math.floor(d));
+    d === 0 ? cx.moveTo(xOf(d), yOf(v)) : cx.lineTo(xOf(d), yOf(v));
+  }
+  cx.stroke(); cx.setLineDash([]);
+  cx.fillStyle = C.amber; cx.font = MONO(500);
+  { const xl = xOf(15); if (xl > -140 && xl < W) cx.fillText("PROMISED TO BILLS", xl, yOf(promised(15)) - 10); }
+
+  // cliffs (named) and the flight marker
+  bills.forEach((b, i) => {
+    const x = xOf(b.d);
+    if (x < -80 || x > W + 80) return;
+    const sel = i === selected;
+    if (b.gbp === 0) {
+      const y = yOf(free(b.d));
+      cx.strokeStyle = sel ? C.accent : C.muted; cx.setLineDash([2, 3]); cx.lineWidth = 1;
+      cx.beginPath(); cx.moveTo(x, y); cx.lineTo(x, y - 70); cx.stroke(); cx.setLineDash([]);
+      cx.fillStyle = sel ? C.accent : C.muted; cx.fillRect(x, y - 70, 7, 5);
+      cx.font = `500 11px "IBM Plex Sans"`; cx.fillText("Flight", x + 10, y - 64);
+      hit.push({ i, x0: x - 14, x1: x + 50, y0: y - 84, y1: y });
+      return;
+    }
+    const bot = yOf(promised(b.d));
+    const yTop = yOf(promised(b.d) + b.gbp);
+    cx.strokeStyle = sel ? C.accent : C.amber; cx.lineWidth = sel ? 3 : 2;
+    cx.beginPath(); cx.moveTo(x, yTop); cx.lineTo(x, bot); cx.stroke();
+    // name at the cliff edge; small bills are stacked up so labels do not collide
+    const lift = b.gbp < 100 ? 14 + (i % 3) * 22 : 8;
+    cx.fillStyle = sel ? C.accent : C.text;
+    cx.font = `${sel ? 600 : 500} 11px "IBM Plex Sans"`;
+    cx.fillText(b.name, x + 4, yTop - lift);
+    if (b.gbp < 100) { cx.strokeStyle = alpha(C.muted, .5); cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x, yTop); cx.lineTo(x + 3, yTop - lift + 3); cx.stroke(); }
+    hit.push({ i, x0: x - 16, x1: x + 60, y0: yTop - lift - 16, y1: bot + 8 });
+  });
+
+  // shoreline
+  const sd = F / pace;          // exact crossing, in days
+  if (!reachesWall()) {
+    const x = xOf(sd);
+    cx.strokeStyle = C.accent; cx.lineWidth = 1.5;
+    cx.beginPath(); cx.moveTo(x, SEA); cx.lineTo(x, SEA - 150); cx.stroke();
+    cx.fillStyle = C.accent; cx.beginPath(); cx.arc(x, SEA, 4, 0, 7); cx.fill();
+    cx.font = MONO(600);
+    const lx = x - 6, ly = SEA - 156;
+    cx.textAlign = "right";
+    cx.fillText("SHORELINE", lx, ly - 14);
+    cx.font = `600 13px "IBM Plex Sans"`; cx.fillText(fmtDate(shoreDay()), lx, ly);
+    cx.font = `400 11px "IBM Plex Sans"`; cx.fillStyle = C.muted;
+    cx.fillText(`${WALL - shoreDay()} days short of the loan`, lx, ly + 15);
+    cx.textAlign = "left";
+  }
+
+  // sea over everything below zero
+  cx.fillStyle = alpha(C.blue, .22); cx.fillRect(0, SEA, W, SEABED - SEA);
+  cx.strokeStyle = C.blue; cx.lineWidth = 1.5; cx.beginPath();
+  for (let x = 0; x <= W; x += 2) { const y = SEA + Math.sin((x + marker * PX) / 9) * 1.5; x ? cx.lineTo(x, y) : cx.moveTo(x, y); }
+  cx.stroke();
+  cx.fillStyle = C.blue; cx.font = MONO(500); cx.fillText("SEA  £0.00", 16, SEA + 26);
+
+  // wall: the loan
+  const xw = xOf(WALL);
+  if (xw < W + 40) {
+    cx.fillStyle = C.surface; cx.fillRect(xw, 170, 22, SEABED - 170);
+    cx.strokeStyle = C.text; cx.lineWidth = 2; cx.beginPath(); cx.moveTo(xw, 170); cx.lineTo(xw, SEABED); cx.stroke();
+    for (let y = 176; y < SEABED; y += 12) { cx.strokeStyle = C.border2; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(xw + 2, y); cx.lineTo(xw + 22, y); cx.stroke(); }
+    cx.save(); cx.translate(xw + 15, 180); cx.rotate(Math.PI / 2);
+    cx.fillStyle = C.text; cx.font = MONO(600);
+    cx.fillText(`LOAN 12 JAN 2027  +${money(DATA.nextIncome.amountGBP)}`, 0, 0);
+    cx.restore();
+    if (reachesWall()) {
+      const y = yOf(free(WALL));
+      cx.fillStyle = C.green; cx.beginPath(); cx.arc(xw, y, 4, 0, 7); cx.fill();
+      const right = xw + 200 < W - 30;       // room beyond the wall?
+      const lx = right ? xw + 32 : xw - 8;
+      cx.textAlign = right ? "left" : "right"; cx.font = MONO(600);
+      cx.fillText("LAND REACHES THE WALL", lx, SEA - 120);
+      cx.font = `600 13px "IBM Plex Sans"`; cx.fillText(`${money(free(WALL))} left on 12 Jan`, lx, SEA - 104);
+      cx.textAlign = "left";
+    } else {
+      const y = yOf(free(WALL));
+      cx.fillStyle = C.red; cx.textAlign = "right"; cx.font = MONO(600);
+      cx.fillText(`${money(free(WALL))} AT THE WALL`, xw - 8, SEABED - 8);
+      cx.textAlign = "left";
+    }
+  }
+
+  // bedrock strata: cash accounts in native currency
+  const tot = DATA.accounts.reduce((s, a) => s + a.gbp, 0);           // 7698.22
+  let y = STRATA_TOP;
+  cx.fillStyle = C.surface; cx.fillRect(0, STRATA_TOP, W, STRATA_H);
+  const bands = DATA.accounts.map(a => { const h = a.gbp / tot * STRATA_H; const b = { a, y, h }; y += h; return b; });
+  bands.forEach((b, k) => {
+    cx.fillStyle = k === 0 ? C.raised : (b.a.readOnly ? HATCH_RO : C.border2);
+    cx.fillRect(0, b.y, W, b.h);
+    cx.strokeStyle = C.border2; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(0, b.y + .5); cx.lineTo(W, b.y + .5); cx.stroke();
+  });
+  // wobble the strata edge so it reads as rock, panning with the land
+  cx.strokeStyle = C.border; cx.lineWidth = 1;
+  for (let k = 0; k < 6; k++) {
+    const yy = STRATA_TOP + 18 + k * 17;
+    cx.beginPath();
+    for (let x = 0; x <= W; x += 4) { const v = yy + Math.sin((x + marker * PX) / (23 + k * 7) + k) * 2; x ? cx.lineTo(x, v) : cx.moveTo(x, v); }
+    cx.stroke();
+  }
+  // labels, pinned to the screen
+  cx.font = MONO(500); cx.fillStyle = C.dim;
+  cx.fillText("BEDROCK  CASH ACCOUNTS, NATIVE CURRENCY", 16, STRATA_TOP + 16);
+  const m = bands[0];
+  cx.fillStyle = C.text; cx.font = `500 12px "IBM Plex Sans"`; cx.fillText("Monzo", 16, STRATA_TOP + 58);
+  cx.font = `500 12px "JetBrains Mono"`; cx.fillText(moneyNative(m.a.native, "GBP"), 16, STRATA_TOP + 74);
+  // thin layers: labels sit above their band with a tick down to it
+  const r = bands[1], mb = bands[2];
+  const lbl = (b, yL, extra) => {
+    cx.strokeStyle = C.muted; cx.lineWidth = 1;
+    cx.beginPath(); cx.moveTo(210, yL - 4); cx.lineTo(206, b.y + b.h / 2); cx.stroke();
+    cx.fillStyle = C.text; cx.font = `500 11px "IBM Plex Sans"`; cx.fillText(b.a.name, 214, yL);
+    cx.font = `500 11px "JetBrains Mono"`; cx.fillText(moneyNative(b.a.native, b.a.currency), 214, yL + 13);
+    cx.fillStyle = C.dim; cx.font = `400 9px "JetBrains Mono"`; cx.fillText(extra, 214, yL + 25);
+  };
+  lbl(r, STRATA_TOP + 44, `fx ${r.a.fx}`);
+  lbl(mb, STRATA_TOP + 86, "READ-ONLY, NOT IN FREE MONEY");
+
+  // standing line (you) and crosshair
+  const dm = Math.round(marker);
+  const vy = dm < 0 ? yOf(F) : yOf(free(dm));
+  cx.strokeStyle = C.accent; cx.lineWidth = 1; cx.setLineDash([]);
+  cx.beginPath(); cx.moveTo(MX + .5, 150); cx.lineTo(MX + .5, SEABED); cx.stroke();
+  cx.beginPath(); cx.moveTo(MX - 10, vy); cx.lineTo(MX + 10, vy); cx.stroke();
+  cx.fillStyle = C.accent; cx.beginPath(); cx.arc(MX + .5, vy, 5, 0, 7); cx.fill();
+  cx.fillStyle = C.base; cx.beginPath(); cx.arc(MX + .5, vy, 2, 0, 7); cx.fill();
+  cx.fillStyle = C.accent; cx.font = MONO(600);
+  cx.fillText(dm === 0 ? "YOU, TODAY" : "YOU", MX + 8, 162);
+
+  // pace dial on the right edge
+  drawDial();
+  updateReadout(dm);
+}
+
+const DIAL_X = 372, DIAL_Y0 = 226, DIAL_Y1 = 520;
+const dialY = p => DIAL_Y1 - (p - PACE_MIN) / (PACE_MAX - PACE_MIN) * (DIAL_Y1 - DIAL_Y0);
+function drawDial() {
+  cx.fillStyle = C.base; cx.fillRect(DIAL_X - 14, DIAL_Y0 - 30, 32, DIAL_Y1 - DIAL_Y0 + 44);
+  cx.strokeStyle = C.border2; cx.lineWidth = 1;
+  for (let p = PACE_MIN; p <= PACE_MAX; p++) {
+    const y = Math.round(dialY(p)) + .5, big = p % 5 === 0;
+    cx.beginPath(); cx.moveTo(DIAL_X + (big ? -8 : -4), y); cx.lineTo(DIAL_X + 4, y); cx.stroke();
+  }
+  cx.fillStyle = C.dim; cx.font = MONO(500); cx.textAlign = "center";
+  cx.fillText("PACE", DIAL_X, DIAL_Y0 - 16);
+  cx.textAlign = "left";
+  for (const s of SNAPS) {
+    const y = dialY(s);
+    cx.strokeStyle = s === DATA.perDayGBP ? C.green : C.red; cx.lineWidth = 2;
+    cx.beginPath(); cx.moveTo(DIAL_X - 12, y); cx.lineTo(DIAL_X - 6, y); cx.stroke();
+  }
+  const y = dialY(pace);
+  cx.fillStyle = C.accent;
+  cx.beginPath(); cx.moveTo(DIAL_X - 12, y); cx.lineTo(DIAL_X + 6, y - 7); cx.lineTo(DIAL_X + 6, y + 7); cx.closePath(); cx.fill();
+}
+
+const rDate = document.getElementById("rDate"), rFig = document.getElementById("rFig"), rSub = document.getElementById("rSub");
+function figHTML(v) {
+  const s = money(v), i = s.lastIndexOf(".");
+  return s.slice(0, i) + `<span class="p">${s.slice(i)}</span>`;
+}
+function updateReadout(dm) {
+  rDate.textContent = (dm === 0 ? "Today, " : "") + fmtDate(dm) + (dm > 0 ? `, in ${dm} days` : dm < 0 ? `, ${-dm} days ago` : "");
+  const paceTxt = `<b class="pnum">${money(pace)}</b> a day`;
+  const shore = reachesWall() ? `land reaches the loan, <b>${money(free(WALL))}</b> left`
+                              : `shore <b>${shortDate(shoreDay())}</b>, ${WALL - shoreDay()} days short`;
+  if (dm < 0) {
+    rFig.className = "fig none"; rFig.textContent = "no history yet";
+    rSub.innerHTML = `history arrives with bank data`;
+    return;
+  }
+  const v = free(dm);
+  rFig.className = "fig" + (dm > 0 ? " proj" : "") + (v < 0 ? " neg" : "");
+  rFig.innerHTML = figHTML(v);
+  const bill = bills.find(b => b.d === dm);
+  const lead = dm === 0 ? "free to 12 Jan" : v < 0 ? "under water" : "free, projected";
+  rSub.innerHTML = bill ? `${lead} &middot; <b>${bill.name}</b> today` : `${lead} &middot; ${paceTxt} &middot; ${shore}`;
+}
+
+// ------------------------------- callout -----------------------------------
+const callout = document.getElementById("callout");
+function showCallout(i) {
+  selected = i;
+  const b = bills[i];
+  document.getElementById("cName").textContent = b.name;
+  document.getElementById("cAmt").textContent = b.gbp ? money(b.gbp) : "paid";
+  document.getElementById("cLine").innerHTML = fmtDate(b.d) + "<br>" + (b.gbp
+    ? "already taken out of the free figure"
+    : "already paid, calendar event only");
+  draw();
+  const h = hit.find(k => k.i === i);
+  const x = Math.min(W - 16 - callout.offsetWidth, Math.max(16, h.x0));
+  callout.style.left = x + "px"; callout.style.top = Math.max(150, h.y0 - 76) + "px";
+  callout.classList.add("on");
+}
+function hideCallout() { selected = -1; callout.classList.remove("on"); }
+
+// ------------------------------- input -------------------------------------
+const clampM = v => Math.max(-PAST, Math.min(WALL, v));
+const clampP = p => Math.max(PACE_MIN, Math.min(PACE_MAX, p));
+function setPace(p) {
+  p = clampP(p);
+  for (const s of SNAPS) if (Math.abs(p - s) < .18) p = s;
+  pace = Math.round(p * 100) / 100;
+}
+let g = null;
+cv.addEventListener("pointerdown", e => {
+  g = { x: e.clientX, y: e.clientY, m: marker, p: pace, axis: null, t: performance.now() };
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener("pointermove", e => {
+  if (!g) return;
+  const dx = e.clientX - g.x, dy = e.clientY - g.y;
+  if (!g.axis && Math.hypot(dx, dy) > 8) g.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+  if (g.axis === "x") { marker = clampM(g.m - dx / PX); if (selected >= 0) hideCallout(); }
+  if (g.axis === "y") setPace(g.p - dy * .02);
+  if (g.axis) draw();
+});
+cv.addEventListener("pointerup", e => {
+  if (g && !g.axis) {
+    const h = hit.find(k => e.clientX >= k.x0 && e.clientX <= k.x1 && e.clientY >= k.y0 && e.clientY <= k.y1);
+    h ? showCallout(h.i) : (hideCallout(), draw());
+  } else if (g && g.axis === "x") {
+    marker = Math.round(marker); draw();
+  }
+  g = null;
+});
+addEventListener("wheel", e => { marker = clampM(marker + e.deltaX / PX); setPace(pace - e.deltaY * .01); draw(); }, { passive: true });
+addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") marker = clampM(Math.round(marker) + 1);
+  if (e.key === "ArrowLeft") marker = clampM(Math.round(marker) - 1);
+  if (e.key === "ArrowUp") setPace(pace + .01);
+  if (e.key === "ArrowDown") setPace(pace - .01);
+  draw();
+});
+// Tilt: gamma (left/right, degrees) walks you through time.
+addEventListener("deviceorientation", e => { gamma = e.gamma || 0; });
+function tick() {
+  if (!g && Math.abs(gamma) > 4) {
+    marker = clampM(marker + (gamma - Math.sign(gamma) * 4) * .03);
+    if (selected >= 0) hideCallout();
+    draw();
+  }
+  requestAnimationFrame(tick);
+}
+
+// expose for the recording script
+window.horizon = { get marker() { return marker; }, get pace() { return pace; }, bills, xOf, yOf, promised, free, hit };
+
+(async () => {
+  await Promise.all([
+    document.fonts.load('500 12px "IBM Plex Sans"'), document.fonts.load('600 13px "IBM Plex Sans"'),
+    document.fonts.load('500 10px "JetBrains Mono"'), document.fonts.load('600 10px "JetBrains Mono"'),
+  ]);
+  await document.fonts.ready;
+  DOTS = makePattern((q, s) => { q.fillStyle = C.border2; q.fillRect(1, 1, 1.5, 1.5); }, 5);
+  HATCH = makePattern((q, s) => { q.strokeStyle = alpha(C.amber, .35); q.lineWidth = 1; q.beginPath(); q.moveTo(0, s); q.lineTo(s, 0); q.stroke(); }, 7);
+  HATCH_RO = makePattern((q, s) => { q.fillStyle = C.surface; q.fillRect(0, 0, s, s); q.strokeStyle = C.muted; q.lineWidth = 1; q.beginPath(); q.moveTo(0, s); q.lineTo(s, 0); q.stroke(); }, 4);
+  draw();
+  document.body.dataset.ready = "1";
+  requestAnimationFrame(tick);
+})();
+</script>
+</body></html>

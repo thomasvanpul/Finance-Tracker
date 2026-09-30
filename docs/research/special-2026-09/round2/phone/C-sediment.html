@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=390, user-scalable=no">
+<title>C Sediment, phone (mock)</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=block");
+/* Colour tokens copied verbatim from ../../phone/A-reach.html (void theme, from artifacts/finance-tracker/src/index.css:511).
+   Every colour in this file is one of these tokens, read at runtime for the canvas. */
+:root {
+  --ft-base:#0A0D12; --ft-surface:#0F1318; --ft-raised:#141A22; --ft-border:#1C2530; --ft-border2:#243040;
+  --ft-text:#E8EDF2; --ft-muted:#71869D; --ft-dim:#556677; --ft-accent:#E8C14A; --ft-amber:#FFB300;
+  --ft-green:#00E5A0; --ft-red:#FF4757; --ft-blue:#73A1D6; --ft-cyan:#00D4FF;
+  --font-sans:"IBM Plex Sans", system-ui, sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--ft-base); color:var(--ft-text); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; }
+body { width:390px; height:844px; overflow:hidden; position:relative; touch-action:none; user-select:none; -webkit-user-select:none; }
+.m { font-family:var(--font-mono); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.p { color:var(--ft-dim); }
+#cv { position:absolute; left:0; top:0; width:390px; height:716px; }
+.hud { position:absolute; pointer-events:none; }
+#top { left:16px; right:16px; top:14px; }
+#top .row1 { display:flex; justify-content:space-between; font-size:10px; color:var(--ft-dim); letter-spacing:.04em; }
+#date { font-size:26px; font-weight:500; margin-top:10px; letter-spacing:-.01em; }
+#date.dry { color:var(--ft-red); }
+#dayof { font-size:11px; color:var(--ft-muted); margin-left:8px; font-weight:400; letter-spacing:0; }
+#loose { font-size:15px; margin-top:4px; }
+#loose .lbl { font-family:var(--font-sans); font-size:12px; color:var(--ft-muted); margin-left:6px; }
+#grains { font-size:10.5px; color:var(--ft-dim); margin-top:2px; }
+.lab { position:absolute; left:282px; width:104px; font-size:10px; line-height:1.35; transition:top .25s linear; }
+.lab .n { font-family:var(--font-sans); font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ft-muted); }
+.lab .v { font-size:12.5px; color:var(--ft-text); }
+.lab .s { color:var(--ft-dim); font-size:9.5px; }
+.lab .tick { position:absolute; left:-10px; top:6px; width:6px; border-top:1px solid var(--ft-border2); }
+#asat { left:282px; top:128px; font-size:9.5px; color:var(--ft-dim); }
+.bill { position:absolute; font-size:9px; color:var(--ft-accent); opacity:0; transition:opacity .3s; }
+.bill.on { opacity:1; }
+#rentlab { text-align:center; background:var(--ft-base); padding:3px 6px; font-size:10px; border:1px dotted var(--ft-accent); }
+#rentlab .s { color:var(--ft-muted); font-size:9px; }
+#ctl { position:absolute; left:0; right:0; top:716px; bottom:0; padding:0 16px; border-top:1px solid var(--ft-border); }
+#track { position:relative; height:44px; margin-top:2px; cursor:pointer; touch-action:none; }
+#track .rail { position:absolute; left:0; right:0; top:24px; border-top:1px solid var(--ft-border2); }
+#track .fill { position:absolute; left:0; top:23px; height:3px; background:var(--ft-accent); }
+#track .gap { position:absolute; top:24px; height:0; border-top:2px dotted var(--ft-red); }
+#track .hd { position:absolute; top:14px; width:0; height:22px; border-left:2px solid var(--ft-text); }
+#track .t { position:absolute; top:30px; font-size:9.5px; color:var(--ft-dim); }
+#track .t.r { color:var(--ft-red); top:0; }
+#track .tk { position:absolute; top:19px; height:11px; border-left:1px solid var(--ft-border2); }
+#row { display:flex; align-items:center; gap:0; margin-top:4px; font-size:11px; }
+#row .k { color:var(--ft-dim); font-size:10px; letter-spacing:.06em; margin-right:8px; }
+.pace { background:none; border:0; color:var(--ft-muted); font:inherit; padding:6px 6px; border-bottom:1px solid transparent; cursor:pointer; }
+.pace.on { color:var(--ft-text); border-bottom-color:var(--ft-accent); }
+.act { margin-left:auto; display:flex; gap:6px; }
+.act button { background:none; border:1px solid var(--ft-border2); color:var(--ft-text); font:inherit; font-size:10.5px; letter-spacing:.08em; padding:6px 10px; cursor:pointer; }
+#msg { margin-top:7px; font-size:11px; color:var(--ft-muted); line-height:1.4; }
+#msg b { font-weight:500; color:var(--ft-text); }
+#msg .r { color:var(--ft-red); }
+#finger { position:absolute; width:34px; height:34px; margin:-17px 0 0 -17px; border:1.5px solid var(--ft-text); border-radius:50%; opacity:0; pointer-events:none; transition:opacity .15s; }
+#finger.on { opacity:.55; }
+</style></head>
+<body>
+<canvas id="cv" width="780" height="1432"></canvas>
+
+<div id="top" class="hud">
+  <div class="row1"><span class="m">MOCK, SAMPLE FIGURES</span><span class="m">1 grain = £10</span></div>
+  <div id="date" class="m"><span id="dtxt">30 Sep 2026</span><span id="dayof">day 0 of 104</span></div>
+  <div id="loose" class="m"><span id="lv">£3,304<span class="p">.33</span></span><span class="lbl">loose until the loan</span></div>
+  <div id="grains" class="m">330 grains + £4.33, the small grain</div>
+</div>
+
+<div id="asat" class="hud m">held 30 Sep</div>
+<div id="labRev" class="hud lab"><span class="tick"></span><div class="n">Revolut</div><div class="v m">€540.75</div><div class="s m">£470.56 fx 0.8702</div></div>
+<div id="labMon" class="hud lab"><span class="tick"></span><div class="n">Monzo</div><div class="v m">£6,845.20</div><div class="s m">£2,833.77 loose</div></div>
+<div id="labPro" class="hud lab"><span class="tick"></span><div class="n">Promised</div><div class="v m">£4,011.43</div><div class="s m">locked to 12 Jan</div><div class="s" style="font-family:var(--font-sans)">tap to name it</div></div>
+<div id="labMay" class="hud lab"><div class="n">Maybank</div><div class="v m">MYR 2,180.00</div><div class="s m">£382.46 fx 0.17544</div><div class="s" style="font-family:var(--font-sans)">read-only, sealed</div><div class="s" style="font-family:var(--font-sans)">not in loose sum</div></div>
+
+<div id="rentlab" class="hud bill m">Rent 960.00 x4<br><span class="s">1 Oct · 1 Nov · 1 Dec · 1 Jan</span></div>
+<div id="b0" class="hud bill m">Spotify 11.99 x3.5</div>
+<div id="b1" class="hud bill m">Three 12.00 x3.5</div>
+<div id="b2" class="hud bill m">Gym 24.99 x3.5</div>
+
+<div id="ctl">
+  <div id="track">
+    <div class="rail"></div><div class="fill" id="tfill"></div><div class="gap" id="tgap"></div>
+    <div class="tk" style="left:0"></div><div class="tk" id="tkDry"></div><div class="tk" style="right:0"></div>
+    <div class="t m" style="left:6px">30 Sep</div>
+    <div class="t m r" id="tDry">29 Dec</div>
+    <div class="t m" style="right:0">12 Jan loan</div>
+    <div class="hd" id="thd"></div>
+  </div>
+  <div id="row">
+    <span class="k">PACE</span>
+    <button class="pace m on" data-p="3640">36.40/day</button>
+    <button class="pace m" data-p="3177">31.77/day</button>
+    <div class="act"><button id="run" class="m">RUN</button><button id="reset" class="m">RESET</button></div>
+  </div>
+  <div id="msg"></div>
+</div>
+<div id="finger"></div>
+
+<script>
+/* ---------- Sample data (inline copy of sample-data.json fields this page uses) ---------- */
+const DATA = {
+  today: "2026-09-30", loanDate: "2027-01-12", daysAway: 104,
+  monzoGBP: 6845.20, revolutEUR: 540.75, revolutGBP: 470.56, maybankMYR: 2180.00, maybankGBP: 382.46,
+  liquidGBP: 7315.76, billsGBP: 4011.43, freeGBP: 3304.33, perDayGBP: 31.77, recentBurnGBP: 36.40,
+  bills: [ ["Spotify", 11.99, 3.5], ["Three", 12.00, 3.5], ["Gym", 24.99, 3.5], ["Rent", 960.00, 4] ]
+};
+/* Arithmetic (all in pence to avoid float drift):
+   liquid   = Monzo 684,520 + Revolut 47,056           = 731,576p = £7,315.76 -> 731 grains + £5.76
+   promised = 960.00x4 + (11.99+12.00+24.99)x3.5
+            = 3,840.00 + 171.43                         = 401,143p = £4,011.43 -> 401 grains + £1.43
+   loose    = 731,576 - 401,143                         = 330,433p = £3,304.33 -> 330 grains + £4.33
+   Monzo loose = 684,520 - 401,143 = 283,377p = £2,833.77 -> 283 grains; Revolut 47,056p -> 47 grains (283+47 = 330).
+     (Assumes the bills are paid from Monzo; mock assumption, sample data does not say.)
+   Bill bands by cumulative pence, grain k covers [k*1000, k*1000+1000): Spotify 0..4,196.5 -> grains 0-3,
+     Three ..8,396.5 -> 4-7, Gym ..17,143 -> 8-16, Rent the rest -> 17-400.
+   Pace: 36.40/day = 3.64 grains/day; 330,433 / 3,640 = 90.78 days -> dry on 30 Sep + 90 = 29 Dec;
+     loan is day 104 (12 Jan): 104 - 90 = 14 days with nothing loose. Short by 3,640x104 - 330,433 = 48,127p = £481.27.
+   31.77/day: 330,433 / 3,177 = 104.008 days; 330,433 - 3,177x104 = 25p -> reaches 12 Jan with £0.25.
+   Maybank 2,180.00 MYR = £382.46 at 0.17544 -> 38 grains + £2.46, sealed, not part of liquid. */
+const FREE_P = 330433, DAYS = 104;
+const MON_FREE = 283, REV_FREE = 47, FREE_N = 330, LOCK_N = 401, LOCK_REM = 143 / 1000;
+
+/* ---------- Geometry ---------- */
+const R = 6, D = 12;
+const L = 14, RW = 270, T = 128, B = 680;      // vessel inner box
+const TUBE_L = 50, TUBE_R = 66, GX = 58;          // drain tube through the locked layer
+const ROWH = D * Math.sqrt(3) / 2;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = { base: css('--ft-base'), text: css('--ft-text'), muted: css('--ft-muted'), dim: css('--ft-dim'),
+  accent: css('--ft-accent'), blue: css('--ft-blue'), border2: css('--ft-border2'), border: css('--ft-border'), red: css('--ft-red') };
+
+/* Locked lattice: hex rows; left block (3/2 grains) | tube | right block (17/16 grains). */
+const statics = [];   // {x,y,r,bill}
+(function buildLattice() {
+  let k = 0, row = 0;
+  while (k < LOCK_N) {
+    const odd = row % 2, y = B - R - row * ROWH;
+    const xs = [];
+    const rN = odd ? 16 : 17, lN = odd ? 2 : 3;
+    for (let i = 0; i < rN; i++) xs.push(TUBE_R + R + (odd ? R : 0) + i * D);
+    for (let i = 0; i < lN; i++) xs.push(L + R + (odd ? R : 0) + i * D);
+    // top partial row: fill from the right wall inwards so the tube mouth stays clear
+    if (LOCK_N - k < xs.length) xs.sort((a, b) => b - a);
+    for (const x of xs) { if (k >= LOCK_N) break; statics.push({ x, y, r: R, k }); k++; }
+    row++;
+  }
+  const last = statics[statics.length - 1];
+  statics.push({ x: last.x - D, y: last.y, r: Math.max(1.4, R * Math.sqrt(LOCK_REM)), k: -1 }); // the £1.43
+  const cum = [4196.5, 8396.5, 17143];
+  for (const s of statics) s.bill = s.k < 0 ? 3 : (s.k * 1000 + 500 < cum[0] ? 0 : s.k * 1000 + 500 < cum[1] ? 1 : s.k * 1000 + 500 < cum[2] ? 2 : 3);
+})();
+const rowsFull = Math.floor((LOCK_N - 1) / 38) * 2 + 1;
+const GATE_Y = B - R - 20 * ROWH - R;   // top of the highest full row
+const LOCK_TOP = Math.min(...statics.map(s => s.y)) - R;
+
+/* ---------- Dynamic grains ---------- */
+const MAX = FREE_N + 1;                  // +1 = the partial grain
+const x = new Float32Array(MAX), y = new Float32Array(MAX), px = new Float32Array(MAX), py = new Float32Array(MAX), rad = new Float32Array(MAX);
+const st = new Int8Array(MAX);           // 0 off, 1 active, 2 draining
+const acct = new Int8Array(MAX);         // 0 Monzo, 1 Revolut, 2 partial
+const dt_ = new Float32Array(MAX);       // drain timer
+// radii vary a little (5.3 to 6.0 px) so the pile does not lock into a crystal and can flow; every full grain is still £10
+for (let i = 0; i < FREE_N; i++) { acct[i] = i < MON_FREE ? 0 : 1; rad[i] = 5.3 + ((i * 7919) % 100) / 100 * .7; }
+const PART = FREE_N; acct[PART] = 2; rad[PART] = R * Math.sqrt(0.433);
+let pourQ = [];                          // indices waiting to be poured in
+const drained = [];                      // LIFO stack of drained indices (refill order)
+
+function spawn(i) {
+  st[i] = 1; x[i] = L + R + Math.random() * (RW - L - 2 * R); y[i] = T + R + Math.random() * 14;
+  px[i] = x[i] - (Math.random() - .5) * .6; py[i] = y[i] - 1.5;
+}
+
+/* Spatial grids */
+const CW = D, GC = Math.ceil((RW - L) / CW) + 2, GR = Math.ceil((B - T) / CW) + 2;
+const cellOf = (xx, yy) => { const c = Math.min(GC - 1, Math.max(0, ((xx - L) / CW) | 0)), r = Math.min(GR - 1, Math.max(0, ((yy - T) / CW) | 0)); return r * GC + c; };
+const sGrid = Array.from({ length: GC * GR }, () => []);
+statics.forEach(s => sGrid[cellOf(s.x, s.y)].push(s));
+const head = new Int32Array(GC * GR), nxt = new Int32Array(MAX);
+
+let angle = 0, orientAngle = 0, dragTilt = null, G = 2000;
+function solve() {
+  head.fill(-1);
+  for (let i = 0; i < MAX; i++) if (st[i] === 1) { const c = cellOf(x[i], y[i]); nxt[i] = head[c]; head[c] = i; }
+  for (let i = 0; i < MAX; i++) {
+    if (st[i] !== 1) continue;
+    const ci = ((x[i] - L) / CW) | 0, ri = ((y[i] - T) / CW) | 0;
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      const cc = ci + dc, rr = ri + dr; if (cc < 0 || rr < 0 || cc >= GC || rr >= GR) continue;
+      const cell = rr * GC + cc;
+      for (let j = head[cell]; j !== -1; j = nxt[j]) {
+        if (j <= i) continue;
+        const dx = x[j] - x[i], dy = y[j] - y[i], min = rad[i] + rad[j], d2 = dx * dx + dy * dy;
+        if (d2 < min * min && d2 > 1e-6) { const d = Math.sqrt(d2), p = (min - d) / d * .5; x[i] -= dx * p; y[i] -= dy * p; x[j] += dx * p; y[j] += dy * p; }
+      }
+      for (const s of sGrid[cell]) {
+        const dx = x[i] - s.x, dy = y[i] - s.y, min = rad[i] + s.r, d2 = dx * dx + dy * dy;
+        if (d2 < min * min && d2 > 1e-6) { const d = Math.sqrt(d2), p = (min - d) / d; x[i] += dx * p; y[i] += dy * p; }
+      }
+    }
+    const r = rad[i];
+    if (x[i] < L + r) x[i] = L + r; if (x[i] > RW - r) x[i] = RW - r;
+    if (y[i] < T + r) y[i] = T + r; if (y[i] > B - r) y[i] = B - r;
+    if (x[i] > TUBE_L - r * .6 && x[i] < TUBE_R + r * .6 && y[i] > GATE_Y - r) y[i] = GATE_Y - r;   // closed gate over the tube
+  }
+}
+function physics() {
+  const a = angle * Math.PI / 180, h = 1 / 180, gx = G * Math.sin(a) * h * h, gy = G * Math.cos(a) * h * h;
+  for (let s = 0; s < 3; s++) {
+    for (let i = 0; i < MAX; i++) {
+      if (st[i] !== 1) continue;
+      const vx = (x[i] - px[i]) * .992, vy = (y[i] - py[i]) * .992;
+      px[i] = x[i]; py[i] = y[i]; x[i] += vx + gx; y[i] += vy + gy;
+    }
+    solve(); solve();
+  }
+  // rest: a grain barely moving is snapped still, so a settled pile does not shimmer
+  for (let i = 0; i < MAX; i++) if (st[i] === 1 && Math.abs(x[i] - px[i]) < .012 && Math.abs(y[i] - py[i]) < .012) { px[i] = x[i]; py[i] = y[i]; }
+  // draining grains: slide to the gate, then fall through the tube and out of the bottom
+  for (let i = 0; i < MAX; i++) {
+    if (st[i] !== 2) continue;
+    dt_[i] += 1;
+    if (dt_[i] < 8) { x[i] += (GX - x[i]) * .35; y[i] += (GATE_Y - R - y[i]) * .35; }
+    else { const t = dt_[i] - 8; x[i] += (GX - x[i]) * .5; y[i] += 1.5 + t * .9; }
+    if (y[i] > B + 34) { st[i] = 0; drained.push(i); }
+  }
+}
+
+/* ---------- Days, pace, money ---------- */
+let pace = 3640, day = 0, target = 0, running = false, naming = false, ready = false;
+const penceAt = d => Math.max(0, Math.round(FREE_P - pace * d));
+const fmt = p => { const s = (Math.floor(p / 100)).toLocaleString('en-GB'); return `£${s}<span class="p">.${String(p % 100).padStart(2, '0')}</span>`; };
+const money = p => `£${(Math.floor(p / 100)).toLocaleString('en-GB')}.${String(p % 100).padStart(2, '0')}`;
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const dateAt = d => { const dt = new Date(2026, 8, 30 + Math.floor(d)); return `${dt.getDate()} ${MON[dt.getMonth()]} ${dt.getFullYear()}`; };
+const dryDay = () => FREE_P / pace;   // fractional day the loose money reaches zero
+
+function syncGrains() {
+  const p = penceAt(day), want = Math.floor(p / 1000);
+  let active = 0; for (let i = 0; i < FREE_N; i++) if (st[i] === 1) active++;
+  const pending = pourQ.length;
+  if (active + pending > want) {
+    let n = Math.min(3, active + pending - want);
+    while (n > 0 && pourQ.length) { drained.push(pourQ.pop()); n--; }
+    for (; n > 0; n--) {   // drain the active grain nearest the tube mouth
+      let best = -1, bd = 1e9;
+      for (let i = 0; i < FREE_N; i++) if (st[i] === 1) { const d = (x[i] - GX) ** 2 + (y[i] - GATE_Y) ** 2; if (d < bd) { bd = d; best = i; } }
+      if (best < 0) break; st[best] = 2; dt_[best] = 0;
+    }
+  } else if (active + pending < want) {
+    for (let n = Math.min(4, want - active - pending); n > 0 && drained.length; n--) pourQ.push(drained.pop());
+  }
+  // pour a few per frame
+  for (let n = 0; n < 7 && pourQ.length; n++) spawn(pourQ.shift());
+  // the partial grain carries the pence below one grain
+  const rem = (p % 1000) / 1000;
+  if (rem <= 0) { if (st[PART] === 1) { st[PART] = 2; dt_[PART] = 0; } }
+  else { const tr = Math.max(1.1, R * Math.sqrt(rem)); rad[PART] += (tr - rad[PART]) * (tr > rad[PART] ? .06 : .5);   /* grow gently so the grain is not flung out of the pile */ if (st[PART] === 0 && active > want - 2 && pourQ.length === 0) spawn(PART); }
+}
+
+/* ---------- Drawing ---------- */
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+ctx.scale(2, 2);
+const sCan = document.createElement('canvas'); sCan.width = 780; sCan.height = 1432;
+let lockReveal = 0;
+function drawStatics() {
+  const c = sCan.getContext('2d'); c.setTransform(2, 0, 0, 2, 0, 0); c.clearRect(0, 0, 390, 716);
+  const n = Math.floor(lockReveal);
+  c.lineWidth = 1.1;
+  for (let i = 0; i < statics.length; i++) {
+    const s = statics[i]; if (i >= n) break;
+    const lit = naming;
+    c.setLineDash(s.r < 3 ? [1, 1.4] : [1.6, 1.9]);
+    c.strokeStyle = lit && s.bill < 3 ? C.text : C.accent; c.globalAlpha = lit ? (s.bill < 3 ? 1 : .8) : .55;
+    c.beginPath(); c.arc(s.x, s.y, s.r - .7, 0, 7); c.stroke();
+    if (lit && s.bill < 3) { c.globalAlpha = .18; c.fillStyle = C.accent; c.fill(); }
+  }
+  c.globalAlpha = 1; c.setLineDash([]);
+}
+function drawVessel() {
+  ctx.strokeStyle = C.border2; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(L - 1, T - 6); ctx.lineTo(L - 1, B + 1); ctx.lineTo(TUBE_L, B + 1);
+  ctx.moveTo(TUBE_R, B + 1); ctx.lineTo(RW + 1, B + 1); ctx.lineTo(RW + 1, T - 6); ctx.stroke();
+  ctx.lineWidth = 1; ctx.strokeStyle = C.border;
+  ctx.beginPath(); ctx.moveTo(L - 1, T - 1); ctx.lineTo(RW + 1, T - 1); ctx.stroke();   // lid
+  // tube
+  ctx.strokeStyle = C.border2; ctx.beginPath();
+  ctx.moveTo(TUBE_L, GATE_Y); ctx.lineTo(TUBE_L, B + 1); ctx.moveTo(TUBE_R, GATE_Y); ctx.lineTo(TUBE_R, B + 1); ctx.stroke();
+  ctx.strokeStyle = running || dragMode === 'days' ? C.dim : C.border2; ctx.setLineDash([2, 2]);
+  ctx.beginPath(); ctx.moveTo(TUBE_L, GATE_Y); ctx.lineTo(TUBE_R, GATE_Y); ctx.stroke(); ctx.setLineDash([]);
+  // plumb line: shows where gravity points in the vessel's frame
+  const a = angle * Math.PI / 180, cx = (L + RW) / 2, cy = T + 10;
+  ctx.strokeStyle = C.dim; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.sin(a) * 22, cy + Math.cos(a) * 22); ctx.stroke();
+  ctx.fillStyle = C.dim; ctx.beginPath(); ctx.arc(cx + Math.sin(a) * 22, cy + Math.cos(a) * 22, 2, 0, 7); ctx.fill();
+  ctx.font = '9px "JetBrains Mono"'; ctx.textAlign = 'left';
+  ctx.fillText(`tilt ${angle >= 0 ? '+' : '-'}${Math.abs(Math.round(angle))}°`, cx + 30, cy + 10);
+}
+/* Maybank: a small sealed vessel, grains fixed (read-only), not part of the loose/promised arithmetic */
+const JAR = { x: 290, y: 614, w: 86, h: 66 };
+const jarGrains = []; (function () { let k = 0; for (let r = 0; k < 38; r++) for (let c = 0; c < 7 && k < 38; c++, k++) jarGrains.push({ x: JAR.x + R + 1 + (r % 2 ? R : 0) + c * D, y: JAR.y + JAR.h - R - r * ROWH }); jarGrains.push({ x: JAR.x + R + 1 + 3 * D + R, y: JAR.y + JAR.h - R - 5 * ROWH, r: R * Math.sqrt(.246) }); })();
+function drawJar() {
+  ctx.strokeStyle = C.border2; ctx.lineWidth = 1.2; ctx.strokeRect(JAR.x - .5, JAR.y - .5, JAR.w + 1, JAR.h + 1);
+  ctx.lineWidth = 3; ctx.strokeStyle = C.dim; ctx.beginPath(); ctx.moveTo(JAR.x - 3, JAR.y - 2); ctx.lineTo(JAR.x + JAR.w + 3, JAR.y - 2); ctx.stroke();
+  ctx.fillStyle = C.muted; ctx.globalAlpha = .55;
+  for (const g of jarGrains) { ctx.beginPath(); ctx.arc(g.x, g.y, (g.r || R) - .6, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+}
+function draw() {
+  ctx.fillStyle = C.base; ctx.fillRect(0, 0, 390, 716);
+  drawVessel();
+  ctx.drawImage(sCan, 0, 0, 390, 716);
+  for (let i = 0; i < MAX; i++) {
+    if (st[i] === 0) continue;
+    ctx.fillStyle = acct[i] === 0 ? C.accent : acct[i] === 1 ? C.blue : C.text;
+    if (st[i] === 2 && y[i] > B) ctx.globalAlpha = Math.max(0, 1 - (y[i] - B) / 34);
+    ctx.beginPath(); ctx.arc(x[i], y[i], Math.max(1.6, rad[i] - .6), 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  drawJar();
+}
+
+/* ---------- Labels at each layer's edge ---------- */
+const $ = id => document.getElementById(id);
+function meanY(a) { let s = 0, n = 0; for (let i = 0; i < FREE_N; i++) if (st[i] === 1 && acct[i] === a) { s += y[i]; n++; } return n ? s / n : null; }
+function placeLabels() {
+  const ry = meanY(1), my = meanY(0);
+  const pro = LOCK_TOP + 12;
+  let yM = my == null ? pro - 70 : Math.min(my - 12, pro - 62);
+  let yR = ry == null ? yM - 52 : Math.min(ry - 12, yM - 50);
+  yR = Math.max(146, yR); yM = Math.max(yR + 50, yM);
+  $('labRev').style.top = yR + 'px'; $('labMon').style.top = yM + 'px'; $('labPro').style.top = pro + 'px';
+  $('labRev').style.opacity = ry == null ? .35 : 1; $('labMon').style.opacity = my == null ? .35 : 1; $('labMay').style.top = (JAR.y - 74) + 'px';
+}
+// bill names along the locked layer: under the vessel for the three small bands, inside for rent
+(function placeBills() {
+  const cl = b => statics.filter(s => s.bill === b && s.k >= 0);
+  const x0 = b => Math.min(...cl(b).map(s => s.x)) - R;
+  $('b0').style.left = x0(0) + 'px'; $('b0').style.top = (B + 4) + 'px';
+  $('b1').style.left = x0(1) + 'px'; $('b1').style.top = (B + 17) + 'px';
+  $('b2').style.right = (390 - RW) + 'px'; $('b2').style.top = (B + 4) + 'px';
+  const rl = $('rentlab'); rl.style.left = '100px'; rl.style.top = (LOCK_TOP + (B - LOCK_TOP) / 2 - 16) + 'px';
+})();
+function setNaming(on) { naming = on; drawStatics(); document.querySelectorAll('.bill').forEach(e => e.classList.toggle('on', on)); }
+
+/* ---------- Readouts ---------- */
+function updateHud() {
+  const p = penceAt(day), dd = dryDay(), isDry = p === 0;
+  $('dtxt').textContent = dateAt(day);
+  $('dayof').textContent = `day ${Math.floor(day)} of ${DAYS}`;
+  $('date').classList.toggle('dry', isDry);
+  $('lv').innerHTML = fmt(p);
+  $('grains').textContent = isDry ? `0 grains. Dry since ${dateAt(dd)}` : `${Math.floor(p / 1000)} grains + ${money(p % 1000)}, the small grain`;
+  const W = 358, px_ = d => d / DAYS * W;
+  $('thd').style.left = px_(day) + 'px'; $('tfill').style.width = px_(Math.min(day, dd)) + 'px';
+  if (dd < DAYS) {
+    const dx = px_(Math.floor(dd));
+    $('tgap').style.display = ''; $('tgap').style.left = dx + 'px'; $('tgap').style.width = (W - dx) + 'px';
+    $('tkDry').style.display = ''; $('tkDry').style.left = dx + 'px';
+    $('tDry').style.display = ''; $('tDry').style.left = (dx - 18) + 'px'; $('tDry').textContent = dateAt(dd).replace(' 2026', '');
+  } else { $('tgap').style.display = 'none'; $('tkDry').style.display = 'none'; $('tDry').style.display = 'none'; }
+  const gap = DAYS - Math.floor(dd);
+  $('msg').innerHTML = pace === 3640
+    ? `At <b>£36.40 a day</b> (last 14 days) the loose grains run out on <b class="r">29 Dec</b>, <b class="r">${gap} days</b> before the loan lands on 12 Jan.`
+    : `At <b>£31.77 a day</b> the loose grains last to the loan on <b>12 Jan</b>, with <b>${money(FREE_P - pace * DAYS)}</b> over.`;
+}
+
+/* ---------- Input: tilt, drag, tap ---------- */
+let dragMode = null, d0 = 0, sx = 0, sy = 0, orientSeen = false, askedPerm = false;
+window.addEventListener('deviceorientation', e => { if (e.gamma == null) return; orientSeen = true; orientAngle = Math.max(-40, Math.min(40, e.gamma)); });
+window.addEventListener('devicemotion', e => { if (orientSeen) return; const g = e.accelerationIncludingGravity; if (!g || g.x == null) return; orientAngle = Math.max(-40, Math.min(40, Math.asin(Math.max(-1, Math.min(1, g.x / 9.81))) * 180 / Math.PI)); });
+const finger = $('finger');
+cv.addEventListener('pointerdown', e => {
+  if (!askedPerm && window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) { askedPerm = true; DeviceOrientationEvent.requestPermission().catch(() => {}); }
+  cv.setPointerCapture(e.pointerId); dragMode = 'undecided'; sx = e.clientX; sy = e.clientY; d0 = day;
+  finger.style.left = e.clientX + 'px'; finger.style.top = e.clientY + 'px'; finger.classList.add('on');
+});
+cv.addEventListener('pointermove', e => {
+  if (!dragMode) return;
+  finger.style.left = e.clientX + 'px'; finger.style.top = e.clientY + 'px';
+  const dx = e.clientX - sx, dy = e.clientY - sy;
+  if (dragMode === 'undecided' && Math.hypot(dx, dy) > 8) dragMode = Math.abs(dx) > Math.abs(dy) ? 'tilt' : 'days';
+  if (dragMode === 'tilt') dragTilt = Math.max(-35, Math.min(35, dx * .2));
+  if (dragMode === 'days') { running = false; day = Math.max(0, Math.min(DAYS, d0 + dy * DAYS / 480)); }
+});
+function up(e) {
+  if (dragMode === 'undecided') {
+    if (e.clientY > LOCK_TOP - 4 && e.clientY < B + 2 && e.clientX > L && e.clientX < RW) setNaming(!naming);
+  }
+  dragMode = null; dragTilt = null; finger.classList.remove('on');
+}
+cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+
+const track = $('track');
+function trackSet(e) { const r = track.getBoundingClientRect(); running = false; day = Math.max(0, Math.min(DAYS, (e.clientX - r.left) / r.width * DAYS)); }
+track.addEventListener('pointerdown', e => { track.setPointerCapture(e.pointerId); trackSet(e); track.onpointermove = trackSet; });
+track.addEventListener('pointerup', () => { track.onpointermove = null; });
+document.querySelectorAll('.pace').forEach(b => b.addEventListener('click', () => {
+  pace = +b.dataset.p; document.querySelectorAll('.pace').forEach(o => o.classList.toggle('on', o === b));
+}));
+$('run').addEventListener('click', () => { if (day >= DAYS - .01) day = 0; running = true; setNaming(false); });
+$('reset').addEventListener('click', () => { running = false; day = 0; });
+
+/* ---------- Loop ---------- */
+let last = performance.now();
+function frame(now) {
+  const dts = Math.min(.05, (now - last) / 1000); last = now;
+  const tgt = dragTilt != null ? dragTilt : orientAngle;
+  angle += (tgt - angle) * Math.min(1, dts * 7);
+  if (lockReveal < statics.length) { lockReveal = Math.min(statics.length, lockReveal + dts * 520); drawStatics(); }
+  else if (!ready) { ready = true; for (let i = 0; i < FREE_N; i++) pourQ.push(i); }
+  if (running) { day = Math.min(DAYS, day + dts * 14); if (day >= DAYS) running = false; }
+  if (ready) syncGrains();
+  physics(); draw(); placeLabels(); updateHud();
+  requestAnimationFrame(frame);
+}
+document.fonts.ready.then(() => { updateHud(); drawStatics(); requestAnimationFrame(t => { last = t; frame(t); }); document.body.dataset.ready = '1'; });
+</script>
+</body></html>

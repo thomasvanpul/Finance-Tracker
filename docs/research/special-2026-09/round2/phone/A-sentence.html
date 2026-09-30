@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=390, user-scalable=no">
+<title>A Sentence, phone home (mock)</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=block");
+/* Colour tokens copied from docs/research/special-2026-09/phone/A-reach.html (void theme,
+   originally artifacts/finance-tracker/src/index.css :root). Every colour below is a token or a color-mix of tokens. */
+:root {
+  --ft-base:#0A0D12; --ft-surface:#0F1318; --ft-raised:#141A22; --ft-border:#1C2530; --ft-border2:#243040;
+  --ft-text:#E8EDF2; --ft-muted:#71869D; --ft-dim:#556677; --ft-accent:#E8C14A; --ft-amber:#FFB300;
+  --ft-green:#00E5A0; --ft-red:#FF4757; --ft-blue:#73A1D6; --ft-cyan:#00D4FF;
+  --font-sans:"IBM Plex Sans", system-ui, sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, monospace;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--ft-base); color:var(--ft-text); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; }
+body { width:390px; height:844px; overflow:hidden; position:relative; user-select:none; -webkit-user-select:none; touch-action:none; }
+
+.top { position:absolute; top:0; left:0; right:0; height:54px; display:flex; align-items:flex-end; justify-content:space-between;
+  padding:0 24px 8px; font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; color:var(--ft-dim); }
+.top .date { color:var(--ft-muted); }
+
+.stage { position:absolute; left:28px; right:28px; top:118px; bottom:150px; }
+.main { font-weight:300; line-height:1.28; letter-spacing:-.012em; color:var(--ft-text); transition:font-size .38s cubic-bezier(.2,.7,.2,1); }
+.quiet { margin-top:.9em; font-weight:300; font-size:19px; line-height:1.4; color:var(--ft-muted); transition:font-size .38s cubic-bezier(.2,.7,.2,1); }
+
+.w { display:inline-block; white-space:pre; }
+.pnum { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:.86em; letter-spacing:-.02em; white-space:nowrap; }
+.door { cursor:pointer; text-decoration-line:underline; text-decoration-thickness:1.5px; text-underline-offset:.18em;
+  text-decoration-color:color-mix(in srgb, var(--ft-muted) 70%, transparent); transition:color .25s, text-decoration-color .25s; }
+.door .w { text-decoration:inherit; }
+.door.past { text-decoration-style:solid; }            /* solid = happened */
+.door.future { text-decoration-style:dotted; }          /* dotted = not yet happened */
+.door.nw { white-space:nowrap; }
+.door.open { color:var(--ft-accent); text-decoration-color:var(--ft-accent); }
+.unf { color:color-mix(in srgb, var(--ft-text) 62%, var(--ft-base)); }
+.unf .unf { color:color-mix(in srgb, var(--ft-text) 48%, var(--ft-base)); }
+.quiet .unf { color:var(--ft-dim); }
+
+@keyframes win { from { opacity:0; transform:translateY(.42em); filter:blur(4px); } to { opacity:1; transform:none; filter:none; } }
+@keyframes wout { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(-.3em); filter:blur(4px); } }
+@keyframes wup { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(-1.4em); filter:blur(3px); } }
+@keyframes wdown { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(1.4em); filter:blur(3px); } }
+@keyframes winup { from { opacity:0; transform:translateY(1.2em); filter:blur(4px); } to { opacity:1; transform:none; filter:none; } }
+@keyframes windown { from { opacity:0; transform:translateY(-1.2em); filter:blur(4px); } to { opacity:1; transform:none; filter:none; } }
+.w.in { animation:win .42s cubic-bezier(.2,.7,.2,1) both; }
+.w.inup { animation:winup .5s cubic-bezier(.2,.7,.2,1) both; }
+.w.indown { animation:windown .5s cubic-bezier(.2,.7,.2,1) both; }
+.leaving .w { animation:wout .26s ease-in both; }
+.goup .w { animation:wup .3s ease-in both; }
+.godown .w { animation:wdown .3s ease-in both; }
+
+/* sentence index: a column of ticks, not a tab bar */
+.ticks { position:absolute; right:10px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:9px; align-items:flex-end; }
+.ticks i { display:block; width:8px; height:1px; background:var(--ft-border2); transition:width .3s, background .3s; }
+.ticks i.on { width:16px; background:var(--ft-accent); }
+
+.foot { position:absolute; left:28px; right:28px; bottom:40px; font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; color:var(--ft-dim); line-height:1.8; }
+.foot .k { color:var(--ft-muted); }
+.legend { display:flex; gap:18px; }
+.legend span { text-decoration-line:underline; text-underline-offset:3px; text-decoration-color:var(--ft-muted); }
+.legend .s { text-decoration-style:solid; } .legend .d { text-decoration-style:dotted; }
+
+/* hold feedback */
+.hold { position:absolute; left:0; bottom:0; height:2px; width:0; background:var(--ft-accent); }
+.hold.go { width:100%; transition:width .55s linear; }
+
+/* ask state */
+.ask { position:absolute; left:28px; right:28px; top:118px; opacity:0; pointer-events:none; transition:opacity .3s; }
+.ask.on { opacity:1; pointer-events:auto; }
+.ask .lab { font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; color:var(--ft-dim); margin-bottom:18px; }
+.ask .row { display:flex; align-items:flex-start; gap:14px; border-bottom:1px solid var(--ft-border2); padding-bottom:12px; }
+.ask textarea { flex:1; background:transparent; border:0; outline:0; resize:none; color:var(--ft-text); font:300 30px/1.28 var(--font-sans);
+  letter-spacing:-.012em; caret-color:var(--ft-accent); height:118px; }
+.ask textarea::placeholder { color:var(--ft-border2); }
+.mic { width:40px; height:40px; flex:0 0 40px; border:1px solid var(--ft-border2); border-radius:50%; display:grid; place-items:center; color:var(--ft-muted); margin-top:4px; position:relative; }
+.mic.live { color:var(--ft-accent); border-color:var(--ft-accent); }
+.mic.live::after { content:""; position:absolute; inset:-6px; border-radius:50%; border:1px solid var(--ft-accent); opacity:.5; animation:ring 1.2s ease-out infinite; }
+@keyframes ring { from { transform:scale(.85); opacity:.6; } to { transform:scale(1.25); opacity:0; } }
+.ask .hint { margin-top:14px; font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; color:var(--ft-dim); line-height:1.8; }
+.stage.dim { opacity:0; transition:opacity .25s; }
+.stage { transition:opacity .3s; }
+.echo { font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; color:var(--ft-dim); margin-bottom:16px; min-height:14px; }
+</style></head>
+<body>
+<div class="top"><span class="date">WED 30 SEP</span><span>MOCK, SAMPLE FIGURES</span></div>
+
+<div class="stage" id="stage">
+  <div class="echo" id="echo"></div>
+  <div class="main" id="main"></div>
+  <div class="quiet" id="quiet"></div>
+</div>
+
+<div class="ask" id="ask">
+  <div class="lab">ASK</div>
+  <div class="row">
+    <textarea id="q" rows="3" placeholder="Can I afford..." spellcheck="false"></textarea>
+    <div class="mic" id="mic" aria-label="Voice">
+      <svg width="16" height="20" viewBox="0 0 16 20" fill="none" stroke="currentColor" stroke-width="1.4">
+        <rect x="5" y="1" width="6" height="11" rx="3"/><path d="M2 9a6 6 0 0 0 12 0M8 15v4M5 19h6"/></svg>
+    </div>
+  </div>
+  <div class="hint">SAY IT OR TYPE IT. RETURN TO ASK.<br>"CAN I AFFORD £X ON FRIDAY"</div>
+</div>
+
+<div class="ticks" id="ticks"></div>
+<div class="foot" id="foot">
+  <div class="legend"><span class="s">happened</span><span class="d">not yet</span></div>
+  <div><span class="k">TAP</span> a phrase &nbsp; <span class="k">SWIPE</span> next &nbsp; <span class="k">HOLD</span> to ask</div>
+</div>
+<div class="hold" id="hold"></div>
+
+<script>
+/* MOCK, SAMPLE FIGURES: inline copy of round2/phone/sample-data.json (file:// cannot fetch). */
+const DATA = {
+  today:"2026-09-30",
+  nextIncome:{ label:"Student loan, term 2", date:"2027-01-12", amountGBP:4735.00, daysAway:104 },
+  accounts:[
+    { name:"Monzo", currency:"GBP", native:6845.20, gbp:6845.20, kind:"cash" },
+    { name:"Revolut", currency:"EUR", native:540.75, gbp:470.56, kind:"cash", fx:"0.8702 ECB 30 Sep" },
+    { name:"Maybank", currency:"MYR", native:2180.00, gbp:382.46, kind:"cash", fx:"0.17544 ECB 30 Sep", readOnly:true },
+    { name:"Alpaca", currency:"USD", native:2450.00, gbp:1822.31, kind:"invested", fx:"0.74380 ECB 30 Sep" },
+    { name:"Kraken", currency:"GBP", native:1146.04, gbp:1146.04, kind:"invested" }
+  ],
+  netWorthGBP:10666.57, liquidGBP:7315.76, billsToNextIncomeGBP:4011.43, freeToNextIncomeGBP:3304.33,
+  perDayGBP:31.77, recentBurnPerDayGBP:36.40, zeroDayAtRecentBurn:"2026-12-29", todaySpentGBP:12.60,
+  upcoming:[
+    { name:"Rent", date:"2026-10-01", gbp:960.00 }, { name:"Spotify", date:"2026-10-04", gbp:11.99 },
+    { name:"Three", date:"2026-10-08", gbp:12.00 }, { name:"Gym", date:"2026-10-12", gbp:24.99 },
+    { name:"Rent", date:"2026-11-01", gbp:960.00 }, { name:"Rent", date:"2026-12-01", gbp:960.00 },
+    { name:"Flight LHR-PEN", date:"2026-12-14", gbp:0, note:"already paid" },
+    { name:"Rent", date:"2027-01-01", gbp:960.00 }
+  ],
+  last14DaysByCategoryGBP:{ Groceries:142.30, "Eating out":186.40, Transport:58.20, Societies:45.00, Books:38.00, Other:39.70 },
+  last14DaysTotalGBP:509.60
+};
+
+/* ---------- arithmetic on the sample data (all derived figures below come from here) ----------
+   free       = liquid - bills           = 7315.76 - 4011.43 = 3304.33   (matches freeToNextIncomeGBP)
+   perDay     = free / 104               = 31.772 -> 31.77               (matches perDayGBP)
+   liquid     = Monzo 6845.20 + Revolut 470.56 = 7315.76 (Maybank is read-only, not reachable)
+   rent       = 4 x 960.00 = 3840.00 ; subs = 4011.43 - 3840.00 = 171.43 (Spotify 11.99 + Three 12.00 + Gym 24.99 = 48.98 a month)
+   burn       = 509.60 / 14 = 36.40
+   zeroDays   = floor(3304.33 / 36.40) = floor(90.78) = 90 -> 30 Sep + 90 = 29 Dec (matches zeroDayAtRecentBurn)
+   gapToLoan  = 12 Jan - 29 Dec = 14 days
+   gapPerDay  = 36.40 - 31.77 = 4.63
+   foreign    = 470.56 + 382.46 + 1822.31 = 2675.33 ; share = 2675.33 / 10666.57 = 25.08% (a quarter)
+   invested   = 1822.31 + 1146.04 = 2968.35
+   top two    = Eating out 186.40 + Groceries 142.30 = 328.70 of 509.60 (64.5%)
+   rest       = 58.20 + 45.00 + 38.00 + 39.70 = 180.90 ; 328.70 + 180.90 = 509.60
+   ask(£X)    = floor((3304.33 - X) / 36.40) days from today ; £45: floor(3259.33/36.40)=floor(89.54)=89 -> 28 Dec
+               new perDay to reach loan = (3304.33 - X) / 104 ; £45: 31.34
+*/
+const r2 = n => Math.round(n*100)/100;
+const TODAY = new Date(DATA.today+"T12:00:00");
+const LOAN = new Date(DATA.nextIncome.date+"T12:00:00");
+const FREE = r2(DATA.liquidGBP - DATA.billsToNextIncomeGBP);
+const BURN = r2(DATA.last14DaysTotalGBP / 14);
+const MON = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const fmt = (n, sym="£") => sym + n.toLocaleString("en-GB",{minimumFractionDigits:2, maximumFractionDigits:2});
+const dm = d => d.getDate()+"\u00a0"+MON[d.getMonth()];   // non-breaking: a date never splits across lines
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const dayDiff = (a,b) => Math.round((b-a)/86400000);
+const zeroDate = free => addDays(TODAY, Math.floor(free / BURN));
+
+const acc = n => DATA.accounts.find(a => a.name===n);
+const rent = DATA.upcoming.filter(u => u.name==="Rent");
+const RENT_TOTAL = r2(rent.reduce((s,u)=>s+u.gbp,0));
+const SUBS_TOTAL = r2(DATA.billsToNextIncomeGBP - RENT_TOTAL);
+const FOREIGN = r2(DATA.accounts.filter(a=>a.currency!=="GBP").reduce((s,a)=>s+a.gbp,0));
+const INVESTED = r2(DATA.accounts.filter(a=>a.kind==="invested").reduce((s,a)=>s+a.gbp,0));
+const cats = Object.entries(DATA.last14DaysByCategoryGBP).sort((a,b)=>b[1]-a[1]);
+const TOP2 = r2(cats[0][1]+cats[1][1]);
+const ZERO = zeroDate(FREE);
+const rentDates = rent.map(u => { const d=new Date(u.date+"T12:00:00"); return d.getDate()+" "+MON[d.getMonth()].slice(0,3); });
+
+/* ---------- sentence grammar: T = plain text, N = figure, D = door (id, text, past|future, unfold parts) ---------- */
+const T = t => ({t});
+const N = t => ({n:t});
+const D = (id, text, kind, unfold, nw) => ({id, text, kind, unfold, nw});
+
+const rentDoor = id => D(id, "rent", "future", [T(" on "+rentDates.slice(0,-1).join(", ")+" and "+rentDates.at(-1)+", "), N(fmt(960)), T(" each")]);
+const subsDoor = id => D(id, "Spotify, Three and the gym", "future",
+  [T(", "), N(fmt(11.99)), T(", "), N(fmt(12)), T(" and "), N(fmt(24.99)), T(" a month, "), N(fmt(SUBS_TOTAL)), T(" in all")]);
+
+const SENTENCES = [
+  { // 1. per day until the loan
+    main:[T("You have "),
+      D("perday", fmt(DATA.perDayGBP)+" a day", "future", [
+        T(", which is "),
+        D("reach", fmt(DATA.liquidGBP)+" you can reach", "past", [T(" ("), N(fmt(acc("Monzo").native)), T(" in Monzo and "), N(fmt(acc("Revolut").native,"€")), T(" in Revolut, "), N(fmt(acc("Revolut").gbp)), T(")")]),
+        T(", minus "), N(fmt(DATA.billsToNextIncomeGBP)), T(" already promised to "), rentDoor("rent1"), T(", "), subsDoor("subs1"),
+        T(", over "+DATA.nextIncome.daysAway+" days,")], true),
+      T(" until "),
+      D("loan", "the loan on "+dm(LOAN), "future", [T(", "), N(fmt(DATA.nextIncome.amountGBP)), T(" of student loan for term 2")]),
+      T(".")],
+    quiet:[T("At "), D("pace","this fortnight's pace","past",[T(", "), N(fmt(DATA.last14DaysTotalGBP)), T(" in 14 days or "), N(fmt(BURN)), T(" a day,")]),
+      T(" it runs out on "), D("zero1", dm(ZERO), "future", [T(", "+dayDiff(ZERO,LOAN)+" days before the loan")], true), T(".")]
+  },
+  { // 2. the zero-day tension
+    main:[T("At "), D("burn2", fmt(BURN)+" a day", "past", [T(", this fortnight's pace,")], true), T(" the free "),
+      D("free2", fmt(FREE), "future", [T(" ("), N(fmt(DATA.liquidGBP)), T(" minus "), N(fmt(DATA.billsToNextIncomeGBP)), T(" promised)")], true),
+      T(" runs out on "), D("zero2", dm(ZERO), "future", [T(", "+Math.floor(FREE/BURN)+" days from today")], true), T(".")],
+    quiet:[T("At "), N(fmt(DATA.perDayGBP)), T(" a day it lasts exactly to "+dm(LOAN)+". The gap is "),
+      D("gap2", fmt(r2(BURN-DATA.perDayGBP))+" a day", "future", [T(", "+dayDiff(ZERO,LOAN)+" days without money")], true), T(".")]
+  },
+  { // 3. net worth, foreign share, native currency first
+    main:[T("You are worth "), D("worth", fmt(DATA.netWorthGBP), "past", [T(", "), N(fmt(INVESTED)), T(" of it invested")], true),
+      T(", and a quarter of it is in "),
+      D("fx3", "euros, ringgit and dollars", "past", [T(": "), N(fmt(acc("Revolut").native,"€")), T(" ("), N(fmt(acc("Revolut").gbp)), T("), "),
+        N(fmt(acc("Maybank").native,"RM")), T(" ("), N(fmt(acc("Maybank").gbp)), T(", read only) and "),
+        N(fmt(acc("Alpaca").native,"$")), T(" ("), N(fmt(acc("Alpaca").gbp)), T("), "), N(fmt(FOREIGN)), T(" in all")]),
+      T(".")],
+    quiet:[T("Converted at "), D("rates3","ECB rates for 30 September","past",[T(": EUR 0.8702, MYR 0.17544, USD 0.74380")]), T(".")]
+  },
+  { // 4. what is promised before the loan
+    main:[T("Before the loan, "), D("prom4", fmt(DATA.billsToNextIncomeGBP), "future", [T(" ("), N(fmt(RENT_TOTAL)), T(" rent and "), N(fmt(SUBS_TOTAL)), T(" the rest)")], true),
+      T(" is already promised: "), rentDoor("rent4"), T(" four times, and "), subsDoor("subs4"), T(".")],
+    quiet:[T("The flight to Penang on 14 December is "), D("flight4","already paid","past",[T(", so it takes nothing from here")]), T(".")]
+  },
+  { // 5. where the last 14 days went
+    main:[T("In the last 14 days "), D("spent5", fmt(DATA.last14DaysTotalGBP), "past", [T(", "), N(fmt(BURN)), T(" a day,")], true),
+      T(" went, "), D("most5","most of it","past",[T(", "), N(fmt(TOP2)), T(",")]),
+      T(" on "+cats[0][0].toLowerCase()+", "), N(fmt(cats[0][1])), T(", and "+cats[1][0].toLowerCase()+", "), N(fmt(cats[1][1])), T(".")],
+    quiet:[D("rest5","The rest","past",[T(": "+cats.slice(2).map(c=>c[0].toLowerCase()).join(", ")+", "),
+      ...cats.slice(2).flatMap((c,i,a)=>[N(fmt(c[1])), T(i<a.length-1?", ":"")])]), T(" went on smaller things.")]
+  },
+  { // 6. the next thing due
+    main:[T("Today you have spent "), D("today6", fmt(DATA.todaySpentGBP), "past", [T(" of your "), N(fmt(DATA.perDayGBP))], true),
+      T(". Tomorrow "), rentDoor("rent6"), T(" takes "), N(fmt(960)), T(".")],
+    quiet:[T("Then Spotify on 4 October, Three on 8 October and the gym on 12 October.")]
+  }
+];
+
+/* ---------- rendering ---------- */
+const $ = id => document.getElementById(id);
+const mainEl = $("main"), quietEl = $("quiet"), stage = $("stage");
+let idx = 0, mode = "home", answer = null;
+
+function wordsInto(el, text, cls, delay) {
+  const parts = text.split(/( +)/);
+  for (const p of parts) {
+    if (!p) continue;
+    if (/^ +$/.test(p)) { el.appendChild(document.createTextNode(" ")); continue; }
+    const s = document.createElement("span"); s.className = "w"+(cls?" "+cls:""); s.textContent = p;
+    if (cls) s.style.animationDelay = Math.min(delay.v, 900)+"ms";
+    delay.v += 26; el.appendChild(s);
+  }
+}
+function numInto(el, text, cls, delay) {
+  const s = document.createElement("span"); s.className = "w pnum"+(cls?" "+cls:""); s.textContent = text;
+  if (cls) s.style.animationDelay = Math.min(delay.v, 900)+"ms";
+  delay.v += 26; el.appendChild(s);
+}
+function renderParts(el, parts, cls, delay) {
+  for (const p of parts) {
+    if (p.t !== undefined) wordsInto(el, p.t, cls, delay);
+    else if (p.n !== undefined) numInto(el, p.n, cls, delay);
+    else {
+      const d = document.createElement("span");
+      d.className = "door "+p.kind+(p.nw?" nw":""); d.dataset.id = p.id; d._unfold = p.unfold;
+      // figures inside a door keep mono and never split
+      const m = p.text.match(/^([£€$]|RM)[\d,.]+/);
+      if (m) { numInto(d, m[0], cls, delay); wordsInto(d, p.text.slice(m[0].length), cls, delay); }
+      else wordsInto(d, p.text, cls, delay);
+      el.appendChild(d);
+    }
+  }
+}
+function fit() {
+  // largest size (34 -> 19) at which main + quiet fit the stage; measured on an offscreen clone
+  const H = stage.clientHeight - 30;
+  const clone = stage.cloneNode(true); clone.style.cssText = "position:absolute;visibility:hidden;left:28px;right:28px;top:0;bottom:auto";
+  clone.querySelectorAll(".leaving").forEach(n=>n.remove());
+  clone.querySelectorAll("*").forEach(n=>{ n.style.transition="none"; });
+  document.body.appendChild(clone);
+  const cm = clone.querySelector(".main"), cq = clone.querySelector(".quiet");
+  let size = 34;
+  for (; size > 19; size -= 1) {
+    cm.style.fontSize = size+"px"; cq.style.fontSize = Math.max(15, Math.round(size*0.58))+"px";
+    if (clone.scrollHeight <= H) break;
+  }
+  clone.remove();
+  mainEl.style.fontSize = size+"px"; quietEl.style.fontSize = Math.max(15, Math.round(size*0.58))+"px";
+}
+function paintTicks() {
+  $("ticks").innerHTML = SENTENCES.map((_,i)=>`<i class="${i===idx && mode==="home" ?"on":""}"></i>`).join("");
+}
+function showSentence(s, cls) {
+  mainEl.innerHTML = ""; quietEl.innerHTML = "";
+  const delay = {v:0};
+  renderParts(mainEl, s.main, cls, delay);
+  delay.v += 120;
+  renderParts(quietEl, s.quiet, cls, delay);
+  fit(); paintTicks();
+}
+
+function openDoor(d) {
+  if (d.classList.contains("open")) return closeDoor(d);
+  d.classList.add("open");
+  const u = document.createElement("span"); u.className = "unf"; u.dataset.for = d.dataset.id;
+  renderParts(u, d._unfold, "in", {v:0});
+  d.after(u);
+  fit();
+}
+function closeDoor(d) {
+  d.classList.remove("open");
+  const u = d.nextElementSibling;
+  if (!u || !u.classList.contains("unf")) return;
+  u.querySelectorAll(".door.open").forEach(x=>x.classList.remove("open"));
+  u.classList.add("leaving");
+  setTimeout(()=>{ u.remove(); fit(); }, 270);
+}
+function foldAll() {
+  [...stage.querySelectorAll(".main > .door.open, .quiet > .door.open")].forEach(closeDoor);
+}
+
+function go(dir) {
+  const next = idx + dir;
+  if (next < 0 || next >= SENTENCES.length) return;
+  mainEl.classList.add(dir>0?"goup":"godown"); quietEl.classList.add(dir>0?"goup":"godown");
+  setTimeout(()=>{
+    mainEl.classList.remove("goup","godown"); quietEl.classList.remove("goup","godown");
+    idx = next; showSentence(SENTENCES[idx], dir>0?"inup":"indown");
+  }, 300);
+}
+function goHome() {
+  mode = "home"; answer = null; $("echo").textContent = "";
+  mainEl.classList.add("godown"); quietEl.classList.add("godown");
+  setTimeout(()=>{ mainEl.classList.remove("godown"); quietEl.classList.remove("godown"); idx = 0; showSentence(SENTENCES[0], "indown"); }, 300);
+}
+
+/* ---------- ask ---------- */
+function openAsk() {
+  mode = "ask"; paintTicks();
+  stage.classList.add("dim"); $("ask").classList.add("on"); $("foot").style.opacity = 0;
+  $("mic").classList.add("live");
+  const q = $("q"); q.value = ""; setTimeout(()=>q.focus(), 60);
+}
+function closeAsk() { $("ask").classList.remove("on"); $("mic").classList.remove("live"); stage.classList.remove("dim"); $("foot").style.opacity = 1; $("q").blur(); }
+
+function resolveDay(text) {
+  const t = text.toLowerCase();
+  if (/\btoday\b/.test(t)) return TODAY;
+  if (/\btomorrow\b/.test(t)) return addDays(TODAY,1);
+  for (let i=0;i<7;i++) if (t.includes(DOW[i].toLowerCase())) { let k=(i - TODAY.getDay()+7)%7; if (k===0) k=7; return addDays(TODAY,k); }
+  const m = t.match(/(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
+  if (m) { const mo = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"].indexOf(m[2]);
+    let d = new Date(TODAY.getFullYear(), mo, +m[1], 12); if (d < TODAY) d = new Date(TODAY.getFullYear()+1, mo, +m[1], 12); return d; }
+  return null;
+}
+function answerFor(q) {
+  const m = q.replace(/,/g,"").match(/(?:afford|spend|buy)[^£\d]*£?\s*(\d+(?:\.\d{1,2})?)/i) || q.replace(/,/g,"").match(/£\s*(\d+(?:\.\d{1,2})?)/);
+  if (!m) return { main:[T("I can answer \"can I afford £X\", with a day if you like.")], quiet:[T("Tap anywhere to go back.")] };
+  const x = r2(parseFloat(m[1]));
+  const day = resolveDay(q);
+  const when = day ? " on "+DOW[day.getDay()]+" "+dm(day) : "";
+  if (day && day >= LOAN) return { main:[T("Yes. "), N(fmt(x)), T(when+" is after the loan on "+dm(LOAN)+", so it comes out of the next term.")], quiet:[] };
+  if (x > FREE) return { main:[T("No. "), N(fmt(x)), T(" is more than the "), N(fmt(FREE)), T(" that is free before "+dm(LOAN)+".")], quiet:[] };
+  const left = r2(FREE - x), nz = zeroDate(left), newPer = r2(left / DATA.nextIncome.daysAway);
+  const moved = dayDiff(nz, ZERO);
+  const verb = moved === 0 ? [T(" leaves "), D("oz", dm(ZERO), "future", [], true), T(" where it is")]
+    : [T(" moves "+dm(ZERO)+" to "), D("nz", dm(nz), "future", [T(", because "), N(fmt(FREE)), T(" minus "), N(fmt(x)), T(" leaves "), N(fmt(left)), T(", which at "), N(fmt(BURN)), T(" a day lasts "+Math.floor(left/BURN)+" days")], true)];
+  return {
+    main:[T("Yes. "), D("x", fmt(x)+when, "future", [], false), ...verb, T(".")],
+    quiet:[T("That is still "+dayDiff(nz,LOAN)+" days before the loan. To reach "+dm(LOAN)+", keep to "), N(fmt(newPer)), T(" a day.")]
+  };
+}
+function submitAsk() {
+  const q = $("q").value.trim(); if (!q) return;
+  closeAsk(); mode = "answer";
+  answer = answerFor(q);
+  $("echo").textContent = "YOU ASKED: " + q.toUpperCase();
+  showSentence(answer, "in");
+}
+$("q").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); submitAsk(); } if (e.key === "Escape") { closeAsk(); mode="home"; paintTicks(); } });
+
+/* ---------- gestures: tap a door, tap background to fold, swipe to move, hold to ask ---------- */
+let g = null;
+document.addEventListener("pointerdown", e => {
+  if (mode === "ask") return;
+  g = { x:e.clientX, y:e.clientY, t:e.target, held:false, moved:false };
+  const hb = $("hold"); hb.className = "hold"; void hb.offsetWidth; hb.className = "hold go";
+  g.timer = setTimeout(()=>{ if (g && !g.moved) { g.held = true; $("hold").className = "hold"; openAsk(); } }, 550);
+});
+document.addEventListener("pointermove", e => {
+  if (!g) return;
+  if (Math.hypot(e.clientX-g.x, e.clientY-g.y) > 10) { g.moved = true; clearTimeout(g.timer); $("hold").className = "hold"; }
+});
+document.addEventListener("pointerup", e => {
+  if (!g) return;
+  clearTimeout(g.timer); $("hold").className = "hold";
+  const s = g; g = null;
+  if (s.held) return;
+  const dx = e.clientX - s.x, dy = e.clientY - s.y;
+  if (Math.abs(dy) > 50 && Math.abs(dy) > Math.abs(dx)) { if (mode === "home") go(dy < 0 ? 1 : -1); else if (mode === "answer") goHome(); return; }
+  const door = s.t.closest && s.t.closest(".door");
+  if (door && door._unfold && door._unfold.length) return openDoor(door);
+  if (mode === "answer") return goHome();
+  foldAll();
+});
+document.addEventListener("pointercancel", () => { if (g) clearTimeout(g.timer); g = null; $("hold").className = "hold"; });
+
+document.fonts.ready.then(()=>{ showSentence(SENTENCES[0], "in"); document.body.dataset.ready = "1"; });
+</script>
+</body></html>

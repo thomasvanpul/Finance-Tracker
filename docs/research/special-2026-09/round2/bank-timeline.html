@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;background:#0A0D12;color:#E8EDF2;font-family:"IBM Plex Sans",system-ui,sans-serif;width:900px;padding:36px 40px;box-sizing:border-box}
+h1{font-size:22px;font-weight:600;margin:0 0 6px} p.s{color:#71869D;margin:0 0 28px;font-size:15px}
+.row{display:grid;grid-template-columns:150px 1fr;gap:18px;padding:14px 0;border-top:1px solid #1C2530}
+.d{font-family:"JetBrains Mono",monospace;color:#E8C14A;font-size:15px}
+.t{font-size:16px;line-height:1.45} .m{color:#71869D}
+.gate{border:1px dashed #E8C14A;padding:14px 16px;margin:0 0 22px;font-size:15px;line-height:1.5}
+</style></head><body>
+<h1>"Testers open when bank data arrives by itself"</h1>
+<p class="s">Numeris round 2, 30 Sep 2026. What that phrase means for a tester, day by day.</p>
+<div class="gate"><b>The gate:</b> nobody is invited until connecting a bank is one tap and spending then appears with no typing, no CSV, no Sync button.
+It opens when two things are true: the Enable Banking contract is signed (needs you), and the build steps are done (about 3-4 weeks, can start now on your own accounts).</div>
+<div class="row"><div class="d">Day 1, 2 min</div><div class="t">Sign up, tap <b>Connect a bank</b>, choose Monzo. Monzo's own app asks "share with Enable Banking?". Approve. Back in Numeris: the balance and about 90 days of spending are there, already sorted. <span class="m">Typed: nothing.</span></div></div>
+<div class="row"><div class="d">Day 2</div><div class="t">Coffee at 9:00. Open Numeris at lunch: the coffee is there, dotted until the bank settles it, then solid. A move from Monzo to Wise shows once, as a transfer. <span class="m">Pressed Sync: never.</span></div></div>
+<div class="row"><div class="d">Days 3-89</div><div class="t">The same, every day. The only reason to open Connections is to add another bank.</div></div>
+<div class="row"><div class="d">Day 90, UK</div><div class="t">"Keep sharing your Monzo data?" One tap, no bank login. <span class="m">Dutch banks skip this.</span></div></div>
+<div class="row"><div class="d">Day 173</div><div class="t">"Your connection ends in 7 days, Reconnect." 30 seconds, same as day 1. Ignored, the data stops on day 180 and the app says so, never shows stale figures silently.</div></div>
+<div class="row"><div class="d">Maybank</div><div class="t m">Not in this. No official Malaysian route exists before 2027; it stays manual.</div></div>
+</body></html>
