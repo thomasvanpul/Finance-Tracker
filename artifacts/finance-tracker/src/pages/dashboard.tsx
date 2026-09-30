@@ -49,6 +49,7 @@ import { loadPersonaIds, PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useLocation } from "wouter";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
+import { balanceColumns, sameSet } from "@/lib/dashboard-columns";
 import { Zap, RefreshCw, X } from "lucide-react";
 import { useState, useMemo, useEffect, useLayoutEffect, useRef, memo } from "react";
 import type { ComponentType, ReactNode } from "react";
@@ -2286,7 +2287,7 @@ function CustomizeDiscoveryTile({ remaining, onEnter, fullWidth }: {
         + {remaining} MORE {remaining === 1 ? "WIDGET" : "WIDGETS"}
       </MonoLabel>
       <Text as="span" size={13} color="var(--ft-dim)">
-        Press EDIT LAYOUT to add them, rearrange this page, or take anything off it.
+        Click here to add them, rearrange this page, or take anything off it.
       </Text>
     </button>
   );
@@ -2380,6 +2381,41 @@ export default function Dashboard() {
   const leftIds = useMemo(() => enabledIds.filter(id => !rightSet.has(id)), [enabledIds, rightSet]);
   const rightIds = useMemo(() => enabledIds.filter(id => rightSet.has(id)), [enabledIds, rightSet]);
 
+  // Balance the two columns by measured height (lib/dashboard-columns.ts has
+  // the why). Runs for a few seconds after the set of widgets changes, so it
+  // settles after each widget's data lands, and never after the user has
+  // dragged something — a hand-made arrangement is theirs, not ours to undo.
+  const columnsRef = useRef<HTMLDivElement>(null);
+  const userArrangedRef = useRef(false);
+  const enabledKey = [...enabledIds].sort().join(",");
+  useEffect(() => {
+    if (userArrangedRef.current) return;
+    const BALANCE_WINDOW_MS = 6000;
+    const TICK_MS = 400;
+    const started = Date.now();
+    const timer = setInterval(() => {
+      const root = columnsRef.current;
+      if (Date.now() - started > BALANCE_WINDOW_MS || userArrangedRef.current) {
+        clearInterval(timer);
+        return;
+      }
+      if (!root || root.children.length < 2) return;
+      const heights = new Map<WidgetId, number>();
+      const [leftCol, rightCol] = [root.children[0], root.children[1]];
+      leftIdsRef.current.forEach((id, i) => heights.set(id, leftCol.children[i]?.getBoundingClientRect().height ?? 0));
+      rightIdsRef.current.forEach((id, i) => heights.set(id, rightCol.children[i]?.getBoundingClientRect().height ?? 0));
+      const next = balanceColumns(enabledIdsRef.current, heights, 6);
+      setRightSet(prev => (sameSet(prev, next) ? prev : next));
+    }, TICK_MS);
+    return () => clearInterval(timer);
+  }, [enabledKey]);
+  const leftIdsRef = useRef(leftIds);
+  leftIdsRef.current = leftIds;
+  const rightIdsRef = useRef(rightIds);
+  rightIdsRef.current = rightIds;
+  const enabledIdsRef = useRef(enabledIds);
+  enabledIdsRef.current = enabledIds;
+
   const isCurrentLayoutSaved = views.some(v =>
     layoutFingerprint(v.enabled, v.order, v.spans as Record<string, string>) ===
     layoutFingerprint([...enabled], order, spans as Record<string, string>)
@@ -2392,6 +2428,7 @@ export default function Dashboard() {
   }
 
   function handleDragStart(event: DragStartEvent) {
+    userArrangedRef.current = true;
     setActiveId(event.active.id as WidgetId);
     setActiveWidth(event.active.rect.current.initial?.width ?? null);
     lastOverRef.current = null;
@@ -2946,7 +2983,7 @@ export default function Dashboard() {
           ) : (
             /* Desktop: drag-and-drop two-column grid */
             <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd} onDragCancel={() => { setActiveId(null); setActiveWidth(null); lastOverRef.current = null; if (preDragOrderRef.current.length) { setOrder(preDragOrderRef.current); setRightSet(preDragRightSetRef.current); } }}>
-              <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <div ref={columnsRef} className="ft-dashboard-two-col" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 {/* Left column */}
                 <VStack gap={6} grow>
                   <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
@@ -3006,7 +3043,7 @@ export default function Dashboard() {
                   }
                 }}
               >
-                <div className="ft-dashboard-two-col" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <div ref={columnsRef} className="ft-dashboard-two-col" style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <VStack gap={6} grow>
                     <SortableContext items={leftIds} strategy={verticalListSortingStrategy}>
                       {leftIds.map(id => (
