@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<title>B Depth, phone home (mock)</title>
+<style>
+/*TOKENS*/
+.read { padding:8px 16px 0; display:flex; align-items:flex-end; justify-content:space-between; }
+.read .nw { font-family:var(--font-mono); font-size:34px; font-weight:500; letter-spacing:-.03em; line-height:1; }
+.read .chg { text-align:right; font-size:11px; color:var(--ft-muted); line-height:1.4; }
+.read .chg .pnum { color:var(--ft-green); font-size:13px; display:block; }
+.head { display:grid; grid-template-columns:1fr auto 1fr; align-items:end; padding:22px 16px 6px; }
+.head .l { font-size:11px; color:var(--ft-muted); }
+.head .l .pnum { display:block; color:var(--ft-text); font-size:14px; margin-top:2px; }
+.head .r { text-align:right; }
+.head .mid { text-align:center; padding:0 6px; }
+.head .mid .k { font-size:11px; color:var(--ft-muted); }
+.head .mid .pnum { display:block; font-size:22px; font-weight:500; color:var(--ft-text); margin-top:1px; }
+svg { display:block; margin:0 16px; }
+svg text { font-family:var(--font-sans); font-size:11px; fill:var(--ft-dim); }
+svg text.m { font-family:var(--font-mono); }
+.book { display:grid; grid-template-columns:1fr 1fr; column-gap:20px; padding:10px 16px 0; }
+.book .row { height:38px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--ft-border); }
+.book .k { font-size:12px; color:var(--ft-muted); }
+.book .pnum { font-size:13px; }
+.book .st { display:flex; flex-direction:column; align-items:flex-end; line-height:1.2; }
+.book .cv { font-size:11px; color:var(--ft-muted); }
+.book .due .k, .book .due .pnum { color:var(--ft-amber); }
+.book .cap { font-size:11px; color:var(--ft-dim); height:22px; display:flex; align-items:flex-end; }
+.book .cap.r { justify-content:flex-end; }
+.keys { position:absolute; left:0; right:0; bottom:97px; }
+</style></head>
+<body>
+<div class="status"><span>Wed 30 Sep</span><span class="mock">MOCK, SAMPLE FIGURES</span></div>
+<div class="read">
+  <div class="nw pnum">£215,304<span class="p">.16</span></div>
+  <div class="chg"><span class="pnum">+£2,127.34</span>since 7 Sep, fx</div>
+</div>
+
+<div class="head">
+  <div class="l">claimed<span class="pnum">£11,685.08</span></div>
+  <div class="mid"><span class="k">spread</span><span class="pnum">−£156.82</span></div>
+  <div class="l r">within reach<span class="pnum">£11,528.26</span></div>
+</div>
+
+<svg width="358" height="262" viewBox="0 0 358 262">
+  <!-- one shared scale, 220px = £12,000 -->
+  <line x1="0" y1="236.5" x2="358" y2="236.5" stroke="var(--ft-border2)"/>
+  <line x1="0" y1="126.5" x2="358" y2="126.5" stroke="var(--ft-border)" stroke-dasharray="1 3"/>
+  <text x="170" y="122" class="m" text-anchor="end">6k</text>
+  <!-- claims: not yet real, so dotted edge; cumulative from the mid outward by due date -->
+  <path d="M179 236 V213.5 H135 V212.7 H91 V147.3 H47 V21.8 H3 V236 Z" fill="color-mix(in srgb, var(--ft-red) 13%, transparent)" stroke="var(--ft-red)" stroke-width="1.25" stroke-dasharray="2 3"/>
+  <rect x="135" y="213.5" width="44" height="22.5" fill="color-mix(in srgb, var(--ft-amber) 45%, transparent)"/>
+  <!-- holdings: real, so solid edge; cumulative from the mid outward by how fast you can reach it -->
+  <path d="M179 236 V175.8 H223 V27.3 H267 V24.6 H311 V6 M355 6 V236 Z" fill="none"/>
+  <path d="M179 236 V175.8 H223 V27.3 H267 V236 Z" fill="color-mix(in srgb, var(--ft-green) 14%, transparent)" stroke="var(--ft-green)" stroke-width="1.25"/>
+  <path d="M267 27.3 V24.6 H311 V236 H267 Z" fill="color-mix(in srgb, var(--ft-green) 8%, transparent)" stroke="var(--ft-green)" stroke-width="1.25" stroke-dasharray="2 3"/>
+  <path d="M311 24.6 V14 M311 6 V4 H355 V236 H311" fill="color-mix(in srgb, var(--ft-green) 14%, transparent)" stroke="var(--ft-green)" stroke-width="1.25"/>
+  <!-- axis break: the held-long step runs off the shared scale -->
+  <path d="M305 16 L317 12 M305 20 L317 16" stroke="var(--ft-text)" stroke-width="1.25"/>
+  <rect x="228" y="32" width="126" height="32" fill="var(--ft-base)"/>
+  <text x="350" y="46" text-anchor="end" class="m" style="fill:var(--ft-text)">+£210,623.90</text>
+  <text x="350" y="60" text-anchor="end">off scale, held long</text>
+  <!-- the mid: net worth sits where the price sits -->
+  <line x1="179.5" y1="0" x2="179.5" y2="244" stroke="var(--ft-text)" stroke-width="1"/>
+  <!-- x axis: time to due (left), time to reach (right) -->
+  <text x="25" y="254" text-anchor="middle">loan</text>
+  <text x="69" y="254" text-anchor="middle">goals</text>
+  <text x="113" y="254" text-anchor="middle">30 days</text>
+  <text x="157" y="254" text-anchor="middle" style="fill:var(--ft-amber)">late</text>
+  <text x="201" y="254" text-anchor="middle">now</text>
+  <text x="245" y="254" text-anchor="middle">saved</text>
+  <text x="289" y="254" text-anchor="middle">owed</text>
+  <text x="333" y="254" text-anchor="middle">long</text>
+</svg>
+
+<div class="book">
+  <div class="cap">claims, soonest first</div><div class="cap r">money, fastest first</div>
+  <div class="row due"><span class="k">6 late</span><span class="pnum">£1,229.71</span></div>
+  <div class="row"><span class="k">Monzo</span><span class="pnum">£2,450.30</span></div>
+  <div class="row"><span class="k">to 30 Oct</span><span class="pnum nyr">£41.06</span></div>
+  <div class="row"><span class="k">Wise</span><span class="st"><span class="pnum">€540.75</span><span class="pnum cv">£465.00<span class="fx">fx</span></span></span></div>
+  <div class="row"><span class="k">goals</span><span class="pnum nyr">£3,566.31</span></div>
+  <div class="row"><span class="k">Maybank</span><span class="st"><span class="pnum">RM 1,980.00</span><span class="pnum cv">£366.92<span class="fx">fx</span></span></span></div>
+  <div class="row"><span class="k">loan, owe</span><span class="pnum">£6,848.00</span></div>
+  <div class="row"><span class="k">Barclays</span><span class="pnum">£8,100.00</span></div>
+</div>
+
+<div class="keys">
+  <div class="key fill"><span class="s">−</span>Spent</div>
+  <div class="key line"><span class="s">+</span>Received</div>
+</div>
+<nav class="rail"><a class="on">HOME</a><a>WORTH</a><a>SPENDING</a><a>UPCOMING</a><a>DIRECTORY</a></nav>
+</body></html>

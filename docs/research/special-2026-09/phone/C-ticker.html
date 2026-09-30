@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<title>C Ticker, phone home (mock)</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=block");
+/* Colour tokens copied verbatim from artifacts/finance-tracker/src/index.css:511 (:root, void) and :592 (arctic).
+   Every colour below this block is a token or a color-mix of tokens. */
+:root {
+  --ft-base:#0A0D12; --ft-surface:#0F1318; --ft-raised:#141A22; --ft-border:#1C2530; --ft-border2:#243040;
+  --ft-text:#E8EDF2; --ft-muted:#71869D; --ft-dim:#556677; --ft-accent:#E8C14A; --ft-amber:#FFB300;
+  --ft-green:#00E5A0; --ft-red:#FF4757; --ft-blue:#73A1D6; --ft-cyan:#00D4FF;
+  --font-sans:"IBM Plex Sans", system-ui, sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, monospace;
+}
+[data-theme="arctic"] {
+  --ft-base:#F0F4F8; --ft-surface:#FFFFFF; --ft-raised:#F7FAFC; --ft-border:#7E8CA0; --ft-border2:#6A788A;
+  --ft-text:#1A2333; --ft-muted:#4A5A74; --ft-dim:#637088; --ft-accent:#0052CC; --ft-amber:#B45309;
+  --ft-green:#006644; --ft-red:#CC0000; --ft-blue:#3971C6; --ft-cyan:#0052CC;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--ft-base); color:var(--ft-text); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; }
+body { width:390px; height:844px; overflow:hidden; position:relative; }
+.pnum { font-family:var(--font-mono); font-variant-numeric:tabular-nums; white-space:nowrap; flex-shrink:0; }
+.p { color:var(--ft-dim); }                       /* pence, dimmed */
+.fx { font-family:var(--font-mono); font-size:11px; color:var(--ft-dim); margin-left:3px; }
+.nyr { text-decoration:underline dotted 1px; text-underline-offset:3px; }   /* dotted = not yet real */
+.status { height:47px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 16px 6px; font-size:11px; color:var(--ft-dim); }
+.status .mock { font-family:var(--font-mono); letter-spacing:.04em; }
+.rail { position:absolute; left:0; right:0; bottom:0; height:83px; padding-bottom:34px; display:flex; border-top:1px solid var(--ft-border); background:var(--ft-base); }
+.rail a { flex:1; height:49px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; letter-spacing:.04em; color:var(--ft-dim); text-decoration:none; position:relative; }
+.rail a.on { color:var(--ft-text); font-weight:600; }
+.rail a.on::before { content:""; position:absolute; top:-1px; left:18px; right:18px; height:2px; background:var(--ft-accent); }
+.keys { display:flex; gap:10px; padding:0 16px; }
+.key { flex:1; height:48px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:15px; font-weight:600; border-radius:3px; }
+.key.fill { background:var(--ft-text); color:var(--ft-base); }
+.key.line { border:1px solid var(--ft-border2); color:var(--ft-text); }
+.key .s { font-family:var(--font-mono); font-weight:500; }
+
+.read { padding:8px 16px 0; }
+.read .pair { font-size:12px; color:var(--ft-muted); font-weight:500; letter-spacing:.03em; }
+.read .row { display:flex; align-items:baseline; justify-content:space-between; margin-top:4px; }
+.read .nw { font-family:var(--font-mono); font-size:36px; font-weight:500; letter-spacing:-.03em; line-height:1; }
+.read .chg { font-size:13px; color:var(--ft-green); }
+.stats { display:grid; grid-template-columns:1.1fr 1fr .9fr; padding:16px 16px 0; }
+.stats div { font-size:11px; color:var(--ft-muted); }
+.stats .pnum { display:block; font-size:14px; color:var(--ft-text); margin-top:3px; }
+.stats div + div { padding-left:12px; border-left:1px solid var(--ft-border); }
+.range { display:flex; align-items:center; gap:2px; padding:16px 12px 0; }
+.range a { height:32px; min-width:44px; padding:0 8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-family:var(--font-mono); color:var(--ft-dim); }
+.range a.on { color:var(--ft-text); border-bottom:2px solid var(--ft-accent); }
+.range .lens { margin-left:auto; font-size:12px; color:var(--ft-muted); padding-right:4px; }
+.range .lens b { color:var(--ft-text); font-weight:600; }
+.chart { position:relative; margin:6px 0 0 16px; width:358px; height:228px; }
+svg text { font-family:var(--font-mono); font-size:11px; fill:var(--ft-dim); }
+.tag { position:absolute; right:0; height:20px; padding:0 5px; display:flex; align-items:center; font-size:11px; background:var(--ft-text); color:var(--ft-base); }
+.float { position:absolute; left:40px; top:158px; padding:7px 9px; background:var(--ft-raised); border:1px solid var(--ft-border2); border-radius:6px; box-shadow:0 6px 18px color-mix(in srgb, var(--ft-base) 60%, transparent); }
+.float .d { font-size:11px; color:var(--ft-muted); }
+.float .pnum { font-size:13px; margin-top:2px; display:block; }
+.tape { padding:8px 16px 0; }
+.tape .row { display:grid; grid-template-columns:52px 1fr auto; align-items:center; height:36px; border-top:1px solid var(--ft-border); column-gap:8px; }
+.tape .t { font-family:var(--font-mono); font-size:11px; color:var(--ft-dim); }
+.tape .m { font-size:13px; }
+.tape .v { text-align:right; line-height:1.15; }
+.tape .v .pnum { font-size:13px; display:block; }
+.tape .v .cv { font-size:11px; color:var(--ft-muted); }
+.keys { position:absolute; left:0; right:0; bottom:97px; }
+</style></head>
+<body>
+<div class="status"><span>Wed 30 Sep</span><span class="mock">MOCK, SAMPLE FIGURES</span></div>
+<div class="read">
+  <div class="pair">NET WORTH, GBP</div>
+  <div class="row">
+    <div class="nw pnum">£215,304<span class="p">.16</span></div>
+    <div class="chg pnum">+0.99%</div>
+  </div>
+</div>
+<div class="stats">
+  <div>within reach<span class="pnum">£11,382.22</span></div>
+  <div>claimed<span class="pnum nyr">£4,837.08</span></div>
+  <div>a day<span class="pnum">£242.41</span></div>
+</div>
+
+<div class="range">
+  <a>1W</a><a class="on">1M</a><a>3M</a><a>1Y</a>
+  <span class="lens">plotting <b>within reach</b></span>
+</div>
+
+<div class="chart">
+  <svg width="358" height="228" viewBox="0 0 374 238">
+    <!-- grid: £1,000 steps, 8,500 to 12,500 over 220px -->
+    <g stroke="var(--ft-border)" stroke-width="1">
+      <line x1="0" y1="27.5" x2="300" y2="27.5"/><line x1="0" y1="82.5" x2="300" y2="82.5"/>
+      <line x1="0" y1="137.5" x2="300" y2="137.5"/><line x1="0" y1="192.5" x2="300" y2="192.5"/>
+    </g>
+    <text x="304" y="31">12k</text><text x="304" y="86">11k</text><text x="304" y="141">10k</text>
+    <!-- past 30 days: happened, solid -->
+    <polyline fill="none" stroke="var(--ft-text)" stroke-width="1.5" stroke-linejoin="round"
+      points="0,31.9 11.7,47.3 29.3,61.8 46.9,44 70.4,49 88,52.8 105.6,38.5 123.2,42.9 140.8,46.8 158.4,53.9 176,61.5"/>
+    <!-- next 30 days: every known bill as a step, not yet real, dotted -->
+    <polyline fill="none" stroke="var(--ft-text)" stroke-width="1.5" stroke-dasharray="1.5 3"
+      points="176,61.5 176,129.1 246.4,129.1 246.4,129.8 252.3,129.8 252.3,182.6 264,182.6 264,183.4 287.5,183.4 287.5,184 300,184"/>
+    <!-- the late bills: the drop at today, amber -->
+    <line x1="176" y1="62" x2="176" y2="129" stroke="var(--ft-amber)" stroke-width="3"/>
+    <!-- today -->
+    <line x1="176.5" y1="0" x2="176.5" y2="222" stroke="var(--ft-border2)"/>
+    <text x="176" y="236" text-anchor="middle" style="fill:var(--ft-text)">30 Sep</text>
+    <text x="0" y="236">31 Aug</text>
+    <text x="300" y="236" text-anchor="end">30 Oct</text>
+    <text x="182" y="100" style="font-family:var(--font-sans);fill:var(--ft-amber)">6 late</text>
+    <text x="258" y="174" style="font-family:var(--font-sans)">rent</text>
+    <!-- scrub, held on 5 Sep -->
+    <line x1="29.5" y1="0" x2="29.5" y2="222" stroke="var(--ft-muted)" stroke-dasharray="2 2"/>
+    <circle cx="29.3" cy="61.8" r="3.5" fill="var(--ft-base)" stroke="var(--ft-text)" stroke-width="1.5"/>
+  </svg>
+  <div class="tag pnum" style="top:49px">11,382.22</div>
+  <div class="tag pnum" style="top:166px;background:transparent;color:var(--ft-text);border:1px dashed var(--ft-text)">9,154.44</div>
+  <div class="float"><div class="d">Sat 5 Sep, the month's low</div><span class="pnum">£11,377.04</span></div>
+</div>
+
+<div class="tape">
+  <div class="row"><span class="t">29 Sep</span><span class="m">Tesco Express</span><span class="v"><span class="pnum">−£23.40</span></span></div>
+  <div class="row"><span class="t">28 Sep</span><span class="m">Grab, Kuala Lumpur</span><span class="v"><span class="pnum">−RM 18.50</span><span class="pnum cv">−£3.43<span class="fx">fx</span></span></span></div>
+  <div class="row"><span class="t">27 Sep</span><span class="m">Hui Ling paid back</span><span class="v"><span class="pnum" style="color:var(--ft-green)">+£31.00</span></span></div>
+  <div class="row"><span class="t">26 Sep</span><span class="m">Wise, top-up in EUR</span><span class="v"><span class="pnum">+€50.00</span><span class="pnum cv">+£43.00<span class="fx">fx</span></span></span></div>
+</div>
+
+<div class="keys">
+  <div class="key fill"><span class="s">−</span>Spent</div>
+  <div class="key line"><span class="s">+</span>Received</div>
+</div>
+<nav class="rail"><a class="on">HOME</a><a>WORTH</a><a>SPENDING</a><a>UPCOMING</a><a>DIRECTORY</a></nav>
+</body></html>

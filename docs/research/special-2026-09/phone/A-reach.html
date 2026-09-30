@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<title>A Reach, phone home (mock)</title>
+<style>
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=block");
+/* Colour tokens copied verbatim from artifacts/finance-tracker/src/index.css:511 (:root, void) and :592 (arctic).
+   Every colour below this block is a token or a color-mix of tokens. */
+:root {
+  --ft-base:#0A0D12; --ft-surface:#0F1318; --ft-raised:#141A22; --ft-border:#1C2530; --ft-border2:#243040;
+  --ft-text:#E8EDF2; --ft-muted:#71869D; --ft-dim:#556677; --ft-accent:#E8C14A; --ft-amber:#FFB300;
+  --ft-green:#00E5A0; --ft-red:#FF4757; --ft-blue:#73A1D6; --ft-cyan:#00D4FF;
+  --font-sans:"IBM Plex Sans", system-ui, sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, monospace;
+}
+[data-theme="arctic"] {
+  --ft-base:#F0F4F8; --ft-surface:#FFFFFF; --ft-raised:#F7FAFC; --ft-border:#7E8CA0; --ft-border2:#6A788A;
+  --ft-text:#1A2333; --ft-muted:#4A5A74; --ft-dim:#637088; --ft-accent:#0052CC; --ft-amber:#B45309;
+  --ft-green:#006644; --ft-red:#CC0000; --ft-blue:#3971C6; --ft-cyan:#0052CC;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--ft-base); color:var(--ft-text); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; }
+body { width:390px; height:844px; overflow:hidden; position:relative; }
+.pnum { font-family:var(--font-mono); font-variant-numeric:tabular-nums; white-space:nowrap; flex-shrink:0; }
+.p { color:var(--ft-dim); }                       /* pence, dimmed */
+.fx { font-family:var(--font-mono); font-size:11px; color:var(--ft-dim); margin-left:3px; }
+.nyr { text-decoration:underline dotted 1px; text-underline-offset:3px; }   /* dotted = not yet real */
+.status { height:47px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 16px 6px; font-size:11px; color:var(--ft-dim); }
+.status .mock { font-family:var(--font-mono); letter-spacing:.04em; }
+.rail { position:absolute; left:0; right:0; bottom:0; height:83px; padding-bottom:34px; display:flex; border-top:1px solid var(--ft-border); background:var(--ft-base); }
+.rail a { flex:1; height:49px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; letter-spacing:.04em; color:var(--ft-dim); text-decoration:none; position:relative; }
+.rail a.on { color:var(--ft-text); font-weight:600; }
+.rail a.on::before { content:""; position:absolute; top:-1px; left:18px; right:18px; height:2px; background:var(--ft-accent); }
+.keys { display:flex; gap:10px; padding:0 16px; }
+.key { flex:1; height:48px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:15px; font-weight:600; border-radius:3px; }
+.key.fill { background:var(--ft-text); color:var(--ft-base); }
+.key.line { border:1px solid var(--ft-border2); color:var(--ft-text); }
+.key .s { font-family:var(--font-mono); font-weight:500; }
+
+.read { padding:8px 16px 0; }
+.read .nw { font-family:var(--font-mono); font-size:40px; font-weight:500; letter-spacing:-.03em; line-height:1; }
+.read .chg { margin-top:8px; font-size:13px; color:var(--ft-muted); display:flex; gap:8px; align-items:baseline; }
+.read .chg .pnum { color:var(--ft-green); font-size:13px; }
+/* the miniature of WORTH: whole wealth at one scale, opens the full map */
+.held { margin:18px 16px 0; height:52px; display:flex; align-items:center; gap:12px; border-top:1px solid var(--ft-border); border-bottom:1px solid var(--ft-border); }
+.mini { width:74px; height:34px; position:relative; flex:none; }
+.mini i { position:absolute; background:var(--ft-border2); }
+.mini i.hot { background:color-mix(in srgb, var(--ft-green) 30%, var(--ft-raised)); }
+.mini i.liq { background:var(--ft-text); }
+.held .t { font-size:12px; color:var(--ft-muted); line-height:1.35; }
+.held .v { margin-left:auto; font-size:15px; }
+.cap { display:flex; justify-content:space-between; align-items:baseline; padding:16px 16px 7px; }
+.cap b { font-size:13px; font-weight:600; }
+.cap span { font-size:11px; color:var(--ft-dim); font-family:var(--font-mono); }
+/* the liquid map: every tile's area is its GBP value at 1px2 = £0.11 */
+.map { position:relative; margin:0 16px; width:358px; height:300px; }
+.tile { position:absolute; background:var(--ft-raised); outline:1px solid var(--ft-base); padding:7px 8px; overflow:visible; }
+.tile .n { font-size:12px; font-weight:600; letter-spacing:.02em; }
+.tile .v { font-size:14px; margin-top:3px; }
+.tile .v2 { font-size:11px; color:var(--ft-muted); margin-top:2px; }
+.claim { position:absolute; left:0; right:0; bottom:0; border:1px dashed var(--ft-muted); border-bottom:none; padding:6px 8px; background:repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ft-muted) 16%, transparent) 5px 6px); }
+.claim.due { border-color:var(--ft-amber); background:repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ft-amber) 20%, transparent) 5px 6px); }
+.claim .l { font-size:11px; color:var(--ft-muted); }
+.claim.due .l { color:var(--ft-amber); }
+.claim .pnum { font-size:12px; }
+.owed { position:absolute; border:1px dashed var(--ft-muted); background:transparent; }
+.legend { display:flex; gap:14px; padding:9px 16px 0; font-size:11px; color:var(--ft-muted); align-items:center; }
+.legend .sw { display:inline-block; width:10px; height:10px; border:1px dashed var(--ft-muted); margin-right:5px; vertical-align:-1px; }
+.legend .sw.due { border-color:var(--ft-amber); }
+.next { margin:22px 16px 0; padding-top:12px; border-top:1px solid var(--ft-border); display:flex; justify-content:space-between; font-size:13px; }
+.next .k { color:var(--ft-muted); }
+.free { display:flex; align-items:flex-end; justify-content:space-between; padding:18px 16px 0; }
+.free .k { font-size:12px; color:var(--ft-muted); margin-bottom:4px; }
+.free .big { font-size:28px; font-weight:500; letter-spacing:-.02em; }
+.free .rate { font-size:13px; color:var(--ft-muted); margin-top:4px; }
+.free .rate .pnum { color:var(--ft-text); }
+.log { width:52px; height:52px; border:1px solid var(--ft-accent); border-radius:3px; display:flex; align-items:center; justify-content:center; color:var(--ft-accent); font-family:var(--font-mono); font-size:26px; font-weight:400; }
+</style></head>
+<body>
+<div class="status"><span>Wed 30 Sep</span><span class="mock">MOCK, SAMPLE FIGURES</span></div>
+<div class="read">
+  <div class="nw pnum">£215,304<span class="p">.16</span></div>
+  <div class="chg"><span class="pnum">+£2,127.34</span><span>since 7 Sep, all exchange rate</span></div>
+</div>
+
+<div class="held">
+  <div class="mini">
+    <i class="hot" style="left:0;top:0;width:52px;height:34px"></i>
+    <i style="left:53px;top:0;width:21px;height:15px"></i>
+    <i style="left:53px;top:16px;width:12px;height:18px"></i>
+    <i style="left:66px;top:16px;width:8px;height:12px"></i>
+    <i class="liq" style="left:66px;top:29px;width:8px;height:5px"></i>
+  </div>
+  <div class="t">Held long<br>flat, pension, ISA, 5 positions</div>
+  <div class="v pnum">£210,623<span class="p">.90</span></div>
+</div>
+
+<div class="cap"><b>Within reach</b><span>£11,528.26</span></div>
+<div class="map">
+  <!-- Barclays 8,100.00 : 252 x 300 ; goals claim 3,566.31 = 132px of it -->
+  <div class="tile" style="left:0;top:0;width:252px;height:300px">
+    <div class="n">BARCLAYS SAVINGS</div>
+    <div class="v pnum">£8,100<span class="p">.00</span></div>
+    <div class="claim" style="height:132px">
+      <div class="l">goals, 30 days</div>
+      <div class="pnum nyr">£3,566.31</div>
+    </div>
+  </div>
+  <!-- right column 106px wide: Monzo 2,450.30 -> 216px ; claims 1,039.13 -> 92px -->
+  <div class="tile" style="left:252px;top:0;width:106px;height:216px">
+    <div class="n">MONZO</div>
+    <div class="v pnum">£2,450<span class="p">.30</span></div>
+    <div class="claim due" style="height:92px">
+      <div class="l">rent, 13 Sep</div>
+      <div class="pnum">£960.00</div>
+      <div class="l" style="margin-top:6px">+ 8 more</div>
+      <div class="pnum nyr">£79.13</div>
+    </div>
+  </div>
+  <!-- Wise 465.00 -> 41px ; Maybank 366.92 -> 32px ; owed 146.04 -> 11px -->
+  <div class="tile" style="left:252px;top:216px;width:106px;height:41px;padding:5px 8px">
+    <div class="pnum" style="font-size:12px">€540.75</div>
+    <div class="pnum" style="font-size:11px;color:var(--ft-muted)">£465.00<span class="fx">fx</span></div>
+  </div>
+  <div class="tile" style="left:252px;top:257px;width:106px;height:32px;padding:0">
+    <div class="pnum" style="position:absolute;left:8px;top:2px;font-size:11px">RM 1,980.00</div>
+    <div class="claim due" style="height:13px;padding:0"></div>
+  </div>
+  <div class="owed" style="left:252px;top:289px;width:106px;height:11px"></div>
+</div>
+<div class="legend"><span><i class="sw due"></i>late</span><span><i class="sw"></i>claimed, not yet due</span><span><i class="sw ow"></i>owed to you <span class="pnum nyr">£146.04</span></span></div>
+
+<div class="free">
+  <div>
+    <div class="k">Free after every claim</div>
+    <div class="big pnum">£6,545<span class="p">.14</span></div>
+    <div class="rate"><span class="pnum">£242.41</span> a day to 27 Oct</div>
+  </div>
+  <div class="log" aria-label="Log money">+</div>
+</div>
+
+<div class="next"><span><span class="k">Next</span>&nbsp; iCloud+ 200GB, today</span><span class="pnum nyr">£2.99</span></div>
+<nav class="rail"><a class="on">HOME</a><a>WORTH</a><a>SPENDING</a><a>UPCOMING</a><a>DIRECTORY</a></nav>
+</body></html>

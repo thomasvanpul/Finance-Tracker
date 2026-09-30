@@ -1,0 +1,33 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=block");
+/* Colour tokens copied verbatim from artifacts/finance-tracker/src/index.css:511 (:root, void) and :592 (arctic).
+   Every colour below this block is a token or a color-mix of tokens. */
+:root {
+  --ft-base:#0A0D12; --ft-surface:#0F1318; --ft-raised:#141A22; --ft-border:#1C2530; --ft-border2:#243040;
+  --ft-text:#E8EDF2; --ft-muted:#71869D; --ft-dim:#556677; --ft-accent:#E8C14A; --ft-amber:#FFB300;
+  --ft-green:#00E5A0; --ft-red:#FF4757; --ft-blue:#73A1D6; --ft-cyan:#00D4FF;
+  --font-sans:"IBM Plex Sans", system-ui, sans-serif;
+  --font-mono:"JetBrains Mono", ui-monospace, monospace;
+}
+[data-theme="arctic"] {
+  --ft-base:#F0F4F8; --ft-surface:#FFFFFF; --ft-raised:#F7FAFC; --ft-border:#7E8CA0; --ft-border2:#6A788A;
+  --ft-text:#1A2333; --ft-muted:#4A5A74; --ft-dim:#637088; --ft-accent:#0052CC; --ft-amber:#B45309;
+  --ft-green:#006644; --ft-red:#CC0000; --ft-blue:#3971C6; --ft-cyan:#0052CC;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+html, body { background:var(--ft-base); color:var(--ft-text); font-family:var(--font-sans); -webkit-font-smoothing:antialiased; }
+body { width:390px; height:844px; overflow:hidden; position:relative; }
+.pnum { font-family:var(--font-mono); font-variant-numeric:tabular-nums; white-space:nowrap; flex-shrink:0; }
+.p { color:var(--ft-dim); }                       /* pence, dimmed */
+.fx { font-family:var(--font-mono); font-size:11px; color:var(--ft-dim); margin-left:3px; }
+.nyr { text-decoration:underline dotted 1px; text-underline-offset:3px; }   /* dotted = not yet real */
+.status { height:47px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 16px 6px; font-size:11px; color:var(--ft-dim); }
+.status .mock { font-family:var(--font-mono); letter-spacing:.04em; }
+.rail { position:absolute; left:0; right:0; bottom:0; height:83px; padding-bottom:34px; display:flex; border-top:1px solid var(--ft-border); background:var(--ft-base); }
+.rail a { flex:1; height:49px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:500; letter-spacing:.04em; color:var(--ft-dim); text-decoration:none; position:relative; }
+.rail a.on { color:var(--ft-text); font-weight:600; }
+.rail a.on::before { content:""; position:absolute; top:-1px; left:18px; right:18px; height:2px; background:var(--ft-accent); }
+.keys { display:flex; gap:10px; padding:0 16px; }
+.key { flex:1; height:48px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:15px; font-weight:600; border-radius:3px; }
+.key.fill { background:var(--ft-text); color:var(--ft-base); }
+.key.line { border:1px solid var(--ft-border2); color:var(--ft-text); }
+.key .s { font-family:var(--font-mono); font-weight:500; }
