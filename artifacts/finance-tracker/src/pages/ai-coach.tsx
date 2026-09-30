@@ -898,7 +898,7 @@ export default function AiCoach() {
           </button>
         </div>
         <div style={{ marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
-          Streamed from Groq / Cerebras · Context assembled server-side, never posted from this page
+          Streamed from Groq · Context assembled server-side, never posted from this page
         </div>
       </div>
 

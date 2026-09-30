@@ -1540,7 +1540,7 @@ function AiSettingsPanel() {
             <SettingsInfoRow label="Categorise" value="Each transaction's description, amount and type; your categories" />
             <SettingsInfoRow label="Receipt scan" value="The photo, your categories, base currency" />
             <SettingsInfoRow label="Receipt split" value="The photo and the names you enter" />
-            <SettingsInfoRow label="Sent to" value="Groq, then Cerebras if Groq fails · US" accent="var(--ft-accent)" />
+            <SettingsInfoRow label="Sent to" value="Groq, then Cerebras on failure (Cerebras is currently down — billing) · US" accent="var(--ft-accent)" />
             <SettingsInfoRow label="If both fail" value="The feature shows an error; nothing is sent elsewhere" />
           </div>
         </div>
