@@ -314,7 +314,7 @@ function TopChangeLeads({ cells, dashboardLabel, isCustomizing, onCustomize }: P
             {ok === null ? (emptyReason ?? "—") : ok.finding.headline}
           </Text>
           {ok?.finding.support != null && (
-            <Text as="div" mono size={12} color="var(--ft-muted)" lineHeight={1.45}>{ok.finding.support}</Text>
+            <Text as="div" size={12} color="var(--ft-muted)" lineHeight={1.45}>{ok.finding.support}</Text>
           )}
           {ok !== null && (
             <HStack align="baseline" gap={10} wrap marginTop={2}>

@@ -292,7 +292,7 @@ export function ChangeAttributionBlock() {
         {view.finding.headline}
       </Text>
       {view.finding.support != null && (
-        <Text as="div" mono size={11} color="var(--ft-muted)" lineHeight="15px">
+        <Text as="div" size={11} color="var(--ft-muted)" lineHeight="15px">
           {view.finding.support}
         </Text>
       )}
