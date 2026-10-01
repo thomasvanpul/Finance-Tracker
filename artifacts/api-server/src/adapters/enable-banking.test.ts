@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { generateKeyPairSync } from "node:crypto";
-import { enableBankingAdapter, signEnableBankingJwt } from "./enable-banking";
+import { enableBankingAdapter, signEnableBankingJwt, revokeSession, sessionIdFromCredential } from "./enable-banking";
 import { AdapterError } from "./types";
 
 const originalFetch = globalThis.fetch;
@@ -176,5 +176,35 @@ describe("enableBankingAdapter.fetchTransactionsSince", () => {
       { externalId: "T2", date: "2026-08-06", description: "Salary Aug", nativeAmount: "1000.00", currency: "GBP" },
     ]);
     expect(call).toBe(2);
+  });
+});
+
+describe("revokeSession (M10)", () => {
+  it("sends an app-authenticated DELETE to /sessions/{id}", async () => {
+    let seen: { url: string; init?: RequestInit } | null = null;
+    stubFetch((url, init) => {
+      seen = { url, init };
+      return jsonResponse(200, { message: "OK" });
+    });
+    await expect(revokeSession("sess-1")).resolves.toBe("revoked");
+    expect(seen!.url).toMatch(/\/sessions\/sess-1$/);
+    expect(seen!.init?.method).toBe("DELETE");
+    expect((seen!.init?.headers as Record<string, string>).Authorization).toMatch(/^Bearer /);
+  });
+
+  it("treats 404 as already gone", async () => {
+    stubFetch(() => jsonResponse(404, { error: "NOT_FOUND" }));
+    await expect(revokeSession("sess-1")).resolves.toBe("already-gone");
+  });
+
+  it("throws on a provider failure so the caller keeps the row", async () => {
+    stubFetch(() => jsonResponse(500, {}));
+    await expect(revokeSession("sess-1")).rejects.toBeInstanceOf(AdapterError);
+  });
+
+  it("reads the session id from a stored credential, or null", () => {
+    expect(sessionIdFromCredential(JSON.stringify({ sessionId: "sess-9" }))).toBe("sess-9");
+    expect(sessionIdFromCredential("not json")).toBeNull();
+    expect(sessionIdFromCredential(JSON.stringify({}))).toBeNull();
   });
 });

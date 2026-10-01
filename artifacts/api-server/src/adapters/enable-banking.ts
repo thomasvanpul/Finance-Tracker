@@ -140,7 +140,7 @@ export function signEnableBankingJwt(): string {
 
 async function ebFetch<T>(
   path: string,
-  init: RequestInit & { skipAppAuth?: boolean } = {},
+  init: RequestInit & { skipAppAuth?: boolean; notFoundAs?: T } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -160,6 +160,9 @@ async function ebFetch<T>(
   }
   if (res.status === 401 || res.status === 403) {
     throw new AdapterError("auth", "Enable Banking rejected the session or app credential");
+  }
+  if (res.status === 404 && init.notFoundAs !== undefined) {
+    return init.notFoundAs;
   }
   if (res.status === 429) {
     throw new AdapterError("rate_limit", "Enable Banking rate limit hit");
@@ -191,6 +194,34 @@ function parseCredential(raw: string): StoredCredential {
 // stored credential (validUntil surfaces from the session's access.valid_until).
 export async function getSession(sessionId: string): Promise<EBSession> {
   return ebFetch<EBSession>(`/sessions/${sessionId}`);
+}
+
+// Closes the session at Enable Banking, which closes the PSU's consent at
+// the bank "automatically if possible" (DELETE /sessions/{id}, API
+// reference). Called before a connection row or a whole account is
+// deleted: once our row goes, the session id goes with it and nothing
+// could revoke the consent afterwards — it would stay live at the
+// provider until valid_until, up to 180 days (BACKLOG M10).
+//
+// A 404 means the session is already gone (deleted earlier, or never
+// existed), which is the outcome asked for. Any other failure throws.
+export async function revokeSession(sessionId: string): Promise<"revoked" | "already-gone"> {
+  const res = await ebFetch<{ message?: string } | null>(
+    `/sessions/${encodeURIComponent(sessionId)}`,
+    { method: "DELETE", notFoundAs: null },
+  );
+  return res === null ? "already-gone" : "revoked";
+}
+
+// The session id inside a stored (decrypted) credential, or null when the
+// credential is unreadable — such a credential cannot sync either, so
+// there is no consent this app could still be using or could revoke.
+export function sessionIdFromCredential(raw: string): string | null {
+  try {
+    return parseCredential(raw).sessionId;
+  } catch {
+    return null;
+  }
 }
 
 // Exported for the consent-start route. `redirectUrl` MUST match the URL

@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db, accountTable } from "@workspace/db";
 import { verifyPassword } from "better-auth/crypto";
 import { deleteUserAccount } from "../lib/account-deletion";
+import { revokeBankConsents, ConsentRevokeError } from "../lib/bank-consents";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -23,7 +24,9 @@ const router: IRouter = Router();
 // What this cannot do is make a third party forget a credential the user
 // pasted in (Wise, Alpaca, Kraken tokens; the Google/GitHub sign-in
 // grant). The row holding our encrypted copy goes; the user revokes the
-// token at the provider. The confirmation screen says so.
+// token at the provider. The confirmation screen says so. Enable Banking
+// is the exception: its consent is ours to close, so it is closed before
+// anything is deleted (lib/bank-consents.ts, BACKLOG M10).
 router.post("/account/delete", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
   const sessionUser = (req as any).user as { email?: string } | undefined;
@@ -46,6 +49,18 @@ router.post("/account/delete", async (req, res): Promise<void> => {
       res.status(400).json({ error: "Enter your current password to confirm deletion" });
       return;
     }
+  }
+
+  try {
+    const revoked = await revokeBankConsents(userId);
+    logger.info({ ...revoked }, "bank consents closed before account deletion");
+  } catch (err) {
+    if (!(err instanceof ConsentRevokeError)) throw err;
+    logger.error({ err: err.message }, "account deletion stopped: bank consent not closed");
+    res.status(502).json({
+      error: "Your bank connection could not be closed at the provider, so nothing was deleted. Try again in a few minutes.",
+    });
+    return;
   }
 
   const result = await deleteUserAccount(userId);

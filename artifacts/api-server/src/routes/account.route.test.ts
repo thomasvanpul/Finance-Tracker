@@ -31,6 +31,17 @@ vi.mock("../lib/account-deletion", () => ({
   deleteUserAccount: (userId: string) => deleteUserAccountMock(userId),
 }));
 
+// Bank consents are closed before deletion (M10). Default: nothing to
+// close; a test can make it fail.
+const revokeBankConsentsMock = vi.fn(async (_userId: string) => ({ revoked: 0, alreadyGone: 0, unreadable: 0 }));
+vi.mock("../lib/bank-consents", () => {
+  class ConsentRevokeError extends Error {}
+  return {
+    ConsentRevokeError,
+    revokeBankConsents: (userId: string) => revokeBankConsentsMock(userId),
+  };
+});
+
 let server: Server;
 let baseUrl = "";
 
@@ -57,6 +68,7 @@ afterAll(async () => {
 beforeEach(() => {
   credentialRows = [];
   deleteUserAccountMock.mockClear();
+  revokeBankConsentsMock.mockClear();
 });
 
 async function deleteAccount(body: unknown) {
@@ -101,5 +113,31 @@ describe("POST /account/delete", () => {
     const res = await deleteAccount({ email: "owner@example.com" });
     expect(res.status).toBe(200);
     expect(deleteUserAccountMock).toHaveBeenCalledWith("user-a");
+  });
+
+  it("closes bank consents before deleting", async () => {
+    const order: string[] = [];
+    revokeBankConsentsMock.mockImplementationOnce(async () => {
+      order.push("revoke");
+      return { revoked: 1, alreadyGone: 0, unreadable: 0 };
+    });
+    deleteUserAccountMock.mockImplementationOnce(async () => {
+      order.push("delete");
+      return { deletedRows: 3, tables: { user: 1 } };
+    });
+    const res = await deleteAccount({ email: "owner@example.com" });
+    expect(res.status).toBe(200);
+    expect(revokeBankConsentsMock).toHaveBeenCalledWith("user-a");
+    expect(order).toEqual(["revoke", "delete"]);
+  });
+
+  it("deletes nothing when a bank consent cannot be closed", async () => {
+    const { ConsentRevokeError } = await import("../lib/bank-consents");
+    revokeBankConsentsMock.mockImplementationOnce(async () => {
+      throw new ConsentRevokeError(1, new Error("Enable Banking 500"));
+    });
+    const res = await deleteAccount({ email: "owner@example.com" });
+    expect(res.status).toBe(502);
+    expect(deleteUserAccountMock).not.toHaveBeenCalled();
   });
 });

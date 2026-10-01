@@ -15,6 +15,7 @@ import { getAdapter, AdapterError } from "../adapters";
 import { parseFileCredential } from "../adapters/file";
 import { logger } from "../lib/logger";
 import { runConnectionSync } from "../lib/connection-sync";
+import { revokeBankConsents, ConsentRevokeError } from "../lib/bank-consents";
 import { computeExternalId, assignOrdinals } from "../lib/file-dedup";
 
 const router: IRouter = Router();
@@ -127,6 +128,18 @@ router.delete("/connections/:id", async (req, res): Promise<void> => {
     return;
   }
   const { id } = parsed.data;
+
+  // An Enable Banking session is closed at the provider first: once the
+  // row goes, nothing could close it (BACKLOG M10). A no-op for every
+  // other provider and for an id this user does not own.
+  try {
+    await revokeBankConsents(userId, id);
+  } catch (err) {
+    if (!(err instanceof ConsentRevokeError)) throw err;
+    logger.error({ userId, connectionId: id, err: err.message }, "connection delete stopped: bank consent not closed");
+    res.status(502).json({ error: "The bank consent could not be closed at the provider, so the connection was kept. Try again in a few minutes." });
+    return;
+  }
 
   // Row is deleted outright — the credential ciphertext goes with it.
   // No soft-delete, no audit copy, no separate credential table.
