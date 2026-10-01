@@ -136,7 +136,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
                 <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 10, minWidth: 18, paddingTop: 2, flexShrink: 0, fontWeight: 700 }}>
                   {String(j + 1).padStart(2, "0")}
                 </span>
-                <Text as="span" mono size={12}>{item.replace(/^\d+\.\s/, "")}</Text>
+                <Text as="span" size={12}>{item.replace(/^\d+\.\s/, "")}</Text>
               </li>
             ))}
           </ol>
@@ -149,7 +149,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
             {items.map((item, j) => (
               <li key={j} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 <span style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", marginTop: 3, flexShrink: 0, fontSize: 10 }}>▸</span>
-                <Text as="span" mono size={12}>{item.replace(/^[-*•]\s/, "")}</Text>
+                <Text as="span" size={12}>{item.replace(/^[-*•]\s/, "")}</Text>
               </li>
             ))}
           </ul>
@@ -167,7 +167,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
           ? <strong key={j} style={{ color: "var(--ft-text)", fontWeight: 700 }}>{chunk}</strong>
           : chunk
       );
-      return <p key={i} style={{ margin: "6px 0 0", fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.7 }}>{boldified}</p>;
+      return <p key={i} style={{ margin: "6px 0 0", fontFamily: "var(--font-sans)", fontSize: 12, lineHeight: 1.7 }}>{boldified}</p>;
     });
 }
 
@@ -202,7 +202,7 @@ function MessageBubble({ msg }: { msg: Message; index: number }) {
 
         {msg.text && (
           isUser
-            ? <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.65 }}>{msg.text}</div>
+            ? <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, lineHeight: 1.65 }}>{msg.text}</div>
             : <div>{renderMarkdown(msg.text)}</div>
         )}
 
@@ -268,10 +268,10 @@ function SmartInsightCard({
     >
       <Icon size={12} style={{ color: item.color, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>{item.title}</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>{item.body}</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600 }}>{item.title}</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>{item.body}</div>
       </div>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: item.color, letterSpacing: "0.08em", flexShrink: 0 }}>ASK ▸</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: item.color, letterSpacing: "0.08em", flexShrink: 0 }}>ASK ▸</span>
     </button>
   );
 }
@@ -311,7 +311,7 @@ function SuggestedPromptButton({
       onTouchCancel={() => setHov(false)}
     >
       <Icon size={12} style={{ color: "var(--ft-accent)", flexShrink: 0 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", flex: 1 }}>{prompt.label}</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", flex: 1 }}>{prompt.label}</span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", flexShrink: 0 }}>↵</span>
     </button>
   );
@@ -603,7 +603,7 @@ export default function AiCoach() {
               <button
                 type="button"
                 onClick={reset}
-                style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", background: "none", border: "1px solid var(--ft-border2)", padding: "4px 10px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase", transition: "color 0.15s, border-color 0.15s" }}
+                style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", background: "none", border: "1px solid var(--ft-border2)", padding: "4px 10px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase", transition: "color 0.15s, border-color 0.15s" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-text)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-border)"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "var(--ft-dim)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--ft-border2)"; }}
               >
@@ -616,13 +616,13 @@ export default function AiCoach() {
 
       {/* AI status banners */}
       {aiAvailable === null && (
-        <div style={{ marginBottom: 12, padding: "8px 12px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", display: "flex", alignItems: "center", gap: 8, letterSpacing: "0.04em" }}>
+        <div style={{ marginBottom: 12, padding: "8px 12px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-sans)", display: "flex", alignItems: "center", gap: 8, letterSpacing: "0.04em" }}>
           <Loader2 size={10} style={{ animation: "spin 1s linear infinite", flexShrink: 0 }} />
           Checking AI availability…
         </div>
       )}
       {aiAvailable === false && (
-        <div style={{ marginBottom: 12, padding: "10px 14px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", display: "flex", alignItems: "baseline", gap: 8 }}>
+        <div style={{ marginBottom: 12, padding: "10px 14px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", display: "flex", alignItems: "baseline", gap: 8 }}>
           <MonoLabel as="span" size={9} color="var(--ft-red)" letterSpacing="0.14em">AI OFFLINE</MonoLabel>
           <span style={{ fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.5 }}>
             No AI provider is currently configured or verified. Check /api/ai/status for the per-provider health (Groq, Cerebras).
@@ -647,10 +647,10 @@ export default function AiCoach() {
               }}>
                 <Sparkles size={22} style={{ color: "var(--ft-amber)" }} />
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 6, letterSpacing: "0.02em" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 6, letterSpacing: "0.02em" }}>
                 Your AI Financial Coach
               </div>
-              <Text as="div" mono size={10} color="var(--ft-dim)" lineHeight={1.7}>
+              <Text as="div" size={10} color="var(--ft-dim)" lineHeight={1.7}>
                 {primaryPersona
                   ? `Focused on ${primaryPersona.tagline.toLowerCase()}. I have full access to your spending, budgets, investments, and goals.`
                   : "Ask anything about your finances. I have access to your current month's spending, budgets, and account balances."
@@ -746,7 +746,7 @@ export default function AiCoach() {
                         width: "100%",
                       }}
                     >
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{s.label}</span>
+                      <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)" }}>{s.label}</span>
                       <MonoLabel as="span" size={8} color="var(--ft-dim)" letterSpacing="0.1em">↵</MonoLabel>
                     </button>
                   ))}
@@ -867,7 +867,7 @@ export default function AiCoach() {
               borderRadius: 2,
               color: "var(--ft-text)",
               fontSize: 12,
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               padding: "10px 12px",
               resize: "none",
               outline: "none",
@@ -897,7 +897,7 @@ export default function AiCoach() {
             <Send size={15} style={{ color: !input.trim() ? "var(--ft-dim)" : "var(--ft-base)" }} />
           </button>
         </div>
-        <div style={{ marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
+        <div style={{ marginTop: 6, fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
           Streamed from Groq · Context assembled server-side, never posted from this page
         </div>
       </div>
