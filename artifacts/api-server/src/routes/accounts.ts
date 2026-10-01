@@ -86,6 +86,8 @@ router.get("/accounts/reconciliation", async (req, res): Promise<void> => {
   ]);
   const today = localDateString(new Date());
   const ids = cashRows.map((a) => a.id);
+  // No `date < today` bound: computeReconciliation refuses a same-day
+  // baseline itself, and dataAvailableSince must still see today's row.
   const snapshotRows = ids.length === 0 ? [] : await db
     .select({
       accountId: accountBalanceSnapshotsTable.accountId,
@@ -97,7 +99,6 @@ router.get("/accounts/reconciliation", async (req, res): Promise<void> => {
     .where(and(
       eq(accountBalanceSnapshotsTable.userId, userId),
       inArray(accountBalanceSnapshotsTable.accountId, ids),
-      lt(accountBalanceSnapshotsTable.date, today),
     ));
   const earliestCapture = snapshotRows.reduce<Date | null>(
     (min, s) => (min == null || s.capturedAt < min ? s.capturedAt : min), null);

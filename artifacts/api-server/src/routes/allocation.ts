@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, gte, inArray, lt, lte, or, gt } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, or, gt } from "drizzle-orm";
 import {
   db,
   accountsTable,
@@ -102,7 +102,6 @@ router.get("/allocation", async (req, res): Promise<void> => {
     .where(and(
       eq(accountBalanceSnapshotsTable.userId, userId),
       inArray(accountBalanceSnapshotsTable.accountId, ids),
-      lt(accountBalanceSnapshotsTable.date, today),
     ));
   const earliestCapture = snapshotRows.reduce<Date | null>(
     (min, s) => (min == null || s.capturedAt < min ? s.capturedAt : min), null);
