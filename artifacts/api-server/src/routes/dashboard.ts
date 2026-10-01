@@ -5,6 +5,7 @@ import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, txToBase } from "../lib/market";
 import { getValuationPrices } from "../lib/market-eod";
 import { nativeCurrencyForTicker } from "../lib/ticker-currency";
+import { reportableTotalValue } from "../lib/enrich-investment";
 import { foldDayChange, type DayChangeLeg } from "../lib/portfolio-day-change";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
@@ -176,6 +177,8 @@ async function processAccounts(accounts: Account[], baseCurrency: string) {
   // the response identity a consumer can check:
   //   netWorth == totalCash + portfolio.totalValueBase + owing.netBase
   //               - totalLiabilities
+  // (a null portfolio.totalValueBase — holdings, none valued — counts as 0
+  // here, and portfolio.unavailablePositions says so)
   const totalCash = assetAccountsTotal(accountBreakdown);
   const totalLiabilities = liabilityAccountsTotal(accountBreakdown);
   // Spendable cash is a NARROWER total than totalCash, and the two are not
@@ -849,7 +852,9 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       unconvertibleAccounts,
       accountBreakdown,
       portfolio: {
-        totalValueBase: Math.round(portfolioValueBase * 100) / 100,
+        // Null when positions are held and none could be valued (L1). Net
+        // worth then excludes them, and unavailablePositions says so.
+        totalValueBase: reportableTotalValue(Math.round(portfolioValueBase * 100) / 100, investments.length, unavailablePositions),
         totalPlBase: Math.round(portfolioPlBase * 100) / 100,
         totalPlPercent: portfolioPlPercent == null ? null : Math.round(portfolioPlPercent * 100) / 100,
         dayChangeBase: dayChangeBase == null ? null : Math.round(dayChangeBase * 100) / 100,

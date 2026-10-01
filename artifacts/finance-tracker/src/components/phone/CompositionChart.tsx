@@ -23,7 +23,7 @@ export type HoldingsBucket = Exclude<AccountType, "liability">;
 
 export interface HoldingsInput {
   accountBreakdown?: Array<{ type: AccountType; baseEquivalent: number | null }>;
-  portfolio?: { totalValueBase?: number };
+  portfolio?: { totalValueBase?: number | null };
 }
 
 export interface Holdings {

@@ -7,7 +7,8 @@
  */
 
 export type DashboardSummaryPortfolio = {
-  totalValueBase: number;
+  /** @nullable */
+  totalValueBase: number | null;
   totalPlBase: number;
   /** @nullable */
   totalPlPercent: number | null;

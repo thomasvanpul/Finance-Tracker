@@ -88,7 +88,9 @@ interface UnpricedFields {
 const round = (n: number) => Math.round(n * 100) / 100;
 
 export interface InvestmentTotals {
-  totalValueBase: number;
+  /** Null when positions are held but none of them could be valued — see
+   *  reportableTotalValue. */
+  totalValueBase: number | null;
   totalPlBase: number;
   totalPlPercent: number | null;
   positions: number;
@@ -110,6 +112,20 @@ export interface InvestmentTotals {
  *  a position with neither is dropped. Shared by GET /investments/summary
  *  and, in spirit, dashboard.ts's processInvestments — same rule, applied
  *  to the DB-shaped rows dashboard.ts already has in hand. */
+// The portfolio total a response may state. Holding positions and being
+// able to value none of them is not a portfolio worth zero: it is an
+// unknown, and a 0 here passed every `!= null` guard on the way to phone
+// HOME's "PORTFOLIO £0" (BACKLOG L1). An empty portfolio is an honest 0.
+// A partly-valued one keeps its figure; unavailablePositions labels it.
+export function reportableTotalValue(
+  totalValueBase: number,
+  positions: number,
+  unavailablePositions: number,
+): number | null {
+  if (positions > 0 && unavailablePositions === positions) return null;
+  return totalValueBase;
+}
+
 export function summarizeInvestments(enriched: readonly EnrichedPosition[]): InvestmentTotals {
   let totalValueBase = 0;
   let totalPlBase = 0;
@@ -133,7 +149,7 @@ export function summarizeInvestments(enriched: readonly EnrichedPosition[]): Inv
   // above for the same rule and reason.
   const totalPlPercent: number | null = totalCostBase > 0 ? (totalPlBase / totalCostBase) * 100 : null;
   return {
-    totalValueBase: round(totalValueBase),
+    totalValueBase: reportableTotalValue(round(totalValueBase), enriched.length, unavailablePositions),
     totalPlBase: round(totalPlBase),
     totalPlPercent: totalPlPercent == null ? null : round(totalPlPercent),
     positions: enriched.length,

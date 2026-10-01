@@ -1131,7 +1131,8 @@ export interface InvestmentUpdate {
 }
 
 export interface InvestmentSummary {
-  totalValueBase: number;
+  /** @nullable */
+  totalValueBase: number | null;
   totalPlBase: number;
   /** @nullable */
   totalPlPercent: number | null;
@@ -1772,7 +1773,8 @@ export type DashboardSummaryAccountBreakdownItem = {
 };
 
 export type DashboardSummaryPortfolio = {
-  totalValueBase: number;
+  /** @nullable */
+  totalValueBase: number | null;
   totalPlBase: number;
   /** @nullable */
   totalPlPercent: number | null;

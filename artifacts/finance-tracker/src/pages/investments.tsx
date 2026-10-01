@@ -112,6 +112,7 @@ import {
 // watchlist tickers.
 import { MarketsTab, alertTriggered } from "./investments/markets-tab";
 import { useMarketDataEnabled } from "@/lib/market-visibility";
+import { knownPortfolioTotal } from "@/lib/portfolio-total";
 
 const TH: React.CSSProperties = {
   padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)",
@@ -1194,7 +1195,7 @@ function InvKpiBar({ cells, style }: { cells: KpiCell[]; style?: React.CSSProper
 
 interface PortfolioPositionsTableProps {
   investments: Investment[];
-  summary: { totalValueBase: number; totalPlBase: number; totalPlPercent: number | null } | null | undefined;
+  summary: { totalValueBase: number | null; totalPlBase: number; totalPlPercent: number | null; unavailablePositions: number } | null | undefined;
   quoteMap: Map<string, QuoteData>;
   classMap: Record<number, AssetClass>;
   tickerFilter: string;
@@ -1231,7 +1232,10 @@ function PortfolioPositionsTable({
     return inv.ticker.toLowerCase().includes(q) || inv.name.toLowerCase().includes(q);
   });
 
-  const totalValue = summary?.totalValueBase ?? 0;
+  // Null when positions are held and none could be valued (L1). Weights
+  // below need a positive total and skip otherwise.
+  const knownTotal = knownPortfolioTotal(summary);
+  const totalValue = knownTotal ?? 0;
 
   // Column header style
   const CH: React.CSSProperties = {
@@ -1487,7 +1491,7 @@ function PortfolioPositionsTable({
                 <td style={{ ...TD, borderBottom: "none" }} />
                 <td style={{ ...TD, borderBottom: "none" }} />
                 <td style={{ ...TD, textAlign: "right", fontWeight: 700, color: "var(--ft-text)", fontSize: 12, borderBottom: "none" }} className="pnum">
-                  {formatBaseMoney(summary.totalValueBase)}
+                  {knownTotal != null ? formatBaseMoney(knownTotal) : "—"}
                 </td>
                 <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "none", color: summary.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
                   {summary.totalPlBase >= 0 ? "+" : ""}{formatBaseMoney(summary.totalPlBase)}
@@ -1644,8 +1648,11 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
 
   // ── Portfolio snapshot history (localStorage) — must be above early return ──
   const SNAPSHOT_KEY = "ft-portfolio-snapshots";
+  // Null when positions are held and none could be valued (L1): every
+  // ratio below skips, and the KPI prints "—" rather than £0.
+  const summaryTotal = knownPortfolioTotal(summary);
   useEffect(() => {
-    const totalVal = summary?.totalValueBase;
+    const totalVal = summaryTotal;
     const hasPosNow = (investments?.length ?? 0) > 0;
     if (totalVal != null && hasPosNow && totalVal > 0) {
       const todayStr = new Date().toISOString().slice(0, 10);
@@ -1656,7 +1663,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
         localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(Object.fromEntries(sorted)));
       } catch { /* noop */ }
     }
-  }, [summary?.totalValueBase, investments?.length]);
+  }, [summaryTotal, investments?.length]);
 
   // ── Check alerts on load (once investments & quotes are available) ──
   useEffect(() => {
@@ -1783,15 +1790,15 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
 
   // ── Portfolio Analytics ──
   const portBeta = (() => {
-    if (!summary || summary.totalValueBase <= 0) return null;
+    if (summaryTotal == null || summaryTotal <= 0) return null;
     let wb = 0, covered = 0;
-    (investments ?? []).forEach((inv) => { const q = quoteMap.get(inv.ticker); if (q?.beta != null && inv.baseEquivalent != null) { wb += (inv.baseEquivalent / summary.totalValueBase) * q.beta; covered += inv.baseEquivalent; } });
+    (investments ?? []).forEach((inv) => { const q = quoteMap.get(inv.ticker); if (q?.beta != null && inv.baseEquivalent != null) { wb += (inv.baseEquivalent / summaryTotal) * q.beta; covered += inv.baseEquivalent; } });
     return covered > 0 ? wb : null;
   })();
 
-  const largestPos = summary && summary.totalValueBase > 0
+  const largestPos = summaryTotal != null && summaryTotal > 0
     ? pricedInvs.reduce<{ ticker: string; pct: number } | null>((best, inv) => {
-        const pct = ((inv.baseEquivalent ?? 0) / summary.totalValueBase) * 100;
+        const pct = ((inv.baseEquivalent ?? 0) / summaryTotal) * 100;
         return !best || pct > best.pct ? { ticker: inv.ticker, pct } : best;
       }, null) : null;
 
@@ -1801,7 +1808,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   const kpiCells: KpiCell[] = summary ? [
     {
       label: "PORTFOLIO VALUE",
-      value: formatBaseMoney(summary.totalValueBase),
+      value: summaryTotal != null ? formatBaseMoney(summaryTotal) : "—",
       // Surface unavailablePositions the same way /accounts KPI
       // surfaces unconvertibleAccounts. Server sums totalValueBase
       // over `priced` positions only (see routes/investments.ts) —
@@ -2254,7 +2261,7 @@ marketsVisible
                     <div key={i} className="flex items-center gap-1.5 text-xs" style={{ color: "var(--ft-muted)" }}>
                       <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: d.color, flexShrink: 0 }} />
                       {d.name}
-                      {summary && summary.totalValueBase > 0 && <span style={{ color: "var(--ft-dim)" }}>{((d.value / summary.totalValueBase) * 100).toFixed(1)}%</span>}
+                      {summaryTotal != null && summaryTotal > 0 && <span style={{ color: "var(--ft-dim)" }}>{((d.value / summaryTotal) * 100).toFixed(1)}%</span>}
                     </div>
                   ))}
                 </div>
@@ -2277,7 +2284,7 @@ marketsVisible
           )}
 
           {/* Heat map: positions sized by weight, colored by P&L */}
-          {hasPositions && (investments?.length ?? 0) >= 2 && summary && summary.totalValueBase > 0 && (
+          {hasPositions && (investments?.length ?? 0) >= 2 && summaryTotal != null && summaryTotal > 0 && (
             <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
               <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">Size = weight · Colour = P&L</Text>}>PORTFOLIO HEAT MAP</PanelHeader>
               <div style={{ padding: 8 }}>
@@ -2291,7 +2298,7 @@ marketsVisible
                     .sort((a, b) => (b.baseEquivalent ?? 0) - (a.baseEquivalent ?? 0))
                     .map((inv) => {
                       const gbpVal = inv.baseEquivalent ?? 0;
-                      const weight = summary.totalValueBase > 0 ? (gbpVal / summary.totalValueBase) * 100 : 0;
+                      const weight = (gbpVal / summaryTotal) * 100;
                       const pct = inv.plPercent ?? 0;
                       const bg = pct > 15 ? "rgba(63,185,80,0.85)" : pct > 7 ? "rgba(63,185,80,0.55)" : pct > 2 ? "rgba(63,185,80,0.3)" : pct > -2 ? "rgba(180,180,180,0.18)" : pct > -7 ? "rgba(248,81,73,0.3)" : pct > -15 ? "rgba(248,81,73,0.55)" : "rgba(248,81,73,0.85)";
                       const textColor = Math.abs(pct) > 7 ? "rgba(255,255,255,0.95)" : "var(--ft-text)";
@@ -2354,10 +2361,10 @@ marketsVisible
           )}
 
           {/* AI Portfolio Commentary — terminal style */}
-          {hasPositions && summary && summary.totalValueBase > 0 && (
+          {hasPositions && summaryTotal != null && summaryTotal > 0 && (
             <AiPortfolioCommentary
               investments={pricedInvs.map((inv) => ({ ticker: inv.ticker, baseEquivalent: inv.baseEquivalent ?? 0, quantity: inv.shares }))}
-              totalValue={summary.totalValueBase}
+              totalValue={summaryTotal}
             />
           )}
 

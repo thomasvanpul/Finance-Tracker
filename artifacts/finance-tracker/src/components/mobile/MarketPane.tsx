@@ -9,6 +9,7 @@ import {
   type StockQuote,
 } from "@workspace/api-client-react";
 import { Text, VStack } from "@/components/primitives";
+import { knownPortfolioTotal } from "@/lib/portfolio-total";
 import { HomeSectionHeader } from "./home-section-header";
 import { DrillTarget } from "@/components/drill";
 import { PHONE_GUTTER, PHONE_ROW_PY } from "@/components/phone/rhythm";
@@ -214,7 +215,7 @@ export function MarketPane({ investmentsHref }: MarketPaneProps) {
     return oldest;
   }, [quotes]);
 
-  const holdingsValueBase = dashboard?.portfolio.totalValueBase ?? null;
+  const holdingsValueBase = knownPortfolioTotal(dashboard?.portfolio);
   // The session the securities leg was valued at, and how many positions the
   // total could not price. Both come straight from the dashboard payload —
   // the screen states them rather than deriving anything of its own.

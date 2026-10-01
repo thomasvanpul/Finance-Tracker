@@ -31,7 +31,8 @@ vi.mock("../lib/market-eod", () => ({
   }),
 }));
 
-const { processInvestments } = await import("./dashboard");
+const { processInvestments, computeNetWorth } = await import("./dashboard");
+const { reportableTotalValue } = await import("../lib/enrich-investment");
 
 interface FakeInvestment { ticker: string; shares: string; costPricePerShare: string }
 function inv(ticker: string, shares: string, costPricePerShare: string): FakeInvestment {
@@ -113,5 +114,36 @@ describe("processInvestments — net worth must not silently drop the unpriced p
     expect(result.portfolioValueBase).toBe(0);
     expect(result.unavailablePositions).toBe(0);
     expect(result.positionsAtCost).toBe(0);
+  });
+});
+
+// L1 and L2 (BACKLOG § L, 19 Sep 2026). What the response serialises, not
+// only what processInvestments sums. `reportableTotalValue` is the value the
+// route puts in portfolio.totalValueBase; computeNetWorth is the headline.
+describe("dashboard portfolio total and net worth — market data off (L1, L2)", () => {
+  const cash = { totalCash: 1000, totalOwedToMe: 0, totalIOwe: 0, totalLiabilities: 0 };
+
+  it("L2: markets off, one position — net worth includes it at cost basis", async () => {
+    mockPriceMap = new Map();
+    const r = await processInvestments([inv("AAPL", "10", "180.00")] as never, "GBP");
+    expect(computeNetWorth({ ...cash, portfolioValueBase: r.portfolioValueBase })).toBe(1000 + 1440);
+  });
+
+  it("L2: markets on, the same position — net worth includes it at its close", async () => {
+    mockPriceMap = new Map([["AAPL", { ticker: "AAPL", price: 200, currency: "USD", previousClose: null, updatedAt: "2026-09-18T21:00:00Z" }]]);
+    const r = await processInvestments([inv("AAPL", "10", "180.00")] as never, "GBP");
+    expect(computeNetWorth({ ...cash, portfolioValueBase: r.portfolioValueBase })).toBe(1000 + 1600);
+  });
+
+  it("L1: holdings that cannot be valued serialise as null, never 0", async () => {
+    mockPriceMap = new Map();
+    const r = await processInvestments([inv("AAPL", "10", "180.00")] as never, "THB");
+    expect(reportableTotalValue(r.portfolioValueBase, 1, r.unavailablePositions)).toBeNull();
+  });
+
+  it("L1: no holdings at all is an honest 0", async () => {
+    mockPriceMap = new Map();
+    const r = await processInvestments([], "GBP");
+    expect(reportableTotalValue(r.portfolioValueBase, 0, r.unavailablePositions)).toBe(0);
   });
 });

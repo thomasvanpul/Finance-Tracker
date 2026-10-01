@@ -15,6 +15,7 @@ import { HomeSectionHeader } from "./home-section-header";
 import { HomeHero, type HeroCell } from "./home-hero";
 import { PHONE_GROUP_GAP, PHONE_GUTTER, PHONE_IN_GROUP } from "@/components/phone/rhythm";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { knownPortfolioTotal } from "@/lib/portfolio-total";
 import { MarketPane } from "./MarketPane";
 import { NewsPane } from "./NewsPane";
 import { loadPersonaIds, type PersonaId } from "@/lib/persona";
@@ -371,6 +372,9 @@ export function MobileHome(_props: MobileHomeProps) {
             const since = sinceCloseLabel(dashboard?.portfolio.dayChangeFromSession);
             const dGbp = dashboard?.portfolio.dayChangeBase ?? null;
             const dPct = dashboard?.portfolio.dayChangePercent ?? null;
+            // Null when positions are held and none could be valued (L1):
+            // "—" over the "N unavailable — not in value" note, never £0.
+            const portfolioTotal = knownPortfolioTotal(dashboard?.portfolio);
             const col = dGbp == null ? "var(--ft-dim)" : dGbp >= 0 ? "var(--ft-green)" : "var(--ft-red)";
             return (
               <HomeHero
@@ -378,8 +382,8 @@ export function MobileHome(_props: MobileHomeProps) {
                 symbol="£"
                 figure={dashboardLoading
                   ? "…"
-                  : dashboard?.portfolio.totalValueBase != null
-                    ? nfmt(dashboard.portfolio.totalValueBase)
+                  : portfolioTotal != null
+                    ? nfmt(portfolioTotal)
                     : "—"}
                 cells={cells}
                 under={

@@ -223,8 +223,30 @@ describe("summarizeInvestments — net worth must not silently drop the unpriced
   it("still excludes a position with neither a live price nor a convertible cost basis", () => {
     const noFx = enrichInvestment(row, new Map(), fx, "THB");
     const totals = summarizeInvestments([noFx]);
-    expect(totals.totalValueBase).toBe(0);
     expect(totals.unavailablePositions).toBe(1);
     expect(totals.positionsAtCost).toBe(0);
+  });
+
+  // L1. Until 2 Oct 2026 the case above asserted totalValueBase === 0, and
+  // that 0 is what phone HOME printed as "PORTFOLIO £0" for a user who holds
+  // stock: 0 passes a `!= null` guard. Holding something and being able to
+  // value none of it is "we do not know", so the total is null.
+  it("L1: holdings exist but none could be valued — the total is null, never 0", () => {
+    const noFx = enrichInvestment(row, new Map(), fx, "THB");
+    expect(summarizeInvestments([noFx]).totalValueBase).toBeNull();
+  });
+
+  it("L1: one valued and one unvaluable — the total is the valued part, labelled by unavailablePositions", () => {
+    const valued = enrichInvestment(row, new Map(), fx, "GBP");
+    // .JO is quoted in ZAR, which this test's FX table does not carry.
+    const zarRow: InvestmentRow = { ...row, ticker: "NPN.JO" };
+    const noFx = enrichInvestment(zarRow, new Map(), fx, "GBP");
+    const totals = summarizeInvestments([valued, noFx]);
+    expect(totals.totalValueBase).toBe(1440);
+    expect(totals.unavailablePositions).toBe(1);
+  });
+
+  it("an empty portfolio totals 0 — nothing is held, so nothing is unknown", () => {
+    expect(summarizeInvestments([]).totalValueBase).toBe(0);
   });
 });

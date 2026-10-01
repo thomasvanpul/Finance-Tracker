@@ -11,6 +11,7 @@
 
 import { useGetDashboard } from "@workspace/api-client-react";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { knownPortfolioTotal } from "@/lib/portfolio-total";
 import { MarketPane } from "@/components/mobile/MarketPane";
 import { NewsPane } from "@/components/mobile/NewsPane";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
@@ -22,6 +23,8 @@ import type { DashboardSummaryPortfolio } from "@workspace/api-client-react";
 function PortfolioHero({ portfolio }: { portfolio: DashboardSummaryPortfolio }) {
   const baseCcy = getBaseCurrency();
   const sym = baseCcy === "GBP" ? "£" : baseCcy === "USD" ? "$" : `${baseCcy} `;
+  // Null when positions are held and none could be valued (L1).
+  const total = knownPortfolioTotal(portfolio);
   const dBase = portfolio.dayChangeBase;
   const dPct = portfolio.dayChangePercent;
   const since = sinceCloseLabel(portfolio.dayChangeFromSession);
@@ -40,7 +43,7 @@ function PortfolioHero({ portfolio }: { portfolio: DashboardSummaryPortfolio }) 
           letterSpacing="-0.035em"
           numeric
         >
-          {nfmt(portfolio.totalValueBase)}
+          {total != null ? nfmt(total) : "—"}
         </Text>
       </HStack>
       <Text as="div" mono size={12} mt={6} color={col} numeric>

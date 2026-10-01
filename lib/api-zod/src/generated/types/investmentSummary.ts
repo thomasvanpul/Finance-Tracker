@@ -7,7 +7,8 @@
  */
 
 export interface InvestmentSummary {
-  totalValueBase: number;
+  /** @nullable */
+  totalValueBase: number | null;
   totalPlBase: number;
   /** @nullable */
   totalPlPercent: number | null;

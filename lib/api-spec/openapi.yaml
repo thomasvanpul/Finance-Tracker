@@ -2579,8 +2579,10 @@ components:
       # excludes a whole unpriced portfolio.
       required: [totalValueBase, totalPlBase, totalPlPercent, positions, positionsAtCost, unavailablePositions, valuationAsOfSession]
       properties:
+        # Null when positions are held and none could be valued (BACKLOG L1):
+        # an unknown, not a portfolio worth zero. An empty portfolio is 0.
         totalValueBase:
-          type: number
+          type: ["number", "null"]
         totalPlBase:
           type: number
         # Nullable: percentage is undefined when the portfolio's cost
@@ -3298,8 +3300,10 @@ components:
           type: object
           required: [totalValueBase, totalPlBase, totalPlPercent, dayChangeBase, dayChangePercent, positionsAtCost, unavailablePositions, valuationAsOfSession, dayChangeFromSession]
           properties:
+            # Null when positions are held and none could be valued (BACKLOG L1):
+            # an unknown, not a portfolio worth zero. An empty portfolio is 0.
             totalValueBase:
-              type: number
+              type: ["number", "null"]
             totalPlBase:
               type: number
             # Nullable: undefined when the portfolio has no cost basis
