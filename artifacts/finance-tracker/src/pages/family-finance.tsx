@@ -155,7 +155,7 @@ function Btn({
     gap: 4,
     border: "1px solid var(--ft-border2)",
     borderRadius: 2,
-    fontFamily: "var(--font-mono)",
+    fontFamily: "var(--font-sans)",
     fontWeight: 500,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.45 : 1,
@@ -195,7 +195,7 @@ function FieldRow({
     <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <label
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 10,
           fontWeight: 600,
           color: "var(--ft-muted)",
@@ -220,7 +220,7 @@ function FtInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
         border: "1px solid var(--ft-border2)",
         borderRadius: 2,
         color: "var(--ft-text)",
-        fontFamily: "var(--font-mono)",
+        fontFamily: props.type === "number" || props.type === "date" ? "var(--font-mono)" : "var(--font-sans)",
         fontSize: 12,
         padding: "5px 8px",
         outline: "none",
@@ -241,7 +241,7 @@ function FtSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
         border: "1px solid var(--ft-border2)",
         borderRadius: 2,
         color: "var(--ft-text)",
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 12,
         padding: "5px 8px",
         outline: "none",
@@ -256,7 +256,7 @@ function RoleBadge({ role }: { role: FamilyMember["role"] }) {
   return (
     <span
       style={{
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 9,
         fontWeight: 700,
         textTransform: "uppercase",
@@ -377,7 +377,7 @@ function KpiCell({
 }: {
   label: string;
   value: string;
-  sub?: string;
+  sub?: React.ReactNode;
   color?: string;
   // Deprecated in the desktop-port pass: the per-cell coloured
   // borderTop stripe was the "rainbow ratings" pattern the port
@@ -431,7 +431,7 @@ function KpiCell({
       {sub && (
         <div
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             color: "var(--ft-dim)",
             marginTop: 2,
@@ -469,7 +469,7 @@ function IncomeLegendItem({
       />
       <span
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           color: "var(--ft-text)",
         }}
@@ -479,7 +479,6 @@ function IncomeLegendItem({
       <span
         className="pnum"
         style={{
-          fontFamily: "var(--font-mono)",
           fontSize: 11,
           color: "var(--ft-muted)",
           fontVariantNumeric: "tabular-nums",
@@ -551,7 +550,7 @@ function SpendingLegendRow({
           />
           <span
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               color: "var(--ft-text)",
             }}
@@ -681,7 +680,7 @@ function TimelineRow({
           </span>
           <span
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               fontWeight: 700,
               textTransform: "uppercase",
@@ -698,7 +697,7 @@ function TimelineRow({
           </span>
           <span
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 12,
               color: isPast ? "var(--ft-dim)" : "var(--ft-text)",
               flex: 1,
@@ -780,7 +779,7 @@ function AccountToggleButton({
       onMouseLeave={() => setHovered(false)}
       onClick={() => onToggle(String(account.id), checked)}
       style={{
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         padding: "2px 8px",
         border: `1px solid ${checked ? "var(--ft-accent)" : "var(--ft-border2)"}`,
@@ -834,7 +833,7 @@ function BudgetRow({
       }}
     >
       <div style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)" }}>
           {drillHref ? <Drill href={drillHref} title={`Open the ${b.category} transactions this month`}>{b.category}</Drill> : b.category}
         </span>
         <button onClick={onDelete} style={{ background: "transparent", border: "none", color: "var(--ft-red)", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", opacity: hovered ? 0.7 : 0, transition: "opacity 0.1s" }}>
@@ -932,11 +931,11 @@ function GoalRow({
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <HStack gap={8} align="center" marginBottom={5}>
-            <Text as="span" mono size={12} weight={600} color="var(--ft-text)">
+            <Text as="span" size={12} weight={600} color="var(--ft-text)">
               {g.name}
             </Text>
             <span style={{
-              fontFamily: "var(--font-mono)", fontSize: 9,
+              fontFamily: "var(--font-sans)", fontSize: 9,
               padding: "1px 5px",
               border: "1px solid var(--ft-border2)",
               borderRadius: 2,
@@ -950,7 +949,7 @@ function GoalRow({
               </Text>
             )}
             {pct != null && pct >= 1 && (
-              <Text as="span" mono size={9} weight={700} color="var(--ft-green)">
+              <Text as="span" size={9} weight={700} color="var(--ft-green)">
                 COMPLETE
               </Text>
             )}
@@ -1062,7 +1061,7 @@ function MemberCard({
     >
       <HStack align="start" justify="between" marginBottom={10}>
         <div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 5 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 5 }}>
             <Text as="span" mono size={9} color={accentHex}>■</Text> {member.name}
           </div>
           <RoleBadge role={member.role} />
@@ -1489,7 +1488,7 @@ export default function FamilyFinance() {
           <KpiCell
             label="Savings Rate"
             value={savingsRate == null ? "—" : `${savingsRate.toFixed(1)}%`}
-            sub={monthlyIncome == null || monthlyExpenses == null ? "loading" : `${formatBaseMoney(monthlyIncome - monthlyExpenses)} saved/mo`}
+            sub={monthlyIncome == null || monthlyExpenses == null ? "loading" : <><span className="pnum">{formatBaseMoney(monthlyIncome - monthlyExpenses)}</span> saved/mo</>}
             color={
               savingsRate == null
                 ? "var(--ft-dim)"
@@ -1548,13 +1547,13 @@ export default function FamilyFinance() {
             </div>
             <div
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 10,
                 color: "var(--ft-dim)",
                 marginTop: 2,
               }}
             >
-              member{members.length !== 1 ? "s" : ""} · {accounts.length} account{accounts.length !== 1 ? "s" : ""}
+              member{members.length !== 1 ? "s" : ""} · <span className="pnum">{accounts.length}</span> account{accounts.length !== 1 ? "s" : ""}
             </div>
           </div>
         </div>
@@ -1692,7 +1691,7 @@ export default function FamilyFinance() {
                   );
                 })}
                 {accounts.length === 0 && (
-                  <Text as="span" mono size={11} color="var(--ft-dim)">
+                  <Text as="span" size={11} color="var(--ft-dim)">
                     No accounts available
                   </Text>
                 )}
@@ -1805,7 +1804,7 @@ export default function FamilyFinance() {
                     type="category"
                     dataKey="name"
                     width={60}
-                    tick={{ fontFamily: "var(--font-mono)", fontSize: 10, fill: "var(--ft-text)" }}
+                    tick={{ fontFamily: "var(--font-sans)", fontSize: 10, fill: "var(--ft-text)" }}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -1898,7 +1897,7 @@ export default function FamilyFinance() {
                     alignItems: "center",
                     justifyContent: "center",
                     height: 200,
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     fontSize: 11,
                     color: "var(--ft-dim)",
                   }}
@@ -1932,7 +1931,7 @@ export default function FamilyFinance() {
               })() : (
                 <div
                   style={{
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     fontSize: 11,
                     color: "var(--ft-dim)",
                   }}
