@@ -111,7 +111,16 @@ function PlainBlock() {
         gap: SECTION_GAP,
       }}
     >
-      <Skeleton width="100%" height="100%" />
+      {/* height:100% alone resolved to 0: both callers (AuthGate,
+          PreferencesGate) wrap this in a min-height column, so no ancestor
+          has a definite height for the percentage — measured 358x0 at
+          390px wide, a blank screen instead of a skeleton. The absolute
+          box takes its height from the flexed slot, which is definite. */}
+      <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+        <div style={{ position: "absolute", inset: 0 }}>
+          <Skeleton width="100%" height="100%" />
+        </div>
+      </div>
     </div>
   );
 }
