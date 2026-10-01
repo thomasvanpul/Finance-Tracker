@@ -480,7 +480,7 @@ function DisposalRow({ d, sym: disposalSym, deleteConfirmId, onDelete, holdingLa
   const hl = holdingLabel(d);
   return (
     <TaxHoverRow style={{ display: "flex", alignItems: "center", borderBottom: "1px solid var(--ft-border)", height: 36 }}>
-      <div style={{ flex: 1, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, color: "var(--ft-text)", whiteSpace: "nowrap", minWidth: 0, fontFamily: "var(--font-mono)" }}>{d.assetName}</div>
+      <div style={{ flex: 1, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 12, color: "var(--ft-text)", whiteSpace: "nowrap", minWidth: 0, fontFamily: "var(--font-sans)" }}>{d.assetName}</div>
       <div style={{ width: 80, minWidth: 80, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-cyan)", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>{d.ticker ?? "—"}</div>
       <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{d.acquiredDate}</div>
       <div style={{ width: 100, minWidth: 100, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{d.disposedDate}</div>
@@ -496,7 +496,7 @@ function DisposalRow({ d, sym: disposalSym, deleteConfirmId, onDelete, holdingLa
           style={deleteConfirmId === d.id ? { background: "var(--ft-red)", color: "#fff" } : undefined}
         >
           {deleteConfirmId === d.id
-            ? <Text as="span" mono size={8} weight={700}>DEL?</Text>
+            ? <Text as="span" size={8} weight={700}>DEL?</Text>
             : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />}
         </Button>
       </div>
@@ -517,7 +517,7 @@ interface ShelterContribRowProps {
 function ShelterContribRow({ c, i, isLast, sym: shelterSym, shelterName }: ShelterContribRowProps) {
   return (
     <TaxHoverRow style={{ display: "flex", alignItems: "center", padding: "8px 16px", gap: 16, borderBottom: isLast ? "none" : "1px solid var(--ft-border)" }}>
-      <div style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{c.provider ?? `${shelterName} Provider`}</div>
+      <div style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)" }}>{c.provider ?? `${shelterName} Provider`}</div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-blue)", fontVariantNumeric: "tabular-nums" }}>{fmt(c.amount, shelterSym)}</div>
       <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", width: 60, textAlign: "right" }}>{c.taxYear}</div>
     </TaxHoverRow>
@@ -535,7 +535,7 @@ function IncomeBandRow({ b, isLast }: IncomeBandRowProps) {
   return (
     <TaxHoverRow style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 16px", borderBottom: isLast ? "none" : "1px solid var(--ft-border)" }}>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: b.color, width: 52, flexShrink: 0 }}>{b.rate}</span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", flex: 1 }}>{b.label}</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", flex: 1 }}>{b.label}</span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textAlign: "right" }}>{b.range}</span>
     </TaxHoverRow>
   );
@@ -625,7 +625,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
             {fmt(totalIncomeTax, sym)}
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
             on <span className="pnum">{fmt(grossSalary, sym)}</span> gross
           </div>
         </div>
@@ -636,8 +636,8 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: effectiveRate > 40 ? "var(--ft-red)" : effectiveRate > 25 ? "var(--ft-amber)" : "var(--ft-green)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
             {effectiveRate.toFixed(1)}%
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-            marginal: {marginRate}%
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+            marginal: <span style={{ fontFamily: "var(--font-mono)" }}>{marginRate}%</span>
           </div>
         </div>
         <div style={{ padding: "12px 16px 12px 0" }}>
@@ -658,7 +658,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-blue)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
             {fmt(totalNI, sym)}
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
             total deductions: <span className="pnum">{fmt(totalDeductions, sym)}</span>
           </div>
         </div>
@@ -696,8 +696,8 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             </MonoLabel>
           </HStack>
           <HStack align="center" justify="between" marginBottom={6}>
-            <Text as="span" mono size={10} color="var(--ft-muted)">
-              Day {elapsed} of {totalDays}
+            <Text as="span" size={10} color="var(--ft-muted)">
+              Day <span style={{ fontFamily: "var(--font-mono)" }}>{elapsed}</span> of <span style={{ fontFamily: "var(--font-mono)" }}>{totalDays}</span>
             </Text>
             <Text as="span" mono size={11} weight={700} color={progressPct > 80 ? "var(--ft-amber)" : "var(--ft-text)"}>
               {progressPct.toFixed(0)}%
@@ -711,10 +711,10 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
               transition: "none",
             }} />
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>
             {isCurrentYear
-              ? remaining === 0 ? "Tax year ended — submit returns now" : `${remaining} days remaining in tax year`
-              : "Historical tax year — ended 5 Apr " + (startYear + 1)
+              ? remaining === 0 ? "Tax year ended — submit returns now" : <><span style={{ fontFamily: "var(--font-mono)" }}>{remaining}</span> days remaining in tax year</>
+              : <>Historical tax year — ended <span style={{ fontFamily: "var(--font-mono)" }}>5 Apr {startYear + 1}</span></>
             }
           </div>
         </div>
@@ -729,7 +729,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             </HStack>
             <VStack gap={6}>
               <HStack align="center" justify="between">
-                <Text as="span" mono size={10} color="var(--ft-muted)">
+                <Text as="span" size={10} color="var(--ft-muted)">
                   Paper return
                 </Text>
                 <HStack gap={8} align="center">
@@ -747,7 +747,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
                 </HStack>
               </HStack>
               <HStack align="center" justify="between">
-                <Text as="span" mono size={10} color="var(--ft-muted)">
+                <Text as="span" size={10} color="var(--ft-muted)">
                   Online + tax payment
                 </Text>
                 <HStack gap={8} align="center">
@@ -765,8 +765,8 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
                   </span>
                 </HStack>
               </HStack>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2, lineHeight: 1.5 }}>
-                Self-assessment required if: self-employed · income &gt;£100k · untaxed income &gt;£1k
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)", marginTop: 2, lineHeight: 1.5 }}>
+                Self-assessment required if: self-employed · income <span style={{ fontFamily: "var(--font-mono)" }}>&gt;£100k</span> · untaxed income <span style={{ fontFamily: "var(--font-mono)" }}>&gt;£1k</span>
               </div>
             </VStack>
           </div>
@@ -785,7 +785,7 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
               {fmt(yearISA, sym)}
             </span>
             {yearISA > 0 && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6 }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginLeft: 6 }}>
                 est. <span className="pnum">{fmt(estimatedIsaTaxSaved, sym)}</span> tax sheltered/yr
               </span>
             )}
@@ -1019,7 +1019,7 @@ export default function Tax() {
         const msg = msgs[pid];
         if (!msg) return null;
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 5%, transparent)", padding: "8px 14px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 5%, transparent)", padding: "8px 14px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color: "var(--ft-amber)", fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>TAX TIP</span>
             <span>{msg}</span>
           </div>
@@ -1031,7 +1031,7 @@ export default function Tax() {
         <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
           <PanelHeader>UK INCOME TAX ESTIMATOR (2024/25)</PanelHeader>
           <div style={{ padding: "12px 16px 4px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-base)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" as const }}>
-            <label style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em", whiteSpace: "nowrap" as const }}>
+            <label style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em", whiteSpace: "nowrap" as const }}>
               Gross Annual Salary
             </label>
             <input
@@ -1043,8 +1043,8 @@ export default function Tax() {
               style={{ fontFamily: "var(--font-mono)", fontSize: 13, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 10px", width: 140, textAlign: "right" as const, outline: "none", marginBottom: 8 }}
             />
             {grossSalary > 100_000 && (
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-amber)", marginBottom: 8 }}>
-                PA tapering applies above £100k
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-amber)", marginBottom: 8 }}>
+                PA tapering applies above <span style={{ fontFamily: "var(--font-mono)" }}>£100k</span>
               </span>
             )}
           </div>
@@ -1094,7 +1094,7 @@ export default function Tax() {
                       <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>{rules.cgtRateHighLabel}</div>
                     </div>
                   )}
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", paddingBottom: 2 }}>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", paddingBottom: 2 }}>
                     on <span className="pnum">{fmt(taxableGains, sym)}</span> taxable gains
                   </div>
                 </HStack>
@@ -1126,8 +1126,8 @@ export default function Tax() {
                 <div style={{ height: 5, background: "var(--ft-raised)" }}>
                   <div style={{ height: "100%", width: `${allowancePct}%`, background: allowancePct >= 100 ? "var(--ft-red)" : allowancePct > 80 ? "var(--ft-amber)" : "var(--ft-green)", transition: "none" }} />
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
-                  <span className="pnum">{fmt(Math.max(0, rules.cgtAllowance - netGains), sym)}</span> remaining · {allowancePct.toFixed(0)}% used
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 5 }}>
+                  <span className="pnum">{fmt(Math.max(0, rules.cgtAllowance - netGains), sym)}</span> remaining · <span style={{ fontFamily: "var(--font-mono)" }}>{allowancePct.toFixed(0)}%</span> used
                 </div>
               </div>
             )}
@@ -1144,8 +1144,8 @@ export default function Tax() {
           {yearDisposals.length === 0 && (
             <div style={{ padding: "40px 24px", textAlign: "center", background: "var(--ft-base)", borderBottom: "1px solid var(--ft-border)" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 24, color: "var(--ft-border2)", marginBottom: 8, lineHeight: 1 }}>—</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 4 }}>No disposals for {selectedYear}</div>
-              <MonoLabel as="div" size={9} letterSpacing="0.08em">Record a disposal to calculate your CGT liability</MonoLabel>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 4 }}>No disposals for <span style={{ fontFamily: "var(--font-mono)" }}>{selectedYear}</span></div>
+              <Text as="div" size={9} color="var(--ft-dim)" letterSpacing="0.08em" upper>Record a disposal to calculate your CGT liability</Text>
             </div>
           )}
           {yearDisposals.map(d => (
@@ -1276,7 +1276,7 @@ export default function Tax() {
           </div>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 16px", borderTop: "1px solid var(--ft-border)" }}>
             <Info style={{ width: 13, height: 13, flexShrink: 0, marginTop: 1, color: "var(--ft-dim)" }} />
-            <Text as="span" mono size={9} color="var(--ft-dim)" lineHeight={1.6}>For information only. Rates may change year to year and vary by individual circumstances. Consult a qualified tax professional for personalised advice.</Text>
+            <Text as="span" size={9} color="var(--ft-dim)" lineHeight={1.6}>For information only. Rates may change year to year and vary by individual circumstances. Consult a qualified tax professional for personalised advice.</Text>
           </div>
         </div>
       )}
@@ -1284,36 +1284,36 @@ export default function Tax() {
       {/* ── Add Disposal Dialog ─────────────────────────────────────────────────── */}
       <Dialog open={addDisposalOpen} onOpenChange={setAddDisposalOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle style={{ color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, letterSpacing: "0.04em" }}>Record Capital Disposal</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle style={{ color: "var(--ft-text)", fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 700, letterSpacing: "0.04em" }}>Record Capital Disposal</DialogTitle></DialogHeader>
           <form onSubmit={handleAddDisposal}>
             <div className="space-y-3">
               <div className="ft-two-col grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Asset Name</label>
-                  <Input placeholder="Apple Inc." value={disposalForm.assetName} onChange={e => setDisposalForm(f => ({ ...f, assetName: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12 }} />
+                  <label style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Asset Name</label>
+                  <Input placeholder="Apple Inc." value={disposalForm.assetName} onChange={e => setDisposalForm(f => ({ ...f, assetName: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-sans)", fontSize: 12 }} />
                 </div>
                 <div className="space-y-1">
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Ticker (optional)</label>
+                  <label style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Ticker (optional)</label>
                   <Input placeholder="AAPL" value={disposalForm.ticker} onChange={e => setDisposalForm(f => ({ ...f, ticker: e.target.value.toUpperCase() }))} style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12 }} />
                 </div>
               </div>
               <div className="ft-two-col grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Acquired Date</label>
+                  <label style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Acquired Date</label>
                   <Input type="date" value={disposalForm.acquiredDate} onChange={e => setDisposalForm(f => ({ ...f, acquiredDate: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12 }} />
                 </div>
                 <div className="space-y-1">
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Disposed Date</label>
+                  <label style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Disposed Date</label>
                   <Input type="date" value={disposalForm.disposedDate} onChange={e => setDisposalForm(f => ({ ...f, disposedDate: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12 }} />
                 </div>
               </div>
               <div className="ft-two-col grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Proceeds ({sym})</label>
+                  <label style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Proceeds ({sym})</label>
                   <Input type="number" step="0.01" min="0" placeholder="5000.00" value={disposalForm.proceeds} onChange={e => setDisposalForm(f => ({ ...f, proceeds: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12, textAlign: "right" as const }} />
                 </div>
                 <div className="space-y-1">
-                  <label style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Cost Basis ({sym})</label>
+                  <label style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.08em", display: "block" }}>Cost Basis ({sym})</label>
                   <Input type="number" step="0.01" min="0" placeholder="3000.00" value={disposalForm.costBasis} onChange={e => setDisposalForm(f => ({ ...f, costBasis: e.target.value }))} required style={{ height: 32, fontFamily: "var(--font-mono)", fontSize: 12, textAlign: "right" as const }} />
                 </div>
               </div>
@@ -1328,7 +1328,7 @@ export default function Tax() {
             </div>
             <DialogFooter className="mt-5">
               <DialogClose asChild><Button type="button" variant="outline" style={{ height: 32, fontSize: 11 }}>Cancel</Button></DialogClose>
-              <Button type="submit" style={{ background: "var(--ft-green)", color: "var(--ft-base)", border: "none", height: 32, fontSize: 11, fontFamily: "var(--font-mono)" }}>Record Disposal</Button>
+              <Button type="submit" style={{ background: "var(--ft-green)", color: "var(--ft-base)", border: "none", height: 32, fontSize: 11, fontFamily: "var(--font-sans)" }}>Record Disposal</Button>
             </DialogFooter>
           </form>
         </DialogContent>
