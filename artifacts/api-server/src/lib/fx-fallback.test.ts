@@ -44,6 +44,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe("FX fallback — Frankfurter fills when Yahoo is dark", () => {
@@ -75,6 +76,8 @@ describe("FX fallback — Frankfurter fills when Yahoo is dark", () => {
   });
 
   it("prefers Yahoo when Yahoo answers, ignores Frankfurter for those currencies", async () => {
+    // Yahoo is asked only with ENABLE_MARKET_DATA on (J28, fx-yahoo-gate.test.ts).
+    vi.stubEnv("ENABLE_MARKET_DATA", "1");
     // Yahoo returns USD only; the fallback fills the other 10.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const partialYahoo: any = {
@@ -111,6 +114,8 @@ describe("FX fallback — Frankfurter fills when Yahoo is dark", () => {
   });
 
   it("returns whatever Yahoo delivered when Frankfurter also fails", async () => {
+    // Yahoo is asked only with ENABLE_MARKET_DATA on (J28, fx-yahoo-gate.test.ts).
+    vi.stubEnv("ENABLE_MARKET_DATA", "1");
     // Yahoo returns USD, Frankfurter throws. Chain must not fabricate
     // the other 10 currencies — same honesty rule as before, just
     // testing the "one leg fails" case.

@@ -74,7 +74,7 @@ import {
   type ProviderName,
 } from "./market-classifier";
 import { alpacaFetchPrices, polygonFetchPrices, twelveDataFetchPrices, frankfurterFetchPrices, priceToQuote } from "./market-adapters";
-import { assertMarketDataEnabled } from "./market-flag";
+import { assertMarketDataEnabled, isMarketDataEnabled } from "./market-flag";
 
 // Cache entries
 let fxCache: { data: FxRatesData; ts: number } | null = null;
@@ -177,8 +177,13 @@ export async function getFxRates(): Promise<FxRatesData> {
   // in the product depended on them, and the RM 4,120 → £4,120 defect
   // grew out of exactly that class of mistake. See CLAUDE.md's "never
   // show a number the API did not supply".
+  //
+  // Yahoo runs only with ENABLE_MARKET_DATA on (J28). FX itself stays on
+  // either way (lib/market-flag.ts), but Yahoo is an unlicensed scrape and
+  // went out with the rest of the market surface on 19 Sep 2026; with the
+  // flag off every rate is the ECB fixing via Frankfurter.
   let rates: Record<string, number> = {};
-  try {
+  if (isMarketDataEnabled()) try {
     rates = await fxRatesFromYahoo();
   } catch (err) {
     // ProviderUnavailableError (circuit open) is expected during a Yahoo

@@ -22,7 +22,8 @@
 // ── What is OUTSIDE it, deliberately ───────────────────────────────────────
 //
 //   FX rates. They come from the ECB via Frankfurter (keyless, no display
-//   restriction) with Yahoo only as a fallback pair lookup, and every
+//   restriction); Yahoo, which getFxRates asks first when this flag is on,
+//   is skipped entirely when it is off (BACKLOG J28). Every
 //   non-market money figure in the app depends on them: the whole design
 //   shows a native currency first and a converted value second. Turning FX
 //   off would not remove a market surface, it would break every balance in
