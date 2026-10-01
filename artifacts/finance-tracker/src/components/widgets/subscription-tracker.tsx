@@ -106,7 +106,7 @@ function EmptySubscriptions() {
       </div>
       <div
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 9,
           color: "var(--ft-dim)",
           letterSpacing: "0.1em",
@@ -118,7 +118,7 @@ function EmptySubscriptions() {
       </div>
       <div
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 9,
           color: "var(--ft-dim)",
           textAlign: "center",
@@ -192,7 +192,7 @@ function SubscriptionRow({ item, monthlyTotal }: SubscriptionRowProps) {
         <div style={{ minWidth: 0 }}>
           <div
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               color: "var(--ft-text)",
               overflow: "hidden",
@@ -446,7 +446,7 @@ export function SubscriptionTrackerWidget() {
                 {urgentCount === 0 && warningCount === 0 && subs.length > 0 && (
                   <span
                     style={{
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                       fontSize: 9,
                       color: "var(--ft-dim)",
                     }}
