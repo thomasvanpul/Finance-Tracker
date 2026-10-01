@@ -1343,8 +1343,15 @@ From the planning docs:
   **Not built yet.** Desktop work, phone is priority. When it lands,
   update the sub-picker's Calculators list and re-run Lock #18.
 
-- **G20 · localStorage: 26 account-level keys migrate to a
+- **G20 · localStorage: account-level keys migrate to a
   user_preferences table (27 Aug) — DONE, differently from planned.**
+  **Measured 1 Oct 2026.** The source of truth is the registry
+  `artifacts/finance-tracker/src/lib/account-storage-keys.ts`, which a lock
+  test keeps equal to the call sites: 112 exact keys plus 4 prefixes;
+  75 account-level (synced), 24 device-local, 4 server-cache, 3 local-cache,
+  6 onboarding. The "26 account-level / 18 device-local" figures in the
+  plan text below are the 27 Aug estimate, kept as history; the "~70" below
+  was the 13 Sep count. Re-measure from the registry, not from this entry.
   **Corrected 13 Sep 2026.** A shipped as `19bddb7` — a Dexie outbox
   (`lib/outbox-db.ts`), not the TanStack mutation cache below, covering
   transaction writes only. B shipped as `71a1142` (table, migration 0018),
