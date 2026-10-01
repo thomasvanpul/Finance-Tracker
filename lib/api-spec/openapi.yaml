@@ -2656,9 +2656,6 @@ components:
         direction:
           type: string
           enum: [i_owe_them, they_owe_me]
-        status:
-          type: string
-          enum: [pending, settled]
         notes:
           type: string
         accountId:

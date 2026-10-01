@@ -1262,14 +1262,6 @@ export const DebtUpdateDirection = {
   they_owe_me: 'they_owe_me',
 } as const;
 
-export type DebtUpdateStatus = typeof DebtUpdateStatus[keyof typeof DebtUpdateStatus];
-
-
-export const DebtUpdateStatus = {
-  pending: 'pending',
-  settled: 'settled',
-} as const;
-
 export interface DebtUpdate {
   personName?: string;
   description?: string;
@@ -1277,7 +1269,6 @@ export interface DebtUpdate {
   nativeAmount?: number;
   currency?: DebtUpdateCurrency;
   direction?: DebtUpdateDirection;
-  status?: DebtUpdateStatus;
   notes?: string;
   accountId?: number;
 }

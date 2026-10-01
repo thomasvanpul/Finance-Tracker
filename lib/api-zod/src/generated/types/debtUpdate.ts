@@ -7,7 +7,6 @@
  */
 import type { DebtUpdateCurrency } from './debtUpdateCurrency';
 import type { DebtUpdateDirection } from './debtUpdateDirection';
-import type { DebtUpdateStatus } from './debtUpdateStatus';
 
 export interface DebtUpdate {
   personName?: string;
@@ -16,7 +15,6 @@ export interface DebtUpdate {
   nativeAmount?: number;
   currency?: DebtUpdateCurrency;
   direction?: DebtUpdateDirection;
-  status?: DebtUpdateStatus;
   notes?: string;
   accountId?: number;
 }

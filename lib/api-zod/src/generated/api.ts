@@ -899,7 +899,6 @@ export const UpdateDebtBody = zod.object({
   "nativeAmount": zod.number().optional(),
   "currency": zod.enum(['GBP', 'USD', 'EUR', 'MYR', 'CNY', 'JPY', 'AUD', 'CAD', 'SGD', 'HKD', 'THB', 'INR']).optional(),
   "direction": zod.enum(['i_owe_them', 'they_owe_me']).optional(),
-  "status": zod.enum(['pending', 'settled']).optional(),
   "notes": zod.string().optional(),
   "accountId": zod.number().optional()
 })
