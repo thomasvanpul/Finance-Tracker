@@ -121,7 +121,7 @@ function QuoteRow({ q, showSparkline }: { q: Quote; showSparkline: boolean }) {
       {/* Ticker name */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           fontWeight: 600,
           color: "var(--ft-text)",
@@ -269,7 +269,7 @@ export function MarketSnapshotWidget(_props: { isExpanded?: boolean }) {
     <WidgetShell title="Market Snapshot" isLoading={isLoading} accent="var(--ft-amber)" headerRight={headerRight}>
       {!isLoading && (
         isError || quotes.length === 0 ? (
-          <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
+          <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
             Market data unavailable
           </div>
         ) : (
@@ -297,7 +297,7 @@ export function MarketSnapshotWidget(_props: { isExpanded?: boolean }) {
 
             <div style={{
               padding: "var(--ft-widget-py) var(--ft-widget-px)",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               color: "var(--ft-dim)",
               display: "flex",
@@ -306,7 +306,7 @@ export function MarketSnapshotWidget(_props: { isExpanded?: boolean }) {
               background: "var(--ft-base)",
             }}>
               <span style={{ letterSpacing: "0.06em" }}>AUTO-REFRESH 5MIN</span>
-              {lastUpdated && <span>Updated {lastUpdated}</span>}
+              {lastUpdated && <span>Updated <span className="pnum">{lastUpdated}</span></span>}
             </div>
           </>
         )
