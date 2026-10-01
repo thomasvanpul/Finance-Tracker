@@ -35,6 +35,9 @@ import {
 } from "recharts";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { netAccountsTotal } from "@/lib/account-sign";
+import { Drill } from "@/components/drill";
+import { categoryTransactionsHref, thisMonthRange } from "@/lib/entity-href";
+import { householdBudgetDrillCategory } from "@/lib/household-budget-drill";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -800,7 +803,7 @@ function AccountToggleButton({
 // ── Budget Row ────────────────────────────────────────────────────────────────
 
 function BudgetRow({
-  b, idx, budgetsLength, actual, pct, barCol, members, onDelete, onUpdateAssignment,
+  b, idx, budgetsLength, actual, pct, barCol, drillHref, members, onDelete, onUpdateAssignment,
 }: {
   b: HouseholdBudget;
   idx: number;
@@ -808,6 +811,8 @@ function BudgetRow({
   actual: number;
   pct: number | null;
   barCol: string;
+  /** Opens the rows Spent summed; null when no ledger filter selects exactly those. */
+  drillHref: string | null;
   members: FamilyMember[];
   onDelete: () => void;
   onUpdateAssignment: (val: string) => void;
@@ -829,7 +834,9 @@ function BudgetRow({
       }}
     >
       <div style={{ padding: "8px 12px", display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>{b.category}</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>
+          {drillHref ? <Drill href={drillHref} title={`Open the ${b.category} transactions this month`}>{b.category}</Drill> : b.category}
+        </span>
         <button onClick={onDelete} style={{ background: "transparent", border: "none", color: "var(--ft-red)", cursor: "pointer", padding: 2, display: "flex", alignItems: "center", opacity: hovered ? 0.7 : 0, transition: "opacity 0.1s" }}>
           <Trash2 size={10} />
         </button>
@@ -838,7 +845,13 @@ function BudgetRow({
         <span className="pnum">{formatBaseMoney(b.monthlyLimit)}</span>
       </div>
       <div style={{ padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 12, color: pct == null ? "var(--ft-dim)" : pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-text)", fontVariantNumeric: "tabular-nums", display: "flex", alignItems: "center" }}>
-        <span className="pnum">{formatBaseMoney(actual)}</span>
+        {drillHref ? (
+          <Drill href={drillHref} title="Open the transactions this added up">
+            <span className="pnum">{formatBaseMoney(actual)}</span>
+          </Drill>
+        ) : (
+          <span className="pnum">{formatBaseMoney(actual)}</span>
+        )}
       </div>
       <HStack align="center" padding="8px 12px">
         <div style={{ width: "100%" }}>
@@ -2157,6 +2170,10 @@ export default function FamilyFinance() {
               // A budget with no monthly limit has no "% used".
               const pct: number | null = b.monthlyLimit > 0 ? actual / b.monthlyLimit : null;
               const barCol = pct == null ? "var(--ft-border2)" : pct >= 1 ? "var(--ft-red)" : pct >= 0.8 ? "var(--ft-amber)" : "var(--ft-green)";
+              // Same local month the tally above summed.
+              const range = thisMonthRange();
+              const drillCategory = householdBudgetDrillCategory(b.category, transactions, range.from.slice(0, 7));
+              const drillHref = drillCategory == null ? null : categoryTransactionsHref(drillCategory, range);
               return (
                 <BudgetRow
                   key={b.id}
@@ -2166,6 +2183,7 @@ export default function FamilyFinance() {
                   actual={actual}
                   pct={pct}
                   barCol={barCol}
+                  drillHref={drillHref}
                   members={members}
                   onDelete={() => deleteBudget(b.id)}
                   onUpdateAssignment={(val) => updateBudgetAssignment(b.id, val)}
