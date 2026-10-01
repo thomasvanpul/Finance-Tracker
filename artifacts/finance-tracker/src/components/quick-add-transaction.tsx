@@ -275,7 +275,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
           border: "1px solid var(--ft-border2)",
           width: "100%",
           maxWidth: 420,
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
         }}
       >
         <div
@@ -337,7 +337,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
                 border: "1px solid var(--ft-border)",
                 color: scanState === "scanning" ? "var(--ft-dim)" : "var(--ft-muted)",
                 fontSize: 10,
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 padding: "4px 10px",
                 cursor: scanState === "scanning" ? "not-allowed" : "pointer",
                 letterSpacing: "0.06em",
@@ -354,7 +354,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
               <span
                 style={{
                   fontSize: 10,
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   color: "var(--ft-red)",
                   letterSpacing: "0.04em",
                 }}
@@ -451,7 +451,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
                       flex: 1,
                       padding: "6px 0",
                       fontSize: 10,
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                       fontWeight: 700,
                       letterSpacing: "0.06em",
                       background: active ? cfg.color : "var(--ft-raised)",
@@ -505,7 +505,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
                 background: "var(--ft-raised)",
                 border: "1px solid var(--ft-border)",
                 color: "var(--ft-text)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 padding: "7px 10px",
                 outline: "none",
@@ -523,7 +523,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
                   <span
                     onClick={() => { setForm((f) => ({ ...f, category: "" })); setAutoCatFilled(false); }}
                     title="Auto-filled — click to clear"
-                    style={{ fontSize: 8, padding: "1px 5px", background: "rgba(6,182,212,0.12)", border: "1px solid var(--ft-cyan, #06b6d4)", borderRadius: 2, color: "var(--ft-cyan, #06b6d4)", fontFamily: "var(--font-mono)", letterSpacing: "0.06em", cursor: "pointer" }}
+                    style={{ fontSize: 8, padding: "1px 5px", background: "rgba(6,182,212,0.12)", border: "1px solid var(--ft-cyan, #06b6d4)", borderRadius: 2, color: "var(--ft-cyan, #06b6d4)", fontFamily: "var(--font-sans)", letterSpacing: "0.06em", cursor: "pointer" }}
                   >
                     auto ×
                   </span>
@@ -541,7 +541,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
                   background: "var(--ft-raised)",
                   border: "1px solid var(--ft-border)",
                   color: "var(--ft-text)",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 12,
                   padding: "7px 10px",
                   outline: "none",
@@ -605,7 +605,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
                 background: "var(--ft-raised)",
                 border: "1px solid var(--ft-border)",
                 color: form.accountId ? "var(--ft-text)" : "var(--ft-dim)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 padding: "7px 10px",
                 cursor: "pointer",
@@ -631,7 +631,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
                 border: "1px solid var(--ft-border)",
                 color: "var(--ft-muted)",
                 fontSize: 10,
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 padding: "6px 14px",
                 cursor: "pointer",
                 letterSpacing: "0.06em",
@@ -648,7 +648,7 @@ export function QuickAddTransaction({ open, onClose }: Props) {
                 border: "none",
                 color: isPending ? "var(--ft-dim)" : "var(--ft-surface)",
                 fontSize: 10,
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 padding: "6px 18px",
                 cursor: isPending ? "not-allowed" : "pointer",
                 fontWeight: 700,
