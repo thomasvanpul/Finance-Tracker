@@ -132,7 +132,7 @@ export function PersonaQuickStart() {
             >
               <div style={{
                 width: 16, height: 16, borderRadius: "50%",
-                border: `1px solid ${isDone ? "var(--ft-green)" : "rgba(244,162,30,0.5)"}`,
+                border: `1px solid ${isDone ? "var(--ft-green)" : "var(--ft-accent-edge)"}`,
                 background: isDone ? "var(--ft-green)" : "transparent",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0,
@@ -157,7 +157,7 @@ export function PersonaQuickStart() {
                   style={{
                     fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 600,
                     letterSpacing: "0.06em", color: "var(--ft-amber)",
-                    background: "transparent", border: "1px solid rgba(244,162,30,0.4)",
+                    background: "transparent", border: "1px solid var(--ft-accent-edge)",
                     padding: "3px 10px", cursor: "pointer", flexShrink: 0,
                   }}
                 >
@@ -180,7 +180,7 @@ export function PersonaQuickStart() {
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{
                   width: 16, height: 16, borderRadius: "50%",
-                  border: `1px solid ${isDone ? "var(--ft-green)" : "rgba(244,162,30,0.5)"}`,
+                  border: `1px solid ${isDone ? "var(--ft-green)" : "var(--ft-accent-edge)"}`,
                   background: isDone ? "var(--ft-green)" : "transparent",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
@@ -210,11 +210,11 @@ export function PersonaQuickStart() {
                   style={{
                     fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 600,
                     letterSpacing: "0.06em", color: "var(--ft-amber)",
-                    background: "transparent", border: "1px solid rgba(244,162,30,0.4)",
+                    background: "transparent", border: "1px solid var(--ft-accent-edge)",
                     padding: "3px 10px", cursor: "pointer", alignSelf: "flex-start",
                     transition: "background 0.1s",
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(244,162,30,0.12)"; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "var(--ft-hover)"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
                 >
                   GO →
