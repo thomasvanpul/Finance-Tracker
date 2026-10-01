@@ -322,7 +322,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
               background: "transparent",
               border: "none",
               outline: "none",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 14,
               color: "var(--ft-text)",
               padding: "0 16px 0 44px",
@@ -346,7 +346,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
               style={{
                 padding: "24px 16px",
                 textAlign: "center",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 11,
                 color: "var(--ft-dim)",
               }}
@@ -360,7 +360,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
               style={{
                 padding: "24px 16px",
                 textAlign: "center",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 color: "var(--ft-dim)",
               }}
@@ -380,7 +380,7 @@ export function GlobalSearch({ open, onClose }: GlobalSearchProps) {
                   <div
                     style={{
                       fontSize: 9,
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                       textTransform: "uppercase",
                       letterSpacing: "0.1em",
                       color: "var(--ft-dim)",
@@ -461,7 +461,7 @@ function ResultRow({ result, isSelected, onMouseEnter, onClick }: ResultRowProps
       {/* Kind badge */}
       <span
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 9,
           letterSpacing: "0.06em",
           color: isSelected ? "var(--ft-accent)" : "var(--ft-dim)",
@@ -482,7 +482,7 @@ function ResultRow({ result, isSelected, onMouseEnter, onClick }: ResultRowProps
       {/* Primary label */}
       <span
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 12,
           color: isSelected ? "var(--ft-text)" : "var(--ft-muted)",
           flex: 1,
@@ -530,7 +530,7 @@ function HintItem({ keys, label }: { keys: string; label: string }) {
   return (
     <span
       style={{
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 9,
         color: "var(--ft-dim)",
         display: "flex",
@@ -540,6 +540,7 @@ function HintItem({ keys, label }: { keys: string; label: string }) {
     >
       <span
         style={{
+          fontFamily: "var(--font-mono)",
           background: "var(--ft-base)",
           border: "1px solid var(--ft-border2)",
           padding: "0 4px",
