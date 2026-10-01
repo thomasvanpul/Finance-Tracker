@@ -537,7 +537,7 @@ function WeekStripDayCell({ dateStr, dayName, dayNum, isToday, events, isLast = 
             return (
               <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 4 }}>
                 <span style={{ width: 4, height: 4, borderRadius: "50%", background: feedColor, flexShrink: 0, marginTop: 3 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-muted)", lineHeight: 1.35 }}>{ev.title}</span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 7.5, color: "var(--ft-muted)", lineHeight: 1.35 }}>{ev.title}</span>
               </div>
             );
           })
@@ -574,7 +574,7 @@ function FeedItemRow({ feed, active, onToggle }: FeedItemRowProps) {
       onMouseLeave={() => setHov(false)}
     >
       <span style={{ width: 10, height: 10, borderRadius: "50%", background: feed.color, flexShrink: 0 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: active ? "var(--ft-text)" : "var(--ft-dim)", flex: 1 }}>{feed.name}</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: active ? "var(--ft-text)" : "var(--ft-dim)", flex: 1 }}>{feed.name}</span>
       <span style={{ color: active ? "var(--ft-green)" : "var(--ft-border2)", flexShrink: 0 }}>
         {active ? <Check size={10} /> : <div style={{ width: 10, height: 10, border: "1px solid var(--ft-border2)", borderRadius: 2 }} />}
       </span>
@@ -604,8 +604,8 @@ function ImportedFeedRow({ feed, deleteConfirmId, onDelete }: ImportedFeedRowPro
       onMouseLeave={() => setHov(false)}
     >
       <span style={{ width: 10, height: 10, borderRadius: "50%", background: feed.color, flexShrink: 0 }} />
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1 }}>
-        {feed.name} <span style={{ color: "var(--ft-dim)" }}>({feed.events.length})</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-text)", flex: 1 }}>
+        {feed.name} <span style={{ color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>({feed.events.length})</span>
       </span>
       <button
         onClick={() => onDelete(feed.id)}
@@ -615,7 +615,7 @@ function ImportedFeedRow({ feed, deleteConfirmId, onDelete }: ImportedFeedRowPro
           border: "none",
           color: deleteConfirmId === feed.id ? "#fff" : "var(--ft-dim)",
           cursor: "pointer", padding: "2px 4px", display: "flex", alignItems: "center",
-          borderRadius: 2, fontFamily: "var(--font-mono)", fontSize: 8,
+          borderRadius: 2, fontFamily: "var(--font-sans)", fontSize: 8,
         }}
       >
         {deleteConfirmId === feed.id ? "DEL?" : <X size={10} />}
@@ -881,7 +881,7 @@ function AgendaEventRow({ ev, typeBadgeColors, typeLabels }: AgendaEventRowProps
       }}>
         {typeLabels[ev.type] ?? ev.type}
       </span>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.label}</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.label}</span>
       {ev.amount !== undefined && (
         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: ev.amount == null ? "var(--ft-dim)" : ev.amountColor ?? "var(--ft-muted)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
           {ev.amount == null ? "—" : formatBaseMoney(ev.amount)}
@@ -914,10 +914,10 @@ function WeekDayCell({ date, dayData, feedEvs, custEvs, onAddEvent }: WeekDayCel
       {feedEvs.slice(0, 3).map((ev, i) => {
         const feed = PREDEFINED_FEEDS.find(f => f.id === ev.feedId);
         const c = feed?.color ?? "var(--ft-border)";
-        return <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `color-mix(in srgb, ${c} 13%, transparent)`, color: feed?.color ?? "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>;
+        return <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-sans)", padding: "1px 4px", background: `color-mix(in srgb, ${c} 13%, transparent)`, color: feed?.color ?? "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>;
       })}
       {custEvs.slice(0, 3).map((ev, i) => (
-        <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-mono)", padding: "1px 4px", background: `color-mix(in srgb, ${ev.color} 13%, transparent)`, color: ev.color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
+        <div key={i} style={{ fontSize: 8, fontFamily: "var(--font-sans)", padding: "1px 4px", background: `color-mix(in srgb, ${ev.color} 13%, transparent)`, color: ev.color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ev.title}</div>
       ))}
       {income > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-green)", fontVariantNumeric: "tabular-nums" }}>+{formatBaseMoney(Math.abs(income))}</div>}
       {expenses > 0 && <div className="pnum" style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-red)", fontVariantNumeric: "tabular-nums" }}>-{formatBaseMoney(Math.abs(expenses))}</div>}
@@ -926,7 +926,7 @@ function WeekDayCell({ date, dayData, feedEvs, custEvs, onAddEvent }: WeekDayCel
       {!hasAny && <div style={{ fontSize: 8, fontFamily: "var(--font-mono)", color: "var(--ft-border2)", marginTop: "auto" }}>—</div>}
       <button
         onClick={(e) => { e.stopPropagation(); onAddEvent(date); }}
-        style={{ marginTop: "auto", background: "none", border: "none", color: "var(--ft-border2)", cursor: "pointer", padding: "2px 0", fontSize: 9, fontFamily: "var(--font-mono)", textAlign: "left", display: "flex", alignItems: "center", gap: 3 }}
+        style={{ marginTop: "auto", background: "none", border: "none", color: "var(--ft-border2)", cursor: "pointer", padding: "2px 0", fontSize: 9, fontFamily: "var(--font-sans)", textAlign: "left", display: "flex", alignItems: "center", gap: 3 }}
       >
         <Plus size={7} /> add
       </button>
@@ -958,9 +958,9 @@ function ThisWeekStrip({ enabledFeeds, feedEventMap }: { enabledFeeds: string[];
         <PanelHeader
           right={
             !hasAny ? (
-              <Text as="span" mono size={9} color="var(--ft-dim)">No events — enable feeds via Sources</Text>
+              <Text as="span" size={9} color="var(--ft-dim)">No events — enable feeds via Sources</Text>
             ) : (
-              <Text as="span" mono size={9} color="var(--ft-dim)">
+              <Text as="span" size={9} color="var(--ft-dim)">
                 {days.reduce((s, d) => s + d.events.length, 0)} event{days.reduce((s, d) => s + d.events.length, 0) !== 1 ? "s" : ""} this week
               </Text>
             )
@@ -1007,7 +1007,7 @@ function Legend() {
           key={label}
           style={{
             display: "flex", alignItems: "center", gap: 6,
-            fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)",
+            fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)",
             padding: "5px 12px", background: "var(--ft-surface)",
             marginRight: i < items.length - 1 ? 1 : 0,
           }}
@@ -1038,12 +1038,12 @@ function EventForm({
   const [color, setColor] = useState(EVENT_COLORS[0]);
 
   const inp: React.CSSProperties = {
-    fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)",
+    fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)",
     background: "var(--ft-base)", border: "1px solid var(--ft-border2)",
     padding: "5px 8px", width: "100%", outline: "none", boxSizing: "border-box",
   };
   const lbl: React.CSSProperties = {
-    fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)",
+    fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)",
     letterSpacing: "0.06em", textTransform: "uppercase", display: "block", marginBottom: 4,
   };
 
@@ -1081,11 +1081,11 @@ function EventForm({
         <button
           onClick={() => { if (title.trim() && date) onSave({ title: title.trim(), date, time: time || undefined, description: description || undefined, color }); }}
           disabled={!title.trim() || !date}
-          style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", background: title.trim() && date ? "var(--ft-accent)" : "var(--ft-raised)", color: title.trim() && date ? "var(--ft-base)" : "var(--ft-dim)", border: "none", padding: "6px 16px", cursor: title.trim() && date ? "pointer" : "default" }}
+          style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.06em", background: title.trim() && date ? "var(--ft-accent)" : "var(--ft-raised)", color: title.trim() && date ? "var(--ft-base)" : "var(--ft-dim)", border: "none", padding: "6px 16px", cursor: title.trim() && date ? "pointer" : "default" }}
         >
           Save Event
         </button>
-        <button onClick={onCancel} style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "6px 12px", cursor: "pointer" }}>
+        <button onClick={onCancel} style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "transparent", color: "var(--ft-muted)", border: "1px solid var(--ft-border)", padding: "6px 12px", cursor: "pointer" }}>
           Cancel
         </button>
       </HStack>
@@ -1189,24 +1189,24 @@ function SourcesPanel({
         <input ref={fileRef} type="file" accept=".ics,text/calendar" style={{ display: "none" }} onChange={(e) => handleFileImport(e.target.files?.[0])} />
         <button
           onClick={() => fileRef.current?.click()}
-          style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "7px 12px", cursor: "pointer", width: "100%", letterSpacing: "0.04em" }}
+          style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "7px 12px", cursor: "pointer", width: "100%", letterSpacing: "0.04em" }}
         >
           <Upload size={11} /> Import .ics File
         </button>
         <button
           onClick={onExport}
-          style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "7px 12px", cursor: "pointer", width: "100%", letterSpacing: "0.04em" }}
+          style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-text)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "7px 12px", cursor: "pointer", width: "100%", letterSpacing: "0.04em" }}
         >
           <Download size={11} /> Export Calendar (.ics)
         </button>
         <button
           onClick={onRequestNotif}
-          style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 10, color: notifPermission === "granted" ? "var(--ft-green)" : "var(--ft-text)", background: "var(--ft-raised)", border: `1px solid ${notifPermission === "granted" ? "var(--ft-green)44" : "var(--ft-border2)"}`, padding: "7px 12px", cursor: "pointer", width: "100%", letterSpacing: "0.04em" }}
+          style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-sans)", fontSize: 10, color: notifPermission === "granted" ? "var(--ft-green)" : "var(--ft-text)", background: "var(--ft-raised)", border: `1px solid ${notifPermission === "granted" ? "var(--ft-green)44" : "var(--ft-border2)"}`, padding: "7px 12px", cursor: "pointer", width: "100%", letterSpacing: "0.04em" }}
         >
           {notifPermission === "granted" ? <Bell size={11} /> : <BellOff size={11} />}
           {notifPermission === "granted" ? "Notifications: On" : notifPermission === "denied" ? "Notifications: Blocked" : "Enable Notifications"}
         </button>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", lineHeight: 1.6, borderTop: "1px solid var(--ft-border)", paddingTop: 8 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)", lineHeight: 1.6, borderTop: "1px solid var(--ft-border)", paddingTop: 8 }}>
           To add to Apple/Google Calendar: export the .ics file and import via your calendar app's "Add from file" option.
         </div>
       </div>
@@ -1231,7 +1231,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
   const [deleteConfirmEvId, setDeleteConfirmEvId] = useState<string | null>(null);
 
   return (
-    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: 0, minWidth: 268, maxWidth: 320, fontFamily: "var(--font-mono)" }}>
+    <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: 0, minWidth: 268, maxWidth: 320, fontFamily: "var(--font-sans)" }}>
       {/* Header */}
       <PanelHeader
         right={
@@ -1322,7 +1322,7 @@ function DayDetailPanel({ dateStr, data, feedEvents, customEvents, onClose, onDe
       {data.transactions.length === 0 && data.upcoming.length === 0 && data.subscriptions.length === 0 && feedEvents.length === 0 && customEvents.length === 0 && (
         <div style={{ padding: "24px 16px", textAlign: "center" }}>
           <div style={{ fontSize: 18, marginBottom: 6 }}>○</div>
-          <Text as="div" mono size={10} color="var(--ft-dim)">No activity this day</Text>
+          <Text as="div" size={10} color="var(--ft-dim)">No activity this day</Text>
         </div>
       )}
     </div>
@@ -1493,7 +1493,7 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
               {billCount > 0 && (
                 <VStack gap={1}>
                   {(data?.upcoming ?? []).slice(0, 1).map((bill) => (
-                    <div key={bill.id} style={{ background: bill.status === "paid" ? "var(--ft-green)22" : "var(--ft-amber)22", borderRadius: 2, padding: "1px 3px", fontSize: 8, fontFamily: "var(--font-mono)", color: bill.status === "paid" ? "var(--ft-green)" : "var(--ft-amber)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div key={bill.id} style={{ background: bill.status === "paid" ? "var(--ft-green)22" : "var(--ft-amber)22", borderRadius: 2, padding: "1px 3px", fontSize: 8, fontFamily: "var(--font-sans)", color: bill.status === "paid" ? "var(--ft-green)" : "var(--ft-amber)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {bill.description.slice(0, 8)}
                     </div>
                   ))}
@@ -1577,8 +1577,8 @@ function AgendaView({ dayMap, feedEventMap, customEventMap, todayStr, debtEvents
         border: "1px solid var(--ft-border)", background: "var(--ft-surface)",
       }}>
         <CalendarDays size={24} style={{ color: "var(--ft-border2)", marginBottom: 10 }} />
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", marginBottom: 4 }}>No upcoming events in the next 90 days</div>
-        <Text as="div" mono size={9} color="var(--ft-border2)">Add transactions, bills, or enable market data feeds via Sources</Text>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", marginBottom: 4 }}>No upcoming events in the next 90 days</div>
+        <Text as="div" size={9} color="var(--ft-border2)">Add transactions, bills, or enable market data feeds via Sources</Text>
       </div>
     );
   }
@@ -1985,7 +1985,7 @@ export default function CalendarPage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -1998,26 +1998,26 @@ export default function CalendarPage() {
         <HStack gap={6} align="center">
           {viewMode === "month" && (
             <>
-              <button onClick={prevMonth} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 12, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>‹</button>
+              <button onClick={prevMonth} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", fontSize: 12, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>‹</button>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 700, color: "var(--ft-text)", minWidth: 140, textAlign: "center" }}>{MONTH_NAMES[month]} {year}</span>
-              <button onClick={nextMonth} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 12, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>›</button>
+              <button onClick={nextMonth} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", fontSize: 12, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>›</button>
             </>
           )}
           {viewMode === "week" && (
             <>
-              <button onClick={() => setWeekOffset(w => w - 1)} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 12, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>‹</button>
+              <button onClick={() => setWeekOffset(w => w - 1)} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", fontSize: 12, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>‹</button>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", minWidth: 160, textAlign: "center" }}>
                 {weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – {new Date(weekStart.getTime() + 6 * 86400000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
               </span>
-              <button onClick={() => setWeekOffset(w => w + 1)} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 12, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>›</button>
+              <button onClick={() => setWeekOffset(w => w + 1)} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", fontSize: 12, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>›</button>
             </>
           )}
           {viewMode === "agenda" && (
-            <Text as="span" mono size={11} weight={700} color="var(--ft-text)">Next 90 Days</Text>
+            <Text as="span" size={11} weight={700} color="var(--ft-text)">Next 90 Days</Text>
           )}
           <button
             onClick={goToToday}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "4px 10px", cursor: "pointer", border: "1px solid var(--ft-accent)", color: "var(--ft-accent)", background: "transparent" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "4px 10px", cursor: "pointer", border: "1px solid var(--ft-accent)", color: "var(--ft-accent)", background: "transparent" }}
           >
             Today
           </button>
@@ -2033,7 +2033,7 @@ export default function CalendarPage() {
             <button
               key={id}
               onClick={() => setViewMode(id)}
-              style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-mono)", fontSize: 9, padding: "4px 10px", cursor: "pointer", border: "none", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none", background: viewMode === id ? "var(--ft-accent)" : "var(--ft-surface)", color: viewMode === id ? "var(--ft-base)" : "var(--ft-muted)", letterSpacing: "0.06em" }}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans)", fontSize: 9, padding: "4px 10px", cursor: "pointer", border: "none", borderRight: i < arr.length - 1 ? "1px solid var(--ft-border)" : "none", background: viewMode === id ? "var(--ft-accent)" : "var(--ft-surface)", color: viewMode === id ? "var(--ft-base)" : "var(--ft-muted)", letterSpacing: "0.06em" }}
             >
               {icon} {label}
             </button>
@@ -2044,13 +2044,13 @@ export default function CalendarPage() {
         <HStack gap={8}>
           <button
             onClick={() => { setEventFormDate(todayStr); setShowEventForm((v) => !v); setShowSources(false); }}
-            style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", color: "var(--ft-text)", background: showEventForm ? "var(--ft-raised)" : "transparent", border: "1px solid var(--ft-border2)", padding: "5px 10px", cursor: "pointer" }}
+            style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.06em", color: "var(--ft-text)", background: showEventForm ? "var(--ft-raised)" : "transparent", border: "1px solid var(--ft-border2)", padding: "5px 10px", cursor: "pointer" }}
           >
             <Plus size={10} /> Add Event
           </button>
           <button
             onClick={() => { setShowSources((v) => !v); setShowEventForm(false); }}
-            style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", color: showSources ? "var(--ft-accent)" : "var(--ft-text)", background: showSources ? "var(--ft-raised)" : "transparent", border: `1px solid ${showSources ? "var(--ft-accent)44" : "var(--ft-border2)"}`, padding: "5px 10px", cursor: "pointer" }}
+            style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.06em", color: showSources ? "var(--ft-accent)" : "var(--ft-text)", background: showSources ? "var(--ft-raised)" : "transparent", border: `1px solid ${showSources ? "var(--ft-accent)44" : "var(--ft-border2)"}`, padding: "5px 10px", cursor: "pointer" }}
           >
             <Calendar size={10} /> Sources
             {enabledFeeds.length > 0 && (
