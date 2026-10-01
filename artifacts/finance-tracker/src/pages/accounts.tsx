@@ -3108,9 +3108,9 @@ export default function Accounts() {
               frame instead of doubling it. */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", marginRight: -1, marginBottom: -1 }}>
             {Object.entries(fxRates.rates ?? {})
-              .filter(([ccy]) => ["USD", "EUR", "MYR", "JPY", "CNY", "AUD", "SGD", "HKD", "CAD", "CHF", "INR", "THB"].includes(ccy))
+              .filter(([ccy]) => ["USD", "EUR", "MYR", "JPY", "CNY", "AUD", "SGD", "HKD", "CAD", "INR", "THB"].includes(ccy))
               .sort(([a], [b]) => {
-                const priority = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CHF", "CNY", "HKD", "MYR", "SGD", "THB", "INR"];
+                const priority = ["USD", "EUR", "JPY", "GBP", "AUD", "CAD", "CNY", "HKD", "MYR", "SGD", "THB", "INR"];
                 return priority.indexOf(a) - priority.indexOf(b);
               })
               .filter(([, rate]) => typeof rate === "number")
