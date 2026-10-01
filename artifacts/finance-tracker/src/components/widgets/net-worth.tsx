@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getGetNetWorthHistoryQueryKey, useGetDashboard, useGetNetWorthHistory } from "@workspace/api-client-react";
-import { historyFromPoints, todayDelta, type NetWorthHistoryEntry } from "@/lib/net-worth-history";
+import { historyFromPoints, isoDay, todayDelta, type NetWorthHistoryEntry } from "@/lib/net-worth-history";
 import { UnconvertibleAccountsBadge } from "@/components/UnconvertibleAccountsBadge";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { formatBaseMoney, formatPercent } from "@/lib/utils";
@@ -110,18 +110,6 @@ function formatNative(amount: number, currency: string): string {
   const symbols: Record<string, string> = { GBP: "£", USD: "$", EUR: "€", MYR: "RM ", SGD: "S$", AUD: "A$", CAD: "C$", JPY: "¥", HKD: "HK$", CHF: "CHF " };
   const sym = symbols[currency] ?? `${currency} `;
   return `${sym}${Math.abs(amount).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-// The LOCAL calendar day, as YYYY-MM-DD.
-//
-// Not `toISOString().slice(0, 10)`, which is the UTC day: east of Greenwich
-// the local midnight is still yesterday in UTC, so that idiom names the
-// wrong day for every user ahead of it and the wrong day the other way for
-// every user behind. Entries in this history are keyed by local day, so a
-// cutoff computed in UTC would compare against a different calendar.
-function isoDay(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 function formatYAxis(value: number): string {

@@ -16,7 +16,10 @@ import {
   useGetDashboard,
   useGetFxRates,
   useGetTransactionSummary,
+  useGetNetWorthHistory,
+  getGetNetWorthHistoryQueryKey,
 } from "@workspace/api-client-react";
+import { historyFromPoints, isoDay, todayDelta } from "@/lib/net-worth-history";
 import { formatBaseMoney, formatNative, formatDate } from "@/lib/utils";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { AXIS_TICK } from "@/lib/chart-tokens";
@@ -120,10 +123,8 @@ const TH: React.CSSProperties = {
   whiteSpace: "nowrap" as const,
 };
 
-const HISTORY_KEY = "ft-nw-history";
 const ACCT_META_KEY = "ft-acct-meta";
-
-type NwHistoryEntry = { date: string; netWorth: number };
+const NW_HISTORY_DAYS = 365;
 
 interface AccountMeta {
   notes: string;
@@ -141,17 +142,6 @@ function loadAccountMeta(): Record<string, AccountMeta> {
 
 function saveAccountMeta(meta: Record<string, AccountMeta>) {
   try { localStorage.setItem(ACCT_META_KEY, JSON.stringify(meta)); } catch { /* noop */ }
-}
-
-function loadNwHistory(): NwHistoryEntry[] {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
 }
 
 // ─── Wise status badge ────────────────────────────────────────────────────────
@@ -1716,7 +1706,14 @@ export default function Accounts() {
   const { data: healthTxs } = useListTransactions({ dateFrom: sixMonthsAgo });
   const { data: dashData } = useGetDashboard();
 
-  const [nwHistory, setNwHistory] = useState<{ date: string; netWorth: number }[]>(() => loadNwHistory());
+  // What the server captured on each day the dashboard was read
+  // (net_worth_snapshots). Asked for once the dashboard has answered, because
+  // that read is what captures today.
+  const nwHistoryParams = { days: NW_HISTORY_DAYS };
+  const { data: nwHistoryData } = useGetNetWorthHistory(nwHistoryParams, {
+    query: { queryKey: getGetNetWorthHistoryQueryKey(nwHistoryParams), enabled: !!dashData },
+  });
+  const nwHistory = useMemo(() => historyFromPoints(nwHistoryData?.points), [nwHistoryData]);
   const [accountMeta, setAccountMeta] = useState<Record<string, AccountMeta>>(() => loadAccountMeta());
   const [onboardingDismissed, setOnboardingDismissed] = useState(() => !!localStorage.getItem("ft-acct-onboarding-dismissed"));
 
@@ -1728,24 +1725,6 @@ export default function Accounts() {
       return next;
     });
   }, []);
-
-  // Write daily net-worth snapshot and keep nwHistory state in sync
-  useEffect(() => {
-    if (!dashData) return;
-    const today = new Date().toISOString().slice(0, 10);
-    try {
-      const raw = localStorage.getItem(HISTORY_KEY);
-      const existing: { date: string; netWorth: number; cash?: number; portfolio?: number }[] = raw ? JSON.parse(raw) : [];
-      if (existing.some(e => e.date === today)) {
-        setNwHistory(existing);
-        return;
-      }
-      const entry = { date: today, netWorth: dashData.netWorth, cash: dashData.totalCash, portfolio: dashData.portfolio.totalValueBase };
-      const updated = [...existing, entry].slice(-365);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-      setNwHistory(updated);
-    } catch { /* noop */ }
-  }, [dashData]);
 
   // Per-account stats derived from health transactions
   const accountStatsMap = useMemo(() => {
@@ -2347,10 +2326,8 @@ export default function Accounts() {
             })()
           : "never";
 
-        // Net-worth delta from nwHistory
-        const prevNw = nwHistory.length > 1 ? nwHistory[nwHistory.length - 2].netWorth : null;
-        const currNw = nwHistory.length > 0 ? nwHistory[nwHistory.length - 1].netWorth : null;
-        const nwDelta = prevNw !== null && currNw !== null ? currNw - prevNw : null;
+        // Today minus yesterday, or nothing unless both days were captured.
+        const nwDelta = todayDelta(nwHistory, isoDay(new Date()));
 
         // Portfolio from dash data
         const portfolioVal = (dashData as { portfolio?: { totalValueBase?: number } } | undefined)?.portfolio?.totalValueBase ?? 0;

@@ -20,6 +20,18 @@ export function historyFromPoints(points: NetWorthPoint[] | undefined): NetWorth
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+// The LOCAL calendar day, as YYYY-MM-DD.
+//
+// Not `toISOString().slice(0, 10)`, which is the UTC day: east of Greenwich
+// the local midnight is still yesterday in UTC, so that idiom names the
+// wrong day for every user ahead of it and the wrong day the other way for
+// every user behind. Entries in this history are keyed by local day, so a
+// cutoff computed in UTC would compare against a different calendar.
+export function isoDay(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 // The day before a YYYY-MM-DD local date, by calendar.
 function dayBefore(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
