@@ -234,7 +234,7 @@ function BreakdownRow({ label, value, color, bold }: BreakdownRowProps) {
         transition: "background 0.1s",
       }}
     >
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>{label}</span>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color, fontWeight: bold ? 700 : 400 }}>
         <span className="pnum">{value}</span>
       </span>
@@ -337,7 +337,7 @@ export default function Projection() {
           title="NET WORTH PROJECTION"
           subtitle="compound growth model · three scenarios · milestone tracker"
         />
-        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "24px 20px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1.7 }}>
+        <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "24px 20px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", lineHeight: 1.7 }}>
           Projection needs a real net worth and at least a few months of income and expenses to establish a savings baseline. Connect an account or import transactions and the three scenarios fill in.
         </div>
       </div>
@@ -406,7 +406,7 @@ export default function Projection() {
             <span>Base: <span className="pnum">{formatBaseMoney(Math.round(avgMonthlySavings))}</span>/mo</span>
             <span>+100%</span>
           </div>
-          <div style={{ marginTop: 8, ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+          <div style={{ marginTop: 8, fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>
             {savingsAdj > 0 ? `Saving ${savingsAdj}% more than current pace` : savingsAdj < 0 ? `Saving ${Math.abs(savingsAdj)}% less than current pace` : "At current savings pace"}
           </div>
         </div>
@@ -426,7 +426,7 @@ export default function Projection() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -464,7 +464,7 @@ export default function Projection() {
           right={
             <button
               onClick={() => setShowScenarios(s => !s)}
-              style={{ ...mono, fontSize: 9, padding: "3px 8px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-muted)", cursor: "pointer" }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 9, padding: "3px 8px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-muted)", cursor: "pointer" }}
             >
               {showScenarios ? "Hide scenarios" : "Show scenarios"}
             </button>
@@ -603,7 +603,7 @@ export default function Projection() {
                 <span className="pnum">{formatBaseMoney(finalBull)}</span>
               </span>
             </HStack>
-            <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 6, textAlign: "center" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)", marginTop: 6, textAlign: "center" }}>
               ▲ baseline <span className="pnum">{formatBaseMoney(finalBase)}</span> · upside: +<span className="pnum">{formatBaseMoney(finalBull - finalBase)}</span> · downside: −<span className="pnum">{formatBaseMoney(finalBase - finalBear)}</span>
             </div>
           </div>
