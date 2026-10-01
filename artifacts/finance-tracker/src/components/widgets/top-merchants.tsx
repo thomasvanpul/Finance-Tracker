@@ -89,7 +89,7 @@ function MerchantRow({ merchant, rank, isLast, isExpanded: expanded, color, barW
         <Drill
           href={merchantTransactionsHref(merchant.name)}
           title={`${merchant.name} — every transaction, across accounts`}
-          style={{ fontFamily: "var(--font-mono)", fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          style={{ fontFamily: "var(--font-sans)", fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
         >
           {truncatedName}
         </Drill>
@@ -197,7 +197,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
   const merchantRows = (
     <div style={{ padding: "4px 12px 12px" }}>
       {topMerchants.length === 0 ? (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", paddingTop: 16 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", paddingTop: 16 }}>
           No expenses this month
         </div>
       ) : (
@@ -267,7 +267,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
             {donutData.map((entry, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: entry.color, flexShrink: 0 }} />
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {entry.name}
                 </span>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", flexShrink: 0 }}>
@@ -278,7 +278,7 @@ export function TopMerchantsWidget({ isExpanded }: { isExpanded?: boolean }) {
           </div>
         </>
       ) : (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", paddingTop: 20 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", paddingTop: 20 }}>
           No data
         </div>
       )}
