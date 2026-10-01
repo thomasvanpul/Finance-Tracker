@@ -102,7 +102,7 @@ function AlertCountChip({ count, level, label }: AlertCountChipProps) {
   const color = LEVEL_COLOR[level];
   return (
     <span style={{
-      fontFamily: "var(--font-mono)",
+      fontFamily: "var(--font-sans)",
       fontSize: 9,
       fontWeight: 600,
       color,
@@ -134,7 +134,7 @@ function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) 
           : `color-mix(in srgb, ${color} 4%, var(--ft-raised))`,
         borderBottom: "1px solid var(--ft-border)",
         padding: "var(--ft-widget-py) var(--ft-widget-px)",
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         transition: "background 0.1s",
       }}
     >
@@ -186,7 +186,7 @@ function AlertRow({ alert, onDismiss }: { alert: Alert; onDismiss: (id: string) 
           border: "none",
           color: "var(--ft-dim)",
           cursor: "pointer",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 16,
           padding: "0 2px",
           lineHeight: 1,
@@ -378,7 +378,7 @@ export function SmartAlertsWidget() {
           <button
             onClick={dismissAll}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               letterSpacing: "0.06em",
               padding: "var(--ft-badge-py) var(--ft-badge-px)",
@@ -408,7 +408,7 @@ export function SmartAlertsWidget() {
 
       {extra > 0 && (
         <div style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 9,
           color: "var(--ft-dim)",
           padding: "var(--ft-widget-py) var(--ft-widget-px)",
