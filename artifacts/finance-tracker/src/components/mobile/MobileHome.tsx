@@ -7,7 +7,6 @@ import { usePrivacy } from "@/contexts/privacy-context";
 import {
   useGetDashboard,
   useListTransactions,
-  useGetTransactionSummary,
   useListSubscriptions,
   useListUpcoming,
 } from "@workspace/api-client-react";
@@ -100,7 +99,6 @@ export function MobileHome(_props: MobileHomeProps) {
   const dateTo = now.toISOString().slice(0, 10);
 
   const { data: dashboard, isLoading: dashboardLoading } = useGetDashboard();
-  const { data: _monthSummary } = useGetTransactionSummary({ month: monthStr });
   const { data: txns = [] } = useListTransactions({ dateFrom, dateTo });
   // The month window above is what the screen shows. A recurring series
   // cannot be seen inside one month, so the projected trough reads the full
