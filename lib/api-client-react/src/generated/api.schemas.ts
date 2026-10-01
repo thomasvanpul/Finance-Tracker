@@ -1722,6 +1722,33 @@ export interface TabSlotSettings {
   tabSlot: TabSlotSettingsTabSlot;
 }
 
+export interface NetWorthPoint {
+  /** Local date, YYYY-MM-DD */
+  date: string;
+  /** assets + portfolio + owingNet - liabilities, as the dashboard showed it that day */
+  netWorth: number;
+  assets: number;
+  portfolio: number;
+  /** Positive magnitude */
+  liabilities: number;
+  /** Owed to the user minus owed by the user */
+  owingNet: number;
+  /** The day's figure left out an account with no FX rate or an unvalued holding */
+  partial: boolean;
+}
+
+export interface NetWorthHistory {
+  baseCurrency: string;
+  /**
+     * Earliest captured day in the current base currency (YYYY-MM-DD), or null when none
+     * @nullable
+     */
+  dataAvailableSince: string | null;
+  /** Captured days in a previous base currency, left out of points */
+  daysInOtherCurrency: number;
+  points: NetWorthPoint[];
+}
+
 export type DashboardSummaryAccountBreakdownItemType = typeof DashboardSummaryAccountBreakdownItemType[keyof typeof DashboardSummaryAccountBreakdownItemType];
 
 
@@ -1876,6 +1903,14 @@ export type GetAdminOverviewParams = {
 
  */
 webCommit?: string;
+};
+
+export type GetNetWorthHistoryParams = {
+/**
+ * @minimum 1
+ * @maximum 3650
+ */
+days?: number;
 };
 
 export type ListTransactionsParams = {

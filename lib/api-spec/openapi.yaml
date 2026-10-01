@@ -99,6 +99,35 @@ paths:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
 
+  /net-worth/history:
+    get:
+      operationId: getNetWorthHistory
+      tags: [dashboard]
+      summary: Daily net worth as the dashboard captured it
+      description: >-
+        One point per day on which the dashboard was read, from the first
+        captured day. No backfill and no interpolation: a day without a
+        read is absent. Days captured in a previous base currency are
+        counted in daysInOtherCurrency, not converted.
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 3650
+            default: 365
+      responses:
+        "200":
+          description: Net worth history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NetWorthHistory"
+        "400":
+          description: days out of range
+
   # ── ACCOUNTS ───────────────────────────────────────────────────────────────
   /accounts:
     get:
@@ -3169,6 +3198,47 @@ components:
             artifacts/finance-tracker/src/lib/tab-slot.ts.
 
     # ── DASHBOARD ─────────────────────────────────────────────────────────────
+    NetWorthHistory:
+      type: object
+      required: [baseCurrency, dataAvailableSince, daysInOtherCurrency, points]
+      properties:
+        baseCurrency:
+          type: string
+        dataAvailableSince:
+          type: ["string", "null"]
+          description: Earliest captured day in the current base currency (YYYY-MM-DD), or null when none
+        daysInOtherCurrency:
+          type: integer
+          description: Captured days in a previous base currency, left out of points
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/NetWorthPoint"
+
+    NetWorthPoint:
+      type: object
+      required: [date, netWorth, assets, portfolio, liabilities, owingNet, partial]
+      properties:
+        date:
+          type: string
+          description: Local date, YYYY-MM-DD
+        netWorth:
+          type: number
+          description: assets + portfolio + owingNet - liabilities, as the dashboard showed it that day
+        assets:
+          type: number
+        portfolio:
+          type: number
+        liabilities:
+          type: number
+          description: Positive magnitude
+        owingNet:
+          type: number
+          description: Owed to the user minus owed by the user
+        partial:
+          type: boolean
+          description: The day's figure left out an account with no FX rate or an unvalued holding
+
     DashboardSummary:
       type: object
       required: [baseCurrency, netLiquidity, netWorth, totalCash, totalLiabilities, unconvertibleAccounts, accountBreakdown, portfolio, thisMonth, owing]

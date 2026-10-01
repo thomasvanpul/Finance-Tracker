@@ -55,6 +55,7 @@ import type {
   GetAdminWhoami200,
   GetMarketPricesParams,
   GetMarketQuotesParams,
+  GetNetWorthHistoryParams,
   GetTransactionSummaryParams,
   Goal,
   HealthStatus,
@@ -67,6 +68,7 @@ import type {
   InvestmentSummary,
   InvestmentUpdate,
   ListTransactionsParams,
+  NetWorthHistory,
   OkResult,
   PersonaSettings,
   PersonaState,
@@ -411,6 +413,91 @@ export function useGetDashboard<TData = Awaited<ReturnType<typeof getDashboard>>
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetNetWorthHistoryUrl = (params?: GetNetWorthHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/net-worth/history?${stringifiedParams}` : `/api/net-worth/history`
+}
+
+/**
+ * One point per day on which the dashboard was read, from the first captured day. No backfill and no interpolation: a day without a read is absent. Days captured in a previous base currency are counted in daysInOtherCurrency, not converted.
+ * @summary Daily net worth as the dashboard captured it
+ */
+export const getNetWorthHistory = async (params?: GetNetWorthHistoryParams, options?: RequestInit): Promise<NetWorthHistory> => {
+
+  return customFetch<NetWorthHistory>(getGetNetWorthHistoryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetNetWorthHistoryQueryKey = (params?: GetNetWorthHistoryParams,) => {
+    return [
+    `/api/net-worth/history`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetNetWorthHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getNetWorthHistory>>, TError = ErrorType<void>>(params?: GetNetWorthHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNetWorthHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetNetWorthHistoryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNetWorthHistory>>> = ({ signal }) => getNetWorthHistory(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getNetWorthHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetNetWorthHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getNetWorthHistory>>>
+export type GetNetWorthHistoryQueryError = ErrorType<void>
+
+
+/**
+ * @summary Daily net worth as the dashboard captured it
+ */
+
+export function useGetNetWorthHistory<TData = Awaited<ReturnType<typeof getNetWorthHistory>>, TError = ErrorType<void>>(
+ params?: GetNetWorthHistoryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNetWorthHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetNetWorthHistoryQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

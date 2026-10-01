@@ -33,7 +33,7 @@ const {
   userTable, sessionTable, accountTable, passkeyTable, totpTable, twoFactorTable,
   accountsTable, transactionsTable, upcomingTable, investmentsTable, debtsTable,
   sharedExpensesTable, sharedExpenseParticipantsTable, sharedExpenseSettlementsTable,
-  nwSnapshotsTable, accountBalanceSnapshotsTable, appSettingsTable, budgetsTable,
+  nwSnapshotsTable, accountBalanceSnapshotsTable, netWorthSnapshotsTable, appSettingsTable, budgetsTable,
   goalsTable, subscriptionsTable, dismissedSubscriptionsTable, connectionsTable,
   requestMetricsTable, recurringPatternsTable, userPreferencesTable,
 } = schema;
@@ -103,6 +103,7 @@ export const EXPORT_SECTIONS: readonly ExportSection[] = [
   },
   { key: "netWorthSnapshots", table: nwSnapshotsTable, where: (u) => eq(nwSnapshotsTable.userId, u) },
   { key: "accountBalanceSnapshots", table: accountBalanceSnapshotsTable, where: (u) => eq(accountBalanceSnapshotsTable.userId, u) },
+  { key: "dailyNetWorthSnapshots", table: netWorthSnapshotsTable, where: (u) => eq(netWorthSnapshotsTable.userId, u) },
   { key: "sharedExpenses", table: sharedExpensesTable, where: (u) => eq(sharedExpensesTable.userId, u) },
   {
     key: "sharedExpenseParticipants", table: sharedExpenseParticipantsTable,

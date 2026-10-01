@@ -10,6 +10,7 @@ import { getBaseCurrency } from "../lib/app-settings-db";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
 import { trailingMonthRanges, forwardWindow } from "../lib/date-ranges";
 import { captureAccountSnapshots } from "../lib/account-snapshots";
+import { captureNetWorthSnapshot } from "../lib/net-worth-snapshots";
 import { isLiabilityType } from "../lib/account-sign";
 
 const router: IRouter = Router();
@@ -818,7 +819,16 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // takes the paying account in its body when the debt has none and
   // answers 422 without one, so every settle moves cash
   // (debts.settle.route.test.ts).
-  const netWorth = computeNetWorth({ totalCash, portfolioValueBase, totalOwedToMe, totalIOwe, totalLiabilities });
+  const netWorthTerms = { totalCash, portfolioValueBase, totalOwedToMe, totalIOwe, totalLiabilities };
+  const netWorth = computeNetWorth(netWorthTerms);
+  // Daily history (net_worth_snapshots): first read of the day captures the
+  // figure this response returns, with its terms. Write-once; never throws.
+  await captureNetWorthSnapshot(userId, {
+    terms: netWorthTerms,
+    netWorth: Math.round(netWorth * 100) / 100,
+    baseCurrency,
+    partial: unconvertibleAccounts > 0 || unavailablePositions > 0,
+  });
   const portfolioPlBase = portfolioValueBase - portfolioCostBase;
   // No cost basis (empty portfolio) → no return to compute. Null, not 0
   // — a "+0.00%" render for a user who holds nothing is a fabricated

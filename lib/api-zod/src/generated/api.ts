@@ -220,6 +220,35 @@ export const GetDashboardResponse = zod.object({
 
 
 /**
+ * One point per day on which the dashboard was read, from the first captured day. No backfill and no interpolation: a day without a read is absent. Days captured in a previous base currency are counted in daysInOtherCurrency, not converted.
+ * @summary Daily net worth as the dashboard captured it
+ */
+export const getNetWorthHistoryQueryDaysDefault = 365;
+export const getNetWorthHistoryQueryDaysMax = 3650;
+
+
+
+export const GetNetWorthHistoryQueryParams = zod.object({
+  "days": zod.coerce.number().min(1).max(getNetWorthHistoryQueryDaysMax).default(getNetWorthHistoryQueryDaysDefault)
+})
+
+export const GetNetWorthHistoryResponse = zod.object({
+  "baseCurrency": zod.string(),
+  "dataAvailableSince": zod.string().nullable().describe('Earliest captured day in the current base currency (YYYY-MM-DD), or null when none'),
+  "daysInOtherCurrency": zod.number().describe('Captured days in a previous base currency, left out of points'),
+  "points": zod.array(zod.object({
+  "date": zod.string().describe('Local date, YYYY-MM-DD'),
+  "netWorth": zod.number().describe('assets + portfolio + owingNet - liabilities, as the dashboard showed it that day'),
+  "assets": zod.number(),
+  "portfolio": zod.number(),
+  "liabilities": zod.number().describe('Positive magnitude'),
+  "owingNet": zod.number().describe('Owed to the user minus owed by the user'),
+  "partial": zod.boolean().describe('The day\'s figure left out an account with no FX rate or an unvalued holding')
+}))
+})
+
+
+/**
  * @summary List all accounts
  */
 export const ListAccountsResponseItem = zod.object({
