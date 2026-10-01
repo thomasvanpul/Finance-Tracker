@@ -275,7 +275,7 @@ function PillarMiniBar({ label, score, weight, isLast }: PillarMiniBarProps) {
       padding: "6px 10px",
       borderBottom: isLast ? "none" : "1px solid var(--ft-border)",
     }}>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
         {label}
       </div>
       <div style={{ height: 4, background: "var(--ft-raised)", overflow: "hidden", position: "relative" as const }}>
@@ -324,13 +324,13 @@ function LockedAchievementRow({ item, isLast }: LockedAchievementRowProps) {
       <div style={{ width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
         {ACHIEVEMENT_ICONS[item.icon] ?? <Star size={18} color="var(--ft-dim)" />}
       </div>
-      <div style={{ flex: 1, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+      <div style={{ flex: 1, fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>
         {item.name}
       </div>
-      <Text as="div" mono size={8} color="var(--ft-dim)" letterSpacing="0.04em">
+      <Text as="div" size={8} color="var(--ft-dim)" letterSpacing="0.04em">
         {item.condition}
       </Text>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, color: "var(--ft-dim)", border: "1px solid var(--ft-border2)", padding: "1px 5px", letterSpacing: "0.06em" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 7, color: "var(--ft-dim)", border: "1px solid var(--ft-border2)", padding: "1px 5px", letterSpacing: "0.06em" }}>
         LOCKED
       </div>
     </div>
@@ -497,7 +497,7 @@ function SubScoreRow({ sub, rank, isLast }: SubScoreRowProps) {
       </Text>
       {/* Label + weight */}
       <div>
-        <Text as="div" mono size={10} weight={600} color="var(--ft-text)">
+        <Text as="div" size={10} weight={600} color="var(--ft-text)">
           {sub.label}
         </Text>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 1 }}>
@@ -509,11 +509,11 @@ function SubScoreRow({ sub, rank, isLast }: SubScoreRowProps) {
         <div style={{ height: 3, background: "var(--ft-border)", marginBottom: 5, overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${sub.score ?? 0}%`, background: color }} />
         </div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5 }}>
           {sub.insight}
         </div>
         {sub.action && sub.pointGain !== undefined && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>
             <Text as="span" color="var(--ft-accent)">→</Text> {sub.action}{" "}
             <span className="pnum" style={{ color: "var(--ft-green)", fontWeight: 600 }}>+{sub.pointGain} pts</span>
           </div>
@@ -571,10 +571,10 @@ function AchievementBadge({ achievement }: AchievementBadgeProps) {
       }}>
       <span style={{ lineHeight: 1, flexShrink: 0 }}>{icon}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", marginBottom: 1 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-accent)", marginBottom: 1 }}>
           {achievement.name}
         </div>
-        <Text as="div" mono size={9} color="var(--ft-muted)">
+        <Text as="div" size={9} color="var(--ft-muted)">
           {achievement.description}
         </Text>
       </div>
@@ -657,12 +657,12 @@ function RecRow({ rec, rank, priorityLabel, priorityColor, isLast }: RecRowProps
       </div>
       {/* Text */}
       <div style={{ flex: 1 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.5 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", lineHeight: 1.5 }}>
           {rec.text}
         </div>
       </div>
       {/* Priority badge */}
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 7, fontWeight: 700, color: priorityColor, border: `1px solid ${priorityColor}55`, padding: "2px 5px", flexShrink: 0, letterSpacing: "0.06em" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 7, fontWeight: 700, color: priorityColor, border: `1px solid ${priorityColor}55`, padding: "2px 5px", flexShrink: 0, letterSpacing: "0.06em" }}>
         {priorityLabel}
       </div>
       {/* Impact */}
@@ -1018,10 +1018,10 @@ export default function HealthScore() {
           padding: "10px 14px", marginBottom: 6,
           border: "1px solid var(--ft-border)",
           background: "var(--ft-surface)",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
         }}>
           <div style={{ flexShrink: 0 }}>
-            <div style={{ fontSize: 8, fontWeight: 700, color: personaColor, letterSpacing: "0.12em", marginBottom: 3 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, color: personaColor, letterSpacing: "0.12em", marginBottom: 3 }}>
               {persona.code} — FOCUS
             </div>
             <HStack gap={5} wrap>
@@ -1061,7 +1061,7 @@ export default function HealthScore() {
             <div style={{
               width: 220, height: 220, border: "1px solid var(--ft-border)", background: "var(--ft-surface)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)",
+              fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)",
             }}>
               Loading…
             </div>
@@ -1071,9 +1071,9 @@ export default function HealthScore() {
             <div style={{
               width: 220, height: 220, border: "1px solid var(--ft-border)", background: "var(--ft-surface)",
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
-              fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)",
+              fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)",
             }}>
-              <span style={{ fontSize: 36, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "-0.02em" }}>—</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 36, fontWeight: 700, color: "var(--ft-dim)", letterSpacing: "-0.02em" }}>—</span>
               <span style={{ fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase" as const }}>add transactions to score</span>
             </div>
           )}
@@ -1102,11 +1102,11 @@ export default function HealthScore() {
                 {compositeScore !== null ? `${compositeScore}/100` : "—"}
               </div>
             </HStack>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color, fontWeight: 700, lineHeight: 1.3 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 14, color, fontWeight: 700, lineHeight: 1.3 }}>
               {compositeScore !== null ? gradeDescription(compositeScore) : "Add transactions to generate your score."}
             </div>
             {scoreTrend !== null && (
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--ft-border)" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--ft-border)" }}>
                 Score {scoreTrend >= 0 ? "up" : "down"}{" "}
                 <span className="pnum" style={{ color: scoreTrend >= 0 ? "var(--ft-green)" : "var(--ft-red)", fontWeight: 600 }}>
                   {scoreTrend >= 0 ? "+" : ""}{scoreTrend} pts
@@ -1128,8 +1128,8 @@ export default function HealthScore() {
       {/* ── Score Breakdown (detailed rows, sorted worst-first) ── */}
       <div style={{ marginBottom: 6, border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
         <PanelHeader right={
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
-            {subScores.filter(s => s.action).length} improvement{subScores.filter(s => s.action).length !== 1 ? "s" : ""} available
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-muted)" }}>
+            <span className="pnum">{subScores.filter(s => s.action).length}</span> improvement{subScores.filter(s => s.action).length !== 1 ? "s" : ""} available
           </span>
         }>
           Score Breakdown · sorted by weakest first
@@ -1207,7 +1207,7 @@ export default function HealthScore() {
               </AreaChart>
             </ResponsiveContainer>
             <HStack gap={16} justify="center" marginTop={6}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)" }}>
                 Score saved once per day on visit
               </div>
             </HStack>
@@ -1251,8 +1251,8 @@ export default function HealthScore() {
       {/* ── Achievements ── */}
       <div style={{ marginBottom: 6, background: "var(--ft-surface)", border: "1px solid var(--ft-border)" }}>
         <PanelHeader right={achievements.length > 0 ? (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>
-              {achievements.length} unlocked
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-muted)" }}>
+              <span className="pnum">{achievements.length}</span> unlocked
             </span>
           ) : undefined}>
           Achievements
@@ -1279,7 +1279,7 @@ export default function HealthScore() {
       {/* ── Methodology ── */}
       <div style={{
         background: "var(--ft-surface)", border: "1px solid var(--ft-border)",
-        padding: "10px 14px", fontFamily: "var(--font-mono)", fontSize: 9,
+        padding: "10px 14px", fontFamily: "var(--font-sans)", fontSize: 9,
         color: "var(--ft-dim)", lineHeight: 1.7,
       }}>
         <strong style={{ color: "var(--ft-muted)", letterSpacing: "0.05em" }}>METHODOLOGY — </strong>
