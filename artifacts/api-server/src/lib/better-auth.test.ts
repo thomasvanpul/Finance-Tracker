@@ -53,3 +53,37 @@ describe("better-auth · trustedProviders locks", () => {
     expect(auth.options.account?.accountLinking?.enabled).toBe(true);
   });
 });
+
+// Numeris signs in with Google/Apple/GitHub and never calls the provider
+// afterwards — nothing reads accessToken, refreshToken or idToken back
+// (grep artifacts/*/src, 2026-10-01). better-auth 1.6.23 has no option to
+// skip storing them, so a database hook drops them before every account
+// write. A stored token is a live credential to the user's Google or
+// GitHub account sitting in a finance database for no purpose.
+describe("better-auth · OAuth tokens are not stored", () => {
+  const TOKENS = { accessToken: "ya29.a", refreshToken: "1//r", idToken: "eyJ.i" };
+
+  it("account create drops access, refresh and id tokens", async () => {
+    const before = auth.options.databaseHooks?.account?.create?.before;
+    expect(before, "no account create hook — OAuth tokens are written to the account row").toBeTypeOf("function");
+    const result = await before!({ providerId: "google", accountId: "1", userId: "u", ...TOKENS } as never);
+    const data = (result as { data: Record<string, unknown> }).data;
+    expect(data.accessToken).toBeNull();
+    expect(data.refreshToken).toBeNull();
+    expect(data.idToken).toBeNull();
+  });
+
+  it("account update (updateAccountOnSignIn) drops them too", async () => {
+    const before = auth.options.databaseHooks?.account?.update?.before;
+    expect(before, "no account update hook — every sign-in rewrites fresh tokens").toBeTypeOf("function");
+    const result = await before!({ ...TOKENS } as never);
+    const data = (result as { data: Record<string, unknown> }).data;
+    expect(data).toMatchObject({ accessToken: null, refreshToken: null, idToken: null });
+  });
+
+  it("an update that carries no tokens is not widened — a password change stays a password change", async () => {
+    const before = auth.options.databaseHooks?.account?.update?.before;
+    const result = await before!({ password: "hash" } as never);
+    expect((result as { data: Record<string, unknown> }).data).toEqual({ password: "hash" });
+  });
+});

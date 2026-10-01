@@ -140,6 +140,16 @@ async function sendTransactionalEmail(mail: {
   }
 }
 
+const OAUTH_TOKEN_FIELDS = ["accessToken", "refreshToken", "idToken"] as const;
+
+// Nulls only the token fields the write actually carries, so an update
+// that never touched them (a password change) is not widened.
+function withoutOAuthTokens(account: Record<string, unknown>): Record<string, null> {
+  return Object.fromEntries(
+    OAUTH_TOKEN_FIELDS.filter((field) => field in account).map((field) => [field, null]),
+  );
+}
+
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
   session: {
@@ -346,6 +356,26 @@ export const auth = betterAuth({
       // Methods panel in Settings.
       trustedProviders: ["google", "apple"],
       requireLocalEmailVerified: false,
+    },
+  },
+  // OAuth tokens are dropped before every account write. Numeris uses a
+  // provider only to prove who is signing in, then never calls it again —
+  // nothing reads accessToken, refreshToken or idToken back. Stored, each
+  // one is a live credential to the user's Google or GitHub account sitting
+  // in a finance database for no purpose. better-auth 1.6.23 has no switch
+  // to skip storing them (encryptOAuthTokens only encrypts), and every
+  // account create/update runs through these hooks (internal-adapter.mjs).
+  // A feature that needs to call a provider later must remove this and
+  // turn on encryptOAuthTokens instead. Rows written before this landed
+  // still hold tokens — clearing those is a separate, one-time job.
+  databaseHooks: {
+    account: {
+      create: {
+        before: async (account) => ({ data: { ...account, ...withoutOAuthTokens(account) } }),
+      },
+      update: {
+        before: async (account) => ({ data: { ...account, ...withoutOAuthTokens(account) } }),
+      },
     },
   },
   advanced: {
