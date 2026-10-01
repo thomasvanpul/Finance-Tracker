@@ -633,7 +633,7 @@ function WorthHero({
         <div
           style={{
             marginTop: 4,
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             color: "var(--ft-amber)",
             letterSpacing: "0.06em",
@@ -646,7 +646,7 @@ function WorthHero({
         <div
           style={{
             marginTop: 4,
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             color: "var(--ft-amber)",
             letterSpacing: "0.06em",
@@ -1095,7 +1095,7 @@ function DetailRow({
     >
       <span
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: "var(--ft-text-xs)",
           letterSpacing: "0.12em",
           color: "var(--ft-dim)",
