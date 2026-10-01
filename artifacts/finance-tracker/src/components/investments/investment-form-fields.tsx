@@ -106,7 +106,7 @@ export function InvestmentFormFields({ form, setForm, idPrefix = "inv" }: Invest
       {/* Company name */}
       <div className="space-y-1.5">
         <Label htmlFor={id("name")}>Company / Fund Name</Label>
-        <Input id={id("name")} placeholder="e.g. Vanguard S&P 500 ETF" value={form.name} onChange={(e) => setField("name", e.target.value)} required />
+        <Input id={id("name")} placeholder="e.g. Global equity tracker fund" value={form.name} onChange={(e) => setField("name", e.target.value)} required />
       </div>
 
       {/* Asset class */}

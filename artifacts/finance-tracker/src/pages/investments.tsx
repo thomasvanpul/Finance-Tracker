@@ -2108,17 +2108,26 @@ marketsVisible
                 NO POSITIONS
               </div>
               <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 28, maxWidth: 460, lineHeight: 1.7 }}>
-                Add a stock, ETF, crypto, or bond to start tracking live P&amp;L, allocation breakdowns, benchmark comparisons, and AI-driven portfolio decisions.
+                {marketsVisible
+                  ? <>Add a stock, ETF, crypto, or bond to start tracking live P&amp;L, allocation breakdowns, benchmark comparisons, and AI-driven portfolio decisions.</>
+                  : <>Add a stock, ETF, crypto, or bond to record what you hold and what you paid, in its own currency.</>}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 40px", marginBottom: 28, maxWidth: 500, width: "100%", textAlign: "left" }}>
                 {[
+                  // Allocation, the heat map, concentration, the rebalancer
+                  // and dividends are all built from priced positions
+                  // (pricedInvs, quoteMap), so with market data off they
+                  // would be promised and then render empty (BACKLOG L4).
                   ...(marketsVisible ? [
                     ["▲", "Live prices via Yahoo Finance"],
                     ["◈", "Portfolio vs S&P 500 benchmark"],
-                  ] : []),
-                  ["◆", "Asset allocation heat map"],
-                  ["⬡", "Dividend tracker + earnings calendar"],
-                  ["●", "Concentration risk + rebalancer"],
+                    ["◆", "Asset allocation heat map"],
+                    ["⬡", "Dividend tracker + earnings calendar"],
+                    ["●", "Concentration risk + rebalancer"],
+                  ] : [
+                    ["◆", "Cost basis in each holding's own currency"],
+                    ["●", "Holdings in net worth at what you paid"],
+                  ]),
                   ["◎", "AI-powered portfolio decisions"],
                 ].map(([glyph, text]) => (
                   <div key={text} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>
@@ -2391,8 +2400,10 @@ marketsVisible
             baseCurrency={getBaseCurrency()}
           />
 
-          {hasPositions && <FundamentalsTable investments={investments ?? []} quoteMap={quoteMap} />}
-          {hasPositions && <DividendTracker investments={investments ?? []} quoteMap={quoteMap} />}
+          {/* Both read quotes (P/E, beta, dividend yield) and name Yahoo as
+              their source, so they stay behind the flag (BACKLOG L4). */}
+          {marketsVisible && hasPositions && <FundamentalsTable investments={investments ?? []} quoteMap={quoteMap} />}
+          {marketsVisible && hasPositions && <DividendTracker investments={investments ?? []} quoteMap={quoteMap} />}
 
           {/* Portfolio Analytics */}
           {hasPositions && (
