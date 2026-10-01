@@ -230,7 +230,7 @@ function DecisionRow({ d, rank }: { d: MiniDecision; rank: number }) {
         </span>
         <div style={{ width: 4, height: 28, background: color, borderRadius: 2 }} />
         <span style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 9,
           fontWeight: 600,
           color,
@@ -242,7 +242,7 @@ function DecisionRow({ d, rank }: { d: MiniDecision; rank: number }) {
         }}>
           {PRIORITY_LABEL[d.priority]}
         </span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {d.title}
         </span>
         {d.annualCost && d.annualCost > 0 ? (
@@ -290,7 +290,7 @@ export function DecisionEngineWidget() {
       {/* Header — priority colour rides on the leading glyph, not a stripe. */}
       <PanelHeader
         right={
-          <Link href="/decisions" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-blue)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2, letterSpacing: "0.04em" }}>
+          <Link href="/decisions" style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-blue)", textDecoration: "none", display: "flex", alignItems: "center", gap: 2, letterSpacing: "0.04em" }}>
             ALL <ChevronRight size={9} />
           </Link>
         }
@@ -327,14 +327,14 @@ export function DecisionEngineWidget() {
       {top.length === 0 ? (
         <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", textAlign: "center" }}>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--ft-green)", marginBottom: 6 }}>✓</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-green)" }}>ALL CLEAR</div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>No actions needed right now</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: "var(--ft-green)" }}>ALL CLEAR</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>No actions needed right now</div>
         </div>
       ) : (
         <>
           {top.map((d, i) => <DecisionRow key={d.id} d={d} rank={i + 1} />)}
           {decisions.length > 6 && (
-            <Link href="/decisions" style={{ display: "block", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", textDecoration: "none", textAlign: "center", padding: "7px 0", background: "var(--ft-raised)", letterSpacing: "0.04em" }}>
+            <Link href="/decisions" style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", textDecoration: "none", textAlign: "center", padding: "7px 0", background: "var(--ft-raised)", letterSpacing: "0.04em" }}>
               +{decisions.length - 6} more →
             </Link>
           )}
