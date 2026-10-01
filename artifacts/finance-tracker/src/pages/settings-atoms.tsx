@@ -21,8 +21,8 @@ export const ROW = {
 
 export function RowLabel({ title, sub }: { title: string; sub?: string }) {
   return (
-    <div>
-      <div style={{ fontSize: 12, color: "var(--ft-text)", fontWeight: 500, fontFamily: "var(--font-mono)" }}>{title}</div>
+    <div style={{ fontFamily: "var(--font-sans)" }}>
+      <div style={{ fontSize: 12, color: "var(--ft-text)", fontWeight: 500 }}>{title}</div>
       {sub && <div style={{ fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>{sub}</div>}
     </div>
   );
@@ -59,7 +59,7 @@ export function ActionBtn({ label, variant = "accent", onClick, disabled }: { la
       onMouseEnter={() => { if (!disabled) setHov(true); }}
       onMouseLeave={() => setHov(false)}
       style={{
-        fontFamily: "var(--font-mono)", fontSize: 11, color,
+        fontFamily: "var(--font-sans)", fontSize: 11, color,
         background: hov ? `color-mix(in srgb, ${color} 8%, transparent)` : "transparent",
         border: `1px solid ${color}`,
         padding: "7px 18px", cursor: disabled ? "not-allowed" : "pointer",
@@ -121,7 +121,7 @@ export function SettingsInfoRow({ label, value, accent = "var(--ft-text)" }: { l
       style={{
         display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12,
         padding: "8px 14px", borderBottom: "1px solid var(--ft-border)",
-        fontFamily: "var(--font-mono)", fontSize: 10,
+        fontFamily: "var(--font-sans)", fontSize: 10,
         background: hov ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))" : "var(--ft-surface)",
         transition: "background 0.1s",
       }}
@@ -149,12 +149,12 @@ export function SettingsDataResetRow({ label, description, onReset }: { label: s
       }}
     >
       <div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>{label}</div>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{description}</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>{label}</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)" }}>{description}</div>
       </div>
       <button
         onClick={onReset}
-        style={{ flexShrink: 0, fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.06em", color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "5px 12px", cursor: "pointer", whiteSpace: "nowrap" }}
+        style={{ flexShrink: 0, fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.06em", color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "5px 12px", cursor: "pointer", whiteSpace: "nowrap" }}
       >
         Reset
       </button>
@@ -196,7 +196,7 @@ export function SettingsSelectRow({ title, sub, value, onChange, children }: { t
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", flexShrink: 0 }}
+        style={{ fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", flexShrink: 0 }}
       >
         {children}
       </select>
@@ -216,7 +216,7 @@ export function SettingsNavItemRow({ label, visible, onChange }: { label: string
         transition: "background 0.1s",
       }}
     >
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: visible ? "var(--ft-text)" : "var(--ft-dim)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: visible ? "var(--ft-text)" : "var(--ft-dim)" }}>{label}</span>
       <Toggle on={visible} onChange={onChange} />
     </div>
   );
@@ -236,7 +236,7 @@ export function SettingsWidgetRow({
   enabled: boolean;
   onToggle: () => void;
   // Item 13: whether this widget is in the active persona's
-  // recommended set. Rendered as a small mono tag next to the size
+  // recommended set. Rendered as a small tag next to the size
   // label so the user can see at a glance which widgets the persona
   // pre-selected without having to compare against the on/off toggle.
   recommended?: boolean;
@@ -252,10 +252,10 @@ export function SettingsWidgetRow({
         transition: "background 0.1s",
       }}
     >
-      <div>
+      <div style={{ fontFamily: "var(--font-sans)" }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>
           {label}
-          <span style={{ marginLeft: 8, fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
+          <span style={{ marginLeft: 8, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em" }}>
             {span === "full" ? "FULL WIDTH" : "HALF"}
           </span>
           {recommended && (
@@ -263,7 +263,6 @@ export function SettingsWidgetRow({
               style={{
                 marginLeft: 8,
                 fontSize: 9,
-                fontFamily: "var(--font-mono)",
                 color: "var(--ft-accent)",
                 letterSpacing: "0.08em",
                 border: "1px solid var(--ft-accent)44",
@@ -296,7 +295,7 @@ export function SettingsThemeEffectRow({ label, accent, on, onChange }: { label:
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ width: 10, height: 10, borderRadius: "50%", background: accent, display: "inline-block", flexShrink: 0 }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)" }}>{label}</span>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)" }}>{label}</span>
       </div>
       <Toggle on={on} onChange={onChange} />
     </div>
