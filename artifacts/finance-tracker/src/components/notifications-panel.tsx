@@ -879,17 +879,30 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                       >
                         {rule.level === "critical" ? "CRIT" : "WARN"}
                       </span>
+                      {/* The name may ellipsise; the threshold never does. */}
                       <span
                         style={{
-                          fontFamily: "var(--font-mono)",
+                          fontFamily: "var(--font-sans)",
                           fontSize: 10,
                           color: "var(--ft-text)",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "ellipsis",
+                          minWidth: 0,
                         }}
                       >
-                        {rule.accountName} &lt; {formatBaseMoney(rule.threshold)}
+                        {rule.accountName}
+                      </span>
+                      <span
+                        className="pnum"
+                        style={{
+                          fontSize: 10,
+                          color: "var(--ft-text)",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                        }}
+                      >
+                        &lt; {formatBaseMoney(rule.threshold)}
                       </span>
                     </div>
                     <button
