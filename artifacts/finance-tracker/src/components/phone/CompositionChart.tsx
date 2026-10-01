@@ -108,9 +108,11 @@ export const BUCKET_LABEL: Record<keyof Holdings, string> = {
 
 // Colour = position in the type ladder, not hue-as-data. All values
 // route through --ft-* tokens so all 11 themes render legibly.
+// --ft-accent means "you can press this" (DESIGN.md §11); these buckets are
+// informational only, so investment is --ft-cyan, not the accent.
 export const BUCKET_COLOR: Record<keyof Holdings, string> = {
   cash: "var(--ft-text)",
-  investment: "var(--ft-accent)",
+  investment: "var(--ft-cyan)",
   pension: "var(--ft-blue)",
   property: "var(--ft-green)",
   other: "var(--ft-dim)",
