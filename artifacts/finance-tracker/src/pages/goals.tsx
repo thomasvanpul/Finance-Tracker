@@ -337,7 +337,7 @@ function GoalCard({
 
   const history = goal.history ?? [];
   const projYear = projectedDate ? projectedDate.getFullYear() : null;
-  const barColor = done ? "#56D364" : pct >= 75 ? "var(--ft-green)" : pct >= 40 ? "#e3b341" : "var(--ft-red)";
+  const barColor = done ? "#56D364" : pct >= 75 ? "var(--ft-green)" : pct >= 40 ? "var(--ft-amber)" : "var(--ft-red)";
   const deadlineDays = goal.deadline ? daysUntil(goal.deadline) : null;
   const deadlineUrgencyColor = dlInfo?.isOverdue
     ? "var(--ft-red)"
@@ -450,7 +450,7 @@ function GoalCard({
       <div style={{ marginBottom: 10 }}>
         <HStack align="baseline" justify="between" marginBottom={6}>
           <div>
-            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: done ? "var(--ft-green)" : pct >= 75 ? "var(--ft-green)" : pct >= 40 ? "#e3b341" : "var(--ft-red)" }}>
+            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: done ? "var(--ft-green)" : pct >= 75 ? "var(--ft-green)" : pct >= 40 ? "var(--ft-amber)" : "var(--ft-red)" }}>
               {pct.toFixed(0)}%
             </span>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginLeft: 4 }}>funded</span>

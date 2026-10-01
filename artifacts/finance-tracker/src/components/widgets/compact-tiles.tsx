@@ -553,7 +553,7 @@ export function CompactSpendingBreakdown() {
   return (
     <Tile
       label="TOP SPEND"
-      accent="#e3b341"
+      accent="var(--ft-amber)"
       href={top ? categoryTransactionsHref(top[0], thisMonthRange()) : "/analytics"}
       primary={top ? top[0] : "No spend yet"}
       secondary={top ? `${formatBaseMoney(top[1])}${second ? ` · ${second[0]}` : ""}` : "Add transactions"}
@@ -609,7 +609,7 @@ export function CompactBudgetTracker() {
     });
     return { over, total, worstPct };
   }, [budgets, txs]);
-  const color = over > 0 ? "var(--ft-red)" : worstPct > 75 ? "#e3b341" : "var(--ft-green)";
+  const color = over > 0 ? "var(--ft-red)" : worstPct > 75 ? "var(--ft-amber)" : "var(--ft-green)";
   return (
     <Tile
       label="BUDGETS"
@@ -633,7 +633,7 @@ export function CompactSavingsGoals() {
     return active.sort((a, b) => (b.current / b.target) - (a.current / a.target))[0] ?? null;
   }, [goals]);
   const pct = top ? Math.round((top.current / top.target) * 100) : null;
-  const accent = pct !== null ? (pct >= 75 ? "var(--ft-green)" : pct >= 40 ? "#e3b341" : "var(--ft-blue)") : "var(--ft-blue)";
+  const accent = pct !== null ? (pct >= 75 ? "var(--ft-green)" : pct >= 40 ? "var(--ft-amber)" : "var(--ft-blue)") : "var(--ft-blue)";
   return (
     <Tile
       label="GOALS"
@@ -765,7 +765,7 @@ export function CompactFinancialHealth() {
   const { data: dash } = useGetDashboard();
   const savingsRate = dash?.thisMonth?.savingsRate ?? null;
   const score = savingsRate !== null ? Math.min(100, Math.round(savingsRate * 1.5 + 30)) : null;
-  const color = score !== null ? (score >= 70 ? "var(--ft-green)" : score >= 40 ? "#e3b341" : "var(--ft-red)") : "var(--ft-dim)";
+  const color = score !== null ? (score >= 70 ? "var(--ft-green)" : score >= 40 ? "var(--ft-amber)" : "var(--ft-red)") : "var(--ft-dim)";
   return (
     <Tile
       label="HEALTH SCORE"
@@ -868,7 +868,7 @@ export function CompactSpendingForecast() {
   return (
     <Tile
       label="FORECAST"
-      accent="#e3b341"
+      accent="var(--ft-amber)"
       href="/analytics"
       primary={forecast > 0 ? formatBaseMoney(Math.round(forecast)) : "—"}
       secondary="Projected month-end"
@@ -966,7 +966,7 @@ export function CompactSpendingVelocity() {
 export function CompactSavingsRate() {
   const { data: dash } = useGetDashboard();
   const rate = dash?.thisMonth?.savingsRate ?? null;
-  const color = rate !== null ? (rate >= 20 ? "var(--ft-green)" : rate >= 10 ? "#e3b341" : "var(--ft-red)") : "var(--ft-dim)";
+  const color = rate !== null ? (rate >= 20 ? "var(--ft-green)" : rate >= 10 ? "var(--ft-amber)" : "var(--ft-red)") : "var(--ft-dim)";
   return (
     <Tile
       label="SAVE RATE"
@@ -1066,7 +1066,7 @@ export function CompactDecisionEngine() {
     goals.forEach(g => { if (g.deadline && g.current < g.target) { const days = (new Date(g.deadline).getTime() - now.getTime()) / 86400000; if (days < 180) count++; } });
     return { count };
   }, [accounts, txs, budgets, goals]);
-  const color = count > 2 ? "var(--ft-red)" : count > 0 ? "#e3b341" : "var(--ft-green)";
+  const color = count > 2 ? "var(--ft-red)" : count > 0 ? "var(--ft-amber)" : "var(--ft-green)";
   return (
     <Tile
       label="ACTIONS"
