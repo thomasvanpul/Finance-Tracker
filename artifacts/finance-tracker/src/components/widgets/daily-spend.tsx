@@ -59,7 +59,7 @@ function TodayTxRow({ description, category, baseEquivalent }: TodayTxRowProps) 
             open rows. The amount is this one transaction's own, not a sum
             (DESIGN.md §14). "Expense" is a placeholder for a row with
             neither, so it links to nothing. */}
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", whiteSpace: "nowrap", display: "block" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-muted)", whiteSpace: "nowrap", display: "block" }}>
           {description
             ? <Drill href={merchantTransactionsHref(description)}>{description}</Drill>
             : category
@@ -67,7 +67,7 @@ function TodayTxRow({ description, category, baseEquivalent }: TodayTxRowProps) 
               : "Expense"}
         </span>
         {category && description && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" as const }}>
             <Drill href={categoryTransactionsHref(category)}>{category}</Drill>
           </span>
         )}
@@ -177,7 +177,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
       {todayTotal === 0 ? (
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-green)", marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap" }}>
           £0.00
-          <span style={{ fontSize: 11, fontWeight: 400, color: "var(--ft-dim)", marginLeft: 8 }}>clear day</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 400, color: "var(--ft-dim)", marginLeft: 8 }}>clear day</span>
         </div>
       ) : (
         <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: totalColor, marginBottom: 4, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap" }}>
@@ -188,7 +188,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
       {dailyAvg > 0 && (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>
               avg <span className="pnum">{formatBaseMoney(dailyAvg)}</span>
             </span>
             <span style={{ color: "var(--ft-border2)" }}>·</span>
@@ -240,7 +240,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
       )}
 
       {dailyAvg === 0 && todayTotal === 0 && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
           No expenses recorded this month yet
         </div>
       )}
@@ -257,7 +257,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
             />
           ))}
           {todayExpenseCount > 4 && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
               <Drill href={ledgerHref({ type: "expense", from: today, to: today })}>+{todayExpenseCount - 4} more</Drill>
             </div>
           )}
@@ -305,7 +305,7 @@ export function DailySpendWidget({ isExpanded }: { isExpanded?: boolean }) {
               stroke="var(--ft-dim)"
               strokeDasharray="4 3"
               strokeWidth={1}
-              label={{ value: "avg", position: "insideTopRight", fill: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-mono)" }}
+              label={{ value: "avg", position: "insideTopRight", fill: "var(--ft-dim)", fontSize: 9, fontFamily: "var(--font-sans)" }}
             />
           )}
           <Bar dataKey="total" radius={[2, 2, 0, 0]} maxBarSize={20}>
