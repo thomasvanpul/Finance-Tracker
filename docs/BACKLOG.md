@@ -257,7 +257,7 @@ cap can be re-imposed per phase rather than across the whole tier.
 | M7 | Reviewer demo account for a login-gated app | TODO | NOT YET |
 | M8 | Screenshots, age rating, review notes, export compliance | TODO | NOT YET |
 | M9 | Enable Banking is on a Restricted Production tier that a public app does not fit | DECIDE | NOT YET |
-| M10 | Account deletion does not revoke the Enable Banking consent | TODO | NOT YET |
+| M10 | Account deletion does not revoke the Enable Banking consent | DONE | 7d02175 |
 | M11 | Android platform does not exist | DECIDE | NOT YET |
 | M12 | `docs/DATA-INVENTORY.md` is stale on the deletion LIKE bug | TODO | NOT YET |
 | N1 | Phone UPCOMING's Add CTA is wired to a no-op, and no add path exists on phone | TODO | NOW |
@@ -2107,9 +2107,13 @@ only today, which keeps it clear of Apple 3.1.3 and of PIS licensing.
   own accounts, real data, no company, no cost." A listed app is none of those
   four. Ask Enable Banking in writing what a public app needs, the same way the
   Alpaca question was asked. Two hours to send, and the answer could change M1.
-- **M10 · Deletion does not revoke the bank consent — TODO · NOT YET.**
-  No `revoke` call exists in `adapters/enable-banking.ts`, so deleting an
-  account leaves a live consent at the provider. Not a store rule. It is a
+- **M10 · Deletion does not revoke the bank consent — DONE · 7d02175 (1 Oct).**
+  Fixed: account deletion and connection deletion now call
+  `DELETE /sessions/{id}` first (`lib/bank-consents.ts`); a provider failure
+  returns 502 and deletes nothing. Not yet exercised against the live Enable
+  Banking API. Original finding: no `revoke` call existed in
+  `adapters/enable-banking.ts`, so deleting an account left a live consent at
+  the provider. Not a store rule. It is a
   GDPR one, and it is the kind of thing that reads badly next to a deletion
   feature the store listing advertises. A day.
 - **M11 · Android does not exist — DECIDE · NOT YET.**
