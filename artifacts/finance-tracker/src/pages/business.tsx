@@ -29,6 +29,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { formatAxisPounds } from "@/lib/axis-pounds";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1379,7 +1380,7 @@ export default function Business() {
                 }}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(v) => `£${(v / 1000).toFixed(0)}k`}
+                tickFormatter={formatAxisPounds}
                 width={44}
               />
               <Tooltip

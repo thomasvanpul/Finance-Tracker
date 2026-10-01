@@ -22,6 +22,7 @@ import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, ledgerHref, merchantTransactionsHref, monthTransactionsHref } from "@/lib/entity-href";
+import { formatAxisPounds } from "@/lib/axis-pounds";
 
 // ─── date helpers ─────────────────────────────────────────────────────────────
 
@@ -1640,13 +1641,3 @@ export default function Reports() {
   );
 }
 
-// Y-axis tick label. Below £1k a "£0k" tick says nothing (and a small
-// negative rendered as "£-0k"), so whole pounds are shown there; above
-// it, thousands. The minus is the typographic one, before the £.
-function formatAxisPounds(v: number): string {
-  const sign = v < 0 ? "−" : "";
-  const abs = Math.abs(v);
-  if (abs < 1000) return `${sign}£${Math.round(abs)}`;
-  const k = abs / 1000;
-  return `${sign}£${k >= 10 ? k.toFixed(0) : k.toFixed(1).replace(/\.0$/, "")}k`;
-}
