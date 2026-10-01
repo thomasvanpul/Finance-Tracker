@@ -38,6 +38,7 @@ import {
   type BandsMonth,
 } from "./CompositionChart";
 import { signedAccountAmount } from "@/lib/account-sign";
+import { positionGlyph, positionQuantity, positionQuantityLabel } from "@/lib/position-label";
 
 // WORTH — the balance-sheet tab. What am I worth, across currencies and
 // across assets, as a 5-second check.
@@ -914,11 +915,11 @@ function PositionRow({
     ? formatNative(position.currentValue, position.currency)
     : undefined;
 
-  // Ticker as glyph label — deterministic, readable at 38px. Slice to
-  // 4 chars so longer venue-qualified symbols (e.g. "MSFT.LON") still
-  // fit the box.
-  const glyphLabel = position.ticker.slice(0, 4).toUpperCase();
-  const secondary = `${position.ticker} · ${position.shares} share${position.shares === 1 ? "" : "s"}`;
+  // Ticker as glyph label — deterministic, readable at 38px. Cut from the
+  // symbol's root so a pair or venue suffix ("BTC-USD", "MSFT.LON") never
+  // leaves a trailing separator in the box.
+  const glyphLabel = positionGlyph(position.ticker);
+  const secondary = `${position.ticker} · ${positionQuantity(position.ticker, position.shares)}`;
 
   return (
     <PhoneEntityRow
@@ -1061,7 +1062,7 @@ function PositionDetail({ position, baseCurrency }: { position: Position; baseCu
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <DetailRow label="NAME" value={position.name} />
-        <DetailRow label="SHARES" value={String(position.shares)} />
+        <DetailRow label={positionQuantityLabel(position.ticker)} value={String(position.shares)} />
         <DetailRow
           label="P&L"
           value={`${plStr} · ${plPctStr}`}
