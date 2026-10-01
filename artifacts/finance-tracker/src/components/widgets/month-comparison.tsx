@@ -104,7 +104,7 @@ function CategoryTableRow({ row, bounds }: CategoryTableRowProps) {
           different sets of rows, and one link for both would open the wrong
           one half the time. The delta and the percentage between them are
           differences, not sets, so they stay flat (DESIGN.md §14). */}
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         <Drill href={categoryTransactionsHref(row.category, bounds.this)}>{row.category}</Drill>
       </div>
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", textAlign: "right" }}>
@@ -160,7 +160,7 @@ function CategoryBarRow({ row, maxVal, bounds }: CategoryBarRowProps) {
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-        <Drill href={categoryTransactionsHref(row.category, bounds.this)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
+        <Drill href={categoryTransactionsHref(row.category, bounds.this)} style={{ fontFamily: "var(--font-sans)", fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 130 }}>
           {row.category}
         </Drill>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -328,7 +328,7 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
       accent="var(--ft-cyan)"
     >
       {!isLoading && !hasData ? (
-        <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+        <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)" }}>
           No transaction data available
         </div>
       ) : !isLoading && isExpanded ? (
@@ -358,7 +358,7 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
                 background: "color-mix(in srgb, var(--ft-accent) 3%, transparent)",
               }}
             >
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>Total Income</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)" }}>Total Income</div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", textAlign: "right" }}><Drill href={ledgerHref({ type: "income", from: lastMonthBounds.start, to: lastMonthBounds.end })}>{formatBaseMoney(lastIncome)}</Drill></div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-cyan)", textAlign: "right" }}><Drill href={ledgerHref({ type: "income", from: thisMonthBounds.start, to: thisMonthBounds.end })}>{formatBaseMoney(thisIncome)}</Drill></div>
               <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, textAlign: "right", color: thisIncome >= lastIncome ? "var(--ft-green)" : "var(--ft-red)" }}>
@@ -391,7 +391,7 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
             ))}
           </div>
           {rows.length === 0 ? (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", padding: "16px 0" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", padding: "16px 0" }}>
               No expense data
             </div>
           ) : (
@@ -410,15 +410,15 @@ export function MonthComparisonWidget({ isExpanded }: { isExpanded?: boolean }) 
           <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <div style={{ width: 8, height: 3, background: "var(--ft-dim)", borderRadius: 2 }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>Last month</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>Last month</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <div style={{ width: 8, height: 5, background: "var(--ft-cyan)", borderRadius: 2 }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>This month</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>This month</span>
             </div>
           </div>
           {rows.length === 0 ? (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", padding: "16px 0" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", padding: "16px 0" }}>
               No expense data yet this month
             </div>
           ) : (
