@@ -30,6 +30,7 @@ import {
   type HoldingsInput,
 } from "@/components/phone/CompositionChart";
 import { useMarketDataEnabled } from "@/lib/market-visibility";
+import { lowestSoFar, type DailyBalance } from "@/lib/lowest-so-far";
 import {
   selectInsight,
   loadDismissedIds,
@@ -210,9 +211,7 @@ export function MobileHome(_props: MobileHomeProps) {
 
   // Cashflow: rolling daily balance from txns this month (past only).
   const dailyBalances = buildDailyBalances(txns, now, totalCash);
-  const monthLow = dailyBalances.length
-    ? dailyBalances.reduce((lo, d) => (d.balance < lo.balance ? d : lo))
-    : null;
+  const monthLow = lowestSoFar(dailyBalances);
 
   const timeStr = now.toLocaleTimeString("en-GB", {
     hour: "2-digit",
@@ -519,7 +518,6 @@ export function MobileHome(_props: MobileHomeProps) {
 }
 
 // ── Cashflow chart (bar per day, past = fg, today = accent, future = dim) ───
-type DailyBalance = { day: number; balance: number; future: boolean };
 
 function buildDailyBalances(
   txns: Array<{ date: string; baseEquivalent: number | null; type: string }>,
@@ -561,7 +559,7 @@ function buildDailyBalances(
 //     balance and the baseline is £0 (DESIGN.md §5, §7);
 //   · days that have not happened are dotted outlines, not a dimmer solid
 //     (the phone's "dotted means not-yet-real");
-//   · TODAY and LOW are tick-marked under their own bars, not coloured —
+//   · TODAY and LOW SO FAR are tick-marked under their own bars, not coloured —
 //     hue does not carry them (§11). LOW is red only when it is below zero;
 //   · depth is decoration, so the offset shadow is gone (Mobile Amendment
 //     permits elevation only on floating surfaces).
@@ -666,7 +664,7 @@ function CashflowChart({
         </span>
         {low && (
           <span className="pnum" style={{ color: low.balance < 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
-            LOW {nfmt(low.balance, { symbol: "£" })} · {low.day} {monthShortMixed}
+            LOW SO FAR {nfmt(low.balance, { symbol: "£" })} · {low.day} {monthShortMixed}
           </span>
         )}
       </div>
