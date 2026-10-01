@@ -68,7 +68,7 @@ export function ViewTab({ label, active, onClick }: { label: string; active: boo
     minWidth: 52,
     height: 26,
     padding: "0 8px",
-    fontFamily: "var(--font-mono)",
+    fontFamily: "var(--font-sans)",
     fontSize: 11,
     letterSpacing: "0.06em",
     cursor: "pointer",
@@ -140,7 +140,7 @@ export function RingView({ holdings, baseCurrency }: { holdings: Holdings; baseC
           width: "100%", maxWidth: 354, height: 296,
           background: "var(--ft-surface)",
           display: "grid", placeItems: "center",
-          fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)",
+          fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)",
           letterSpacing: "0.14em",
         }}
       >
@@ -219,7 +219,7 @@ export function BandsView({ months }: { months: BandsMonth[] }) {
           width: "100%", maxWidth: 354, height: 296,
           background: "var(--ft-surface)",
           display: "grid", placeItems: "center",
-          fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)",
+          fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)",
           letterSpacing: "0.14em",
         }}
       >

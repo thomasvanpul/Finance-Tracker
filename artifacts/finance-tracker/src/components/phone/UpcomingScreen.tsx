@@ -207,7 +207,7 @@ function CountdownStrip({ items, now }: { items: UpcomingItem[]; now: Date }) {
               gap: 6,
               padding: "4px 10px",
               border: `1px solid ${urgent ? "var(--ft-red)" : "var(--ft-border)"}`,
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               letterSpacing: "0.1em",
               color: urgent ? "var(--ft-red)" : "var(--ft-dim)",
@@ -218,7 +218,7 @@ function CountdownStrip({ items, now }: { items: UpcomingItem[]; now: Date }) {
               {item.description.toUpperCase()}
             </span>
             <span style={{ opacity: 0.5 }}>·</span>
-            <span>{daysLabel(days)}</span>
+            <span style={{ fontFamily: "var(--font-mono)" }}>{daysLabel(days)}</span>
           </div>
         );
       })}
@@ -255,7 +255,7 @@ function LensStrip({ active, onChange }: { active: Lens; onChange: (l: Lens) => 
             background: "none",
             border: "none",
             borderBottom: active === key ? "2px solid var(--ft-accent)" : "2px solid transparent",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: "var(--ft-text-xs)",
             fontWeight: 600,
             letterSpacing: "0.08em",
