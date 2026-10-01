@@ -333,16 +333,6 @@ export interface ValuationPrices {
   staleTickers: string[];
 }
 
-/** The oldest of `dates`, or null when none is set. YYYY-MM-DD compares
- *  correctly as a string. Used to date an aggregate from its stalest leg. */
-export function oldestSessionDate(dates: ReadonlyArray<string | null | undefined>): string | null {
-  let oldest: string | null = null;
-  for (const d of dates) {
-    if (d && (oldest == null || d < oldest)) oldest = d;
-  }
-  return oldest;
-}
-
 export async function getValuationPrices(tickers: string[]): Promise<ValuationPrices> {
   // Same contract as getEodPrices above: empty, not an error. Guarded here
   // too rather than relying on the call below, because the live (non-EOD)
