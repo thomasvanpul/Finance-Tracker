@@ -452,7 +452,7 @@ function AlertRow({ alert, onDismiss }: AlertRowProps) {
         background: hov ? `color-mix(in srgb, ${color} 6%, var(--ft-raised))` : "var(--ft-raised)",
         borderBottom: "1px solid var(--ft-border)",
         padding: "8px 12px",
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 11,
         lineHeight: "1.4",
         marginBottom: 1,
@@ -465,7 +465,7 @@ function AlertRow({ alert, onDismiss }: AlertRowProps) {
         <div style={{ color: "var(--ft-text)", fontWeight: 600, marginBottom: 2, lineHeight: "1.3" }}>
           {alert.title}
         </div>
-        <div style={{ color: "var(--ft-muted)", fontSize: 10, lineHeight: "1.4" }}>
+        <div style={{ color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 10, lineHeight: "1.4" }}>
           {alert.detail}
         </div>
       </div>
@@ -476,7 +476,7 @@ function AlertRow({ alert, onDismiss }: AlertRowProps) {
         style={{
           background: "none", border: "none",
           color: "var(--ft-dim)", cursor: "pointer",
-          fontFamily: "var(--font-mono)", fontSize: 15,
+          fontFamily: "var(--font-sans)", fontSize: 15,
           padding: "0 2px", lineHeight: 1, flexShrink: 0, marginTop: 1,
           transition: "color 0.1s",
         }}
@@ -626,7 +626,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
           borderLeft: "1px solid var(--ft-border)",
           display: "flex",
           flexDirection: "column",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           transform: open ? "translateX(0)" : "translateX(100%)",
           transition: "transform 0.12s ease",
         }}
@@ -655,7 +655,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
             )}
             <span
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 10,
                 fontWeight: 700,
                 color: "var(--ft-text)",
@@ -687,7 +687,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                 border: "none",
                 color: "var(--ft-dim)",
                 cursor: "pointer",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 16,
                 padding: "0 2px",
                 lineHeight: 1,
@@ -732,7 +732,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                 <span>{primaryPersona.code} — {primaryPersona.label.toUpperCase()}</span>
               </div>
               <div style={{
-                fontFamily: "var(--font-mono)", fontSize: 9,
+                fontFamily: "var(--font-sans)", fontSize: 9,
                 color: "var(--ft-dim)", lineHeight: "1.5",
               }}>
                 {PERSONA_FOCUS[primaryPersona.id]}
@@ -749,7 +749,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                 height: "100%",
                 gap: 8,
                 color: "var(--ft-dim)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 11,
                 letterSpacing: "0.06em",
               }}
@@ -767,7 +767,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                   <div
                     style={{
                       padding: "4px 14px 4px",
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                       fontSize: 9,
                       color: LEVEL_COLOR[level],
                       letterSpacing: "0.12em",
@@ -806,7 +806,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
               background: "none",
               border: "none",
               cursor: "pointer",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               color: "var(--ft-dim)",
               letterSpacing: "0.1em",
@@ -837,7 +837,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                 <div
                   style={{
                     padding: "8px 14px",
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     fontSize: 9,
                     color: "var(--ft-dim)",
                     letterSpacing: "0.06em",
@@ -867,7 +867,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                     >
                       <span
                         style={{
-                          fontFamily: "var(--font-mono)",
+                          fontFamily: "var(--font-sans)",
                           fontSize: 8,
                           color:
                             rule.level === "critical"
@@ -897,7 +897,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                       onClick={() => deleteBalanceRule(rule.accountId)}
                       aria-label={`Remove balance alert for ${rule.accountName}`}
                       style={{
-                        fontFamily: "var(--font-mono)",
+                        fontFamily: "var(--font-sans)",
                         fontSize: 13,
                         color: "var(--ft-dim)",
                         background: "transparent",
@@ -931,7 +931,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
               >
                 <div
                   style={{
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     fontSize: 8,
                     color: "var(--ft-dim)",
                     letterSpacing: "0.1em",
@@ -946,7 +946,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                   onChange={(e) => setNewAccountId(e.target.value)}
                   aria-label="Select account"
                   style={{
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     fontSize: 10,
                     color: "var(--ft-text)",
                     background: "var(--ft-surface)",
@@ -993,7 +993,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                     }
                     aria-label="Alert severity"
                     style={{
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                       fontSize: 10,
                       color: "var(--ft-text)",
                       background: "var(--ft-surface)",
@@ -1014,7 +1014,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                   onClick={addBalanceRule}
                   disabled={!newAccountId || !newThreshold}
                   style={{
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     fontSize: 9,
                     color:
                       !newAccountId || !newThreshold
@@ -1070,7 +1070,7 @@ export function NotificationsPanel({ open, onClose }: NotificationsPanelProps) {
                 border: "1px solid var(--ft-border)",
                 color: "var(--ft-dim)",
                 cursor: "pointer",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 9,
                 padding: "4px 10px",
                 borderRadius: 4,
