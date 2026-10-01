@@ -15,6 +15,7 @@
 process.env.DATABASE_URL = process.env.DATABASE_URL || "postgres://test:test@localhost/test";
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { PgTable } from "drizzle-orm/pg-core";
 
 // Mock @workspace/db BEFORE importing verifySchemaAtBoot. The
 // module-scope import of `db` in verify-schema.ts resolves against
@@ -87,50 +88,39 @@ describe("verifySchemaAtBoot", () => {
     // detection is one-directional by design — code-expects but
     // DB-lacks; extra DB columns are ignored so a rollback of code
     // doesn't spuriously fail boot).
-    const { getTableColumns } = await import("drizzle-orm");
-    const {
-      accountsTable, appSettingsTable, budgetsTable, connectionsTable,
-      debtsTable, dismissedSubscriptionsTable, goalsTable, investmentsTable,
-      nwSnapshotsTable, recurringPatternsTable, sharedExpensesTable,
-      sharedExpenseParticipantsTable,
-      sharedExpenseSettlementsTable, subscriptionsTable, transactionsTable,
-      upcomingTable, userTable, sessionTable, accountTable,
-      verificationTable, passkeyTable, totpTable, twoFactorTable,
-      userPreferencesTable,
-    } = await import("@workspace/db");
-    const all = {
-      accounts: accountsTable,
-      app_settings: appSettingsTable,
-      budgets: budgetsTable,
-      connections: connectionsTable,
-      debts: debtsTable,
-      dismissed_subscriptions: dismissedSubscriptionsTable,
-      goals: goalsTable,
-      investments: investmentsTable,
-      nw_snapshots: nwSnapshotsTable,
-      recurring_patterns: recurringPatternsTable,
-      shared_expenses: sharedExpensesTable,
-      shared_expense_participants: sharedExpenseParticipantsTable,
-      shared_expense_settlements: sharedExpenseSettlementsTable,
-      subscriptions: subscriptionsTable,
-      transactions: transactionsTable,
-      upcoming: upcomingTable,
-      user_preferences: userPreferencesTable,
-      user: userTable,
-      session: sessionTable,
-      account: accountTable,
-      verification: verificationTable,
-      passkey: passkeyTable,
-      totp_credential: totpTable,
-      two_factor: twoFactorTable,
-    };
+    const { getTableColumns, getTableName, is } = await import("drizzle-orm");
+    const { PgTable } = await import("drizzle-orm/pg-core");
+    const dbModule = await import("@workspace/db");
+    const tables = Object.values(dbModule).filter((v) => is(v, PgTable)) as PgTable[];
     const complete: Record<string, string[]> = {};
-    for (const [name, table] of Object.entries(all)) {
+    for (const table of tables) {
+      const name = getTableName(table);
       complete[name] = Object.values(getTableColumns(table)).map((c) => (c as { name: string }).name);
       // Add a fake extra column to prove the check ignores it.
       complete[name].push("__extra_db_column__");
     }
     fake(complete);
     await expect(verifySchemaAtBoot()).resolves.toBeUndefined();
+  });
+
+  it("notices ANY table @workspace/db exports going missing, not a hand-picked subset", async () => {
+    // The check once kept its own table list, and net_worth_snapshots,
+    // account_balance_snapshots, provider_health, eod_prices and
+    // request_metrics were each added to the schema without being added
+    // to it — so a database lacking any of them booted clean.
+    const { getTableColumns, getTableName, is } = await import("drizzle-orm");
+    const { PgTable } = await import("drizzle-orm/pg-core");
+    const dbModule = await import("@workspace/db");
+    const tables = Object.values(dbModule).filter((v) => is(v, PgTable)) as PgTable[];
+    const complete: Record<string, string[]> = {};
+    for (const table of tables) {
+      complete[getTableName(table)] = Object.values(getTableColumns(table)).map((c) => (c as { name: string }).name);
+    }
+    expect(Object.keys(complete).length).toBeGreaterThan(25);
+    for (const name of Object.keys(complete)) {
+      const { [name]: _dropped, ...rest } = complete;
+      fake(rest);
+      await expect(verifySchemaAtBoot(), `missing ${name}`).rejects.toThrow(new RegExp(`Missing tables:.*\\b${name}\\b`));
+    }
   });
 });

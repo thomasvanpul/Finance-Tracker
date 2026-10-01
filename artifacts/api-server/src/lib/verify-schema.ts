@@ -33,7 +33,7 @@
 //     touches is absent.
 //
 // ── What it checks ───────────────────────────────────────────────────────
-// For every business table exported from @workspace/db:
+// For every table exported from @workspace/db:
 //   1. Get expected columns from drizzle's getTableColumns()
 //   2. Get actual columns from information_schema.columns
 //   3. Any expected column not present in the DB is drift
@@ -48,68 +48,21 @@
 // column, so the operator sees ONE loud line at deploy time instead
 // of scattered 500s later. Non-blocking would defeat the purpose.
 
-import { getTableColumns, getTableName, sql } from "drizzle-orm";
-import type { PgTable } from "drizzle-orm/pg-core";
-import {
-  db,
-  accountsTable,
-  appSettingsTable,
-  budgetsTable,
-  connectionsTable,
-  debtsTable,
-  dismissedSubscriptionsTable,
-  goalsTable,
-  investmentsTable,
-  nwSnapshotsTable,
-  recurringPatternsTable,
-  sharedExpensesTable,
-  sharedExpenseParticipantsTable,
-  sharedExpenseSettlementsTable,
-  subscriptionsTable,
-  transactionsTable,
-  upcomingTable,
-  userTable,
-  sessionTable,
-  accountTable,
-  verificationTable,
-  passkeyTable,
-  totpTable,
-  twoFactorTable,
-  userPreferencesTable,
-} from "@workspace/db";
+import { getTableColumns, getTableName, is, sql } from "drizzle-orm";
+import { PgTable } from "drizzle-orm/pg-core";
+import * as dbModule from "@workspace/db";
 import { logger } from "./logger";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const TABLES: Record<string, PgTable<any>> = {
-  // Business data — the tables that produced the Aug 2026 500s.
-  accounts: accountsTable,
-  app_settings: appSettingsTable,
-  budgets: budgetsTable,
-  connections: connectionsTable,
-  debts: debtsTable,
-  dismissed_subscriptions: dismissedSubscriptionsTable,
-  goals: goalsTable,
-  investments: investmentsTable,
-  nw_snapshots: nwSnapshotsTable,
-  recurring_patterns: recurringPatternsTable,
-  shared_expenses: sharedExpensesTable,
-  shared_expense_participants: sharedExpenseParticipantsTable,
-  shared_expense_settlements: sharedExpenseSettlementsTable,
-  subscriptions: subscriptionsTable,
-  transactions: transactionsTable,
-  upcoming: upcomingTable,
-  user_preferences: userPreferencesTable,
-  // Auth tables — Better Auth manages these but they're still
-  // schema-drift risk if a Better Auth version bump adds a column
-  // and the app hasn't migrated yet.
-  user: userTable,
-  session: sessionTable,
-  account: accountTable,
-  verification: verificationTable,
-  passkey: passkeyTable,
-  totp_credential: totpTable,
-  two_factor: twoFactorTable,
-};
+const { db } = dbModule;
+
+// Every table @workspace/db exports, found by type rather than listed by
+// hand. The hand-kept list this replaced fell behind the schema five times
+// (account_balance_snapshots, request_metrics, eod_prices, provider_health,
+// net_worth_snapshots), and a table missing from the list is a table whose
+// absence from the database boots clean.
+function exportedTables(): PgTable[] {
+  return (Object.values(dbModule) as unknown[]).filter((v): v is PgTable => is(v, PgTable));
+}
 
 interface DriftReport {
   missingTables: string[];
@@ -119,7 +72,8 @@ interface DriftReport {
 export async function verifySchemaAtBoot(): Promise<void> {
   const start = process.hrtime.bigint();
   const expected = new Map<string, Set<string>>();
-  for (const [name, table] of Object.entries(TABLES)) {
+  for (const table of exportedTables()) {
+    const name = getTableName(table);
     const cols = getTableColumns(table);
     const dbNames = new Set<string>();
     for (const col of Object.values(cols)) {
@@ -127,15 +81,6 @@ export async function verifySchemaAtBoot(): Promise<void> {
       // snake_case DB column name (as opposed to the camelCase JS
       // key used in the schema object).
       dbNames.add((col as { name: string }).name);
-    }
-    // Sanity: assert we resolved the DB table name to what we
-    // hardcoded above. A mismatch means someone renamed a table in
-    // the schema file without updating this map.
-    const actualName = getTableName(table);
-    if (actualName !== name) {
-      throw new Error(
-        `verify-schema: TABLES map key "${name}" doesn't match drizzle-declared name "${actualName}". Update TABLES in src/lib/verify-schema.ts.`,
-      );
     }
     expected.set(name, dbNames);
   }
