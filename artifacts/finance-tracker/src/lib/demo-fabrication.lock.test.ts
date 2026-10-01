@@ -54,10 +54,15 @@
 // this lock — the whole point of a lock is that weakening it takes a
 // diff, not a decoration.
 //
-// Line numbers are a snapshot. A future edit that moves an allowlisted
-// literal to a different line will fail the check, at which point the
-// allowlist entry gets its line updated (and a reviewer sees the drift).
-// That is not a bug; that is the lock re-asserting itself.
+// Keyed by declaration name (Shape A) or exact source-line text (Shape B),
+// not by line number. An earlier version keyed on path:line, which meant
+// any edit above an entry shifted it and broke the gate twice — the
+// shifted defect no longer matched the (stale) allowlist line, AND the
+// allowlist entry itself tripped the "stale entry" check below, since
+// nothing sat at its old line any more. Content doesn't move when
+// unrelated lines above it do, so this survives that class of edit.
+// A content match still breaks, correctly, when the allowlisted
+// declaration or literal line is itself edited or removed.
 //
 // ── What this lock does NOT catch ──────────────────────────────────────────
 //
@@ -123,12 +128,17 @@ function namedFlagMatches(name: string): boolean {
 // ── Allowlists ─────────────────────────────────────────────────────────────
 // EVERY entry is a debt item and must justify itself to a reviewer. Adding
 // one is a visible diff to this lock, not a comment in a page nobody
-// re-reads. Line numbers are snapshots; edits that move an allowlisted
-// literal fail the check until the line is corrected here.
+// re-reads. ALLOWLIST_A entries key on `name` (the declared identifier,
+// e.g. `previewId`) and ALLOWLIST_B entries key on `text` (the exact
+// trimmed source line the flagged literal sits on) — see isAllowed()
+// below. Neither depends on where the line sits in the file, only on
+// what it says, so an edit elsewhere in the file can't shift it out from
+// under the match.
 
 interface AllowEntry {
   path: string;      // relative to REPO_ROOT
-  line: number;      // 1-indexed, from getLineAndCharacterOfPosition
+  name?: string;      // Shape A: the declared identifier (ALLOWLIST_A)
+  text?: string;       // Shape B: trimmed source line holding the literal (ALLOWLIST_B)
   reason: string;
 }
 
@@ -136,32 +146,32 @@ const ALLOWLIST_A: readonly AllowEntry[] = [
   // Preview-mode UI state — theme-swatch preview, widget-carousel preview.
   // Not a data fabrication; the "preview" here is a controlled UI state
   // toggled by the user, and no financial value is invented.
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1811, reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
-  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", line: 1813, reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 778, reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
-  { path: "artifacts/finance-tracker/src/pages/settings.tsx", line: 779, reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", name: "previewId", reason: "widget-carousel preview state (which widget is being hovered/previewed in the carousel picker)" },
+  { path: "artifacts/finance-tracker/src/pages/dashboard.tsx", name: "previewDef", reason: "widget-carousel preview definition object (metadata for the previewed widget)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", name: "previewId", reason: "theme-swatch preview state (which accent-colour swatch is being hovered)" },
+  { path: "artifacts/finance-tracker/src/pages/settings.tsx", name: "previewSwatch", reason: "theme-swatch preview colour value (the hovered swatch's hex)" },
 ];
 
 const ALLOWLIST_B: readonly AllowEntry[] = [
   // Chart-normalisation denominators — `... ? maxOfNonEmpty : 1` avoids
   // division by zero when the input is empty. Non-money literals; the `1`
   // is a mathematical placeholder that never renders as a currency figure.
-  { path: "artifacts/finance-tracker/src/components/investments/derivatives-tab.tsx", line: 1489, reason: "chart normalisation denominator: payoffData empty → 1 to avoid /0 in bar height calc" },
-  { path: "artifacts/finance-tracker/src/components/investments/portfolio-tables.tsx", line: 148, reason: "ratio for weighting bar; 1 = fully weighted when live price is missing (chart geometry, not currency)" },
-  { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", line: 159, reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
-  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 550, reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
-  { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1512, reason: "chart max denominator: empty merchants → 1 to avoid /0" },
-  { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1581, reason: "chart max denominator: empty top8 → 1 to avoid /0" },
-  { path: "artifacts/finance-tracker/src/pages/briefing.tsx", line: 471, reason: "chart max denominator: empty sorted → 1 to avoid /0" },
-  { path: "artifacts/finance-tracker/src/pages/decisions.tsx", line: 243, reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 766, reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
-  { path: "artifacts/finance-tracker/src/pages/year-review.tsx", line: 1267, reason: "chart max denominator: empty topCats → 1 to avoid /0" },
+  { path: "artifacts/finance-tracker/src/components/investments/derivatives-tab.tsx", text: "const maxAbs = payoffData.length > 0 ? Math.max(...payoffData.map((p) => Math.abs(p.pl))) : 1;", reason: "chart normalisation denominator: payoffData empty → 1 to avoid /0 in bar height calc" },
+  { path: "artifacts/finance-tracker/src/components/investments/portfolio-tables.tsx", text: ": 1;", reason: "ratio for weighting bar; 1 = fully weighted when live price is missing (chart geometry, not currency)" },
+  { path: "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx", text: "const maxGbp = accounts.length > 0 ? Math.max(...accounts.map(a => Math.abs(a.baseEquivalent ?? 0))) : 1;", reason: "chart max: empty accounts → 1 as normalisation baseline for bar widths" },
+  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", text: "const maxSpend = categorySpend[0]?.total ?? 1;", reason: "chart max denominator: empty categorySpend → 1 to avoid /0" },
+  { path: "artifacts/finance-tracker/src/pages/analytics.tsx", text: "const maxTotal = merchants[0]?.total ?? 1;", reason: "chart max denominator: empty merchants → 1 to avoid /0" },
+  { path: "artifacts/finance-tracker/src/pages/analytics.tsx", text: "const max = top8[0]?.baseEquivalent ?? 1;", reason: "chart max denominator: empty top8 → 1 to avoid /0" },
+  { path: "artifacts/finance-tracker/src/pages/briefing.tsx", text: "const maxAmt = sorted[0]?.[1] ?? 1;", reason: "chart max denominator: empty sorted → 1 to avoid /0" },
+  { path: "artifacts/finance-tracker/src/pages/decisions.tsx", text: "const pctComplete = g.target > 0 ? g.current / g.target : 1;", reason: "goal-progress ratio: g.target === 0 → 1 (goal already met by default)" },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", text: "const growthMultiplier = totalContributions > 0 ? pot / totalContributions : 1;", reason: "growth-ratio: no contributions → 1x (no growth) as neutral baseline" },
+  { path: "artifacts/finance-tracker/src/pages/year-review.tsx", text: "const maxVal = topCats[0]?.[1] ?? 1;", reason: "chart max denominator: empty topCats → 1 to avoid /0" },
 
   // Percentage caps — `... ? Math.min(100, real) : 100` returns 100 as the
   // "already at cap" branch. Non-money literal (percentage points).
-  { path: "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx", line: 1037, reason: "milestone progress cap: no next milestone → 100% (all reached)" },
-  { path: "artifacts/finance-tracker/src/pages/analytics-helpers.ts", line: 36, reason: "pct-change fallback: curr === 0 branch returns 0; else 100 (∞ growth from 0 baseline)" },
-  { path: "artifacts/finance-tracker/src/pages/fire.tsx", line: 374, reason: "coast-FIRE progress cap: coastNeeded <= 0 → 100% (already coasted)" },
+  { path: "artifacts/finance-tracker/src/components/widgets/compact-tiles.tsx", text: "const pct = next ? Math.min(100, (nw / next) * 100) : 100;", reason: "milestone progress cap: no next milestone → 100% (all reached)" },
+  { path: "artifacts/finance-tracker/src/pages/analytics-helpers.ts", text: "if (prev === 0) return curr === 0 ? 0 : 100;", reason: "pct-change fallback: curr === 0 branch returns 0; else 100 (∞ growth from 0 baseline)" },
+  { path: "artifacts/finance-tracker/src/pages/fire.tsx", text: ": 100;", reason: "coast-FIRE progress cap: coastNeeded <= 0 → 100% (already coasted)" },
   // pension.tsx:285 and :389 were the "100% bar when target undefined"
   // sites — a fabricated goal-completion signal for a user who set no
   // target. Fixed 26-Aug: targetMonthlyIncome nullable end-to-end
@@ -173,37 +183,37 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
 
   // UI dimensions, font sizes, opacities, layout constants — pixel/percent
   // values in JSX-style variable initializers. Non-currency.
-  { path: "artifacts/finance-tracker/src/components/currency-mark.tsx", line: 41, reason: "SVG font-size in px based on character count (18 or 22)" },
-  { path: "artifacts/finance-tracker/src/components/layout.tsx", line: 1312, reason: "sidebar-width restore default: 212px when localStorage value is absent" },
-  { path: "artifacts/finance-tracker/src/components/matrix-rain.tsx", line: 91, reason: "matrix-rain glyph scale (1.4 or 1) — animation randomisation, not currency" },
-  { path: "artifacts/finance-tracker/src/components/page-transition.tsx", line: 59, reason: "CSS opacity for fade transition (0 or 1)" },
-  { path: "artifacts/finance-tracker/src/components/primitives/block-field.tsx", line: 162, reason: "figure font size (px) for hero/no-hero layout" },
-  { path: "artifacts/finance-tracker/src/components/primitives/block-field.tsx", line: 163, reason: "tile padding (px) for hero/no-hero layout" },
-  { path: "artifacts/finance-tracker/src/components/theme-effects.tsx", line: 960, reason: "line stroke width (2.5px thick or 1.2px thin)" },
-  { path: "artifacts/finance-tracker/src/components/widgets/budget-tracker.tsx", line: 139, reason: "grid column count: expanded=3, collapsed=2" },
-  { path: "artifacts/finance-tracker/src/pages/recurring.tsx", line: 184, reason: "grid column count for the KPI strip: phone=2, desktop=4 — drives the borderRight column rules, not a figure" },
-  { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 1388, reason: "grid column count for the KPI strip: phone=2, desktop=5 — drives the borderRight column rules, not a figure" },
-  { path: "artifacts/finance-tracker/src/components/widgets/cash-flow.tsx", line: 149, reason: "chart height in px (220 expanded or 150 collapsed)" },
-  { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", line: 158, reason: "row cap: 30 expanded or 15 collapsed" },
-  { path: "artifacts/finance-tracker/src/components/widgets/top-merchants.tsx", line: 143, reason: "row cap: 8 expanded or 5 collapsed" },
-  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", line: 1588, reason: "border thickness (2px hi-value, 4px normal)" },
-  { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1249, reason: "chart bar width in px (38 mobile / 44 desktop)" },
-  { path: "artifacts/finance-tracker/src/pages/analytics.tsx", line: 1250, reason: "chart bar height in px (34 mobile / 40 desktop)" },
-  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 441, reason: "popup position fallback: no anchor rect → 100px default" },
-  { path: "artifacts/finance-tracker/src/pages/investments.tsx", line: 445, reason: "popup position fallback: no anchor rect → 100px default" },
-  { path: "artifacts/finance-tracker/src/pages/reports.tsx", line: 849, reason: "chart bar min height in px (4px)" },
-  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 515, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
-  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", line: 514, reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
+  { path: "artifacts/finance-tracker/src/components/currency-mark.tsx", text: "const boxW = chars === 2 ? 18 : 22;", reason: "SVG font-size in px based on character count (18 or 22)" },
+  { path: "artifacts/finance-tracker/src/components/layout.tsx", text: "return s ? Math.max(160, Math.min(360, Number(s))) : 212;", reason: "sidebar-width restore default: 212px when localStorage value is absent" },
+  { path: "artifacts/finance-tracker/src/components/matrix-rain.tsx", text: "const speed = Math.random() > 0.88 ? 1.4 : 1;", reason: "matrix-rain glyph scale (1.4 or 1) — animation randomisation, not currency" },
+  { path: "artifacts/finance-tracker/src/components/page-transition.tsx", text: "const opacity   = phase === \"fade\" ? 0 : 1;", reason: "CSS opacity for fade transition (0 or 1)" },
+  { path: "artifacts/finance-tracker/src/components/primitives/block-field.tsx", text: "const figureFontSize = withHero ? 13 : 21;", reason: "figure font size (px) for hero/no-hero layout" },
+  { path: "artifacts/finance-tracker/src/components/primitives/block-field.tsx", text: "const pad = withHero ? 8 : 14;", reason: "tile padding (px) for hero/no-hero layout" },
+  { path: "artifacts/finance-tracker/src/components/theme-effects.tsx", text: "ctx.strokeStyle = d.thick ? \"#AA0010\" : \"#8B0000\"; ctx.lineWidth = d.thick ? 2.5 : 1.2;", reason: "line stroke width (2.5px thick or 1.2px thin)" },
+  { path: "artifacts/finance-tracker/src/components/widgets/budget-tracker.tsx", text: "const cols = isExpanded ? 3 : 2;", reason: "grid column count: expanded=3, collapsed=2" },
+  { path: "artifacts/finance-tracker/src/pages/recurring.tsx", text: "const cols = isMobile ? 2 : 4;", reason: "grid column count for the KPI strip: phone=2, desktop=4 — drives the borderRight column rules, not a figure" },
+  { path: "artifacts/finance-tracker/src/pages/reports.tsx", text: "const cols = isMobile ? 2 : 5;", reason: "grid column count for the KPI strip: phone=2, desktop=5 — drives the borderRight column rules, not a figure" },
+  { path: "artifacts/finance-tracker/src/components/widgets/cash-flow.tsx", text: "const chartHeight = isExpanded ? 220 : 150;", reason: "chart height in px (220 expanded or 150 collapsed)" },
+  { path: "artifacts/finance-tracker/src/components/widgets/recent-transactions.tsx", text: "const rowLimit = isExpanded ? 30 : 15;", reason: "row cap: 30 expanded or 15 collapsed" },
+  { path: "artifacts/finance-tracker/src/components/widgets/top-merchants.tsx", text: "const limit = isExpanded ? 8 : 5;", reason: "row cap: 8 expanded or 5 collapsed" },
+  { path: "artifacts/finance-tracker/src/pages/accounts.tsx", text: "const precision = isHighValue ? 2 : 4;", reason: "border thickness (2px hi-value, 4px normal)" },
+  { path: "artifacts/finance-tracker/src/pages/analytics.tsx", text: "const CELL_W = isMobile ? 38 : 44;", reason: "chart bar width in px (38 mobile / 44 desktop)" },
+  { path: "artifacts/finance-tracker/src/pages/analytics.tsx", text: "const CELL_H = isMobile ? 34 : 40;", reason: "chart bar height in px (34 mobile / 40 desktop)" },
+  { path: "artifacts/finance-tracker/src/pages/investments.tsx", text: "return rect ? rect.bottom + 6 : 100;", reason: "popup position fallback: no anchor rect → 100px default" },
+  { path: "artifacts/finance-tracker/src/pages/investments.tsx", text: "return rect ? Math.min(rect.left, window.innerWidth - 256) : 100;", reason: "popup position fallback: no anchor rect → 100px default" },
+  { path: "artifacts/finance-tracker/src/pages/reports.tsx", text: "const barHeight = dowMax > 0 ? Math.max(4, (val / dowMax) * 64) : 4;", reason: "chart bar min height in px (4px)" },
+  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", text: "const bOverdue = overdueIds.has(b.id) ? 0 : 1;", reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
+  { path: "artifacts/finance-tracker/src/pages/upcoming.tsx", text: "const aOverdue = overdueIds.has(a.id) ? 0 : 1;", reason: "sort comparator: overdue → 0, not-overdue → 1 (sort ordinal, not money)" },
 
   // Formatting / config defaults — decimal counts, period lengths.
-  { path: "artifacts/finance-tracker/src/components/mobile/mobile-format.ts", line: 10, reason: "default decimals count (2) for nfmt when unspecified" },
-  { path: "artifacts/finance-tracker/src/lib/currency-query.ts", line: 105, reason: "decimal-place count for the palette conversion result: 2dp at |value| >= 1, 4dp below a unit where 2dp would round a real difference to nothing. A precision setting, not a figure — the value itself comes from convertVia, which returns null rather than a fallback when a leg is unpriced." },
-  { path: "artifacts/finance-tracker/src/lib/currency-query.ts", line: 114, reason: "decimal-place count for the unit rate, mirroring FxRateCell in accounts.tsx: 2dp at >= 100, else 4dp. A precision setting, not a figure." },
-  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 55, reason: "default decimals count (2) for local nfmt fallback" },
-  { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", line: 242, reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
+  { path: "artifacts/finance-tracker/src/components/mobile/mobile-format.ts", text: "const decimals = opts.decimals ?? 2;", reason: "default decimals count (2) for nfmt when unspecified" },
+  { path: "artifacts/finance-tracker/src/lib/currency-query.ts", text: "const decimals = Math.abs(value) >= 1 ? 2 : 4;", reason: "decimal-place count for the palette conversion result: 2dp at |value| >= 1, 4dp below a unit where 2dp would round a real difference to nothing. A precision setting, not a figure — the value itself comes from convertVia, which returns null rather than a fallback when a leg is unpriced." },
+  { path: "artifacts/finance-tracker/src/lib/currency-query.ts", text: "const decimals = unit >= 100 ? 2 : 4;", reason: "decimal-place count for the unit rate, mirroring FxRateCell in accounts.tsx: 2dp at >= 100, else 4dp. A precision setting, not a figure." },
+  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", text: "const decimals = opts.decimals ?? 2;", reason: "default decimals count (2) for local nfmt fallback" },
+  { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", text: "const intervalDays = SUB_FREQ_DAYS[sub.frequency] ?? 30;", reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
 
   // Streaks, thresholds — non-money integers.
-  { path: "artifacts/finance-tracker/src/pages/health-score.tsx", line: 751, reason: "savings-rate percentile threshold selector (10% or 20%), not a currency value" },
+  { path: "artifacts/finance-tracker/src/pages/health-score.tsx", text: "const target = savingsRate < 10 ? 10 : 20;", reason: "savings-rate percentile threshold selector (10% or 20%), not a currency value" },
 
   // Three earlier entries here (markets-tab.tsx:1374 8% revenue growth,
   // owing.tsx:225 + :429 20% APR default) were the defect, not exceptions.
@@ -229,7 +239,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // cell means the assumption is disclosed at the point the projection
   // renders. Different class from targetMonthlyIncome / currentAge,
   // both of which invented personal state.
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 107, reason: "retirementAge fresh-install default (67 = UK State Pension age, Pensions Act 2014). Documented external fact, not an invented personal number. Disclosed at render as 'at age 67 · in Nyr' on the Projected Pot cell." },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", text: "retirementAge: stored.retirementAge ?? 67,", reason: "retirementAge fresh-install default (67 = UK State Pension age, Pensions Act 2014). Documented external fact, not an invented personal number. Disclosed at render as 'at age 67 · in Nyr' on the Projected Pot cell." },
   //
   // growthRate default 7% — G11 resolved via disclosure contract.
   // A conventional pension-model assumption is legitimate IF the user
@@ -242,16 +252,18 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   // are locked by pension-growth-rate-disclosure.test.ts. If any is
   // removed, that test fails before this allowlist entry can silently
   // become a lie about what the code does.
-  { path: "artifacts/finance-tracker/src/pages/pension.tsx", line: 108, reason: "growthRate default 7% — legitimate conventional model assumption, disclosed at the render point via the 'assumes N%/yr growth' clickable pill on the Projected Pot caption (KpiBar) and the health-block footer, with a click handler that scrolls + focuses the input. Contract locked by pension-growth-rate-disclosure.test.ts." },
+  { path: "artifacts/finance-tracker/src/pages/pension.tsx", text: "growthRate: stored.growthRate ?? 7,", reason: "growthRate default 7% — legitimate conventional model assumption, disclosed at the render point via the 'assumes N%/yr growth' clickable pill on the Projected Pot caption (KpiBar) and the health-block footer, with a click handler that scrolls + focuses the input. Contract locked by pension-growth-rate-disclosure.test.ts." },
 ];
 
 // ── Scanner ────────────────────────────────────────────────────────────────
 
 interface Defect {
   path: string;      // relative to REPO_ROOT
-  line: number;      // 1-indexed
+  line: number;      // 1-indexed, for the error message only — not used for allowlist matching
   shape: "A" | "B";
   detail: string;    // human-readable, includes matched text
+  name?: string;      // Shape A: the declared identifier — matched against AllowEntry.name
+  lineText?: string;  // Shape B: trimmed source line holding the literal — matched against AllowEntry.text
 }
 
 function walk(dir: string): string[] {
@@ -369,6 +381,7 @@ function isInValueSlot(node: ts.Node): boolean {
 
 function scanFile(filePath: string): Defect[] {
   const text = readFileSync(filePath, "utf-8");
+  const srcLines = text.split("\n");
   const rel = relative(REPO_ROOT, filePath);
   const sf = ts.createSourceFile(filePath, text, ts.ScriptTarget.ES2020, /*setParentNodes*/ true, filePath.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const defects: Defect[] = [];
@@ -388,6 +401,7 @@ function scanFile(filePath: string): Defect[] {
           line: lineOf(node.name),
           shape: "A",
           detail: `named-flag declaration: ${name}`,
+          name,
         });
       }
     }
@@ -420,11 +434,13 @@ function scanFile(filePath: string): Defect[] {
       const val = Number(literal.text);
       if (val !== 0 && isInValueSlot(node)) {
         const kind = ts.isConditionalExpression(node) ? "ternary-else" : "nullish-coalesce";
+        const litLine = lineOf(literal);
         defects.push({
           path: rel,
-          line: lineOf(literal),
+          line: litLine,
           shape: "B",
           detail: `${kind} literal ${val} in: ${node.getText(sf).replace(/\s+/g, " ").slice(0, 120)}`,
+          lineText: srcLines[litLine - 1]?.trim() ?? "",
         });
       }
     }
@@ -443,7 +459,10 @@ function scanAll(): Defect[] {
 }
 
 function isAllowed(defect: Defect, list: readonly AllowEntry[]): boolean {
-  return list.some((e) => e.path === defect.path && e.line === defect.line);
+  return list.some((e) =>
+    e.path === defect.path &&
+    (defect.shape === "A" ? e.name === defect.name : e.text === defect.lineText)
+  );
 }
 
 function formatDefect(d: Defect): string {
@@ -495,13 +514,16 @@ describe("demo-fabrication lock (#16)", { timeout: 15_000 }, () => {
   it("allowlist entries all still match a real defect (baseline is not stale)", () => {
     const stale: AllowEntry[] = [];
     for (const e of [...ALLOWLIST_A, ...ALLOWLIST_B]) {
-      const stillPresent = defects.some((d) => d.path === e.path && d.line === e.line);
+      const stillPresent = defects.some((d) =>
+        d.path === e.path &&
+        (e.name !== undefined ? d.name === e.name : d.lineText === e.text)
+      );
       if (!stillPresent) stale.push(e);
     }
     if (stale.length === 0) return;
     throw new Error(
       `Lock #16 · Stale allowlist entries — the underlying defect is gone. Remove:\n` +
-      stale.map((e) => `  ${e.path}:${e.line} — ${e.reason}`).join("\n") +
+      stale.map((e) => `  ${e.path} [${e.name ?? e.text}] — ${e.reason}`).join("\n") +
       `\n\nEvery removal here is real progress. The allowlist should shrink over time.`
     );
   });
