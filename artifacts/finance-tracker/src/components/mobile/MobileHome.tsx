@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { entityHref } from "@/lib/entity-href";
 import { comingBills, comingIncome } from "@/lib/upcoming-schedule";
 import { DrillTarget } from "@/components/drill";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
 import {
   useGetDashboard,
@@ -458,7 +458,7 @@ export function MobileHome(_props: MobileHomeProps) {
                 <HomeSectionHeader
                   label={`${monthName} · LIQUID`}
                   link="CASHFLOW ›"
-                  onLink={() => navigate("/cashflow")}
+                  href="/cashflow"
                 />
                 <div style={{ padding: `0 ${PHONE_GUTTER}px` }}>
                   <CashflowChart
@@ -476,12 +476,12 @@ export function MobileHome(_props: MobileHomeProps) {
               {/* Markets pane — the only element that differs tomorrow morning
                   without the user doing anything. Scoped to holdings + implied
                   FX pairs; renders nothing when the user has neither. */}
-              <MarketPane onOpenInvestments={() => navigate("/investments")} />
+              <MarketPane investmentsHref="/investments" />
 
               {/* F3 · news pane. All-or-nothing: header + list render
                   together only when NewsPane has anchor-tied items to
                   show. See components/mobile/NewsPane.tsx. */}
-              <NewsPane onOpenInvestments={() => navigate("/investments")} />
+              <NewsPane investmentsHref="/investments" />
             </div>
           ) : null,
         )}
@@ -490,15 +490,12 @@ export function MobileHome(_props: MobileHomeProps) {
         <HomeSectionHeader
           label="COMING · KNOWN WITH CERTAINTY"
           link="MONTH ›"
-          onLink={() => navigate("/upcoming")}
+          href="/upcoming"
         />
         <div style={{ padding: `0 ${PHONE_GUTTER}px` }}>
           <UpcomingList bills={upcomingBills} incoming={upcomingIncome} />
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/split");
-            }}
+          <Link
+            href="/split"
             style={{
               display: "flex",
               alignItems: "center",
@@ -510,7 +507,7 @@ export function MobileHome(_props: MobileHomeProps) {
             }}
           >
             Split a bill ›
-          </a>
+          </Link>
         </div>
 
     </div>

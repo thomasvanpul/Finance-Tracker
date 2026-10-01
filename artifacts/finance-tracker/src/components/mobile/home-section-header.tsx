@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { SectionHeader } from "@/components/phone/SectionHeader";
 import { PHONE_GROUP_GAP, PHONE_HEADER_H } from "@/components/phone/rhythm";
 
@@ -11,22 +12,21 @@ import { PHONE_GROUP_GAP, PHONE_HEADER_H } from "@/components/phone/rhythm";
 export function HomeSectionHeader({
   label,
   link,
-  onLink,
+  href,
 }: {
   label: string;
   link: string;
-  onLink: () => void;
+  // A real href, not an onClick: keyboard reachable, middle-clickable and
+  // shown in the status bar (DESIGN.md §14).
+  href: string;
 }) {
   return (
     <div style={{ marginTop: PHONE_GROUP_GAP }}>
       <SectionHeader
         label={label}
         right={
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              onLink();
-            }}
+          <Link
+            href={href}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -41,7 +41,7 @@ export function HomeSectionHeader({
             }}
           >
             {link}
-          </a>
+          </Link>
         }
       />
     </div>

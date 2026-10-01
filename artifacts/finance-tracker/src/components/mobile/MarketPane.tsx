@@ -111,10 +111,10 @@ function qtyLabel(qty: number): string {
 }
 
 interface MarketPaneProps {
-  onOpenInvestments: () => void;
+  investmentsHref: string;
 }
 
-export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
+export function MarketPane({ investmentsHref }: MarketPaneProps) {
   const { data: investments = [] } = useListInvestments();
   const { data: accounts = [] } = useListAccounts();
   // Aggregate holdings value. Server-computed, already on the payload this
@@ -243,7 +243,7 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
           now something the user holds, so that is what it says. The header
           itself is HOME's one section header (DESIGN.md §2) — this pane drew
           its own, a ruled dim label, under a banded one. */}
-      <HomeSectionHeader label="WHAT YOU HOLD" link="INVESTMENTS ›" onLink={onOpenInvestments} />
+      <HomeSectionHeader label="WHAT YOU HOLD" link="INVESTMENTS ›" href={investmentsHref} />
       {staleTs !== null && (
         <div style={{ padding: `4px ${PHONE_GUTTER}px 0` }}>
           <StaleAsOf ts={staleTs} isFresh={false} compact />

@@ -60,7 +60,7 @@ function formatWhen(iso: string): string {
   return `${Math.round(diffH / 24)}d`;
 }
 
-export function NewsPane({ onOpenInvestments }: { onOpenInvestments?: () => void }) {
+export function NewsPane({ investmentsHref }: { investmentsHref?: string }) {
   const { data } = useNews();
   // The rule: if the user holds nothing, don't render at all — a
   // generic feed is exactly what F3 rejects. Also don't render
@@ -76,8 +76,8 @@ export function NewsPane({ onOpenInvestments }: { onOpenInvestments?: () => void
       {/* Header + list render all-or-nothing, so an empty header never
           sits above an empty list. The header is HOME's one section header
           (DESIGN.md §2); until 16 Sep 2026 this pane drew its own. */}
-      {onOpenInvestments
-        ? <HomeSectionHeader label="NEWS · CONNECTED TO YOU" link="INVESTMENTS ›" onLink={onOpenInvestments} />
+      {investmentsHref
+        ? <HomeSectionHeader label="NEWS · CONNECTED TO YOU" link="INVESTMENTS ›" href={investmentsHref} />
         : <div style={{ marginTop: 16 }}><SectionHeader label="NEWS · CONNECTED TO YOU" /></div>}
     <div style={{ padding: "0 16px" }}>
       <VStack gap={0}>

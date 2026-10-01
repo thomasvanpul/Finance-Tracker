@@ -10,7 +10,6 @@
 // (NewsPane). No new data contracts needed.
 
 import { useGetDashboard } from "@workspace/api-client-react";
-import { useLocation } from "wouter";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
 import { MarketPane } from "@/components/mobile/MarketPane";
 import { NewsPane } from "@/components/mobile/NewsPane";
@@ -54,7 +53,6 @@ function PortfolioHero({ portfolio }: { portfolio: DashboardSummaryPortfolio }) 
 }
 
 export function MarketScreen() {
-  const [, navigate] = useLocation();
   const { data: dashboard, isLoading } = useGetDashboard();
 
   if (isLoading && !dashboard) {
@@ -81,7 +79,7 @@ export function MarketScreen() {
         </VStack>
       )}
 
-      <MarketPane onOpenInvestments={() => navigate("/investments")} />
+      <MarketPane investmentsHref="/investments" />
 
       {/* News strip. MarketPane's last row already ends on a hairline and
           NewsPane draws its own header rule, so no separator here — the
