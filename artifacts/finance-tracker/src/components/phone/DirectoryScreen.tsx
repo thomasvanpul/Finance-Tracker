@@ -95,17 +95,23 @@ export const DIRECTORY_ITEM_COUNT: number = GROUPS.reduce((n, g) => n + g.items.
 // PhoneShell.tsx.
 export const DIRECTORY_DESTINATIONS: readonly string[] = GROUPS.flatMap((g) => g.items.map((i) => i.href));
 
-function filterGroups(query: string): readonly DirectoryGroup[] {
+export function filterGroups(query: string): readonly DirectoryGroup[] {
   const q = query.trim().toLowerCase();
   if (q === "") return GROUPS;
+  // A heading match keeps the whole group; otherwise only matching items.
+  // A group left with no items is dropped — a bare heading leads nowhere.
   return GROUPS
-    .map((g) => ({
-      ...g,
-      items: g.items.filter(
-        (i) => i.label.toLowerCase().includes(q) || i.desc.toLowerCase().includes(q),
-      ),
-    }))
-    .filter((g) => g.items.length > 0 || g.heading.toLowerCase().includes(q));
+    .map((g) =>
+      g.heading.toLowerCase().includes(q)
+        ? g
+        : {
+            ...g,
+            items: g.items.filter(
+              (i) => i.label.toLowerCase().includes(q) || i.desc.toLowerCase().includes(q),
+            ),
+          },
+    )
+    .filter((g) => g.items.length > 0);
 }
 
 function ItemRow({ item, onTap }: { item: DirectoryItem; onTap: () => void }) {
