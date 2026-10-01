@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { normalizeMerchant } from "./merchant-normalizer";
 import { detectRecurringPatterns } from "./recurring-detector-server";
 
@@ -142,5 +142,39 @@ describe("annual detection is possible, but the gap tolerance is unforgiving", (
       date: ["2026-01-05", "2026-02-04", "2026-03-08"][i],
     }));
     expect(detectRecurringPatterns(monthly)).toHaveLength(1);
+  });
+});
+
+// ── Regression: nextExpected must not shift a day across a DST boundary ───
+//
+// addDays() parses the date-only string as UTC midnight, then used to walk
+// it forward with local setDate/getDate before formatting back through
+// toISOString(). That round-trip is a no-op in a timezone with a constant
+// offset, but a DST transition between the input date and input+days shifts
+// the local wall-clock by an hour without moving the underlying instant by a
+// full day, so the UTC day printed back out lands one day early — west of
+// Greenwich, where UTC midnight already maps to the previous local day.
+// Fixed by keeping the whole walk in UTC (setUTCDate/getUTCDate).
+describe("nextExpected survives a DST transition in the server's local timezone", () => {
+  const originalTZ = process.env.TZ;
+
+  afterEach(() => {
+    process.env.TZ = originalTZ;
+  });
+
+  it("lands on the correct UTC date when the gap crosses the US spring-forward (2026-03-08)", () => {
+    process.env.TZ = "America/New_York";
+
+    const monthly = [
+      { date: "2026-01-08", description: "Apple Developer", nativeAmount: "99.00", currency: "USD", type: "expense" },
+      { date: "2026-02-08", description: "Apple Developer", nativeAmount: "99.00", currency: "USD", type: "expense" },
+      { date: "2026-03-08", description: "Apple Developer", nativeAmount: "99.00", currency: "USD", type: "expense" },
+    ];
+
+    const out = detectRecurringPatterns(monthly);
+    expect(out).toHaveLength(1);
+    // last occurrence 2026-03-08 + a 30-day interval must be 2026-04-07,
+    // not the pre-fix 2026-04-06.
+    expect(out[0].nextExpected).toBe("2026-04-07");
   });
 });
