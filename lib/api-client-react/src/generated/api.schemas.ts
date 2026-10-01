@@ -1282,6 +1282,11 @@ export interface DebtUpdate {
   accountId?: number;
 }
 
+export interface UpcomingPay {
+  /** The account the item was paid from (or received into). Used only when the item has none of its own. */
+  accountId?: number;
+}
+
 export interface DebtSettle {
   /** The account the debt was settled from. Used only when the debt has none of its own. */
   accountId?: number;

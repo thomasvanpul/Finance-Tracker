@@ -714,10 +714,16 @@ export const DeleteUpcomingItemParams = zod.object({
 
 
 /**
+ * Paying logs a transaction against an account and moves its balance. An item with no accountId must be paid with one in the body; without it the server answers 422 rather than pick an account for the user.
+
  * @summary Mark item as paid and auto-log to transactions
  */
 export const PayUpcomingItemParams = zod.object({
   "id": zod.coerce.number()
+})
+
+export const PayUpcomingItemBody = zod.object({
+  "accountId": zod.number().optional().describe('The account the item was paid from (or received into). Used only when the item has none of its own.')
 })
 
 export const PayUpcomingItemResponse = zod.object({

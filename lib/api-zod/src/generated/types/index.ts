@@ -166,6 +166,7 @@ export * from './upcomingItemUpdateCurrency';
 export * from './upcomingItemUpdateFrequency';
 export * from './upcomingItemUpdateStatus';
 export * from './upcomingItemUpdateType';
+export * from './upcomingPay';
 export * from './upcomingSummary';
 export * from './updateBudgetBody';
 export * from './updateGoalBody';

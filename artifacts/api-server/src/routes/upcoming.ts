@@ -7,6 +7,7 @@ import {
   UpdateUpcomingItemBody,
   DeleteUpcomingItemParams,
   PayUpcomingItemParams,
+  PayUpcomingItemBody,
   ListUpcomingResponse,
   UpdateUpcomingItemResponse,
   PayUpcomingItemResponse,
@@ -204,10 +205,28 @@ router.post("/upcoming/:id/pay", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Item not found" });
     return;
   }
+  const body = PayUpcomingItemBody.safeParse(req.body ?? {});
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  // Paying logs a transaction and moves a balance. The item's own account
+  // wins; otherwise the caller must name one. This used to fall back to
+  // `accounts[0]` — a real account picked by position, claiming it paid
+  // when nothing said so. Same rule as POST /debts/:id/settle.
+  const targetAccountId = item.accountId ?? body.data.accountId ?? null;
+  if (targetAccountId == null) {
+    res.status(422).json({ error: "Choose the account this was paid from" });
+    return;
+  }
+  if (item.accountId == null && !(await isAccountOwnedBy(targetAccountId, userId))) {
+    res.status(404).json({ error: `Account ${targetAccountId} not found` });
+    return;
+  }
 
   const [updated] = await db
     .update(upcomingTable)
-    .set({ status: "paid" })
+    .set(item.accountId == null ? { status: "paid", accountId: targetAccountId } : { status: "paid" })
     .where(and(eq(upcomingTable.id, params.data.id), eq(upcomingTable.userId, userId)))
     .returning();
 
@@ -216,26 +235,22 @@ router.post("/upcoming/:id/pay", async (req, res): Promise<void> => {
     .from(accountsTable)
     .where(eq(accountsTable.userId, userId));
 
-  // Use the first account if none linked; if user has no accounts yet skip balance adjustment
-  const targetAccountId = item.accountId ?? accounts[0]?.id;
-  if (targetAccountId) {
-    const baseCurrency = await getBaseCurrency(userId);
-    const { rate, asOf } = await snapshotFxRate(item.currency, baseCurrency);
-    await db.insert(transactionsTable).values({
-      date: item.dueDate,
-      description: item.description,
-      type: item.type,
-      category: item.category,
-      accountId: targetAccountId,
-      nativeAmount: item.nativeAmount,
-      currency: item.currency,
-      source: "manual",
-      userId,
-      nativeToBaseRate: rate == null ? null : String(rate),
-      rateAsOf: asOf,
-    });
-    await adjustAccountBalance(targetAccountId, userId, parseFloat(item.nativeAmount), item.currency, item.type);
-  }
+  const baseCurrency = await getBaseCurrency(userId);
+  const { rate, asOf } = await snapshotFxRate(item.currency, baseCurrency);
+  await db.insert(transactionsTable).values({
+    date: item.dueDate,
+    description: item.description,
+    type: item.type,
+    category: item.category,
+    accountId: targetAccountId,
+    nativeAmount: item.nativeAmount,
+    currency: item.currency,
+    source: "manual",
+    userId,
+    nativeToBaseRate: rate == null ? null : String(rate),
+    rateAsOf: asOf,
+  });
+  await adjustAccountBalance(targetAccountId, userId, parseFloat(item.nativeAmount), item.currency, item.type);
 
   const accountMap = new Map(accounts.map((a) => [a.id, a.name]));
   const enriched = await enrichUpcoming(updated, accountMap, userId);

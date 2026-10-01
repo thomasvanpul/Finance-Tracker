@@ -84,6 +84,7 @@ import type {
   UpcomingItem,
   UpcomingItemInput,
   UpcomingItemUpdate,
+  UpcomingPay,
   UpcomingSummary,
   UpdateBudgetBody,
   UpdateGoalBody,
@@ -1933,16 +1934,20 @@ export const getPayUpcomingItemUrl = (id: number,) => {
 }
 
 /**
+ * Paying logs a transaction against an account and moves its balance. An item with no accountId must be paid with one in the body; without it the server answers 422 rather than pick an account for the user.
+
  * @summary Mark item as paid and auto-log to transactions
  */
-export const payUpcomingItem = async (id: number, options?: RequestInit): Promise<UpcomingItem> => {
+export const payUpcomingItem = async (id: number,
+    upcomingPay?: UpcomingPay, options?: RequestInit): Promise<UpcomingItem> => {
 
   return customFetch<UpcomingItem>(getPayUpcomingItemUrl(id),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      upcomingPay,)
   }
 );}
 
@@ -1950,8 +1955,8 @@ export const payUpcomingItem = async (id: number, options?: RequestInit): Promis
 
 
 export const getPayUpcomingItemMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof payUpcomingItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof payUpcomingItem>>, TError,{id: number}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof payUpcomingItem>>, TError,{id: number;data?: BodyType<UpcomingPay>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof payUpcomingItem>>, TError,{id: number;data?: BodyType<UpcomingPay>}, TContext> => {
 
 const mutationKey = ['payUpcomingItem'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1963,10 +1968,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof payUpcomingItem>>, {id: number}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof payUpcomingItem>>, {id: number;data?: BodyType<UpcomingPay>}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  payUpcomingItem(id,requestOptions)
+          return  payUpcomingItem(id,data,requestOptions)
         }
 
 
@@ -1977,18 +1982,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type PayUpcomingItemMutationResult = NonNullable<Awaited<ReturnType<typeof payUpcomingItem>>>
-
+    export type PayUpcomingItemMutationBody = BodyType<UpcomingPay> | undefined
     export type PayUpcomingItemMutationError = ErrorType<unknown>
 
     /**
  * @summary Mark item as paid and auto-log to transactions
  */
 export const usePayUpcomingItem = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof payUpcomingItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof payUpcomingItem>>, TError,{id: number;data?: BodyType<UpcomingPay>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof payUpcomingItem>>,
         TError,
-        {id: number},
+        {id: number;data?: BodyType<UpcomingPay>},
         TContext
       > => {
       return useMutation(getPayUpcomingItemMutationOptions(options));

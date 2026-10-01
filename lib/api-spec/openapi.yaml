@@ -529,12 +529,22 @@ paths:
       operationId: payUpcomingItem
       tags: [upcoming]
       summary: Mark item as paid and auto-log to transactions
+      description: >
+        Paying logs a transaction against an account and moves its balance.
+        An item with no accountId must be paid with one in the body; without
+        it the server answers 422 rather than pick an account for the user.
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpcomingPay"
       responses:
         "200":
           description: Paid and transaction created
@@ -2653,6 +2663,13 @@ components:
           type: string
         accountId:
           type: integer
+
+    UpcomingPay:
+      type: object
+      properties:
+        accountId:
+          type: integer
+          description: The account the item was paid from (or received into). Used only when the item has none of its own.
 
     DebtSettle:
       type: object

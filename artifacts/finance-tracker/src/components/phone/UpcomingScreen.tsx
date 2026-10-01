@@ -5,6 +5,7 @@ import {
   useGetUpcomingSummary,
   usePayUpcomingItem,
   useDeleteUpcomingItem,
+  useListAccounts,
   getListUpcomingQueryKey,
   getGetUpcomingSummaryQueryKey,
   type UpcomingItem,
@@ -24,6 +25,7 @@ import { SectionHeader } from "./SectionHeader";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
 import { MobileEmptyState } from "@/components/mobile/mobile-ui";
 import { PhoneSectionError } from "@/components/mobile/mobile-ui";
+import { MobileSheet } from "@/components/mobile-sheet";
 
 // UPCOMING — the fifth tab. What is coming and what does it cost.
 //
@@ -276,7 +278,7 @@ interface RowProps {
   isLast: boolean;
   baseCurrency: string | null;
   now: Date;
-  onPay: (id: number) => void;
+  onPay: (item: UpcomingItem) => void;
   onDelete: (id: number) => void;
 }
 
@@ -322,7 +324,7 @@ function UpcomingRow({ item, isLast, baseCurrency, now, onPay, onDelete }: RowPr
           native: nativeBelow,
         }}
         isLast={isLast}
-        onTap={() => onPay(item.id)}
+        onTap={() => onPay(item)}
       />
     </div>
   );
@@ -376,9 +378,23 @@ export function UpcomingScreen() {
   const payMutation = usePayUpcomingItem();
   const deleteMutation = useDeleteUpcomingItem();
 
-  function handlePay(id: number) {
-    payMutation.mutate({ id }, {
+  const { data: accounts } = useListAccounts();
+  // An item with no account of its own is not paid on tap: the API answers
+  // 422 until the user says which account paid, rather than pick one.
+  const [choosingFor, setChoosingFor] = useState<UpcomingItem | null>(null);
+
+  function handlePay(item: UpcomingItem) {
+    if (item.accountId == null) {
+      setChoosingFor(item);
+      return;
+    }
+    pay(item.id);
+  }
+
+  function pay(id: number, accountId?: number) {
+    payMutation.mutate({ id, data: accountId == null ? undefined : { accountId } }, {
       onSuccess: () => {
+        setChoosingFor(null);
         void qc.invalidateQueries({ queryKey: getListUpcomingQueryKey() });
         void qc.invalidateQueries({ queryKey: getGetUpcomingSummaryQueryKey() });
         haptic.medium();
@@ -507,6 +523,38 @@ export function UpcomingScreen() {
           ))
         )}
       </div>
+
+      <MobileSheet
+        open={choosingFor != null}
+        onOpenChange={(o) => { if (!o) setChoosingFor(null); }}
+        title={choosingFor?.type === "income" ? "Received into" : "Paid from"}
+      >
+        {(accounts ?? []).length === 0 ? (
+          <p style={{ color: "var(--ft-muted)", fontSize: "var(--ft-text-body)" }}>
+            Add an account first. Paying logs a transaction against one.
+          </p>
+        ) : (
+          (accounts ?? []).map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              disabled={payMutation.isPending}
+              onClick={() => { if (choosingFor) pay(choosingFor.id, a.id); }}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                width: "100%", minHeight: 44, padding: "0 4px", gap: 12,
+                background: "transparent", border: 0, borderBottom: "1px solid var(--ft-border)",
+                color: "var(--ft-text)", font: "inherit", fontSize: "var(--ft-text-body)", textAlign: "left",
+              }}
+            >
+              <span>{a.name}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", color: "var(--ft-dim)" }}>
+                {a.currency}
+              </span>
+            </button>
+          ))
+        )}
+      </MobileSheet>
     </div>
   );
 }
