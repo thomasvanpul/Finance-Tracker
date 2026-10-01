@@ -251,7 +251,7 @@ function InflationKpiTile({ label, value, color, note }: InflationKpiTileProps) 
 function InflationLegendItem({ color, label }: { color: string; label: string }) {
   return (
     <HStack gap={5} align="center">
-      <div style={{ width: 12, height: 2, background: color, borderRadius: 1 }} />
+      <div style={{ width: 12, height: 2, background: color, borderRadius: 2 }} />
       <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{label}</span>
     </HStack>
   );

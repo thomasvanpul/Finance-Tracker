@@ -2107,7 +2107,7 @@ interface CategoryLegendItemProps {
 function CategoryLegendItem({ cat, amt, total }: CategoryLegendItemProps) {
   return (
     <HStack gap={4} align="center">
-      <div style={{ width: 7, height: 7, borderRadius: 1, background: SUMMARY_CATEGORY_COLORS[cat] ?? "var(--ft-dim)", flexShrink: 0 }} />
+      <div style={{ width: 7, height: 7, borderRadius: 2, background: SUMMARY_CATEGORY_COLORS[cat] ?? "var(--ft-dim)", flexShrink: 0 }} />
       <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>
         {cat} <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 600 }}>{((amt / total) * 100).toFixed(0)}%</span>
       </span>

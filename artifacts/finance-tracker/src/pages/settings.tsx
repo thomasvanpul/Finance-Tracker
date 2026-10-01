@@ -829,13 +829,13 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
             {[s.accent, s.muted, s.muted].map((c,i) => <span key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: c, opacity: i === 0 ? 1 : 0.5 }} />)}
           </div>
           <div style={{ background: s.surface, padding: "5px", display: "flex", flexDirection: "column", gap: 4, height: 68 }}>
-            <div style={{ height: 4, background: s.text, borderRadius: 1, width: "70%", opacity: 0.7 }} />
-            <div style={{ height: 3, background: s.muted, borderRadius: 1, width: "90%", opacity: 0.5 }} />
-            <div style={{ height: 3, background: s.muted, borderRadius: 1, width: "55%", opacity: 0.4 }} />
+            <div style={{ height: 4, background: s.text, borderRadius: 2, width: "70%", opacity: 0.7 }} />
+            <div style={{ height: 3, background: s.muted, borderRadius: 2, width: "90%", opacity: 0.5 }} />
+            <div style={{ height: 3, background: s.muted, borderRadius: 2, width: "55%", opacity: 0.4 }} />
             <div style={{ marginTop: 4, display: "flex", justifyContent: "flex-end" }}>
-              <span style={{ width: 16, height: 8, background: s.accent, display: "block", borderRadius: 1 }} />
+              <span style={{ width: 16, height: 8, background: s.accent, display: "block", borderRadius: 2 }} />
             </div>
-            <div style={{ height: 3, background: s.accent, borderRadius: 1, width: "40%", opacity: 0.6 }} />
+            <div style={{ height: 3, background: s.accent, borderRadius: 2, width: "40%", opacity: 0.6 }} />
           </div>
           {isActive && <div style={{ position: "absolute", top: 3, right: 4, color: s.accent, lineHeight: 1 }}><Check size={9} /></div>}
         </div>
@@ -886,13 +886,13 @@ function AppearancePanel({ theme, setTheme, density, setDensity }: {
                 </div>
                 <div style={{ flex: 1, padding: "6px 8px", display: "flex", gap: 8 }}>
                   <div style={{ width: 40, display: "flex", flexDirection: "column", gap: 4 }}>
-                    {[0.7,0.5,0.4,0.3].map((o,i) => <div key={i} style={{ height: 6, background: s.muted, opacity: o, borderRadius: 1 }} />)}
+                    {[0.7,0.5,0.4,0.3].map((o,i) => <div key={i} style={{ height: 6, background: s.muted, opacity: o, borderRadius: 2 }} />)}
                   </div>
                   <VStack gap={4} grow>
-                    <div style={{ height: 8, background: s.text, opacity: 0.7, borderRadius: 1, width: "80%" }} />
-                    <div style={{ height: 5, background: s.accent, borderRadius: 1, width: "45%" }} />
-                    <div style={{ height: 5, background: s.muted, opacity: 0.4, borderRadius: 1, width: "65%" }} />
-                    <div style={{ height: 5, background: s.muted, opacity: 0.3, borderRadius: 1, width: "50%" }} />
+                    <div style={{ height: 8, background: s.text, opacity: 0.7, borderRadius: 2, width: "80%" }} />
+                    <div style={{ height: 5, background: s.accent, borderRadius: 2, width: "45%" }} />
+                    <div style={{ height: 5, background: s.muted, opacity: 0.4, borderRadius: 2, width: "65%" }} />
+                    <div style={{ height: 5, background: s.muted, opacity: 0.3, borderRadius: 2, width: "50%" }} />
                   </VStack>
                 </div>
               </div>

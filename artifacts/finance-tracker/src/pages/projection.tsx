@@ -596,7 +596,7 @@ export default function Projection() {
                   width: 3,
                   height: "100%",
                   background: "var(--ft-green)",
-                  borderRadius: 1,
+                  borderRadius: 2,
                 }} />
               </div>
               <span style={{ ...mono, fontSize: 10, color: "var(--ft-blue)", fontWeight: 600 }}>

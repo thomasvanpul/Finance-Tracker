@@ -792,7 +792,7 @@ function DaySubRow({ sub }: DaySubRowProps) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
-      <span style={{ width: 8, height: 3, background: "var(--ft-amber)", flexShrink: 0, borderRadius: 1 }} />
+      <span style={{ width: 8, height: 3, background: "var(--ft-amber)", flexShrink: 0, borderRadius: 2 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 10, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
       </div>
@@ -994,8 +994,8 @@ function Legend() {
     { swatch: <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ft-green)", display: "inline-block" }} />, label: "Income" },
     { swatch: <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--ft-red)", display: "inline-block" }} />, label: "Expense" },
     { swatch: <span style={{ width: 0, height: 0, borderLeft: "4px solid transparent", borderRight: "4px solid transparent", borderBottom: "7px solid var(--ft-amber)", display: "inline-block" }} />, label: "Bill due" },
-    { swatch: <span style={{ width: 8, height: 3, background: "var(--ft-amber)", display: "inline-block", borderRadius: 1 }} />, label: "Subscription" },
-    { swatch: <span style={{ width: 8, height: 3, background: "var(--ft-accent)", display: "inline-block", borderRadius: 1 }} />, label: "Event" },
+    { swatch: <span style={{ width: 8, height: 3, background: "var(--ft-amber)", display: "inline-block", borderRadius: 2 }} />, label: "Subscription" },
+    { swatch: <span style={{ width: 8, height: 3, background: "var(--ft-accent)", display: "inline-block", borderRadius: 2 }} />, label: "Event" },
   ];
   return (
     <div style={{
@@ -1460,18 +1460,18 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
               {feedEvs.slice(0, 2).map((ev, i) => {
                 const feed = PREDEFINED_FEEDS.find((f) => f.id === ev.feedId);
                 return (
-                  <div key={i} style={{ height: 3, background: feed?.color ?? "var(--ft-accent)", borderRadius: 1, marginBottom: 2, opacity: 0.85 }} title={ev.title} />
+                  <div key={i} style={{ height: 3, background: feed?.color ?? "var(--ft-accent)", borderRadius: 2, marginBottom: 2, opacity: 0.85 }} title={ev.title} />
                 );
               })}
 
               {/* Custom event bars */}
               {custEvs.slice(0, 2).map((ev, i) => (
-                <div key={i} style={{ height: 3, background: ev.color, borderRadius: 1, marginBottom: 2 }} title={ev.title} />
+                <div key={i} style={{ height: 3, background: ev.color, borderRadius: 2, marginBottom: 2 }} title={ev.title} />
               ))}
 
               {/* Subscription due bars */}
               {subCount > 0 && (data?.subscriptions ?? []).slice(0, 2).map((sub) => (
-                <div key={sub.id} style={{ height: 3, background: "var(--ft-amber)", borderRadius: 1, marginBottom: 2, opacity: 0.9 }} title={`${sub.name} — ${formatBaseMoney(sub.amount)}`} />
+                <div key={sub.id} style={{ height: 3, background: "var(--ft-amber)", borderRadius: 2, marginBottom: 2, opacity: 0.9 }} title={`${sub.name} — ${formatBaseMoney(sub.amount)}`} />
               ))}
 
               {/* Transaction dots */}

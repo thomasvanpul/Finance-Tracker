@@ -1010,8 +1010,8 @@ function MonthSpendingRow({ category, total, maxSpend }: MonthSpendingRowProps) 
         <span style={{ fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}><Drill href={categoryTransactionsHref(category, thisMonthRange())} title={`Everything in ${category} this month`}>{category}</Drill></span>
         <span className="pnum" style={{ fontSize: 10, color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", flexShrink: 0, whiteSpace: "nowrap", marginLeft: 4 }}>{formatBaseMoney(total)}</span>
       </HStack>
-      <div style={{ height: 3, background: "var(--ft-raised)", borderRadius: 1 }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: "var(--ft-red)", borderRadius: 1 }} />
+      <div style={{ height: 3, background: "var(--ft-raised)", borderRadius: 2 }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: "var(--ft-red)", borderRadius: 2 }} />
       </div>
     </div>
   );
@@ -1103,7 +1103,7 @@ function AccountAllocationRow({ name, pct, colorIndex, href }: AccountAllocation
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
     >
-      <div style={{ width: 6, height: 6, borderRadius: 1, background: color, flexShrink: 0 }} />
+      <div style={{ width: 6, height: 6, borderRadius: 2, background: color, flexShrink: 0 }} />
       <span style={{ fontSize: 11, color: "var(--ft-muted)", fontFamily: "var(--font-sans)", whiteSpace: "nowrap", maxWidth: 120 }}>
         <Drill href={href} title={`Open ${name}`}>{name}</Drill>
       </span>

@@ -202,8 +202,8 @@ function SpendingCatRow({
         </Drill>
       </span>
       {!isMobile && (
-        <div style={{ height: 4, background: "var(--ft-border2)", borderRadius: 1, overflow: "hidden" }}>
-          <div style={{ width: `${barWidth}%`, height: "100%", background: barColor, borderRadius: 1, transition: "width 0.12s ease" }} />
+        <div style={{ height: 4, background: "var(--ft-border2)", borderRadius: 2, overflow: "hidden" }}>
+          <div style={{ width: `${barWidth}%`, height: "100%", background: barColor, borderRadius: 2, transition: "width 0.12s ease" }} />
         </div>
       )}
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", textAlign: "right" }}>
@@ -275,8 +275,8 @@ function BudgetPerfRow({
         </span>
       )}
       <HStack gap={6} align="center">
-        <div style={{ flex: 1, height: 5, background: "var(--ft-border2)", borderRadius: 1, overflow: "hidden" }}>
-          <div style={{ width: `${Math.min(pct ?? 0, 100)}%`, height: "100%", background: barColor, borderRadius: 1, transition: "width 0.12s ease" }} />
+        <div style={{ flex: 1, height: 5, background: "var(--ft-border2)", borderRadius: 2, overflow: "hidden" }}>
+          <div style={{ width: `${Math.min(pct ?? 0, 100)}%`, height: "100%", background: barColor, borderRadius: 2, transition: "width 0.12s ease" }} />
         </div>
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: barColor, minWidth: 32, textAlign: "right", fontWeight: over || warn ? 700 : 400 }}>
           <span className="pnum">{pct == null ? "—" : `${pct.toFixed(0)}%`}</span>

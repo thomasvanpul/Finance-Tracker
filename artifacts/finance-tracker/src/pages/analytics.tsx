@@ -2362,8 +2362,8 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
                 <td className="pnum" style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", textAlign: "right", fontWeight: 700, color: diffColor }}>{diffLabel}</td>
                 <td style={{ ...td, borderBottom: isLast ? "none" : "1px solid var(--ft-border)", paddingLeft: 16, minWidth: 120 }}>
                   <div style={{ position: "relative", height: 12 }}>
-                    <div style={{ position: "absolute", left: 0, top: 3, height: 6, width: `${ukPct}%`, background: "var(--ft-border2)", borderRadius: 1 }} />
-                    <div style={{ position: "absolute", left: 0, top: 3, height: 6, width: `${yourPct}%`, background: overBy ? "var(--ft-red)" : "var(--ft-green)", opacity: 0.8, borderRadius: 1 }} />
+                    <div style={{ position: "absolute", left: 0, top: 3, height: 6, width: `${ukPct}%`, background: "var(--ft-border2)", borderRadius: 2 }} />
+                    <div style={{ position: "absolute", left: 0, top: 3, height: 6, width: `${yourPct}%`, background: overBy ? "var(--ft-red)" : "var(--ft-green)", opacity: 0.8, borderRadius: 2 }} />
                     {r.diff != null && Math.abs(r.diff) > 3 && (
                       <div style={{
                         position: "absolute",
@@ -2380,15 +2380,15 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
       </table>
       <div style={{ padding: "5px 16px 8px", borderTop: "1px solid var(--ft-border)", display: "flex", gap: 14, alignItems: "center" }}>
         <HStack gap={5} align="center">
-          <div style={{ width: 12, height: 4, background: "var(--ft-border2)", borderRadius: 1 }} />
+          <div style={{ width: 12, height: 4, background: "var(--ft-border2)", borderRadius: 2 }} />
           <Text as="span" mono size={7.5} color="var(--ft-dim)">UK avg</Text>
         </HStack>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 12, height: 4, background: "var(--ft-green)", opacity: 0.8, borderRadius: 1 }} />
+          <div style={{ width: 12, height: 4, background: "var(--ft-green)", opacity: 0.8, borderRadius: 2 }} />
           <Text as="span" mono size={7.5} color="var(--ft-dim)">under avg</Text>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <div style={{ width: 12, height: 4, background: "var(--ft-red)", opacity: 0.8, borderRadius: 1 }} />
+          <div style={{ width: 12, height: 4, background: "var(--ft-red)", opacity: 0.8, borderRadius: 2 }} />
           <Text as="span" mono size={7.5} color="var(--ft-dim)">over avg</Text>
         </div>
         <span style={{ fontFamily: "var(--font-sans)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>

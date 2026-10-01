@@ -297,7 +297,7 @@ function ProgressBar({
         height,
         background: "var(--ft-raised)",
         border: "1px solid var(--ft-border)",
-        borderRadius: 1,
+        borderRadius: 2,
         overflow: "hidden",
       }}
     >
@@ -1768,7 +1768,7 @@ export default function FamilyFinance() {
                 height: 20,
                 width: "100%",
                 border: "1px solid var(--ft-border)",
-                borderRadius: 1,
+                borderRadius: 2,
                 overflow: "hidden",
               }}
             >

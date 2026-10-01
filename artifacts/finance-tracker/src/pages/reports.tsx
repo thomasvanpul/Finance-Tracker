@@ -818,7 +818,7 @@ function CategorySparklineRow({ cat, amount, i, totalExpenses, sparkVals, last3M
             <HStack gap={2} align="end" height={16}>
               {sparkVals.map((v, si) => (
                 <div key={si} title={`${last3Months[si]?.month ?? ""}: ${formatBaseMoney(v)}`}
-                  style={{ width: 5, height: sparkMax > 0 ? `${Math.max(2, (v / sparkMax) * 16)}px` : "2px", background: color, opacity: 0.5 + (si / sparkVals.length) * 0.5, borderRadius: 1 }}
+                  style={{ width: 5, height: sparkMax > 0 ? `${Math.max(2, (v / sparkMax) * 16)}px` : "2px", background: color, opacity: 0.5 + (si / sparkVals.length) * 0.5, borderRadius: 2 }}
                 />
               ))}
             </HStack>
