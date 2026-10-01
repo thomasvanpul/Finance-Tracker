@@ -199,7 +199,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
           position: "absolute",
           top: 8,
           right: 8,
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           color: "var(--ft-dim)",
           background: "none",
@@ -250,7 +250,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               fontWeight: 600,
               color: "var(--ft-text)",
@@ -268,7 +268,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
             {done ? (
               <span
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 9,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
@@ -285,7 +285,7 @@ function GoalCard({ goal, index, onRemove, onUpdateCurrent }: GoalCardProps) {
                 {velocity && (
                   <span
                     style={{
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                       fontSize: 9,
                       letterSpacing: "0.06em",
                       textTransform: "uppercase",
@@ -482,7 +482,7 @@ function GoalsSummary({ totalSaved, totalTarget, totalPct, onAdd, adding }: Goal
       <button
         onClick={onAdd}
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 9,
           letterSpacing: "0.06em",
           color: "var(--ft-green)",
@@ -646,7 +646,7 @@ export function SavingsGoalsWidget() {
                 onClick={addGoal}
                 disabled={createGoal.isPending}
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 11,
                   color: "var(--ft-base)",
                   background: "var(--ft-green)",
@@ -698,7 +698,7 @@ export function SavingsGoalsWidget() {
             </svg>
             <span
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 11,
                 color: "var(--ft-dim)",
                 textAlign: "center",
@@ -709,7 +709,7 @@ export function SavingsGoalsWidget() {
             </span>
             <span
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 9,
                 color: "var(--ft-dim)",
                 textAlign: "center",
