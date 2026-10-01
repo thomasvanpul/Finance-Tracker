@@ -52,15 +52,12 @@ function useNews() {
 }
 
 function formatWhen(iso: string): string {
-  try {
-    const d = new Date(iso);
-    const diffH = (Date.now() - d.getTime()) / 3600_000;
-    if (diffH < 1) return `${Math.round(diffH * 60)}m`;
-    if (diffH < 24) return `${Math.round(diffH)}h`;
-    return `${Math.round(diffH / 24)}d`;
-  } catch {
-    return "";
-  }
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const diffH = (Date.now() - d.getTime()) / 3600_000;
+  if (diffH < 1) return `${Math.round(diffH * 60)}m`;
+  if (diffH < 24) return `${Math.round(diffH)}h`;
+  return `${Math.round(diffH / 24)}d`;
 }
 
 export function NewsPane({ onOpenInvestments }: { onOpenInvestments?: () => void }) {
