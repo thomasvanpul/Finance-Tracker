@@ -630,7 +630,10 @@ export default function Profile() {
     let cancelled = false;
     apiFetch("/api/connections")
       .then(async (r) => (r.ok ? ((await r.json()) as { provider?: string }[]) : []))
-      .then((rows) => { if (!cancelled) setDeleteProviders(rows.map((c) => c.provider ?? "").filter(Boolean)); })
+      // An Enable Banking consent is closed by the server before deletion
+      // (api-server lib/bank-consents.ts), so it is not one the user has
+      // to revoke themselves.
+      .then((rows) => { if (!cancelled) setDeleteProviders(rows.map((c) => c.provider ?? "").filter((p) => p && p !== "enable-banking")); })
       .catch(() => { if (!cancelled) setDeleteProviders([]); });
     authClient.listAccounts()
       .then((res) => {
