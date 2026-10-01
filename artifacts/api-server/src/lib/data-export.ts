@@ -23,9 +23,10 @@
 // shared expense) are the other user's record and are not in this
 // export. Section 9 of docs/PRIVACY.md is where that is handled.
 
-import { eq, inArray, or, getTableColumns, type SQL } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, or, getTableColumns, type SQL } from "drizzle-orm";
 import { getTableConfig, type PgColumn, type PgTable } from "drizzle-orm/pg-core";
 import * as schema from "@workspace/db";
+import { pagedRows, writeJsonObject, type JsonField, type Write } from "./json-stream";
 
 const {
   db,
@@ -51,7 +52,14 @@ export interface ExportSection {
   // Columns (drizzle property names) left out, with the reason. Everything
   // else on the table is exported.
   withheld?: Record<string, string>;
+  // An integer primary key to read the section by, a page at a time,
+  // instead of in one query. For sections that grow with use rather than
+  // with the user's own data entry.
+  pageBy?: PgColumn;
 }
+
+// Rows per query for a paged section.
+export const EXPORT_PAGE_SIZE = 2000;
 
 export const EXPORT_SECTIONS: readonly ExportSection[] = [
   { key: "profile", table: userTable, where: (u) => eq(userTable.id, u) },
@@ -110,7 +118,13 @@ export const EXPORT_SECTIONS: readonly ExportSection[] = [
         ? or(inArray(sharedExpenseSettlementsTable.participantId, participantIds), eq(sharedExpenseSettlementsTable.actorUserId, u))
         : eq(sharedExpenseSettlementsTable.actorUserId, u),
   },
-  { key: "requestRecords", table: requestMetricsTable, where: (u) => eq(requestMetricsTable.userId, u) },
+  {
+    // The largest section by far, and the one that grows with use: 23,103
+    // rows for the heaviest dev user on 1 Oct, inside the 30-day retention
+    // window (lib/request-metrics.ts). Paged, so the export never holds it.
+    key: "requestRecords", table: requestMetricsTable, where: (u) => eq(requestMetricsTable.userId, u),
+    pageBy: requestMetricsTable.id,
+  },
 ];
 
 // Tables with no section at all, by SQL name.
@@ -143,7 +157,10 @@ export function withheldList(): WithheldEntry[] {
   return [...fields, ...tables];
 }
 
-export async function buildUserExport(userId: string): Promise<Record<string, unknown>> {
+// Writes the export as JSON through `write`, one section — and for a paged
+// section one page — at a time, so memory holds a page rather than the file.
+// Sections are read in turn rather than all at once for the same reason.
+export async function writeUserExport(userId: string, write: Write): Promise<void> {
   const sharedExpenseIds = (
     await db.select({ id: sharedExpensesTable.id }).from(sharedExpensesTable).where(eq(sharedExpensesTable.userId, userId))
   ).map((r) => r.id);
@@ -157,29 +174,64 @@ export async function buildUserExport(userId: string): Promise<Record<string, un
     : [];
   const ctx = { sharedExpenseIds, participantIds };
 
-  const results = await Promise.all(
-    EXPORT_SECTIONS.map(async (section) => {
-      const where = section.where(userId, ctx);
-      if (!where) return [section.key, []] as const;
-      const rows = await db.select(sectionColumns(section)).from(section.table).where(where);
-      return [section.key, rows] as const;
-    }),
-  );
-  const sections = Object.fromEntries(results);
+  function* fields(): Generator<[string, JsonField]> {
+    yield ["exportedAt", { value: new Date().toISOString() }];
+    yield ["version", { value: EXPORT_VERSION }];
+    for (const section of EXPORT_SECTIONS) {
+      yield [section.key, sectionField(section, section.where(userId, ctx))];
+    }
+    yield ["withheld", { value: withheldList() }];
+  }
+  await writeJsonObject(fields(), write);
+}
 
-  // The profile is one row, and settings is at most one; export them as
-  // objects rather than one-element arrays.
-  const [profile] = sections.profile as unknown[];
-  const [settings] = sections.settings as unknown[];
+// The profile is one row, and settings is at most one; they are exported
+// as objects rather than one-element arrays.
+const SINGLE_ROW_SECTIONS = new Set(["profile", "settings"]);
 
+function sectionField(section: ExportSection, where: SQL | undefined): JsonField {
+  const columns = sectionColumns(section);
+  if (SINGLE_ROW_SECTIONS.has(section.key)) {
+    return {
+      value: (async () => {
+        if (!where) return null;
+        const [row] = await db.select(columns).from(section.table).where(where);
+        return row ?? null;
+      })(),
+    };
+  }
+  if (!where) return { pages: (async function* () {})() };
+  const key = section.pageBy;
+  if (!key) {
+    return { pages: (async function* () { yield await db.select(columns).from(section.table).where(where); })() };
+  }
+  const keyProp = keyProperty(section, key);
   return {
-    exportedAt: new Date().toISOString(),
-    version: EXPORT_VERSION,
-    ...sections,
-    profile: profile ?? null,
-    settings: settings ?? null,
-    withheld: withheldList(),
+    pages: pagedRows(
+      EXPORT_PAGE_SIZE,
+      (after, limit) =>
+        db.select(columns).from(section.table)
+          .where(after == null ? where : and(where, gt(key, after)))
+          .orderBy(asc(key)).limit(limit),
+      (row) => (row as Record<string, unknown>)[keyProp] as number,
+    ),
   };
+}
+
+// Drizzle property name of a column (rows are keyed by property, not SQL name).
+function keyProperty(section: ExportSection, column: PgColumn): string {
+  const hit = Object.entries(getTableColumns(section.table)).find(([, c]) => c === column);
+  if (!hit) throw new Error(`pageBy column is not on ${section.key}`);
+  return hit[0];
+}
+
+// The whole export as one object — for tests and anything that wants it in
+// memory. It is the streamed text parsed back, so it is exactly what the
+// route sends.
+export async function buildUserExport(userId: string): Promise<Record<string, unknown>> {
+  const chunks: string[] = [];
+  await writeUserExport(userId, async (c) => { chunks.push(c); });
+  return JSON.parse(chunks.join("")) as Record<string, unknown>;
 }
 
 // SQL table name for a section — used by the lock test.

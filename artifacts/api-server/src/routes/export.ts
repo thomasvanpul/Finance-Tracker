@@ -14,12 +14,28 @@ const router: IRouter = Router();
 // mock that package with only the tables their routes touch.
 router.get("/export/backup", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
-  const { buildUserExport } = await import("../lib/data-export");
-  const backup = await buildUserExport(userId);
+  const { writeUserExport } = await import("../lib/data-export");
 
   res.setHeader("Content-Type", "application/json");
   res.setHeader("Content-Disposition", `attachment; filename="numeris-backup-${localDateString(new Date())}.json"`);
-  res.json(backup);
+  // Streamed, a section and a page at a time, so the server never holds the
+  // whole file. Writes wait for the socket to drain. A failure after the
+  // first byte can no longer become an error status, so it aborts the
+  // connection: the download fails rather than ending as a short file.
+  const write = (chunk: string) =>
+    new Promise<void>((resolve, reject) => {
+      if (res.destroyed) return reject(new Error("client went away"));
+      if (res.write(chunk)) return resolve();
+      res.once("drain", resolve);
+      res.once("close", () => reject(new Error("client went away")));
+    });
+  try {
+    await writeUserExport(userId, write);
+    res.end();
+  } catch (err) {
+    if (!res.headersSent) throw err;
+    res.destroy(err as Error);
+  }
 });
 
 router.get("/export/tax-year/:year", async (req, res): Promise<void> => {
