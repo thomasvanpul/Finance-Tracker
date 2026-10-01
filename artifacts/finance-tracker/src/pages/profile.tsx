@@ -1525,7 +1525,7 @@ export default function Profile() {
                 : "A provider token you pasted in (Wise, Alpaca, Kraken) is destroyed here but not revoked at the provider."}
             </Text>
             <Text as="p" size={10} color="var(--ft-muted)" lineHeight={1.6}>
-              If you sign in with Google or GitHub, Numeris tries to remove its access there too. If that fails, the
+              If you sign in with Google, GitHub or Apple, Numeris tries to remove its access there too. If that fails, the
               account is still deleted, and the next screen tells you where to remove it yourself.
             </Text>
             <button

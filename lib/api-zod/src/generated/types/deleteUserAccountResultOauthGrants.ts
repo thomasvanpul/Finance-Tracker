@@ -9,7 +9,7 @@ import type { DeleteUserAccountResultOauthGrantsRemainingItem } from './deleteUs
 import type { DeleteUserAccountResultOauthGrantsRevokedItem } from './deleteUserAccountResultOauthGrantsRevokedItem';
 
 /**
- * Google and GitHub sign-in grants, revoked best-effort before deletion. `remaining` lists providers whose grant may still be live (no stored token, or the provider refused); the user removes those in the provider's own settings.
+ * Google, GitHub and Apple sign-in grants, revoked best-effort before deletion. `remaining` lists providers whose grant may still be live (no stored token, or the provider refused); the user removes those in the provider's own settings.
  */
 export type DeleteUserAccountResultOauthGrants = {
   revoked: DeleteUserAccountResultOauthGrantsRevokedItem[];

@@ -1,4 +1,4 @@
-// Revoke Google and GitHub sign-in grants before account deletion,
+// Revoke Google, GitHub and Apple sign-in grants before account deletion,
 // best-effort.
 //
 // Unlike a bank consent (bank-consents.ts), a sign-in grant left live at
@@ -8,8 +8,8 @@
 // the client tells the user where to remove it themselves.
 //
 // Most grants cannot be revoked from here at all. better-auth.ts drops the
-// OAuth tokens before every account write, and both providers' revoke
-// endpoints need a token. Only rows written before that change still hold
+// OAuth tokens before every account write, and every provider's revoke
+// endpoint needs a token. Only rows written before that change still hold
 // one. A row with no token is reported as remaining without a call.
 //
 // Must run before deleteUserAccount: the tokens go with the account rows.
@@ -18,14 +18,14 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db, accountTable } from "@workspace/db";
 import { logger } from "./logger";
 
-export type GrantProvider = "google" | "github";
+export type GrantProvider = "google" | "github" | "apple";
 
 export interface GrantRevokeSummary {
   revoked: GrantProvider[];
   remaining: GrantProvider[];
 }
 
-const PROVIDERS: readonly GrantProvider[] = ["google", "github"];
+const PROVIDERS: readonly GrantProvider[] = ["google", "github", "apple"];
 const REVOKE_TIMEOUT_MS = 5_000;
 
 interface GrantRow {
@@ -71,7 +71,9 @@ export async function revokeOAuthGrants(userId: string): Promise<GrantRevokeSumm
 // null when revoked, otherwise why not.
 async function revokeOne(provider: GrantProvider, row: GrantRow): Promise<string | null> {
   try {
-    return provider === "google" ? await revokeGoogle(row) : await revokeGithub(row);
+    if (provider === "google") return await revokeGoogle(row);
+    if (provider === "github") return await revokeGithub(row);
+    return await revokeApple(row);
   } catch (err) {
     return `request failed: ${err instanceof Error ? err.message : String(err)}`;
   }
@@ -110,4 +112,28 @@ async function revokeGithub(row: GrantRow): Promise<string | null> {
     signal: AbortSignal.timeout(REVOKE_TIMEOUT_MS),
   });
   return res.status === 204 ? null : `github answered ${res.status}`;
+}
+
+// POST /auth/revoke with the app's client-secret JWT. APPLE_CLIENT_SECRET is
+// already that JWT (better-auth signs in with it as-is), so it is sent as
+// stored; once it expires (Apple caps it at six months) sign-in fails as well
+// as this. Revoking the refresh token ends the grant.
+async function revokeApple(row: GrantRow): Promise<string | null> {
+  const token = row.refreshToken || row.accessToken;
+  if (!token) return "no stored token";
+  const clientId = process.env.APPLE_CLIENT_ID;
+  const clientSecret = process.env.APPLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return "apple client credentials not configured";
+  const res = await fetch("https://appleid.apple.com/auth/revoke", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      token,
+      token_type_hint: row.refreshToken ? "refresh_token" : "access_token",
+    }).toString(),
+    signal: AbortSignal.timeout(REVOKE_TIMEOUT_MS),
+  });
+  return res.ok ? null : `apple answered ${res.status}`;
 }

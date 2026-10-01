@@ -27,7 +27,7 @@ const router: IRouter = Router();
 // copy goes; the user revokes the token at the provider. The confirmation
 // screen says so. Enable Banking is the exception: its consent is ours to
 // close, so it is closed before anything is deleted (lib/bank-consents.ts,
-// BACKLOG M10). Google and GitHub sign-in grants are revoked best-effort
+// BACKLOG M10). Google, GitHub and Apple sign-in grants are revoked best-effort
 // (lib/oauth-grants.ts) and never block deletion; any still live come back
 // in `oauthGrants.remaining`, and the client tells the user where to remove
 // them.

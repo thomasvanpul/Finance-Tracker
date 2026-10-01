@@ -1,11 +1,11 @@
-// Sign-in grants still live at Google or GitHub after account deletion.
+// Sign-in grants still live at Google, GitHub or Apple after account deletion.
 //
 // The server revokes them best-effort (api-server lib/oauth-grants.ts) and
 // returns the ones it could not. Deletion signs the user out, which unmounts
 // the profile page, so the list is carried in sessionStorage to the sign-in
 // screen, where it is shown until dismissed (DeletedGrantsNotice).
 
-export type GrantProvider = "google" | "github";
+export type GrantProvider = "google" | "github" | "apple";
 
 export const GRANT_HELP: Record<GrantProvider, { label: string; url: string; where: string }> = {
   google: {
@@ -18,12 +18,17 @@ export const GRANT_HELP: Record<GrantProvider, { label: string; url: string; whe
     url: "https://github.com/settings/applications",
     where: "GitHub Settings, Applications, Authorized OAuth Apps",
   },
+  apple: {
+    label: "Apple",
+    url: "https://account.apple.com/account/manage",
+    where: "Apple Account, Sign-In and Security, Sign in with Apple",
+  },
 };
 
 const KEY = "nr-deleted-account-grants";
 
 function isProvider(v: unknown): v is GrantProvider {
-  return v === "google" || v === "github";
+  return v === "google" || v === "github" || v === "apple";
 }
 
 export function rememberRemainingGrants(providers: readonly string[]): void {
@@ -33,7 +38,7 @@ export function rememberRemainingGrants(providers: readonly string[]): void {
     else sessionStorage.removeItem(KEY);
   } catch {
     // Storage blocked: the confirmation screen's advice before deletion
-    // already named both providers.
+    // already named every provider.
   }
 }
 

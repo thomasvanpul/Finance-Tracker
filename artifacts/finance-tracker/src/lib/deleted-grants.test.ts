@@ -1,4 +1,4 @@
-// After account deletion, any Google/GitHub sign-in grant the server could
+// After account deletion, any Google/GitHub/Apple sign-in grant the server could
 // not revoke is carried across sign-out to the sign-in screen, which is
 // where the user lands. sessionStorage is stubbed with a Map.
 
@@ -28,7 +28,7 @@ describe("deleted-grants", () => {
   });
 
   it("drops anything that is not a known provider", () => {
-    sessionStorage.setItem("nr-deleted-account-grants", JSON.stringify(["google", "apple", 4]));
+    sessionStorage.setItem("nr-deleted-account-grants", JSON.stringify(["google", "microsoft", 4]));
     expect(readRemainingGrants()).toEqual(["google"]);
     sessionStorage.setItem("nr-deleted-account-grants", "not json");
     expect(readRemainingGrants()).toEqual([]);
@@ -37,5 +37,11 @@ describe("deleted-grants", () => {
   it("has a removal page for every provider", () => {
     expect(GRANT_HELP.google.url).toBe("https://myaccount.google.com/connections");
     expect(GRANT_HELP.github.url).toBe("https://github.com/settings/applications");
+    expect(GRANT_HELP.apple.url).toBe("https://account.apple.com/account/manage");
+  });
+
+  it("carries an Apple grant the server could not revoke", () => {
+    rememberRemainingGrants(["apple"]);
+    expect(readRemainingGrants()).toEqual(["apple"]);
   });
 });

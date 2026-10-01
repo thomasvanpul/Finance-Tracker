@@ -1,4 +1,4 @@
-// Google and GitHub sign-in grants are revoked best-effort before account
+// Google, GitHub and Apple sign-in grants are revoked best-effort before account
 // deletion. The DB is mocked: the rows below stand for what the account
 // lookup returned. fetch is stubbed, so no provider is called.
 
@@ -94,12 +94,54 @@ describe("revokeOAuthGrants", () => {
     expect(out.revoked).toEqual([]);
   });
 
-  it("ignores providers it does not revoke (credential, apple)", async () => {
-    selected = [
-      { providerId: "credential", accessToken: null, refreshToken: null },
-      { providerId: "apple", accessToken: "x", refreshToken: null },
-    ];
+  it("ignores a provider that holds no grant (credential)", async () => {
+    selected = [{ providerId: "credential", accessToken: null, refreshToken: null }];
     expect(await revokeOAuthGrants("user-a")).toEqual({ revoked: [], remaining: [] });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("revokes an Apple grant with the refresh token and the client-secret JWT", async () => {
+    vi.stubEnv("APPLE_CLIENT_ID", "work.numeris.web");
+    vi.stubEnv("APPLE_CLIENT_SECRET", "eyJ.client.secret");
+    selected = [{ providerId: "apple", accessToken: "a-access", refreshToken: "a-refresh" }];
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+    expect(await revokeOAuthGrants("user-a")).toEqual({ revoked: ["apple"], remaining: [] });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://appleid.apple.com/auth/revoke");
+    expect(init.method).toBe("POST");
+    expect(init.headers["Content-Type"]).toBe("application/x-www-form-urlencoded");
+    expect(Object.fromEntries(new URLSearchParams(String(init.body)))).toEqual({
+      client_id: "work.numeris.web",
+      client_secret: "eyJ.client.secret",
+      token: "a-refresh",
+      token_type_hint: "refresh_token",
+    });
+  });
+
+  it("falls back to the Apple access token, hinted as one", async () => {
+    vi.stubEnv("APPLE_CLIENT_ID", "work.numeris.web");
+    vi.stubEnv("APPLE_CLIENT_SECRET", "eyJ.client.secret");
+    selected = [{ providerId: "apple", accessToken: "a-access", refreshToken: null }];
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+    expect(await revokeOAuthGrants("user-a")).toEqual({ revoked: ["apple"], remaining: [] });
+    const body = new URLSearchParams(String(fetchMock.mock.calls[0][1].body));
+    expect(body.get("token")).toBe("a-access");
+    expect(body.get("token_type_hint")).toBe("access_token");
+  });
+
+  it("reports Apple as remaining when Apple refuses, with no token, or unconfigured", async () => {
+    vi.stubEnv("APPLE_CLIENT_ID", "work.numeris.web");
+    vi.stubEnv("APPLE_CLIENT_SECRET", "eyJ.client.secret");
+    selected = [{ providerId: "apple", accessToken: "a", refreshToken: null }];
+    fetchMock.mockResolvedValueOnce(new Response('{"error":"invalid_client"}', { status: 400 }));
+    expect(await revokeOAuthGrants("user-a")).toEqual({ revoked: [], remaining: ["apple"] });
+
+    selected = [{ providerId: "apple", accessToken: null, refreshToken: null }];
+    expect(await revokeOAuthGrants("user-a")).toEqual({ revoked: [], remaining: ["apple"] });
+
+    vi.stubEnv("APPLE_CLIENT_SECRET", "");
+    selected = [{ providerId: "apple", accessToken: "a", refreshToken: null }];
+    expect(await revokeOAuthGrants("user-a")).toEqual({ revoked: [], remaining: ["apple"] });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
