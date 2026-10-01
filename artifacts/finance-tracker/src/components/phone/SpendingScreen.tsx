@@ -1198,7 +1198,7 @@ function Fab({ onClick }: { onClick: () => void }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: "0 8px 24px rgba(0, 0, 0, 0.24)",
+        boxShadow: "var(--ft-float-shadow)",
         zIndex: 30,
       }}
     >
