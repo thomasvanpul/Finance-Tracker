@@ -246,7 +246,7 @@ function UpcomingRow({
         opacity: item.status === "skipped" ? 0.5 : 1,
       }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 3 }}>
             <span className={item.status === "skipped" ? "line-through" : ""}>{item.description}</span>
           </div>
           <HStack gap={6} align="center" wrap marginBottom={4}>
@@ -256,8 +256,8 @@ function UpcomingRow({
             {/* The category was a filled chip. It is now drilled text: §9
                 draws a per-row label as text, and §14 gives the label the one
                 affordance the app uses for "this opens rows". */}
-            <Drill href={categoryTransactionsHref(item.category)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)" }}>{item.category}</Drill>
-            {item.frequency !== "once" && <Text as="span" mono size={9} color="var(--ft-dim)">{item.frequency}</Text>}
+            <Drill href={categoryTransactionsHref(item.category)} style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-muted)" }}>{item.category}</Drill>
+            {item.frequency !== "once" && <Text as="span" size={9} color="var(--ft-dim)">{item.frequency}</Text>}
           </HStack>
           <HStack gap={4}>
             <Select value={item.status} onValueChange={(v) => onStatusChange(item.id, v as Status)}>
@@ -285,7 +285,7 @@ function UpcomingRow({
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onDelete(item.id)}
               style={deleteConfirmId === item.id ? { background: "var(--ft-red)", color: "#fff" } : undefined}>
               {deleteConfirmId === item.id
-                ? <Text as="span" mono size={7} weight={700}>DEL?</Text>
+                ? <Text as="span" size={7} weight={700}>DEL?</Text>
                 : <Trash2 className="w-3 h-3" style={{ color: "var(--ft-red)" }} />}
             </Button>
           </HStack>
@@ -358,7 +358,7 @@ function UpcomingRow({
           style={deleteConfirmId === item.id ? { background: "var(--ft-red)", color: "#fff" } : undefined}
         >
           {deleteConfirmId === item.id
-            ? <Text as="span" mono size={8} weight={700}>DEL?</Text>
+            ? <Text as="span" size={8} weight={700}>DEL?</Text>
             : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />}
         </Button>
       </div>
@@ -773,7 +773,7 @@ export default function Upcoming() {
         actions={
           <HStack gap={6} align="center">
             {sortedItems.length > 0 && (
-              <Button onClick={exportUpcomingCSV} variant="ghost" size="sm" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", border: "1px solid rgba(34,211,238,0.35)", borderRadius: 2, padding: "4px 10px" }}>
+              <Button onClick={exportUpcomingCSV} variant="ghost" size="sm" style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-cyan)", border: "1px solid rgba(34,211,238,0.35)", borderRadius: 2, padding: "4px 10px" }}>
                 ↓ CSV
               </Button>
             )}
@@ -800,7 +800,7 @@ export default function Upcoming() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -845,24 +845,24 @@ export default function Upcoming() {
       <Dialog open={markPaidItem !== null} onOpenChange={(o) => !o && setMarkPaidItem(null)}>
         <DialogContent style={{ maxWidth: 420 }}>
           <DialogHeader>
-            <DialogTitle style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>
+            <DialogTitle style={{ fontFamily: "var(--font-sans)", fontSize: 13 }}>
               Mark as Paid
             </DialogTitle>
           </DialogHeader>
           {markPaidItem && (
             <div className="space-y-4">
               <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "10px 14px" }}>
-                <div style={{ fontSize: 11, color: "var(--ft-dim)", marginBottom: 4, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.4px" }}>
+                <div style={{ fontSize: 11, color: "var(--ft-dim)", marginBottom: 4, fontFamily: "var(--font-sans)", textTransform: "uppercase", letterSpacing: "0.4px" }}>
                   Item details
                 </div>
-                <div style={{ fontSize: 13, color: "var(--ft-text)", fontFamily: "var(--font-mono)", marginBottom: 6 }}>
+                <div style={{ fontSize: 13, color: "var(--ft-text)", fontFamily: "var(--font-sans)", marginBottom: 6 }}>
                   {markPaidItem.description}
                 </div>
                 <HStack gap={8} align="center" wrap>
-                  <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: markPaidItem.type === "income" ? "var(--ft-green)22" : "var(--ft-red)22", color: markPaidItem.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontFamily: "var(--font-mono)" }}>
+                  <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: markPaidItem.type === "income" ? "var(--ft-green)22" : "var(--ft-red)22", color: markPaidItem.type === "income" ? "var(--ft-green)" : "var(--ft-red)", fontFamily: "var(--font-sans)" }}>
                     {markPaidItem.type.toUpperCase()}
                   </span>
-                  <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>
+                  <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)" }}>
                     {markPaidItem.category}
                   </span>
                   <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: markPaidItem.baseEquivalent == null ? "var(--ft-dim)" : markPaidItem.type === "income" ? "var(--ft-green)" : "var(--ft-red)", marginLeft: "auto" }}>
@@ -872,14 +872,14 @@ export default function Upcoming() {
                   </span>
                 </HStack>
                 {!markPaidItem.accountId && (
-                  <div style={{ marginTop: 8, fontSize: 10, color: "var(--ft-amber)", fontFamily: "var(--font-mono)" }}>
+                  <div style={{ marginTop: 8, fontSize: 10, color: "var(--ft-amber)", fontFamily: "var(--font-sans)" }}>
                     No account linked — transaction will not be recorded
                   </div>
                 )}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="paid-date" style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: "var(--ft-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>
+                <Label htmlFor="paid-date" style={{ fontSize: 11, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", textTransform: "uppercase", letterSpacing: "0.4px" }}>
                   Transaction Date
                 </Label>
                 <Input
@@ -894,7 +894,7 @@ export default function Upcoming() {
           )}
           <DialogFooter className="mt-4">
             <DialogClose asChild>
-              <Button type="button" variant="outline" style={{ fontSize: 12, fontFamily: "var(--font-mono)" }}>
+              <Button type="button" variant="outline" style={{ fontSize: 12, fontFamily: "var(--font-sans)" }}>
                 Cancel
               </Button>
             </DialogClose>
@@ -902,7 +902,7 @@ export default function Upcoming() {
               type="button"
               disabled={markPaidSubmitting}
               onClick={handleMarkPaidConfirm}
-              style={{ background: "var(--ft-green)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 12, fontFamily: "var(--font-mono)", fontWeight: 700 }}
+              style={{ background: "var(--ft-green)", color: "var(--ft-base)", border: "none", borderRadius: 2, fontSize: 12, fontFamily: "var(--font-sans)", fontWeight: 700 }}
             >
               {markPaidSubmitting ? "Confirming…" : "Confirm Paid"}
             </Button>
@@ -1032,7 +1032,7 @@ export default function Upcoming() {
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="Search description…"
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               background: "var(--ft-surface)",
               border: "1px solid var(--ft-border)",
@@ -1046,7 +1046,7 @@ export default function Upcoming() {
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as "all" | UpType)}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 10px", cursor: "pointer", outline: "none" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 10px", cursor: "pointer", outline: "none" }}
           >
             <option value="all">All types</option>
             <option value="income">Income</option>
@@ -1055,7 +1055,7 @@ export default function Upcoming() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as "all" | Status)}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 10px", cursor: "pointer", outline: "none" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 10px", cursor: "pointer", outline: "none" }}
           >
             <option value="all">All statuses</option>
             <option value="pending">Pending</option>
@@ -1065,7 +1065,7 @@ export default function Upcoming() {
           {hasFilters && (
             <button
               onClick={() => { setSearchText(""); setFilterType("all"); setFilterStatus("all"); }}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "5px 10px", border: "1px solid var(--ft-border)", background: "transparent", color: "var(--ft-muted)", cursor: "pointer" }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "5px 10px", border: "1px solid var(--ft-border)", background: "transparent", color: "var(--ft-muted)", cursor: "pointer" }}
             >
               Clear
             </button>
@@ -1112,7 +1112,7 @@ export default function Upcoming() {
             <div style={{ width: 36, borderRight: "1px solid var(--ft-raised)", alignSelf: "stretch" }} />
             <div className="flex-1 text-center" style={{ padding: "28px 16px" }}>
               {hasFilters ? (
-                <Text as="span" mono size={11} color="var(--ft-dim)">No items match the current filters.</Text>
+                <Text as="span" size={11} color="var(--ft-dim)">No items match the current filters.</Text>
               ) : (
                 <VStack gap={10} align="center">
                   <pre style={{ fontSize: 9, lineHeight: 1.4, color: "var(--ft-raised)", fontFamily: "var(--font-mono)", textAlign: "left" }}>{
@@ -1121,8 +1121,8 @@ export default function Upcoming() {
   +30d     ???         EXPENSE  £?.??
   +60d     ???         INCOME   £?.??`
                   }</pre>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>No scheduled flows yet</div>
-                  <Text as="div" mono size={10} color="var(--ft-dim)">Add bills and income to forecast your cash position.</Text>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)" }}>No scheduled flows yet</div>
+                  <Text as="div" size={10} color="var(--ft-dim)">Add bills and income to forecast your cash position.</Text>
                 </VStack>
               )}
             </div>
@@ -1135,7 +1135,7 @@ export default function Upcoming() {
       {/* Subscription renewals — read-only */}
       {upcomingSubs.length > 0 && (
         <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)", "--upc-sub-amount-w": subAmountColW } as React.CSSProperties}>
-          <PanelHeader right={<span style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>read-only</span>}>
+          <PanelHeader right={<span style={{ fontSize: 9, fontFamily: "var(--font-sans)", color: "var(--ft-dim)" }}>read-only</span>}>
             Subscription Renewals — Next 90 days
           </PanelHeader>
           <div>
