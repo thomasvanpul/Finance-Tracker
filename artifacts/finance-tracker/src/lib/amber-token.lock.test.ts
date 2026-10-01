@@ -5,10 +5,9 @@
 // red tiers beside it follow the theme. These files carry only three-tier
 // scales whose other tiers are already tokens.
 //
-// Not covered: components/investments/stat-drill-modal.tsx. Its amber is one
-// step of a five-step hex scale whose next step is orange (#f97316), and there
-// is no orange token. Swapping amber alone would make "fair" and "weak"
-// near-identical in themes whose --ft-amber is orange (e.g. #FF6B00).
+// Not covered here: components/investments/stat-drill-modal.tsx, whose amber
+// is one step of a five-step scale. That scale moved to tokens together with a
+// new --ft-orange and is locked by orange-token.lock.test.ts.
 
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";

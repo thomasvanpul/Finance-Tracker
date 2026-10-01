@@ -15,7 +15,7 @@ interface Palette {
   border: string; border2: string;
   text: string; muted: string; dim: string;
   accent: string;
-  amber: string; green: string; red: string; blue: string; cyan: string;
+  amber: string; orange: string; green: string; red: string; blue: string; cyan: string;
   id1: string; id2: string; id3: string; id4: string;
   id5: string; id6: string; id7: string; id8: string;
   id9: string; id10: string; id11: string; id12: string;
@@ -26,7 +26,7 @@ interface DarkPalette {
   border: string; border2: string;
   text: string; muted: string; dim: string;
   accent: string;
-  amber: string; green: string; red: string; blue: string; cyan: string;
+  amber: string; orange: string; green: string; red: string; blue: string; cyan: string;
 }
 
 // ── Light themes ──────────────────────────────────────────────────────────────
@@ -39,7 +39,7 @@ const arctic: Palette = {
   border: "#7E8CA0", border2: "#6A788A",
   text: "#1A2333", muted: "#4A5A74", dim: "#637088",
   accent: "#0052CC",
-  amber: "#B45309", green: "#006644", red: "#CC0000", blue: "#3971C6", cyan: "#0052CC",
+  amber: "#B45309", orange: "#C13A04", green: "#006644", red: "#CC0000", blue: "#3971C6", cyan: "#0052CC",
   id1: "#1E5FBF", id2: "#157A3F", id3: "#A05500", id4: "#0E7490",
   id5: "#B91C1C", id6: "#6D28D9", id7: "#A16207", id8: "#0F766E",
   id9: "#B45309", id10: "#1D4ED8", id11: "#047857", id12: "#075985",
@@ -54,7 +54,7 @@ const parchment: Palette = {
   border: "#9C8248", border2: "#7A6535",
   text: "#241A0C", muted: "#4B3818", dim: "#6E5528",
   accent: "#7A1F30",
-  amber: "#94430A", green: "#155C34", red: "#A82020", blue: "#1E3D67", cyan: "#1E5266",
+  amber: "#94430A", orange: "#9E3517", green: "#155C34", red: "#A82020", blue: "#1E3D67", cyan: "#1E5266",
   id1: "#173C6E", id2: "#155C34", id3: "#94430A", id4: "#1E5266",
   id5: "#A82020", id6: "#5A1C7A", id7: "#7A4F0C", id8: "#106252",
   id9: "#994A0F", id10: "#1B428F", id11: "#155432", id12: "#124860",
@@ -69,7 +69,7 @@ const slate: Palette = {
   border: "#748596", border2: "#5F6C7E",
   text: "#141A22", muted: "#3E4A58", dim: "#5A6572",
   accent: "#0E5766",
-  amber: "#8F4A00", green: "#155C34", red: "#932530", blue: "#20456E", cyan: "#0E5766",
+  amber: "#8F4A00", orange: "#913A21", green: "#155C34", red: "#932530", blue: "#20456E", cyan: "#0E5766",
   id1: "#164478", id2: "#155C34", id3: "#8F4A00", id4: "#0E5766",
   id5: "#932530", id6: "#4E207F", id7: "#7A5310", id8: "#0F5B4C",
   id9: "#994A0F", id10: "#1A4292", id11: "#0D5533", id12: "#104A68",
@@ -83,7 +83,7 @@ const linen: Palette = {
   border: "#8F7E4D", border2: "#6E6035",
   text: "#241D0F", muted: "#4A3E1E", dim: "#6A5A32",
   accent: "#5A4610",
-  amber: "#8A3F0A", green: "#33500F", red: "#8F1F1F", blue: "#1D3E62", cyan: "#1E4E56",
+  amber: "#8A3F0A", orange: "#8D3117", green: "#33500F", red: "#8F1F1F", blue: "#1D3E62", cyan: "#1E4E56",
   id1: "#173E68", id2: "#33500F", id3: "#8A3F0A", id4: "#124E58",
   id5: "#8F1F1F", id6: "#4A1B6E", id7: "#77530C", id8: "#105E42",
   id9: "#8F4008", id10: "#183C88", id11: "#13502F", id12: "#104060",
@@ -101,7 +101,7 @@ const phosphor: DarkPalette = {
   border: "#0D2A0D", border2: "#1A3D1A",
   text: "#39FF14", muted: "#2A9918", dim: "#1E7010",
   accent: "#7FFF00",
-  amber: "#FF8C00", green: "#00FF88", red: "#FF4444", blue: "#34B39A", cyan: "#AAFFAA",
+  amber: "#FF8C00", orange: "#FF6C32", green: "#00FF88", red: "#FF4444", blue: "#34B39A", cyan: "#AAFFAA",
 };
 
 const amber: DarkPalette = {
@@ -109,7 +109,7 @@ const amber: DarkPalette = {
   border: "#2A1E00", border2: "#3D2B00",
   text: "#FFB000", muted: "#AA7828", dim: "#7A5510",
   accent: "#FFD700",
-  amber: "#FFA500", green: "#AAFF44", red: "#FF4400", blue: "#6EA6D5", cyan: "#FFEE88",
+  amber: "#FFA500", orange: "#FF7A00", green: "#AAFF44", red: "#FF4400", blue: "#6EA6D5", cyan: "#FFEE88",
 };
 
 const midnight: DarkPalette = {
@@ -117,7 +117,7 @@ const midnight: DarkPalette = {
   border: "#0F2456", border2: "#163070",
   text: "#E8F0FF", muted: "#7A99CC", dim: "#4A6AA0",
   accent: "#4D9FFF",
-  amber: "#FF9500", green: "#2EFF9F", red: "#FF4466", blue: "#6A9ED4", cyan: "#00DDFF",
+  amber: "#FF9500", orange: "#FF724B", green: "#2EFF9F", red: "#FF4466", blue: "#6A9ED4", cyan: "#00DDFF",
 };
 
 const matrix: DarkPalette = {
@@ -125,7 +125,7 @@ const matrix: DarkPalette = {
   border: "#003300", border2: "#004400",
   text: "#00CC33", muted: "#009944", dim: "#006622",
   accent: "#00FF41",
-  amber: "#FFAA00", green: "#00FF41", red: "#FF3300", blue: "#33AE96", cyan: "#AAFFAA",
+  amber: "#FFAA00", orange: "#FF7800", green: "#00FF41", red: "#FF3300", blue: "#33AE96", cyan: "#AAFFAA",
 };
 
 const synthwave: DarkPalette = {
@@ -133,7 +133,7 @@ const synthwave: DarkPalette = {
   border: "#2D0050", border2: "#440077",
   text: "#E8D5FF", muted: "#AA66DD", dim: "#8800AA",
   accent: "#FF007A",
-  amber: "#FF6B00", green: "#39FF4E", red: "#FF1133", blue: "#2F8AA3", cyan: "#CC88FF",
+  amber: "#FF6B00", orange: "#FF4B24", green: "#39FF4E", red: "#FF1133", blue: "#2F8AA3", cyan: "#CC88FF",
 };
 
 const deepSpace: DarkPalette = {
@@ -141,7 +141,7 @@ const deepSpace: DarkPalette = {
   border: "#0F0F20", border2: "#1A1A38",
   text: "#C8D0E8", muted: "#7880B0", dim: "#505090",
   accent: "#7B5EA7",
-  amber: "#FFD166", green: "#2ECC71", red: "#FF4455", blue: "#6478D2", cyan: "#00DDEE",
+  amber: "#FFD166", orange: "#FF935E", green: "#2ECC71", red: "#FF4455", blue: "#6478D2", cyan: "#00DDEE",
 };
 
 const mario: DarkPalette = {
@@ -149,7 +149,7 @@ const mario: DarkPalette = {
   border: "#1A38A0", border2: "#102890",
   text: "#FCFCFC", muted: "#D4E4FF", dim: "#C0D4FF",
   accent: "#F8C800",
-  amber: "#D07010", green: "#3ABB3A", red: "#CC2000", blue: "#1830A0", cyan: "#90C8FC",
+  amber: "#D07010", orange: "#CF4F07", green: "#3ABB3A", red: "#CC2000", blue: "#1830A0", cyan: "#90C8FC",
 };
 
 const gilded: DarkPalette = {
@@ -159,7 +159,7 @@ const gilded: DarkPalette = {
   accent: "#C8941E",
   // red was #CC3333 (3.82:1 on #0E0C00) — below 4.5:1 for body text.
   // Brightened to clear the threshold while staying recognisably red.
-  amber: "#D4A017", green: "#4ECCA3", red: "#E84040", blue: "#6699BB", cyan: "#EED080",
+  amber: "#D4A017", orange: "#E17733", green: "#4ECCA3", red: "#E84040", blue: "#6699BB", cyan: "#EED080",
 };
 
 const bloodline: DarkPalette = {
@@ -169,7 +169,7 @@ const bloodline: DarkPalette = {
   // accent was #CC1A2F (3.59:1 on #1A0008) — below 4.5:1 for body text.
   // Brightened to vivid crimson to clear the threshold.
   accent: "#FF3344",
-  amber: "#FF6600", green: "#1A8C3A", red: "#FF0022", blue: "#6688AA", cyan: "#FF8899",
+  amber: "#FF6600", orange: "#FF4618", green: "#1A8C3A", red: "#FF0022", blue: "#6688AA", cyan: "#FF8899",
 };
 
 // void is the product's default theme — the palette every new user sees
@@ -180,7 +180,7 @@ const voidTheme: DarkPalette = {
   border: "#1C2530", border2: "#243040",
   text: "#E8EDF2", muted: "#71869D", dim: "#556677",
   accent: "#E8C14A",
-  amber: "#FFB300", green: "#00E5A0", red: "#FF4757", blue: "#73A1D6", cyan: "#00D4FF",
+  amber: "#FFB300", orange: "#FF8343", green: "#00E5A0", red: "#FF4757", blue: "#73A1D6", cyan: "#00D4FF",
 };
 
 const DARK_THEMES: Record<string, DarkPalette> = {
@@ -242,6 +242,7 @@ const PAIRS: Pair[] = [
   // Accent + status colours (used as text in pills, chips, deltas).
   { fg: "accent", bg: "surface", threshold: 4.5, label: "accent on surface" },
   { fg: "amber", bg: "surface", threshold: 4.5, label: "amber on surface" },
+  { fg: "orange", bg: "surface", threshold: 4.5, label: "orange on surface" },
   { fg: "green", bg: "surface", threshold: 4.5, label: "green on surface" },
   { fg: "red", bg: "surface", threshold: 4.5, label: "red on surface" },
   { fg: "blue", bg: "surface", threshold: 4.5, label: "blue on surface" },
@@ -271,6 +272,7 @@ const DARK_PAIRS: DarkPair[] = [
   { fg: "dim", bg: "surface", threshold: 3.0, label: "dim on surface (large/UI)" },
   { fg: "accent", bg: "surface", threshold: 4.5, label: "accent on surface" },
   { fg: "amber", bg: "surface", threshold: 4.5, label: "amber on surface" },
+  { fg: "orange", bg: "surface", threshold: 4.5, label: "orange on surface" },
   { fg: "green", bg: "surface", threshold: 4.5, label: "green on surface" },
   { fg: "red", bg: "surface", threshold: 4.5, label: "red on surface" },
   { fg: "blue", bg: "surface", threshold: 4.5, label: "blue on surface" },

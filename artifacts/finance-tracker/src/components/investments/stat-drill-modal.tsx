@@ -40,12 +40,17 @@ interface Assessment {
 }
 
 const QC: Record<Quality, string> = {
-  excellent: "#3fb950",
-  good: "#22d3ee",
-  fair: "#e3b341",
-  weak: "#f97316",
-  poor: "#f85149",
+  excellent: "var(--ft-green)",
+  good: "var(--ft-cyan)",
+  fair: "var(--ft-amber)",
+  weak: "var(--ft-orange)",
+  poor: "var(--ft-red)",
 };
+
+// QC values are var() references, so a hex alpha suffix cannot be appended.
+function qcWash(q: Quality, pct: number): string {
+  return `color-mix(in srgb, ${QC[q]} ${pct}%, transparent)`;
+}
 
 function pct(v: string): number | null {
   const n = parseFloat(v.replace("%", "").replace("+", ""));
@@ -505,7 +510,7 @@ function AnalystChart({ data }: { data: RecTrend[] }) {
           <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }} tickLine={false} axisLine={false} />
           <RTooltip contentStyle={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 9 }} />
           {["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"].map((k, i) => (
-            <Bar key={k} dataKey={k} stackId="a" fill={["#3fb950", "#22d3ee", "#e3b341", "#f97316", "#f85149"][i]} />
+            <Bar key={k} dataKey={k} stackId="a" fill={QC[(["excellent", "good", "fair", "weak", "poor"] as Quality[])[i]]} />
           ))}
         </BarChart>
       </ResponsiveContainer>
@@ -543,7 +548,7 @@ export function StatDrillModal({ label, value, info, earningsHistory = [], recTr
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 36, fontWeight: 700, color: assessment ? QC[assessment.quality] : "var(--ft-text)", letterSpacing: "-0.02em", lineHeight: 1 }}>{value}</div>
             {assessment && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ background: QC[assessment.quality] + "22", border: `1px solid ${QC[assessment.quality]}55`, color: QC[assessment.quality], fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "3px 10px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <div style={{ background: qcWash(assessment.quality, 13), border: `1px solid ${qcWash(assessment.quality, 33)}`, color: QC[assessment.quality], fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "3px 10px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                   {assessment.badge}
                 </div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.4, maxWidth: 280 }}>{assessment.context}</div>
@@ -594,7 +599,7 @@ export function StatDrillModal({ label, value, info, earningsHistory = [], recTr
               <div style={{ display: "flex", gap: 6 }}>
                 {(["poor", "weak", "fair", "good", "excellent"] as Quality[]).map((q) => (
                   <div key={q} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                    <div style={{ height: 4, background: assessment?.quality === q ? QC[q] : QC[q] + "40", width: "100%", borderRadius: 2, transition: "background 0.12s" }} />
+                    <div style={{ height: 4, background: assessment?.quality === q ? QC[q] : qcWash(q, 25), width: "100%", borderRadius: 2, transition: "background 0.12s" }} />
                     <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: assessment?.quality === q ? QC[q] : "var(--ft-dim)", letterSpacing: "0.04em", textTransform: "capitalize" }}>{q}</div>
                   </div>
                 ))}
