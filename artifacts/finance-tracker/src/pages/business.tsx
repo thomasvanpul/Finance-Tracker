@@ -196,7 +196,7 @@ function KpiCell({
 }: {
   label: string;
   value: string;
-  sub?: string;
+  sub?: React.ReactNode;
   valueColor?: string;
   // Deprecated in the desktop-port pass: the per-cell coloured
   // borderTop stripe was the constitution's "rainbow ratings"
@@ -258,7 +258,7 @@ function KpiCell({
       {sub && (
         <div
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             color: "var(--ft-dim)",
             marginTop: 3,
@@ -316,10 +316,10 @@ function InvoiceRow({
         transition: "background 0.1s",
       }}
     >
-      <td style={{ ...TD, fontWeight: 600, color: "var(--ft-text)" }}>
+      <td style={{ ...TD, fontFamily: "var(--font-sans)", fontWeight: 600, color: "var(--ft-text)" }}>
         {inv.client}
       </td>
-      <td style={{ ...TD, color: "var(--ft-muted)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <td style={{ ...TD, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {inv.description || "—"}
       </td>
       <td
@@ -356,7 +356,7 @@ function InvoiceRow({
             background: cfg.bg,
             color: cfg.color,
             padding: "2px 7px",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 9,
             fontWeight: 700,
             letterSpacing: "0.08em",
@@ -385,7 +385,7 @@ function InvoiceRow({
                 color: "var(--ft-green)",
                 padding: "3px 7px",
                 cursor: "pointer",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 9,
                 transition: "background 0.1s",
                 display: "flex",
@@ -406,7 +406,7 @@ function InvoiceRow({
               color: hovered ? "var(--ft-red)" : "var(--ft-dim)",
               padding: "3px 6px",
               cursor: "pointer",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               transition: "color 0.1s",
             }}
@@ -451,7 +451,7 @@ function ExpenseRow({
         transition: "background 0.1s",
       }}
     >
-      <td style={TD}>{name}</td>
+      <td style={{ ...TD, fontFamily: "var(--font-sans)" }}>{name}</td>
       <td
         className="pnum"
         style={{
@@ -498,7 +498,7 @@ function ExpenseRow({
         </div>
         <div
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 9,
             color: "var(--ft-dim)",
             marginTop: 3,
@@ -506,7 +506,7 @@ function ExpenseRow({
             transition: "opacity 0.1s",
           }}
         >
-          {((value / total) * 100).toFixed(1)}% of all expenses
+          <span className="pnum">{((value / total) * 100).toFixed(1)}%</span> of all expenses
         </div>
       </td>
     </tr>
@@ -640,7 +640,7 @@ function EmptyState({
       </div>
       <div
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           fontWeight: 700,
           color: "var(--ft-muted)",
@@ -693,7 +693,7 @@ function CategoryChip({
         border: "1px solid var(--ft-accent-edge)",
         color: "var(--ft-accent)",
         padding: "3px 9px 3px 9px",
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         fontWeight: 600,
         letterSpacing: "0.04em",
@@ -751,7 +751,7 @@ function CategoryToggleButton({
           : "1px solid var(--ft-border)",
         color: active ? "var(--ft-accent)" : hovered ? "var(--ft-text)" : "var(--ft-muted)",
         padding: "3px 9px",
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         fontWeight: active ? 700 : 400,
         cursor: "pointer",
@@ -805,7 +805,7 @@ const vatValue: React.CSSProperties = {
 };
 
 const vatSub: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 10,
   color: "var(--ft-dim)",
   lineHeight: 1.4,
@@ -819,11 +819,14 @@ const inputStyle: React.CSSProperties = {
   border: "1px solid var(--ft-border2)",
   color: "var(--ft-text)",
   padding: "5px 8px",
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 11,
   outline: "none",
   boxSizing: "border-box",
 };
+
+// Number and date inputs carry figures, so they stay mono (DESIGN.md §10).
+const dataInputStyle: React.CSSProperties = { ...inputStyle, fontFamily: "var(--font-mono)" };
 
 const selectStyle: React.CSSProperties = {
   width: "100%",
@@ -831,14 +834,14 @@ const selectStyle: React.CSSProperties = {
   border: "1px solid var(--ft-border2)",
   color: "var(--ft-text)",
   padding: "5px 8px",
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 11,
   outline: "none",
   cursor: "pointer",
 };
 
 const fieldLabel: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 9,
   fontWeight: 700,
   color: "var(--ft-dim)",
@@ -1193,7 +1196,7 @@ export default function Business() {
           <KpiCell
             label="Revenue YTD"
             value={formatBaseMoney(ytdIncome)}
-            sub={`${ytdIncomeTxs.length} income tx`}
+            sub={<><span className="pnum">{ytdIncomeTxs.length}</span> income tx</>}
             valueColor="var(--ft-green)"
             accentColor="var(--ft-green)"
             trend="up"
@@ -1201,14 +1204,14 @@ export default function Business() {
           <KpiCell
             label="Expenses YTD"
             value={formatBaseMoney(ytdExpenses)}
-            sub={`${ytdExpenseTxs.length} expense tx`}
+            sub={<><span className="pnum">{ytdExpenseTxs.length}</span> expense tx</>}
             valueColor="var(--ft-red)"
             accentColor="var(--ft-red)"
           />
           <KpiCell
             label="Net Profit"
             value={formatBaseMoney(ytdProfit)}
-            sub={ytdMargin != null && ytdMargin > 0 ? `${ytdMargin.toFixed(1)}% margin` : undefined}
+            sub={ytdMargin != null && ytdMargin > 0 ? <><span className="pnum">{ytdMargin.toFixed(1)}%</span> margin</> : undefined}
             valueColor={ytdProfit >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             accentColor={ytdProfit >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
             trend={ytdProfit >= 0 ? "up" : "down"}
@@ -1338,11 +1341,11 @@ export default function Business() {
             <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 8 }}>
               <HStack gap={4} align="center">
                 <div style={{ width: 8, height: 8, background: "var(--ft-green)", opacity: 0.8 }} />
-                <Text as="span" mono size={9} color="var(--ft-dim)">Revenue</Text>
+                <Text as="span" size={9} color="var(--ft-dim)">Revenue</Text>
               </HStack>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <div style={{ width: 8, height: 8, background: "var(--ft-red)", opacity: 0.7 }} />
-                <Text as="span" mono size={9} color="var(--ft-dim)">Expenses</Text>
+                <Text as="span" size={9} color="var(--ft-dim)">Expenses</Text>
               </div>
             </div>
           </div>
@@ -1476,7 +1479,7 @@ export default function Business() {
               color: "var(--ft-base)",
               border: "none",
               padding: "4px 10px",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               fontWeight: 700,
               letterSpacing: "0.08em",
@@ -1523,7 +1526,7 @@ export default function Business() {
           <KpiCell
             label="Total Invoices"
             value={String(invoices.length)}
-            sub={invoiceStats.draftCount > 0 ? `${invoiceStats.draftCount} draft` : undefined}
+            sub={invoiceStats.draftCount > 0 ? <><span className="pnum">{invoiceStats.draftCount}</span> draft</> : undefined}
             valueColor="var(--ft-text)"
           />
         </div>
@@ -1578,7 +1581,7 @@ export default function Business() {
             {invoiceFormError && (
               <div
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 11,
                   color: "var(--ft-red)",
                   marginBottom: 10,
@@ -1618,7 +1621,7 @@ export default function Business() {
               <div>
                 <div style={fieldLabel}>Amount</div>
                 <input
-                  style={inputStyle}
+                  style={dataInputStyle}
                   type="number"
                   min="0"
                   step="0.01"
@@ -1632,7 +1635,7 @@ export default function Business() {
               <div>
                 <div style={fieldLabel}>Currency</div>
                 <select
-                  style={selectStyle}
+                  style={{ ...selectStyle, fontFamily: "var(--font-mono)" }}
                   value={invoiceForm.currency}
                   onChange={(e) =>
                     handleInvoiceFormChange("currency", e.target.value)
@@ -1648,7 +1651,7 @@ export default function Business() {
               <div>
                 <div style={fieldLabel}>Issued Date</div>
                 <input
-                  style={inputStyle}
+                  style={dataInputStyle}
                   type="date"
                   value={invoiceForm.issuedDate}
                   onChange={(e) =>
@@ -1659,7 +1662,7 @@ export default function Business() {
               <div>
                 <div style={fieldLabel}>Due Date</div>
                 <input
-                  style={inputStyle}
+                  style={dataInputStyle}
                   type="date"
                   value={invoiceForm.dueDate}
                   onChange={(e) =>
@@ -1707,7 +1710,7 @@ export default function Business() {
                   color: "var(--ft-base)",
                   border: "none",
                   padding: "6px 14px",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 10,
                   fontWeight: 700,
                   letterSpacing: "0.08em",
@@ -1727,7 +1730,7 @@ export default function Business() {
                   color: "var(--ft-muted)",
                   border: "1px solid var(--ft-border)",
                   padding: "6px 14px",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 10,
                   fontWeight: 600,
                   cursor: "pointer",
@@ -1869,7 +1872,7 @@ export default function Business() {
               <div className="pnum" style={vatValue}>
                 {formatBaseMoney(vatData.vatCollected)}
               </div>
-              <div style={vatSub}>@ 20% standard rate</div>
+              <div style={vatSub}>@ <span className="pnum">20%</span> standard rate</div>
             </div>
 
             {/* VAT reclaimable */}
@@ -1925,7 +1928,7 @@ export default function Business() {
             style={{
               borderTop: "1px solid var(--ft-border)",
               padding: "8px 20px",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               color: "var(--ft-dim)",
               display: "flex",
@@ -1949,7 +1952,7 @@ export default function Business() {
 
         <div
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             color: "var(--ft-dim)",
             marginBottom: 12,
@@ -1974,7 +1977,7 @@ export default function Business() {
           {businessCategories.length === 0 && (
             <span
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 11,
                 color: "var(--ft-dim)",
               }}
@@ -2048,7 +2051,7 @@ export default function Business() {
                 ? "var(--ft-base)"
                 : "var(--ft-dim)",
               padding: "5px 12px",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               fontWeight: 700,
               cursor: newCatInput.trim() ? "pointer" : "not-allowed",
@@ -2068,7 +2071,7 @@ export default function Business() {
         style={{
           borderTop: "1px solid var(--ft-border)",
           paddingTop: 12,
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 10,
           color: "var(--ft-dim)",
           lineHeight: 1.6,
