@@ -304,7 +304,7 @@ export function CashFlowWidget({ isExpanded }: { isExpanded?: boolean }) {
       {!isLoading && (
         <>
           {allHistory.length === 0 ? (
-            <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
+            <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
               No history yet — add transactions to see cash flow
             </div>
           ) : (
