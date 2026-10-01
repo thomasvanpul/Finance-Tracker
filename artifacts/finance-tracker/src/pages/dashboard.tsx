@@ -2646,16 +2646,19 @@ export default function Dashboard() {
       // rebuild's colour audit found.
       valueColor: "var(--ft-text)",
     };
+    // Income, spend and the two social balances are magnitudes coloured by
+    // direction, so the glyph says the direction too — DESIGN.md §7, gain
+    // and loss never on hue alone. kpi-sign.lock.test.ts holds it.
     const MONTHLY_INCOME: KpiCellData = {
       label: "MONTHLY INCOME",
       href: drillWhen(income > 0, ledgerHref({ type: "income", ...thisMonthRange() })),
-      value: income > 0 ? formatBaseMoney(income) : "—",
+      value: income > 0 ? `+${formatBaseMoney(Math.abs(income))}` : "—",
       valueColor: income > 0 ? "var(--ft-green)" : "var(--ft-dim)",
     };
     const MONTHLY_SPEND: KpiCellData = {
       label: "MONTHLY SPEND",
       href: drillWhen(expenses > 0, ledgerHref({ type: "expense", ...thisMonthRange() })),
-      value: expenses > 0 ? formatBaseMoney(expenses) : "—",
+      value: expenses > 0 ? `−${formatBaseMoney(Math.abs(expenses))}` : "—",
       valueColor: expenses > 0 ? "var(--ft-red)" : "var(--ft-dim)",
     };
     const SAVINGS_RATE: KpiCellData = {
@@ -2751,12 +2754,12 @@ export default function Dashboard() {
     };
     const OWED_TO_ME: KpiCellData = {
       label: "OWED TO ME",
-      value: owedToMe > 0 ? formatBaseMoney(owedToMe) : "—",
+      value: owedToMe > 0 ? `+${formatBaseMoney(Math.abs(owedToMe))}` : "—",
       valueColor: owedToMe > 0 ? "var(--ft-green)" : "var(--ft-dim)",
     };
     const I_OWE: KpiCellData = {
       label: "I OWE",
-      value: iOwe > 0 ? formatBaseMoney(iOwe) : "—",
+      value: iOwe > 0 ? `−${formatBaseMoney(Math.abs(iOwe))}` : "—",
       valueColor: iOwe > 0 ? "var(--ft-red)" : "var(--ft-dim)",
     };
 
