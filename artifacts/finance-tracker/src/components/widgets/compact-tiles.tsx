@@ -986,7 +986,7 @@ export function CompactSavingsRate() {
 export function CompactEmergencyFund() {
   const { data: accounts = [] } = useListAccounts({});
   const { data: allTxs = [] } = useListTransactions({});
-  const { months, color } = useMemo(() => {
+  const { months, color, hasData } = useMemo(() => {
     const liquid = netAccountsTotal(accounts);
     const now = new Date();
     const expenses: number[] = [];
@@ -998,20 +998,20 @@ export function CompactEmergencyFund() {
     }
     const avg = expenses.length ? expenses.reduce((s, v) => s + v, 0) / expenses.length : 0;
     const months = avg > 0 ? liquid / avg : 0;
-    const color = months < 3 ? "var(--ft-red)" : months < 6 ? "#e3b341" : "var(--ft-green)";
-    return { months, color };
+    const color = avg <= 0 ? "var(--ft-dim)" : months < 3 ? "var(--ft-red)" : months < 6 ? "var(--ft-amber)" : "var(--ft-green)";
+    return { months, color, hasData: avg > 0 };
   }, [accounts, allTxs]);
   return (
     <Tile
       label="EMERGENCY FUND"
       accent={color}
       href="/accounts"
-      primary={months > 0 ? `${months.toFixed(1)} mo` : "—"}
+      primary={hasData ? `${months.toFixed(1)} mo` : "—"}
       primaryColor={color}
-      secondary={months > 0 ? "of 6-month target" : "No history"}
-      bar={months > 0 ? Math.min(100, (months / 6) * 100) : undefined}
+      secondary={hasData ? "of 6-month target" : "No history"}
+      bar={hasData ? Math.min(100, (months / 6) * 100) : undefined}
       barColor={color}
-      trend={months >= 6 ? "up" : months >= 3 ? "neutral" : "down"}
+      trend={hasData ? (months >= 6 ? "up" : months >= 3 ? "neutral" : "down") : undefined}
     />
   );
 }
