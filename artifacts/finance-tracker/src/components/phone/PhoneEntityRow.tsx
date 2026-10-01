@@ -64,6 +64,14 @@ export interface PhoneEntityRowAmount {
 interface PhoneEntityRowProps {
   primary: string;
   secondary?: string;
+  /**
+   * Whether `secondary` is data (a date, duration, or ticker — §10 of
+   * DESIGN.md) rather than language (a category or account name). Default
+   * true matches the existing callers (UPCOMING's due date, WORTH's
+   * ticker). A caller whose secondary is a name a human wrote — SPENDING's
+   * category — passes false.
+   */
+  secondaryMono?: boolean;
   identity?: PhoneEntityRowIdentity;
   amount?: PhoneEntityRowAmount;
   onTap?: () => void;
@@ -181,6 +189,7 @@ export function deriveTonesForList(inputs: readonly string[]): string[] {
 export function PhoneEntityRow({
   primary,
   secondary,
+  secondaryMono = true,
   identity,
   amount,
   onTap,
@@ -246,7 +255,7 @@ export function PhoneEntityRow({
         {secondary && (
           <span
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: secondaryMono ? "var(--font-mono)" : "var(--font-sans)",
               fontSize: "var(--ft-text-xs)",
               color: "var(--ft-muted)",
               overflow: "hidden",

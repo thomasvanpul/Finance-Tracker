@@ -736,21 +736,22 @@ function SpendingHero({ hero, now, loading, filter }: { hero: HeroData | null; n
     const delta = spendDelta(hero.mtd, hero.lastMonthSamePoint, hero.sameDayLastIso);
     if (delta.kind === "same") {
       deltaLine = (
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>
-          same as by {delta.day}
+        <span style={{ fontSize: 12, color: "var(--ft-dim)" }}>
+          same as by <span style={{ fontFamily: "var(--font-mono)" }}>{delta.day}</span>
         </span>
       );
     } else {
       const colour = delta.kind === "more" ? "var(--ft-red)" : "var(--ft-green)";
       deltaLine = (
-        <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: colour }}>
-          {formatBaseMoney(delta.abs)} {delta.kind} than by {delta.day}
+        <span style={{ fontSize: 12, color: colour }}>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)" }}>{formatBaseMoney(delta.abs)}</span>
+          {" "}{delta.kind} than by <span style={{ fontFamily: "var(--font-mono)" }}>{delta.day}</span>
         </span>
       );
     }
   } else if (hero != null && hero.mtd != null && hero.lastMonthSamePoint == null) {
     deltaLine = (
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>
+      <span style={{ fontSize: 12, color: "var(--ft-dim)" }}>
         no comparison — last month's rate unavailable
       </span>
     );
@@ -984,6 +985,7 @@ function TxSwipeRow({
         <PhoneEntityRow
           primary={tx.description}
           secondary={secondary}
+          secondaryMono={false}
           identity={{ tone }}
           amount={{
             value: baseStr,
