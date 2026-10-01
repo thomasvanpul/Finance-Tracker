@@ -436,7 +436,7 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore, isL
       >
         <span
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 9,
             fontWeight: 700,
             color: dismissed ? "var(--ft-dim)" : priorityColor,
@@ -447,7 +447,7 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore, isL
         </span>
         <span
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 8,
             color: "var(--ft-dim)",
             letterSpacing: "0.04em",
@@ -461,9 +461,8 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore, isL
       {/* Main content */}
       <div style={{ padding: "12px 14px", minWidth: 0 }}>
         <div
-          className="pnum"
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 12,
             fontWeight: 700,
             color: "var(--ft-text)",
@@ -484,14 +483,13 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore, isL
                 border: `1px solid ${d.daysUntilDeadline < 30 ? "rgba(248,81,73,0.3)" : "rgba(227,179,65,0.3)"}`,
               }}
             >
-              {d.daysUntilDeadline}d left
+              <span className="pnum">{d.daysUntilDeadline}d</span> left
             </span>
           )}
         </div>
         <div
-          className="pnum"
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             color: "var(--ft-dim)",
             lineHeight: 1.5,
@@ -507,7 +505,7 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore, isL
               display: "inline-flex",
               alignItems: "center",
               gap: 4,
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               color: "var(--ft-blue)",
               textDecoration: "none",
@@ -520,8 +518,8 @@ function DecisionRow({ decision: d, dismissed = false, onDismiss, onRestore, isL
             <ChevronRight size={10} />
           </Link>
           {d.annualCost !== undefined && d.annualCost > 0 && (
-            <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 25%, transparent)", padding: "1px 5px" }}>
-              {formatBaseMoney(d.annualCost)}/yr impact
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--ft-amber) 25%, transparent)", padding: "1px 5px" }}>
+              <span className="pnum">{formatBaseMoney(d.annualCost)}</span>/yr impact
             </span>
           )}
         </HStack>
@@ -676,7 +674,7 @@ export default function Decisions() {
             <button
               onClick={() => setShowDismissed((v) => !v)}
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 10,
                 padding: "3px 10px",
                 background: "var(--ft-raised)",
@@ -685,7 +683,7 @@ export default function Decisions() {
                 cursor: "pointer",
               }}
             >
-              {showDismissed ? "HIDE" : "SHOW"} {dismissedList.length} DISMISSED
+              {showDismissed ? "HIDE" : "SHOW"} <span className="pnum">{dismissedList.length}</span> DISMISSED
             </button>
           ) : null
         }
@@ -698,7 +696,7 @@ export default function Decisions() {
           padding: "5px 12px", marginBottom: 6,
           background: "var(--ft-surface)",
           border: "1px solid var(--ft-border)",
-          fontFamily: "var(--font-mono)", fontSize: 9,
+          fontFamily: "var(--font-sans)", fontSize: 9,
         }}>
           <Text as="span" weight={700} color="var(--ft-amber)" letterSpacing="0.1em">
             {activePersona.code}
@@ -750,7 +748,7 @@ export default function Decisions() {
             border: "1px solid var(--ft-border)",
             background: "var(--ft-surface)",
             padding: "40px 32px",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
           }}
         >
           <div style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ft-green)", fontWeight: 700, marginBottom: 6 }}>
