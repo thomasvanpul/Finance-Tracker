@@ -2395,9 +2395,18 @@ export default function Dashboard() {
     const BALANCE_WINDOW_MS = 6000;
     const TICK_MS = 400;
     const started = Date.now();
+    // The first press inside the columns also ends the window. Moving a
+    // widget to the other column remounts it, so a rebalance triggered by
+    // what the press changed (Spending Breakdown's month, and with it its
+    // height) threw that change away — the chevron looked dead.
+    let touched = false;
+    const onPress = (e: PointerEvent) => {
+      if (columnsRef.current?.contains(e.target as Node)) touched = true;
+    };
+    document.addEventListener("pointerdown", onPress, true);
     const timer = setInterval(() => {
       const root = columnsRef.current;
-      if (Date.now() - started > BALANCE_WINDOW_MS || userArrangedRef.current) {
+      if (Date.now() - started > BALANCE_WINDOW_MS || userArrangedRef.current || touched) {
         clearInterval(timer);
         return;
       }
@@ -2409,7 +2418,10 @@ export default function Dashboard() {
       const next = balanceColumns(enabledIdsRef.current, heights, 6);
       setRightSet(prev => (sameSet(prev, next) ? prev : next));
     }, TICK_MS);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("pointerdown", onPress, true);
+    };
   }, [enabledKey]);
   const leftIdsRef = useRef(leftIds);
   leftIdsRef.current = leftIds;
