@@ -29,6 +29,9 @@ import { PHONE_GROUP_GAP, PHONE_GUTTER, PHONE_ROW_PY } from "./rhythm";
 // Amendment lines followed (src/index.css:47–94):
 //   :74  ≥44px tap target on Hide
 //   :77  11px floor; body sits at 13px
+//   CLAUDE.md: a figure in full or not at all. Headline and body carry
+//        figures, so they wrap; neither may ellipsise (until 1 Oct 2026 both
+//        cropped at one line, which could cut a figure mid-number).
 //   :78  no dead space — when insight is null, the slot returns null
 //        entirely, not a placeholder. Empty is the message.
 
@@ -67,9 +70,6 @@ export function InsightSlot({ insight, onDismiss }: InsightSlotProps) {
             fontWeight: 600,
             lineHeight: "20px",
             color: "var(--ft-text)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
           }}
         >
           {insight.drillHref
@@ -81,9 +81,6 @@ export function InsightSlot({ insight, onDismiss }: InsightSlotProps) {
             fontSize: 13,
             lineHeight: "18px",
             color: "var(--ft-muted)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
           }}
         >
           <Figures text={insight.body} />
