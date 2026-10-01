@@ -536,16 +536,22 @@ export const ListTransactionsResponse = zod.array(ListTransactionsResponseItem)
 /**
  * @summary Create a transaction
  */
+export const createTransactionBodyNativeAmountMin = 0.01;
+
+export const createTransactionBodyToNativeAmountMin = 0.01;
+
+
+
 export const CreateTransactionBody = zod.object({
   "date": zod.string(),
   "description": zod.string(),
   "type": zod.enum(['income', 'expense', 'transfer']),
   "category": zod.string(),
   "accountId": zod.number(),
-  "nativeAmount": zod.number(),
+  "nativeAmount": zod.number().min(createTransactionBodyNativeAmountMin),
   "currency": zod.string(),
   "toAccountId": zod.number().optional(),
-  "toNativeAmount": zod.number().optional(),
+  "toNativeAmount": zod.number().min(createTransactionBodyToNativeAmountMin).optional(),
   "toCurrency": zod.string().optional()
 })
 
@@ -573,13 +579,17 @@ export const UpdateTransactionParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const updateTransactionBodyNativeAmountMin = 0.01;
+
+
+
 export const UpdateTransactionBody = zod.object({
   "date": zod.string().optional(),
   "description": zod.string().optional(),
   "type": zod.enum(['income', 'expense', 'transfer']).optional(),
   "category": zod.string().optional(),
   "accountId": zod.number().optional(),
-  "nativeAmount": zod.number().optional(),
+  "nativeAmount": zod.number().min(updateTransactionBodyNativeAmountMin).optional(),
   "currency": zod.string().optional()
 })
 

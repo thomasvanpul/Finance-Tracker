@@ -13,9 +13,11 @@ export interface TransactionInput {
   type: TransactionInputType;
   category: string;
   accountId: number;
+  /** @minimum 0.01 */
   nativeAmount: number;
   currency: string;
   toAccountId?: number;
+  /** @minimum 0.01 */
   toNativeAmount?: number;
   toCurrency?: string;
 }

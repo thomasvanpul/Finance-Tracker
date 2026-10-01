@@ -2275,8 +2275,13 @@ components:
           type: string
         accountId:
           type: integer
+        # A magnitude, never a signed delta — balance.ts derives the sign
+        # from type (expense/transfer-out negate) and transferDirection.
+        # A negative value here double-negates (2026-09-30T2018 split bug:
+        # a negative expense raised the balance it should have lowered).
         nativeAmount:
           type: number
+          minimum: 0.01
         currency:
           type: string
         # Transfer leg (type=transfer only). When present the server writes
@@ -2287,8 +2292,10 @@ components:
         # dropped them and broke the api-server typecheck.
         toAccountId:
           type: integer
+        # Same magnitude invariant as nativeAmount above.
         toNativeAmount:
           type: number
+          minimum: 0.01
         toCurrency:
           type: string
 
@@ -2306,8 +2313,10 @@ components:
           type: string
         accountId:
           type: integer
+        # Same magnitude invariant as TransactionInput.nativeAmount.
         nativeAmount:
           type: number
+          minimum: 0.01
         currency:
           type: string
 

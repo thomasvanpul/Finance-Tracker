@@ -13,6 +13,7 @@ export interface TransactionUpdate {
   type?: TransactionUpdateType;
   category?: string;
   accountId?: number;
+  /** @minimum 0.01 */
   nativeAmount?: number;
   currency?: string;
 }
