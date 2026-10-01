@@ -1,5 +1,6 @@
 import { Drill } from "@/components/drill";
 import type { Insight } from "@/lib/spending-insights";
+import { figureSegments } from "@/lib/figure-segments";
 import { PHONE_GROUP_GAP, PHONE_GUTTER, PHONE_ROW_PY } from "./rhythm";
 
 // InsightSlot — the one-insight-or-nothing container on SPENDING.
@@ -72,8 +73,8 @@ export function InsightSlot({ insight, onDismiss }: InsightSlotProps) {
           }}
         >
           {insight.drillHref
-            ? <Drill href={insight.drillHref}>{insight.headline}</Drill>
-            : insight.headline}
+            ? <Drill href={insight.drillHref}><Figures text={insight.headline} /></Drill>
+            : <Figures text={insight.headline} />}
         </div>
         <div
           style={{
@@ -85,7 +86,7 @@ export function InsightSlot({ insight, onDismiss }: InsightSlotProps) {
             whiteSpace: "nowrap",
           }}
         >
-          {insight.body}
+          <Figures text={insight.body} />
         </div>
         {insight.action && (
           <button
@@ -130,5 +131,18 @@ export function InsightSlot({ insight, onDismiss }: InsightSlotProps) {
         Hide
       </button>
     </div>
+  );
+}
+
+// Producers hand the slot strings, so a figure in one ("£31 outstanding for
+// 74 days.") has no element of its own and privacy mode, which blurs `.pnum`,
+// left it readable. Each money or percentage figure gets its own `.pnum`.
+function Figures({ text }: { text: string }) {
+  return (
+    <>
+      {figureSegments(text).map((part, i) =>
+        part.figure ? <span key={i} className="pnum">{part.text}</span> : part.text,
+      )}
+    </>
   );
 }
