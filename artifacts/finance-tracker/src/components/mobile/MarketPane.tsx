@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { useLocation } from "wouter";
 import {
   useListInvestments,
   useListAccounts,
@@ -11,6 +10,7 @@ import {
 } from "@workspace/api-client-react";
 import { Text, VStack } from "@/components/primitives";
 import { HomeSectionHeader } from "./home-section-header";
+import { DrillTarget } from "@/components/drill";
 import { PHONE_GUTTER, PHONE_ROW_PY } from "@/components/phone/rhythm";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { FixingMark, closeTagText } from "@/components/FixingMark";
@@ -115,7 +115,6 @@ interface MarketPaneProps {
 }
 
 export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
-  const [, navigate] = useLocation();
   const { data: investments = [] } = useListInvestments();
   const { data: accounts = [] } = useListAccounts();
   // Aggregate holdings value. Server-computed, already on the payload this
@@ -256,51 +255,53 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
             which is the grain J26 permits. Null-safe per G10: the payload
             only carries a number once the dashboard has loaded. */}
         {heldPositions.length > 0 && (
-          <div
-            onClick={onOpenInvestments}
-            style={{
-              cursor: "pointer",
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              rowGap: 2,
-              columnGap: 12,
-              alignItems: "baseline",
-              minHeight: 44,
-              padding: `${PHONE_ROW_PY}px 0`,
-              borderBottomWidth: 1,
-              borderBottomStyle: "solid",
-              borderBottomColor: "var(--ft-border)",
-            }}
-          >
-            <Text as="span" mono size={13} weight={700} letterSpacing="0.02em">
-              HOLDINGS
-            </Text>
-            <Text as="span" mono size={13} numeric>
-              {holdingsValueBase != null
-                ? formatMoney(holdingsValueBase, getBaseCurrency())
-                : "—"}
-            </Text>
-            <div style={{ gridColumn: "1 / -1" }}>
-              <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
-                {[
-                  `your ${heldPositions.length} position${heldPositions.length === 1 ? "" : "s"}`,
-                  // Not live, and said so. Crypto and FX stay live and carry
-                  // no mark — they have no close to be end-of-day against.
-                  closeText,
-                  // G10: a leg we could not price is named, never absorbed
-                  // into the total as a zero. Same wording as the desktop
-                  // INVESTMENTS KPI ("N unavailable — not in value").
-                  unpriced > 0 ? `${unpriced} unavailable — not in value` : null,
-                  // A leg valued at cost basis IS in the total above — this
-                  // names it as not-live rather than letting a stale-looking
-                  // figure pass as a market price.
-                  atCost > 0 ? `${atCost} at cost` : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
+          // Whole cell is the hit area (DrillTarget renders the <a>); the
+          // underline stays on the figure alone (DESIGN.md §14).
+          <DrillTarget href="/investments" title="Your holdings — open positions">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr auto",
+                rowGap: 2,
+                columnGap: 12,
+                alignItems: "baseline",
+                minHeight: 44,
+                padding: `${PHONE_ROW_PY}px 0`,
+                borderBottomWidth: 1,
+                borderBottomStyle: "solid",
+                borderBottomColor: "var(--ft-border)",
+              }}
+            >
+              <Text as="span" mono size={13} weight={700} letterSpacing="0.02em">
+                HOLDINGS
               </Text>
+              <Text as="span" mono size={13} numeric>
+                {holdingsValueBase != null
+                  ? <span className="ft-drill">{formatMoney(holdingsValueBase, getBaseCurrency())}</span>
+                  : "—"}
+              </Text>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
+                  {[
+                    `your ${heldPositions.length} position${heldPositions.length === 1 ? "" : "s"}`,
+                    // Not live, and said so. Crypto and FX stay live and carry
+                    // no mark — they have no close to be end-of-day against.
+                    closeText,
+                    // G10: a leg we could not price is named, never absorbed
+                    // into the total as a zero. Same wording as the desktop
+                    // INVESTMENTS KPI ("N unavailable — not in value").
+                    unpriced > 0 ? `${unpriced} unavailable — not in value` : null,
+                    // A leg valued at cost basis IS in the total above — this
+                    // names it as not-live rather than letting a stale-looking
+                    // figure pass as a market price.
+                    atCost > 0 ? `${atCost} at cost` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </Text>
+              </div>
             </div>
-          </div>
+          </DrillTarget>
         )}
         {/* Positions: ticker + quantity. The user's own record — no price,
             no change%. J27. */}
@@ -313,7 +314,6 @@ export function MarketPane({ onOpenInvestments }: MarketPaneProps) {
               ticker={p.ticker}
               shares={p.shares}
               isLast={isLast}
-              onClick={() => navigate("/investments")}
             />
           );
         })}
@@ -360,37 +360,36 @@ interface PositionRowProps {
   ticker: string;
   shares: number;
   isLast: boolean;
-  onClick: () => void;
 }
 
-function PositionRow({ ticker, shares, isLast, onClick }: PositionRowProps) {
+function PositionRow({ ticker, shares, isLast }: PositionRowProps) {
   return (
-    <div
-      onClick={onClick}
-      style={{
-        cursor: "pointer",
-        display: "grid",
-        gridTemplateColumns: "auto 1fr",
-        columnGap: 12,
-        alignItems: "baseline",
-        // 44 is the Amendment's tap minimum. The row was 52 when it
-        // carried two lines; it carries one now.
-        minHeight: 44,
-        padding: `${PHONE_ROW_PY}px 0`,
-        borderBottomWidth: isLast ? 1 : 0,
-        borderBottomStyle: "solid",
-        borderBottomColor: "var(--ft-border)",
-      }}
-    >
-      {/* Text colour, not --ft-blue: this row is pressable, and a
-          categorical colour never marks a control (DESIGN.md §11). */}
-      <Text as="span" mono size={13} weight={700} letterSpacing="0.02em">
-        {ticker}
-      </Text>
-      <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
-        your {qtyLabel(shares)} {unitNoun(ticker, shares)}
-      </Text>
-    </div>
+    // Whole row is the hit area; the underline stays on the ticker alone
+    // (DESIGN.md §14).
+    <DrillTarget href="/investments" title={`${ticker} — open your positions`}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto 1fr",
+          columnGap: 12,
+          alignItems: "baseline",
+          // 44 is the Amendment's tap minimum. The row was 52 when it
+          // carried two lines; it carries one now.
+          minHeight: 44,
+          padding: `${PHONE_ROW_PY}px 0`,
+          borderBottomWidth: isLast ? 1 : 0,
+          borderBottomStyle: "solid",
+          borderBottomColor: "var(--ft-border)",
+        }}
+      >
+        <Text as="span" mono size={13} weight={700} letterSpacing="0.02em">
+          <span className="ft-drill">{ticker}</span>
+        </Text>
+        <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
+          your {qtyLabel(shares)} {unitNoun(ticker, shares)}
+        </Text>
+      </div>
+    </DrillTarget>
   );
 }
 
