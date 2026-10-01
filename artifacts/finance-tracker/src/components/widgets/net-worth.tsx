@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { useGetDashboard } from "@workspace/api-client-react";
+import { useState } from "react";
+import { getGetNetWorthHistoryQueryKey, useGetDashboard, useGetNetWorthHistory } from "@workspace/api-client-react";
+import { historyFromPoints, todayDelta, type NetWorthHistoryEntry } from "@/lib/net-worth-history";
 import { UnconvertibleAccountsBadge } from "@/components/UnconvertibleAccountsBadge";
 import { StaleAsOf } from "@/components/StaleAsOf";
 import { formatBaseMoney, formatPercent } from "@/lib/utils";
@@ -11,10 +12,9 @@ import { CurrencyMark } from "@/components/currency-mark";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { signedAccountAmount } from "@/lib/account-sign";
 
-const HISTORY_KEY = "ft-nw-history";
-const MAX_ENTRIES = 365;
-
-type HistoryEntry = { date: string; netWorth: number; cash: number; portfolio: number };
+// Every captured day the API will return (its ceiling): the ALL period is
+// all of it, and the shorter periods filter by date below.
+const HISTORY_DAYS = 3650;
 type Period = "7D" | "1M" | "3M" | "ALL";
 
 // `gbpTotal` and `share` are null when ANY account in the bucket has no FX
@@ -110,40 +110,6 @@ function formatNative(amount: number, currency: string): string {
   const symbols: Record<string, string> = { GBP: "£", USD: "$", EUR: "€", MYR: "RM ", SGD: "S$", AUD: "A$", CAD: "C$", JPY: "¥", HKD: "HK$", CHF: "CHF " };
   const sym = symbols[currency] ?? `${currency} `;
   return `${sym}${Math.abs(amount).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-// Sorted on the way out, never trusted as stored.
-//
-// The x-axis read "7 Sept · 20 Aug · 10 Sept · 8 Sept · 9 Sept · 11 Sept ·
-// 13 Sept · 16 Sept" — August between two Septembers — because entries were
-// appended in the order the widget happened to mount and the array was
-// plotted in that order. Recharts draws a categorical axis from the array,
-// so the line travelled backwards in time and the chart was not a chart of
-// anything.
-//
-// Nothing in this file ever guaranteed the order. The append guard only
-// checks that today is not already present; an entry written under a clock
-// that had moved, or restored from a backup, lands wherever it lands. The
-// fix is here rather than at the append because this is the only place the
-// stored array becomes data, so a future writer cannot reintroduce it.
-//
-// Rows with no usable date are dropped rather than sorted to one end: a
-// point with no x is not a point, and keeping it would put a fabricated
-// position on a chart of someone's money.
-function loadHistory(): HistoryEntry[] {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return (parsed as HistoryEntry[])
-      .filter((e) => e != null && typeof e.date === "string" && !Number.isNaN(Date.parse(e.date)))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  } catch { return []; }
-}
-
-function saveHistory(entries: HistoryEntry[]): void {
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(entries)); } catch {}
 }
 
 // The LOCAL calendar day, as YYYY-MM-DD.
@@ -251,12 +217,9 @@ function NetWorthTooltip({ active, payload, label }: TooltipProps) {
   );
 }
 
-function TodayBadge({ history }: { history: HistoryEntry[] }) {
-  if (history.length < 2) return null;
-  const today = history[history.length - 1];
-  const yesterday = history[history.length - 2];
-  const delta = today.netWorth - yesterday.netWorth;
-  if (delta === 0) return null;
+function TodayBadge({ history }: { history: NetWorthHistoryEntry[] }) {
+  const delta = todayDelta(history, isoDay(new Date()));
+  if (delta == null || delta === 0) return null;
   const isUp = delta > 0;
   return (
     <span style={{
@@ -477,24 +440,16 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   // Both are what make a cached-but-not-live value legible to the user
   // rather than presented as current.
   const { data: d, isLoading, dataUpdatedAt, isStale } = useGetDashboard();
-  const [history, setHistory] = useState<HistoryEntry[]>(() => loadHistory());
+  // History is what the server captured on each day the dashboard was read
+  // (net_worth_snapshots), so it is the same figure on every device. Asked
+  // for only once the dashboard has answered, because that read is what
+  // captures today.
+  const historyParams = { days: HISTORY_DAYS };
+  const { data: nwHistory } = useGetNetWorthHistory(historyParams, {
+    query: { queryKey: getGetNetWorthHistoryQueryKey(historyParams), enabled: !!d },
+  });
+  const history = historyFromPoints(nwHistory?.points);
   const [period, setPeriod] = useState<Period>("1M");
-
-  useEffect(() => {
-    if (!d) return;
-    const today = isoDay(new Date());
-    const existing = loadHistory();
-    if (existing.some(e => e.date === today)) { setHistory(existing); return; }
-    const newEntry: HistoryEntry = { date: today, netWorth: d.netWorth, cash: d.totalCash, portfolio: d.portfolio.totalValueBase };
-    // Re-sorted rather than appended blind. "Today" is only the newest entry
-    // while the clock moves forwards, and an out-of-order write is what put
-    // 20 August between two Septembers in the first place.
-    const updated = [...existing, newEntry]
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-MAX_ENTRIES);
-    saveHistory(updated);
-    setHistory(updated);
-  }, [d]);
 
   // A window in DAYS, not in entries. `slice(-7)` took the last seven
   // RECORDINGS, and this history gains an entry only on a day the dashboard
