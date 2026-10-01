@@ -31,6 +31,7 @@ import {
 } from "@/components/phone/CompositionChart";
 import { useMarketDataEnabled } from "@/lib/market-visibility";
 import { lowestSoFar, type DailyBalance } from "@/lib/lowest-so-far";
+import { cashflowBars } from "@/lib/cashflow-bars";
 import {
   selectInsight,
   loadDismissedIds,
@@ -549,14 +550,15 @@ function buildDailyBalances(
 // labels spaced along one line with nothing tying them to a bar. Now, by
 // rule:
 //   · the plot states its scale — the top rule is labelled with the tallest
-//     balance and the baseline is £0 (DESIGN.md §5, §7);
+//     balance and the baseline is £0 (DESIGN.md §5, §7). When a day goes
+//     below £0, the £0 line moves inside the plot, that day's bar hangs down
+//     from it, and the bottom rule is labelled with the lowest balance;
 //   · days that have not happened are dotted outlines, not a dimmer solid
 //     (the phone's "dotted means not-yet-real");
 //   · TODAY and LOW SO FAR are tick-marked under their own bars, not coloured —
 //     hue does not carry them (§11). LOW is red only when it is below zero;
 //   · depth is decoration, so the offset shadow is gone (Mobile Amendment
 //     permits elevation only on floating surfaces).
-// Bar height is still |balance| / max — see report Deferred on negatives.
 const PLOT_H = 120;
 const AXIS_H = 18;
 const EDGE_LABEL_CLEARANCE = 5; // days — hide an edge date the TODAY label would collide with
@@ -574,7 +576,8 @@ function CashflowChart({
   low: DailyBalance | null;
   monthShortMixed: string;
 }) {
-  const maxAbs = days.length ? Math.max(...days.map((d) => Math.abs(d.balance)), 1) : 1;
+  const geometry = cashflowBars(days);
+  const hasNegative = geometry.bottom < 0;
   const n = Math.max(days.length, 1);
   const centreOf = (i: number) => `${((i + 0.5) / n) * 100}%`;
   const lowIndex = low != null ? days.findIndex((d) => d.day === low.day) : -1;
@@ -594,37 +597,53 @@ function CashflowChart({
     <div style={{ marginTop: 8 }}>
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
         <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
-          {nfmt(maxAbs, { symbol: "£", decimals: 0 })}
+          {nfmt(geometry.top, { symbol: "£", decimals: 0 })}
         </Text>
       </div>
       <div
         style={{
+          position: "relative",
           height: PLOT_H,
           display: "flex",
-          alignItems: "flex-end",
           gap: 2,
           borderTop: "1px solid var(--ft-border)",
-          borderBottom: "1px solid var(--ft-border2)",
+          borderBottom: `1px solid ${hasNegative ? "var(--ft-border)" : "var(--ft-border2)"}`,
         }}
       >
+        {hasNegative && (
+          <span
+            aria-hidden
+            style={{ position: "absolute", left: 0, right: 0, top: `${geometry.zeroPct}%`, height: 0, borderTop: "1px solid var(--ft-border2)" }}
+          />
+        )}
         {days.map((d, i) => {
-          const heightPct = Math.max(1, (Math.abs(d.balance) / maxAbs) * 100);
+          const bar = geometry.bars[i];
           return (
-            <span
-              key={i}
-              style={{
-                flex: 1,
-                minWidth: 1,
-                height: `${heightPct}%`,
-                boxSizing: "border-box",
-                ...(d.future
-                  ? { border: "1px dotted var(--ft-dim)", borderBottom: "none" }
-                  : { background: "var(--ft-text)" }),
-              }}
-            />
+            <span key={i} style={{ position: "relative", flex: 1, minWidth: 1 }}>
+              <span
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  [bar.below ? "top" : "bottom"]: `${bar.offsetPct}%`,
+                  height: `${bar.heightPct}%`,
+                  boxSizing: "border-box",
+                  ...(d.future
+                    ? { border: "1px dotted var(--ft-dim)", [bar.below ? "borderTop" : "borderBottom"]: "none" }
+                    : { background: "var(--ft-text)" }),
+                }}
+              />
+            </span>
           );
         })}
       </div>
+      {hasNegative && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+          <Text as="span" mono size={11} color="var(--ft-dim)" numeric>
+            {nfmt(geometry.bottom, { symbol: "£", decimals: 0 })}
+          </Text>
+        </div>
+      )}
       <div style={{ position: "relative", height: AXIS_H, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
         {hasToday && tick(todayIndex)}
         {lowIndex >= 0 && lowIndex !== todayIndex && tick(lowIndex)}
