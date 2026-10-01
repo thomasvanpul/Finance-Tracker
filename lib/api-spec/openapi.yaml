@@ -716,12 +716,22 @@ paths:
       operationId: settleDebt
       tags: [debts]
       summary: Mark a debt as settled
+      description: >
+        Settling moves the amount out of (or into) an account. A debt with
+        no accountId must be settled with one in the body; without it the
+        server answers 422 rather than settle with no cash movement.
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebtSettle"
       responses:
         "200":
           description: Settled
@@ -2643,6 +2653,13 @@ components:
           type: string
         accountId:
           type: integer
+
+    DebtSettle:
+      type: object
+      properties:
+        accountId:
+          type: integer
+          description: The account the debt was settled from. Used only when the debt has none of its own.
 
     DebtSummary:
       type: object

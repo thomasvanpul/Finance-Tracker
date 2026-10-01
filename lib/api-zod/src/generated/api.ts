@@ -927,10 +927,16 @@ export const DeleteDebtParams = zod.object({
 
 
 /**
+ * Settling moves the amount out of (or into) an account. A debt with no accountId must be settled with one in the body; without it the server answers 422 rather than settle with no cash movement.
+
  * @summary Mark a debt as settled
  */
 export const SettleDebtParams = zod.object({
   "id": zod.coerce.number()
+})
+
+export const SettleDebtBody = zod.object({
+  "accountId": zod.number().optional().describe('The account the debt was settled from. Used only when the debt has none of its own.')
 })
 
 export const SettleDebtResponse = zod.object({

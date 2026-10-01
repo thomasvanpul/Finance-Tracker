@@ -812,14 +812,12 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   // Monzo → net worth 230,134.93 → 230,034.93; settle → 230,034.93 flat,
   // cash −100. Do not remove one half of this without the other.
   //
-  // The accountId condition is real, not decoration. debts.ts:227 guards
-  // the balance adjustment on `if (existing.accountId)`, so settling a
-  // debt with a null accountId credits nothing and net worth jumps by
-  // the full amount (measured: 229,934.93 → 230,034.93). That is a gap
-  // in the settle path — the app does not know which account paid — and
-  // it is not an argument against this term: before this change the same
-  // debt was never counted at all, which is wrong in both phases rather
-  // than one.
+  // The accountId condition used to be real: settling a debt with a null
+  // accountId credited nothing and net worth jumped by the full amount
+  // (measured: 229,934.93 → 230,034.93). Since 1-Oct the settle route
+  // takes the paying account in its body when the debt has none and
+  // answers 422 without one, so every settle moves cash
+  // (debts.settle.route.test.ts).
   const netWorth = computeNetWorth({ totalCash, portfolioValueBase, totalOwedToMe, totalIOwe, totalLiabilities });
   const portfolioPlBase = portfolioValueBase - portfolioCostBase;
   // No cost basis (empty portfolio) → no return to compute. Null, not 0

@@ -1282,6 +1282,11 @@ export interface DebtUpdate {
   accountId?: number;
 }
 
+export interface DebtSettle {
+  /** The account the debt was settled from. Used only when the debt has none of its own. */
+  accountId?: number;
+}
+
 export interface DebtSummary {
   totalOwedToMe: number;
   totalIOwe: number;

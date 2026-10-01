@@ -85,6 +85,7 @@ export * from './debtDirection';
 export * from './debtInput';
 export * from './debtInputCurrency';
 export * from './debtInputDirection';
+export * from './debtSettle';
 export * from './debtStatus';
 export * from './debtSummary';
 export * from './debtUpdate';

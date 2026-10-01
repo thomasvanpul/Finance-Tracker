@@ -7,6 +7,7 @@ import {
   UpdateDebtBody,
   DeleteDebtParams,
   SettleDebtParams,
+  SettleDebtBody,
   ListDebtsResponse,
   GetDebtSummaryResponse,
 } from "@workspace/api-zod";
@@ -223,20 +224,37 @@ router.post("/debts/:id/settle", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Debt not found" });
     return;
   }
+  const body = SettleDebtBody.safeParse(req.body ?? {});
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  // Net worth counts a pending debt (dashboard.ts computeNetWorth), so a
+  // settle that moves no cash makes net worth jump by the full amount.
+  // The debt's own account wins; otherwise the caller must name one. No
+  // guess at "the first account" (upcoming.ts does that) — it would say
+  // an account paid when nothing said so.
+  const settleAccountId = existing.accountId ?? body.data.accountId ?? null;
+  if (settleAccountId == null) {
+    res.status(422).json({ error: "Choose the account this debt was settled from" });
+    return;
+  }
+  if (existing.accountId == null && !(await isAccountOwnedBy(settleAccountId, userId))) {
+    res.status(404).json({ error: `Account ${settleAccountId} not found` });
+    return;
+  }
   const [item] = await db
     .update(debtsTable)
-    .set({ status: "settled" })
+    .set(existing.accountId == null ? { status: "settled", accountId: settleAccountId } : { status: "settled" })
     .where(and(eq(debtsTable.id, params.data.id), eq(debtsTable.userId, userId)))
     .returning();
   if (!item) {
     res.status(404).json({ error: "Debt not found" });
     return;
   }
-  if (existing.accountId) {
-    const nativeAmount = parseFloat(existing.nativeAmount);
-    const txType = existing.direction === "i_owe_them" ? "expense" : "income";
-    await adjustAccountBalance(existing.accountId, userId, nativeAmount, existing.currency, txType);
-  }
+  const nativeAmount = parseFloat(existing.nativeAmount);
+  const txType = existing.direction === "i_owe_them" ? "expense" : "income";
+  await adjustAccountBalance(settleAccountId, userId, nativeAmount, existing.currency, txType);
   const enriched = await enrichDebt(item, userId);
   res.json(enriched);
 });

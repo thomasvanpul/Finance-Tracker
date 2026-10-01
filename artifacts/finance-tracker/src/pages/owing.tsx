@@ -94,6 +94,10 @@ interface SettleFormState {
   fullAmount: number;
   inputValue: string;
   mode: "full" | "partial";
+  // The debt names no account, so settling must say which one paid —
+  // the API refuses (422) rather than settle with no cash movement.
+  needsAccount: boolean;
+  accountId: string;
 }
 
 function makeEmptyDebtForm(): DebtForm {
@@ -817,14 +821,21 @@ export default function Owing() {
     }
   }
 
-  function openSettleForm(id: number, name: string, amount: number) {
-    setSettleForm({ debtId: id, fullAmount: amount, inputValue: amount.toFixed(2), mode: "full" });
+  function openSettleForm(id: number, name: string, amount: number, accountId: number | null) {
+    setSettleForm({
+      debtId: id, fullAmount: amount, inputValue: amount.toFixed(2), mode: "full",
+      needsAccount: accountId == null, accountId: "",
+    });
   }
 
   async function confirmSettle() {
     if (!settleForm) return;
+    if (settleForm.needsAccount && !settleForm.accountId) return;
     try {
-      await settleDebt.mutateAsync({ id: settleForm.debtId });
+      await settleDebt.mutateAsync({
+        id: settleForm.debtId,
+        data: settleForm.needsAccount ? { accountId: parseInt(settleForm.accountId) } : undefined,
+      });
       invalidate();
       toast({ title: "Settled!", description: "Debt marked as settled." });
       setSettleForm(null);
@@ -1699,7 +1710,7 @@ export default function Owing() {
                         {d.status === "pending" && !isSettling && d.baseEquivalent != null && (
                           <HStack gap={4} align="center">
                             <button
-                              onClick={() => openSettleForm(d.id, d.personName, d.baseEquivalent!)}
+                              onClick={() => openSettleForm(d.id, d.personName, d.baseEquivalent!, d.accountId ?? null)}
                               style={{
                                 display: "flex",
                                 alignItems: "center",
@@ -1807,8 +1818,29 @@ export default function Owing() {
                         <span style={{ fontSize: 10, color: "var(--ft-dim)" }}>
                           of <span className="pnum">{formatBaseMoney(settleForm.fullAmount)}</span>
                         </span>
+                        {settleForm.needsAccount && (
+                          <Select
+                            value={settleForm.accountId || undefined}
+                            onValueChange={(v) => setSettleForm((s) => s ? { ...s, accountId: v } : s)}
+                          >
+                            <SelectTrigger
+                              aria-label={isIowe ? "Paid from account" : "Received into account"}
+                              style={{ ...INPUT_STYLE, height: 28, width: 180, fontSize: 12 }}
+                            >
+                              <SelectValue placeholder={isIowe ? "Paid from…" : "Received into…"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {accounts?.map((a) => (
+                                <SelectItem key={a.id} value={String(a.id)} style={{ color: "var(--ft-text)", fontSize: 12 }}>
+                                  {a.name} ({a.currency})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                         <button
                           onClick={confirmSettle}
+                          disabled={settleForm.needsAccount && !settleForm.accountId}
                           style={{
                             display: "flex",
                             alignItems: "center",
@@ -1819,7 +1851,8 @@ export default function Owing() {
                             background: "rgba(63,185,80,0.15)",
                             color: "var(--ft-green)",
                             border: "1px solid rgba(63,185,80,0.3)",
-                            cursor: "pointer",
+                            cursor: settleForm.needsAccount && !settleForm.accountId ? "not-allowed" : "pointer",
+                            opacity: settleForm.needsAccount && !settleForm.accountId ? 0.5 : 1,
                             fontWeight: 600,
                           }}
                         >
@@ -2024,7 +2057,7 @@ export default function Owing() {
 
             <div className="space-y-1.5">
               <Label style={{ color: "var(--ft-muted)", fontSize: 11 }}>
-                Account <Text as="span" color="var(--ft-dim)">(optional — adjusts balance when settled)</Text>
+                Account <Text as="span" color="var(--ft-dim)">(optional — asked for when settled if left empty)</Text>
               </Label>
               <Select
                 value={form.accountId || "__none__"}
