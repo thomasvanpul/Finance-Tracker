@@ -142,7 +142,7 @@ function CategoryForecastRowExpanded({ row, range }: CategoryForecastRowExpanded
     >
       <div
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           color: "var(--ft-text)",
           overflow: "hidden",
@@ -245,7 +245,7 @@ function CategoryForecastRowCompact({ row, timeElapsed, range }: CategoryForecas
       >
         <span
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 11,
             color: "var(--ft-text)",
             whiteSpace: "nowrap",
@@ -679,7 +679,7 @@ export function SpendingForecastWidget({ isExpanded }: { isExpanded?: boolean })
               {catRows.length === 0 ? (
                 <div
                   style={{
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     fontSize: 11,
                     color: "var(--ft-dim)",
                     textAlign: "center",
