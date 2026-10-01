@@ -21,4 +21,7 @@ describe("persona-quick-start colour lock", () => {
     expect(SOURCE.match(/rgba\(\s*244\s*,\s*162\s*,\s*30/g) ?? []).toEqual([]);
   });
 
+  it("paints no control amber — pressable and current are the accent", () => {
+    expect(SOURCE.match(/--ft-amber/g) ?? []).toEqual([]);
+  });
 });

@@ -137,7 +137,7 @@ export function PersonaQuickStart() {
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0,
                 fontSize: 8, fontFamily: "var(--font-mono)",
-                color: isDone ? "#000" : "var(--ft-amber)",
+                color: isDone ? "#000" : "var(--ft-accent)",
                 fontWeight: 700,
               }}>
                 {isDone ? "✓" : (i + 1)}
@@ -156,7 +156,7 @@ export function PersonaQuickStart() {
                   onClick={() => completeStep(step.id, step.href)}
                   style={{
                     fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 600,
-                    letterSpacing: "0.06em", color: "var(--ft-amber)",
+                    letterSpacing: "0.06em", color: "var(--ft-accent)",
                     background: "transparent", border: "1px solid var(--ft-accent-edge)",
                     padding: "3px 10px", cursor: "pointer", flexShrink: 0,
                   }}
@@ -185,7 +185,7 @@ export function PersonaQuickStart() {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                   fontSize: 8, fontFamily: "var(--font-mono)",
-                  color: isDone ? "#000" : "var(--ft-amber)",
+                  color: isDone ? "#000" : "var(--ft-accent)",
                   fontWeight: 700,
                 }}>
                   {isDone ? "✓" : (i + 1)}
@@ -209,7 +209,7 @@ export function PersonaQuickStart() {
                   onClick={() => completeStep(step.id, step.href)}
                   style={{
                     fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 600,
-                    letterSpacing: "0.06em", color: "var(--ft-amber)",
+                    letterSpacing: "0.06em", color: "var(--ft-accent)",
                     background: "transparent", border: "1px solid var(--ft-accent-edge)",
                     padding: "3px 10px", cursor: "pointer", alignSelf: "flex-start",
                     transition: "background 0.1s",
