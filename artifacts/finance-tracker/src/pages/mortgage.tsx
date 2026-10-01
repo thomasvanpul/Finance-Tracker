@@ -182,6 +182,9 @@ const INPUT_STYLE: React.CSSProperties = {
   outline: "none",
 };
 
+// Form field labels are language, not a column legend (DESIGN.md § 10).
+const FIELD_LABEL_STYLE: React.CSSProperties = { ...LABEL_STYLE, fontFamily: "var(--font-sans)" };
+
 const FIELD_STYLE: React.CSSProperties = { display: "flex", flexDirection: "column", gap: 4 };
 
 // ─── Amortization helpers ────────────────────────────────────────────────────
@@ -273,8 +276,8 @@ function MonthTableRow({ row, isGapAbove, totalHidden }: MonthTableRowProps) {
     <>
       {isGapAbove && (
         <tr>
-          <td colSpan={5} style={{ textAlign: "center", padding: "4px", fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", background: "var(--ft-raised)" }}>
-            ··· {totalHidden} months hidden ···
+          <td colSpan={5} style={{ textAlign: "center", padding: "4px", fontSize: 9, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", background: "var(--ft-raised)" }}>
+            ··· <span style={{ fontFamily: "var(--font-mono)" }}>{totalHidden}</span> months hidden ···
           </td>
         </tr>
       )}
@@ -352,7 +355,7 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
   const TOGGLE_BTN = (active: boolean): React.CSSProperties => ({
     padding: "3px 10px",
     fontSize: 9,
-    fontFamily: "var(--font-mono)",
+    fontFamily: "var(--font-sans)",
     background: active ? "var(--ft-accent)" : "var(--ft-raised)",
     border: `1px solid ${active ? "var(--ft-accent)" : "var(--ft-border)"}`,
     color: active ? "var(--ft-base)" : "var(--ft-dim)",
@@ -376,8 +379,8 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
           <Text as="div" mono size={16} weight={700} color="var(--ft-red)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatBaseMoney(totalInterest)}</span>
           </Text>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-red)", marginTop: 3 }}>
-            <span className="pnum">{interestRatio.toFixed(1)}</span>% of total repaid
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-red)", marginTop: 3 }}>
+            <span style={{ fontFamily: "var(--font-mono)" }}><span className="pnum">{interestRatio.toFixed(1)}</span>%</span> of total repaid
           </div>
         </div>
         <div style={{ padding: "10px 12px" }}>
@@ -385,8 +388,8 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
           <Text as="div" mono size={16} weight={700} color="var(--ft-green)" letterSpacing="-0.02em" lineHeight={1}>
             <span className="pnum">{formatBaseMoney(principal)}</span>
           </Text>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-green)", marginTop: 3 }}>
-            <span className="pnum">{(100 - interestRatio).toFixed(1)}</span>% of total repaid
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-green)", marginTop: 3 }}>
+            <span style={{ fontFamily: "var(--font-mono)" }}><span className="pnum">{(100 - interestRatio).toFixed(1)}</span>%</span> of total repaid
           </div>
         </div>
       </div>
@@ -502,9 +505,9 @@ function AmortizationTable({ rows, totalInterest, principal }: AmortizationTable
           {rows.length > 24 && (
             <button
               onClick={() => setShowAll((v) => !v)}
-              style={{ marginTop: 8, background: "none", border: "1px dashed var(--ft-border2)", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "4px 12px", cursor: "pointer", width: "100%" }}
+              style={{ marginTop: 8, background: "none", border: "1px dashed var(--ft-border2)", color: "var(--ft-dim)", fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "4px 12px", cursor: "pointer", width: "100%" }}
             >
-              {showAll ? "Show less" : `Show all ${rows.length} months`}
+              {showAll ? "Show less" : <>Show all <span style={{ fontFamily: "var(--font-mono)" }}>{rows.length}</span> months</>}
             </button>
           )}
         </>
@@ -539,7 +542,7 @@ function OverpaymentScenarioCard({ label, months, interest, color }: Overpayment
     >
       <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: 11, fontFamily: "var(--font-mono)", color, marginBottom: 2 }}>{formatMonths(months)}</div>
-      <Text as="div" mono size={10} color="var(--ft-red)">
+      <Text as="div" size={10} color="var(--ft-red)">
         <span className="pnum">{formatBaseMoney(interest)}</span> interest
       </Text>
     </div>
@@ -588,7 +591,7 @@ function OverpaymentImpact({ mortgage }: OverpaymentProps) {
       <div style={{ paddingTop: 12 }}>
 
       <div style={{ marginBottom: 12 }}>
-        <div style={LABEL_STYLE}>Extra monthly payment: <span style={{ color: "var(--ft-accent)" }}><span className="pnum">{formatBaseMoney(extra)}</span></span></div>
+        <div style={FIELD_LABEL_STYLE}>Extra monthly payment: <span style={{ color: "var(--ft-accent)" }}><span className="pnum">{formatBaseMoney(extra)}</span></span></div>
         <input
           type="range"
           min={0}
@@ -704,7 +707,7 @@ function RateScenarios({ mortgage }: RateScenariosProps) {
       <SectionRule>Interest Rate Scenarios</SectionRule>
       <div style={{ paddingTop: 12 }}>
       <HStack gap={8} align="center" marginBottom={12}>
-        <div style={LABEL_STYLE}>Base rate (%)</div>
+        <div style={FIELD_LABEL_STYLE}>Base rate (%)</div>
         <input
           type="number"
           step="0.1"
@@ -760,7 +763,7 @@ function AffordabilityKpiCard({ label, value, color, sub }: AffordabilityKpiCard
         <span className="pnum">{value}</span>
       </div>
       {sub && (
-        <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color, marginTop: 2 }}>{sub}</div>
+        <div style={{ fontSize: 9, fontFamily: "var(--font-sans)", color, marginTop: 2 }}>{sub}</div>
       )}
     </div>
   );
@@ -800,27 +803,27 @@ function AffordabilityTab() {
     <Panel title="Affordability Calculator" padding="12px 16px">
       <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
         <div style={FIELD_STYLE}>
-          <div style={LABEL_STYLE}>Annual income (£)</div>
+          <div style={FIELD_LABEL_STYLE}>Annual income (£)</div>
           <input type="number" placeholder="e.g. 60000" value={annualIncome} onChange={(e) => setAnnualIncome(e.target.value)} style={INPUT_STYLE} />
         </div>
         <div style={FIELD_STYLE}>
-          <div style={LABEL_STYLE}>Deposit (£)</div>
+          <div style={FIELD_LABEL_STYLE}>Deposit (£)</div>
           <input type="number" placeholder="e.g. 50000" value={deposit} onChange={(e) => setDeposit(e.target.value)} style={INPUT_STYLE} />
         </div>
         <div style={FIELD_STYLE}>
-          <div style={LABEL_STYLE}>Desired monthly payment (£)</div>
+          <div style={FIELD_LABEL_STYLE}>Desired monthly payment (£)</div>
           <input type="number" placeholder="e.g. 1200" value={desiredMonthly} onChange={(e) => setDesiredMonthly(e.target.value)} style={INPUT_STYLE} />
         </div>
         <div style={FIELD_STYLE}>
-          <div style={LABEL_STYLE}>Interest rate (%)</div>
+          <div style={FIELD_LABEL_STYLE}>Interest rate (%)</div>
           <input type="number" step="0.1" placeholder="4.5" value={rate} onChange={(e) => setRate(e.target.value)} style={INPUT_STYLE} />
         </div>
         <div style={FIELD_STYLE}>
-          <div style={LABEL_STYLE}>Term (years)</div>
+          <div style={FIELD_LABEL_STYLE}>Term (years)</div>
           <input type="number" placeholder="25" value={termYears} onChange={(e) => setTermYears(e.target.value)} style={INPUT_STYLE} />
         </div>
         <div style={FIELD_STYLE}>
-          <div style={LABEL_STYLE}>Buyer type</div>
+          <div style={FIELD_LABEL_STYLE}>Buyer type</div>
           <HStack gap={0}>
             {[{ label: "First-time buyer", value: true }, { label: "Other", value: false }].map(({ label, value }) => (
               <button
@@ -830,7 +833,7 @@ function AffordabilityTab() {
                   flex: 1,
                   padding: "6px 8px",
                   fontSize: 10,
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   background: isFtb === value ? "var(--ft-accent)" : "var(--ft-raised)",
                   border: `1px solid ${isFtb === value ? "var(--ft-accent)" : "var(--ft-border)"}`,
                   color: isFtb === value ? "var(--ft-base)" : "var(--ft-dim)",
@@ -919,7 +922,7 @@ function PageKpiStrip({ mortgages }: PageKpiStripProps) {
             <span className="pnum">{value}</span>
           </div>
           {label === "Monthly Payment" && mortgages.length > 1 && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>{mortgages.length} loans combined</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}><span style={{ fontFamily: "var(--font-mono)" }}>{mortgages.length}</span> loans combined</div>
           )}
         </div>
       ))}
@@ -960,8 +963,8 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
       <HStack gap={16} align="start" padding="14px 16px">
         <div style={{ flex: 1 }}>
           <HStack gap={8} align="center" marginBottom={12}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)" }}>{mortgage.name}</span>
-            <span style={{ fontSize: 8, padding: "2px 8px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)" }}>{mortgage.name}</span>
+            <span style={{ fontSize: 8, padding: "2px 8px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-dim)", fontFamily: "var(--font-sans)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
               {mortgage.type === "repayment" ? "Repayment" : "Interest-only"}
             </span>
             <span style={{ fontSize: 8, padding: "2px 8px", borderRadius: 2, background: "var(--ft-raised)", color: ltvColor, fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.06em", border: `1px solid ${ltvColor}33` }}>
@@ -1025,7 +1028,7 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
         <div style={{ display: "flex", gap: 4 }}>
           <button
             onClick={() => setExpanded((v) => !v)}
-            style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "4px 10px", cursor: "pointer" }}
+            style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", padding: "4px 10px", cursor: "pointer" }}
           >
             {expanded ? "▲ Hide" : "▼ Details"}
           </button>
@@ -1038,7 +1041,7 @@ function LoanCard({ mortgage, onDelete }: LoanCardProps) {
               background: deleteConfirm ? "var(--ft-red)" : "none",
               border: `1px solid ${deleteConfirm ? "var(--ft-red)" : "var(--ft-border)"}`,
               color: deleteConfirm ? "#fff" : "var(--ft-red)",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: deleteConfirm ? 8 : 9,
               fontWeight: deleteConfirm ? 700 : undefined,
               padding: "4px 8px",
@@ -1110,27 +1113,27 @@ function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
       <form onSubmit={handleSubmit}>
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
           <div style={{ ...FIELD_STYLE, gridColumn: "1 / -1" }}>
-            <div style={LABEL_STYLE}>Name</div>
-            <input type="text" required placeholder="e.g. Home mortgage" value={form.name} onChange={(e) => setField("name", e.target.value)} style={INPUT_STYLE} />
+            <div style={FIELD_LABEL_STYLE}>Name</div>
+            <input type="text" required placeholder="e.g. Home mortgage" value={form.name} onChange={(e) => setField("name", e.target.value)} style={{ ...INPUT_STYLE, fontFamily: "var(--font-sans)" }} />
           </div>
           <div style={FIELD_STYLE}>
-            <div style={LABEL_STYLE}>Principal (£)</div>
+            <div style={FIELD_LABEL_STYLE}>Principal (£)</div>
             <input type="number" required step="0.01" min="1" placeholder="250000" value={form.principal} onChange={(e) => setField("principal", e.target.value)} style={INPUT_STYLE} />
           </div>
           <div style={FIELD_STYLE}>
-            <div style={LABEL_STYLE}>Annual rate (%)</div>
+            <div style={FIELD_LABEL_STYLE}>Annual rate (%)</div>
             <input type="number" required step="0.01" min="0" placeholder="4.5" value={form.annualRate} onChange={(e) => setField("annualRate", e.target.value)} style={INPUT_STYLE} />
           </div>
           <div style={FIELD_STYLE}>
-            <div style={LABEL_STYLE}>Term (years)</div>
+            <div style={FIELD_LABEL_STYLE}>Term (years)</div>
             <input type="number" required min="1" max="40" placeholder="25" value={form.termYears} onChange={(e) => setField("termYears", e.target.value)} style={INPUT_STYLE} />
           </div>
           <div style={FIELD_STYLE}>
-            <div style={LABEL_STYLE}>Start date</div>
+            <div style={FIELD_LABEL_STYLE}>Start date</div>
             <input type="date" required value={form.startDate} onChange={(e) => setField("startDate", e.target.value)} style={INPUT_STYLE} />
           </div>
           <div style={FIELD_STYLE}>
-            <div style={LABEL_STYLE}>Type</div>
+            <div style={FIELD_LABEL_STYLE}>Type</div>
             <HStack gap={0}>
               {(["repayment", "interest-only"] as LoanType[]).map((t) => (
                 <button
@@ -1141,7 +1144,7 @@ function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
                     flex: 1,
                     padding: "6px 4px",
                     fontSize: 10,
-                    fontFamily: "var(--font-mono)",
+                    fontFamily: "var(--font-sans)",
                     background: form.type === t ? "var(--ft-accent)" : "var(--ft-raised)",
                     border: `1px solid ${form.type === t ? "var(--ft-accent)" : "var(--ft-border)"}`,
                     color: form.type === t ? "var(--ft-base)" : "var(--ft-dim)",
@@ -1156,15 +1159,15 @@ function AddLoanFormPanel({ onAdd, onCancel }: AddLoanFormPanelProps) {
             </HStack>
           </div>
           <div style={FIELD_STYLE}>
-            <div style={LABEL_STYLE}>Extra monthly (£, optional)</div>
+            <div style={FIELD_LABEL_STYLE}>Extra monthly (£, optional)</div>
             <input type="number" step="0.01" min="0" placeholder="0.00" value={form.extraMonthly} onChange={(e) => setField("extraMonthly", e.target.value)} style={INPUT_STYLE} />
           </div>
         </div>
         <HStack gap={8} justify="end">
-          <button type="button" onClick={onCancel} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 10, padding: "6px 14px", cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <button type="button" onClick={onCancel} style={{ background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", fontSize: 10, padding: "6px 14px", cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase" }}>
             Cancel
           </button>
-          <button type="submit" style={{ background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, padding: "6px 18px", cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          <button type="submit" style={{ background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, padding: "6px 18px", cursor: "pointer", letterSpacing: "0.06em", textTransform: "uppercase" }}>
             Add Loan
           </button>
         </HStack>
@@ -1202,7 +1205,7 @@ export default function MortgagePage() {
         actions={activeTab === "loans" && !showAddForm ? (
           <button
             onClick={() => setShowAddForm(true)}
-            style={{ background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, padding: "6px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}
+            style={{ background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, padding: "6px 14px", cursor: "pointer", letterSpacing: "0.08em", textTransform: "uppercase" }}
           >
             + Add Loan
           </button>
@@ -1223,7 +1226,7 @@ export default function MortgagePage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -1241,7 +1244,7 @@ export default function MortgagePage() {
               border: "none",
               borderBottom: `2px solid ${activeTab === tab ? "var(--ft-accent)" : "transparent"}`,
               color: activeTab === tab ? "var(--ft-accent)" : "var(--ft-dim)",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               fontWeight: 700,
               letterSpacing: "0.08em",
@@ -1269,14 +1272,14 @@ export default function MortgagePage() {
                 <path d="M2 22L24 6L46 22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                 <rect x="18" y="30" width="12" height="12" rx="1" stroke="currentColor" strokeWidth="1.5"/>
               </svg>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.04em" }}>NO LOANS TRACKED</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.7, maxWidth: 280 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.04em" }}>NO LOANS TRACKED</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.7, maxWidth: 280 }}>
                 Add a mortgage or loan to track repayments, model overpayments, and calculate total interest cost.
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddForm(true)}
-                style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "12px 24px", cursor: "pointer", marginTop: 4 }}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", background: "var(--ft-accent)", border: "none", color: "var(--ft-base)", padding: "12px 24px", cursor: "pointer", marginTop: 4 }}
               >
                 + ADD LOAN
               </button>
