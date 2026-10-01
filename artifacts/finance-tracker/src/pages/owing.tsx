@@ -532,7 +532,7 @@ function StrategyTab() {
                   <div style={{
                     width: 22,
                     height: 22,
-                    background: "rgba(244,162,30,0.15)",
+                    background: "var(--ft-accent-tint)",
                     color: "var(--ft-accent)",
                     fontFamily: "var(--font-mono)",
                     fontSize: 10,

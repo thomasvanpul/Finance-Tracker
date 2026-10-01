@@ -233,7 +233,7 @@ function GenericUnlockOverlay({ onDone }: { onDone: () => void }) {
         color: "var(--ft-accent, #F4A21E)",
         letterSpacing: "0.1em",
         pointerEvents: "none",
-        boxShadow: "0 0 20px rgba(244,162,30,0.3)",
+        boxShadow: "0 0 20px color-mix(in srgb, var(--ft-accent) 30%, transparent)",
         animation: "ft-generic-pop 0.2s ease-out",
       }}
     >
@@ -650,7 +650,7 @@ function MoneyCoinsOverlay({ onDone }: { onDone: () => void }) {
             left: `${coin.x}%`,
             fontSize: coin.size,
             color: "var(--ft-accent, #F4A21E)",
-            textShadow: "0 0 8px rgba(244,162,30,0.6)",
+            textShadow: "0 0 8px color-mix(in srgb, var(--ft-accent) 60%, transparent)",
             fontFamily: "monospace",
             fontWeight: 700,
             animation: `ft-coin-rise ${coin.duration}s ${coin.startDelay}s ease-out forwards`,

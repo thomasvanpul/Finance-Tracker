@@ -1120,8 +1120,8 @@ function Step3({
             alignItems: "center",
             gap: 10,
             padding: "8px 12px",
-            background: "rgba(244,162,30,0.08)",
-            border: "1px solid rgba(244,162,30,0.28)",
+            background: "color-mix(in srgb, var(--ft-amber) 8%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--ft-amber) 28%, transparent)",
             marginBottom: 12,
             flexWrap: "wrap",
           }}
@@ -1271,7 +1271,7 @@ function ImportRow({
           : hovered
           ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
           : row.isDuplicate
-          ? "rgba(244,162,30,0.04)"
+          ? "color-mix(in srgb, var(--ft-amber) 4%, transparent)"
           : "transparent",
         transition: "background 0.1s",
         cursor: "pointer",
@@ -1352,7 +1352,7 @@ function ImportRow({
           <span
             style={{
               color: "var(--ft-amber)",
-              background: "rgba(244,162,30,0.15)",
+              background: "color-mix(in srgb, var(--ft-amber) 15%, transparent)",
               padding: "1px 6px",
               fontSize: 9,
               fontFamily: "var(--font-mono)",
@@ -1657,8 +1657,8 @@ export default function ImportPage() {
       {importDone && (
         <div
           style={{
-            background: errorCount === 0 ? "rgba(86,211,100,0.08)" : "rgba(244,162,30,0.08)",
-            border: `1px solid ${errorCount === 0 ? "rgba(86,211,100,0.35)" : "rgba(244,162,30,0.35)"}`,
+            background: errorCount === 0 ? "rgba(86,211,100,0.08)" : "color-mix(in srgb, var(--ft-amber) 8%, transparent)",
+            border: `1px solid ${errorCount === 0 ? "rgba(86,211,100,0.35)" : "color-mix(in srgb, var(--ft-amber) 35%, transparent)"}`,
             padding: "12px 16px",
             marginBottom: 6,
             display: "flex",

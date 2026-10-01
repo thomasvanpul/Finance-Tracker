@@ -1420,7 +1420,7 @@ function CalendarGrid({ year, month, dayMap, feedEventMap, customEventMap, selec
                   ? "color-mix(in srgb, var(--ft-accent) 8%, var(--ft-surface))"
                   : hoveredDay === dateStr && hasActivity
                   ? "color-mix(in srgb, var(--ft-accent) 4%, var(--ft-surface))"
-                  : `rgba(244, 162, 30, ${bgOpacity / 1000})`,
+                  : `color-mix(in srgb, var(--ft-accent) ${bgOpacity / 10}%, transparent)`,
                 outline: isSelected ? "1px solid var(--ft-accent)" : "none",
                 opacity: isFutureMonth && isFuture ? 0.5 : 1,
                 transition: "background 0.1s",

@@ -263,7 +263,7 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                   padding: "28px 16px",
                   textAlign: "center",
                   cursor: "pointer",
-                  background: dragging ? "rgba(244,162,30,0.04)" : "var(--ft-raised)",
+                  background: dragging ? "color-mix(in srgb, var(--ft-accent) 4%, transparent)" : "var(--ft-raised)",
                   transition: "all 0.15s",
                   marginBottom: 14,
                 }}

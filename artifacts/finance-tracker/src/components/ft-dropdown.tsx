@@ -125,7 +125,7 @@ export function FtDropdown({ options, value, onChange, label, minWidth = 120 }: 
                   gap: 8,
                   width: "100%",
                   padding: "7px 12px",
-                  background: isSelected ? "rgba(244,162,30,0.1)" : "transparent",
+                  background: isSelected ? "var(--ft-accent-tint)" : "transparent",
                   border: "none",
                   borderLeft: isSelected ? "2px solid var(--ft-accent)" : "2px solid transparent",
                   color: isSelected ? "var(--ft-accent)" : "var(--ft-text)",

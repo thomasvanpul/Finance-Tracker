@@ -466,10 +466,10 @@ function ResultRow({ result, isSelected, onMouseEnter, onClick }: ResultRowProps
           letterSpacing: "0.06em",
           color: isSelected ? "var(--ft-accent)" : "var(--ft-dim)",
           background: isSelected
-            ? "rgba(244,162,30,0.1)"
+            ? "var(--ft-accent-tint)"
             : "var(--ft-base)",
           border: "1px solid",
-          borderColor: isSelected ? "rgba(244,162,30,0.3)" : "var(--ft-border)",
+          borderColor: isSelected ? "var(--ft-accent-edge)" : "var(--ft-border)",
           padding: "2px 5px",
           flexShrink: 0,
           minWidth: 28,

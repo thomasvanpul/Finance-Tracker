@@ -654,8 +654,8 @@ export default function CashflowPage() {
               textTransform: "uppercase",
               padding: "4px 8px",
               cursor: "pointer",
-              border: `1px solid ${showSettings ? "rgba(244,162,30,0.4)" : "var(--ft-border)"}`,
-              background: showSettings ? "rgba(244,162,30,0.1)" : "var(--ft-surface)",
+              border: `1px solid ${showSettings ? "var(--ft-accent-edge)" : "var(--ft-border)"}`,
+              background: showSettings ? "var(--ft-accent-tint)" : "var(--ft-surface)",
               color: showSettings ? "var(--ft-accent)" : "var(--ft-muted)",
             }}
           >

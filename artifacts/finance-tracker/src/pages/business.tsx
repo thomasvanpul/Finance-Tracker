@@ -689,8 +689,8 @@ function CategoryChip({
         gap: 5,
         background: hovered
           ? "color-mix(in srgb, var(--ft-accent) 18%, var(--ft-surface))"
-          : "rgba(244,162,30,0.10)",
-        border: "1px solid rgba(244,162,30,0.25)",
+          : "var(--ft-accent-tint)",
+        border: "1px solid var(--ft-accent-edge)",
         color: "var(--ft-accent)",
         padding: "3px 9px 3px 9px",
         fontFamily: "var(--font-mono)",
@@ -742,12 +742,12 @@ function CategoryToggleButton({
       onClick={() => onToggle(cat)}
       style={{
         background: active
-          ? "rgba(244,162,30,0.12)"
+          ? "var(--ft-accent-tint)"
           : hovered
           ? "color-mix(in srgb, var(--ft-accent) 6%, var(--ft-surface))"
           : "var(--ft-surface)",
         border: active
-          ? "1px solid rgba(244,162,30,0.35)"
+          ? "1px solid var(--ft-accent-edge)"
           : "1px solid var(--ft-border)",
         color: active ? "var(--ft-accent)" : hovered ? "var(--ft-text)" : "var(--ft-muted)",
         padding: "3px 9px",
