@@ -200,7 +200,7 @@ function EduCallout({ title, color, bg, border, children }: {
       >
         <span
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             fontWeight: 700,
             color,
@@ -536,7 +536,7 @@ function BSCalculator({ quoteMap }: BSCalcProps) {
                       <td
                         style={{
                           padding: "6px 10px",
-                          fontFamily: "var(--font-mono)",
+                          fontFamily: "var(--font-sans)",
                           fontWeight: 700,
                           color: "var(--ft-cyan)",
                           fontSize: 12,
@@ -1162,7 +1162,7 @@ function OptionsChainViewer() {
             padding: "28px",
             fontSize: 12,
             color: "var(--ft-dim)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
           }}
         >
           Loading {activeTicker} options chain...
@@ -1177,7 +1177,7 @@ function OptionsChainViewer() {
             padding: "28px 0",
             fontSize: 12,
             color: "var(--ft-dim)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
           }}
         >
           Enter a ticker symbol above to load a live options chain.
@@ -1199,14 +1199,14 @@ function OptionsChainViewer() {
           >
             <span
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 9,
                 color: "var(--ft-dim)",
                 textTransform: "uppercase",
                 letterSpacing: "0.06em",
               }}
             >
-              Expiry: {activeExpiry} — {rows.length} strikes — cyan row = ATM
+              Expiry: <span className="pnum">{activeExpiry}</span> — <span className="pnum">{rows.length}</span> strikes — cyan row = ATM
             </span>
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
@@ -1503,7 +1503,7 @@ function StrategyBuilder({ quoteMap }: { quoteMap: Map<string, QuoteData> }) {
             Strategy Builder
           </span>
           {strategyName && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-cyan)", marginLeft: 6 }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-cyan)", marginLeft: 6 }}>
               — {strategyName}
             </span>
           )}
