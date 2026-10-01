@@ -207,7 +207,7 @@ export function DirectoryScreen() {
           alignItems: "center",
           gap: 8,
           padding: "8px 12px",
-          background: "var(--ft-surface)",
+          background: "var(--ft-base)",
           borderBottom: "1px solid var(--ft-border)",
           flexShrink: 0,
         }}
@@ -317,7 +317,8 @@ export function DirectoryScreen() {
                     style={{
                       margin: 0,
                       padding: "20px 16px 8px",
-                      fontFamily: "var(--font-mono)",
+                      // A destination name is language, not data (DESIGN.md §10).
+                      fontFamily: "var(--font-head)",
                       fontSize: "var(--ft-text-xs)",
                       fontWeight: 600,
                       letterSpacing: "0.12em",
