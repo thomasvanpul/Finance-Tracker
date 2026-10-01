@@ -5,6 +5,8 @@ import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import {
   useCreateTransaction,
   useCreateDebt,
+  useListAccounts,
+  type Account,
   getListTransactionsQueryKey,
   getGetDashboardQueryKey,
   getGetTransactionSummaryQueryKey,
@@ -35,6 +37,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, Text, VStack } from "@/components/primitives";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // ─── Data model ───────────────────────────────────────────────────────────────
 
@@ -1402,12 +1405,16 @@ interface ExpenseRowProps {
   expense: SplitExpense;
   members: string[];
   myName: string;
-  onAddToTransactions: () => void;
+  accounts: Account[];
+  onAddToTransactions: (accountId: number) => void;
   onDelete: () => void;
 }
 
-function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }: ExpenseRowProps) {
+function ExpenseRow({ expense, members, myName, accounts, onAddToTransactions, onDelete }: ExpenseRowProps) {
   const [expanded, setExpanded] = useState(false);
+  // Logging a share writes a transaction, and a transaction lives in an
+  // account — the button asks which one rather than send a placeholder.
+  const [pickingAccount, setPickingAccount] = useState(false);
   const [viewingReceipt, setViewingReceipt] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -1521,9 +1528,30 @@ function ExpenseRow({ expense, members, myName, onAddToTransactions, onDelete }:
           style={{ display: "flex", gap: 4, flexShrink: 0 }}
           onClick={(e) => e.stopPropagation()}
         >
-          {myShare !== undefined && myShare > 0 && (
+          {myShare !== undefined && myShare > 0 && pickingAccount && !expense.addedToMyTransactions && (
+            <Select
+              defaultOpen
+              onOpenChange={(o) => { if (!o) setPickingAccount(false); }}
+              onValueChange={(v) => { setPickingAccount(false); onAddToTransactions(parseInt(v)); }}
+            >
+              <SelectTrigger
+                aria-label="Paid from account"
+                style={{ height: 22, width: 140, fontSize: 10, background: "var(--ft-surface)", borderColor: "var(--ft-border)", color: "var(--ft-text)" }}
+              >
+                <SelectValue placeholder="Paid from…" />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((a) => (
+                  <SelectItem key={a.id} value={String(a.id)} style={{ color: "var(--ft-text)", fontSize: 12 }}>
+                    {a.name} ({a.currency})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {myShare !== undefined && myShare > 0 && !pickingAccount && (
             <button
-              onClick={onAddToTransactions}
+              onClick={() => { if (!expense.addedToMyTransactions) setPickingAccount(true); }}
               title={
                 expense.addedToMyTransactions
                   ? "Added to transactions"
@@ -2312,6 +2340,7 @@ export default function SplitPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createTransaction = useCreateTransaction();
+  const { data: accounts } = useListAccounts();
 
   const [data, setData] = useState<BillSplitData>(() => loadData());
   const [myName, setMyName] = useState<string>(() => loadMyName());
@@ -2419,7 +2448,7 @@ export default function SplitPage() {
   }, [selectedGroupId, toast]);
 
   const handleAddToTransactions = useCallback(
-    async (expenseId: string) => {
+    async (expenseId: string, accountId: number) => {
       if (!myName) {
         toast({
           title: "Set your name first",
@@ -2449,7 +2478,7 @@ export default function SplitPage() {
             type: "expense",
             description: expense.description,
             category: expense.category,
-            accountId: 0,
+            accountId,
             date: expense.date,
           },
         });
@@ -2884,7 +2913,8 @@ export default function SplitPage() {
                   expense={exp}
                   members={selectedGroup.members}
                   myName={myName}
-                  onAddToTransactions={() => handleAddToTransactions(exp.id)}
+                  accounts={accounts ?? []}
+                  onAddToTransactions={(accountId) => handleAddToTransactions(exp.id, accountId)}
                   onDelete={() => handleDeleteExpense(exp.id)}
                 />
               ))}
