@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { entityHref } from "@/lib/entity-href";
-import { comingBills } from "@/lib/upcoming-schedule";
+import { comingBills, comingIncome } from "@/lib/upcoming-schedule";
 import { DrillTarget } from "@/components/drill";
 import { useLocation } from "wouter";
 import { usePrivacy } from "@/contexts/privacy-context";
@@ -195,14 +195,7 @@ export function MobileHome(_props: MobileHomeProps) {
   // (explicit one-off or scheduled). Two rendering rows max — enough
   // for salary + maybe a client invoice, without turning COMING into
   // an infinite feed.
-  const now30 = new Date();
-  const in30Str = new Date(now30.getTime() + 30 * 86400000).toISOString().slice(0, 10);
-  const todayStr = now30.toISOString().slice(0, 10);
-  const upcomingIncome = upcomingItems
-    .filter((i) => i.type === "income" && i.status === "pending")
-    .filter((i) => i.dueDate >= todayStr && i.dueDate <= in30Str)
-    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
-    .slice(0, 2);
+  const upcomingIncome = comingIncome(upcomingItems, new Date(), 30, 2);
   const lastDayOfMonth = new Date(
     now.getFullYear(),
     now.getMonth() + 1,

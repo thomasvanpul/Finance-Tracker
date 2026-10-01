@@ -123,3 +123,24 @@ export function comingBills<T extends { nextDue?: string | null }>(
     .sort((a, b) => a.nextDue.localeCompare(b.nextDue))
     .slice(0, limit);
 }
+
+/**
+ * Home's COMING income rows: pending income due from today to `days` ahead,
+ * nearest first. Past-dated pending items are left out for the same reason
+ * comingBills leaves out past-dated bills: COMING claims what is ahead, and
+ * UPCOMING carries what is late.
+ */
+export function comingIncome<T extends { type: string; status: string; dueDate: string }>(
+  items: readonly T[],
+  now: Date,
+  days: number,
+  limit: number,
+): T[] {
+  const today = localYmd(now);
+  const until = addUtcDays(today, days);
+  return items
+    .filter((i) => i.type === "income" && i.status === "pending")
+    .filter((i) => i.dueDate >= today && i.dueDate <= until)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+    .slice(0, limit);
+}

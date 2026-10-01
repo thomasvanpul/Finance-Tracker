@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   comingBills,
+  comingIncome,
   daysLabel,
   daysUntil,
   groupUpcoming,
@@ -91,5 +92,43 @@ describe("comingBills", () => {
       { id: 5, nextDue: "2026-10-01" },
     ];
     expect(comingBills(subs, NOW, 2).map((s) => s.id)).toEqual([3, 5]);
+  });
+});
+
+describe("comingIncome", () => {
+  const item = (id: number, dueDate: string, extra: Partial<{ type: string; status: string }> = {}) =>
+    ({ id, dueDate, type: "income", status: "pending", ...extra });
+
+  it("keeps pending income from today to the window's end, nearest first", () => {
+    const items = [
+      item(1, "2026-10-20"),
+      item(2, "2026-09-28"),
+      item(3, "2026-09-27"),
+      item(4, "2026-09-27", { status: "paid" }),
+      item(5, "2026-09-27", { type: "expense" }),
+      item(6, "2026-11-30"),
+    ];
+    expect(comingIncome(items, NOW, 30, 2).map((i) => i.id)).toEqual([3, 2]);
+  });
+
+  // The 16 Sep finding: HOME COMING showed 12 and 15 Sept on 16 Sept.
+  it("leaves out pending income whose date has passed", () => {
+    const items = [item(1, "2026-09-12"), item(2, "2026-09-15"), item(3, "2026-10-02")];
+    expect(comingIncome(items, NOW, 30, 2).map((i) => i.id)).toEqual([3]);
+  });
+
+  // "Today" is the local date. Just after local midnight east of UTC the UTC
+  // date is still yesterday, and just before local midnight west of UTC it is
+  // already tomorrow; whichever zone this runs in, one of these straddles it.
+  it("leaves out yesterday's income just after local midnight", () => {
+    const justAfterMidnight = new Date(2026, 9, 1, 0, 30);
+    const items = [item(1, "2026-09-30"), item(2, "2026-10-01")];
+    expect(comingIncome(items, justAfterMidnight, 30, 2).map((i) => i.id)).toEqual([2]);
+  });
+
+  it("keeps today's income just before local midnight", () => {
+    const justBeforeMidnight = new Date(2026, 9, 1, 23, 30);
+    const items = [item(1, "2026-10-01"), item(2, "2026-10-02")];
+    expect(comingIncome(items, justBeforeMidnight, 30, 2).map((i) => i.id)).toEqual([1, 2]);
   });
 });
