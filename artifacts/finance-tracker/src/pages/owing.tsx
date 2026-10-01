@@ -92,8 +92,6 @@ interface SplitBillForm {
 interface SettleFormState {
   debtId: number;
   fullAmount: number;
-  inputValue: string;
-  mode: "full" | "partial";
   // The debt names no account, so settling must say which one paid —
   // the API refuses (422) rather than settle with no cash movement.
   needsAccount: boolean;
@@ -823,7 +821,7 @@ export default function Owing() {
 
   function openSettleForm(id: number, name: string, amount: number, accountId: number | null) {
     setSettleForm({
-      debtId: id, fullAmount: amount, inputValue: amount.toFixed(2), mode: "full",
+      debtId: id, fullAmount: amount,
       needsAccount: accountId == null, accountId: "",
     });
   }
@@ -1761,62 +1759,9 @@ export default function Owing() {
                         gap: 8,
                         flexWrap: "wrap",
                       }}>
-                        <HStack gap={4} align="center">
-                          <button
-                            onClick={() => setSettleForm((s) => s ? { ...s, mode: "full", inputValue: s.fullAmount.toFixed(2) } : s)}
-                            style={{
-                              padding: "3px 8px",
-                              fontSize: 10,
-                              fontFamily: "var(--font-mono)",
-                              textTransform: "uppercase",
-                              letterSpacing: "0.05em",
-                              borderRadius: 2,
-                              border: `1px solid ${settleForm.mode === "full" ? "rgba(63,185,80,0.5)" : "var(--ft-border2)"}`,
-                              background: settleForm.mode === "full" ? "rgba(63,185,80,0.12)" : "transparent",
-                              color: settleForm.mode === "full" ? "var(--ft-green)" : "var(--ft-dim)",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Full
-                          </button>
-                          <button
-                            onClick={() => setSettleForm((s) => s ? { ...s, mode: "partial", inputValue: "" } : s)}
-                            style={{
-                              padding: "3px 8px",
-                              fontSize: 10,
-                              fontFamily: "var(--font-mono)",
-                              textTransform: "uppercase",
-                              letterSpacing: "0.05em",
-                              borderRadius: 2,
-                              border: `1px solid ${settleForm.mode === "partial" ? "rgba(255,166,0,0.5)" : "var(--ft-border2)"}`,
-                              background: settleForm.mode === "partial" ? "rgba(255,166,0,0.1)" : "transparent",
-                              color: settleForm.mode === "partial" ? "var(--ft-amber)" : "var(--ft-dim)",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Partial
-                          </button>
-                        </HStack>
-                        <input
-                          type="number"
-                          value={settleForm.inputValue}
-                          onChange={(e) => setSettleForm((s) => s ? { ...s, inputValue: e.target.value } : s)}
-                          placeholder="Amount"
-                          style={{
-                            background: "var(--ft-base)",
-                            border: "1px solid var(--ft-border2)",
-                            color: "var(--ft-text)",
-                            fontSize: 12,
-                            fontFamily: "var(--font-mono)",
-                            height: 28,
-                            width: 100,
-                            padding: "0 8px",
-                            borderRadius: 2,
-                            outline: "none",
-                          }}
-                        />
                         <span style={{ fontSize: 10, color: "var(--ft-dim)" }}>
-                          of <span className="pnum">{formatBaseMoney(settleForm.fullAmount)}</span>
+                          Settling the full amount of{" "}
+                          <span className="pnum" style={{ color: "var(--ft-text)" }}>{formatBaseMoney(settleForm.fullAmount)}</span>
                         </span>
                         {settleForm.needsAccount && (
                           <Select
