@@ -429,8 +429,15 @@ export function SpendingScreen() {
   // list of one, and the other four would be unreachable. The filter is the
   // scope; inside it, everything that matched is shown.
   const visibleMonths = filtered ? months : months.slice(0, monthsShown);
-  const hasMoreToLoad = months.length > monthsShown || monthsShown < 12;
-  //                                                    ^ 12-month floor: user can
+  // At the 12-month cap, `months.length > monthsShown` can still be true (the
+  // query always fetches one month past what's shown, see queryMonths above)
+  // — but setMonthsShown never advances past 12, so that clause alone kept
+  // the sentinel reporting "more to load" forever for any account with over
+  // a year of history. `atCap` names that state so it renders as a stop,
+  // not a stuck spinner.
+  const atCap = monthsShown >= 12 && months.length > monthsShown;
+  const hasMoreToLoad = !atCap && (months.length > monthsShown || monthsShown < 12);
+  //                                                               ^ 12-month floor: user can
   // always request one more month even if the current fetch is empty (a genuine
   // gap in history rather than "nothing more exists"). Capped at 12 to bound
   // the query size.
@@ -625,6 +632,16 @@ export function SpendingScreen() {
           <div ref={setSentinel} style={{ padding: "24px 16px", textAlign: "center" }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
               LOADING EARLIER…
+            </span>
+          </div>
+        )}
+        {/* atCap: more history exists than the 12-month ceiling will ever
+            page in. A live "LOADING EARLIER…" sentinel here would lie —
+            nothing is loading and nothing will. State the stop instead. */}
+        {atCap && !filtered && (
+          <div style={{ padding: "24px 16px", textAlign: "center" }}>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
+              12 MONTHS SHOWN
             </span>
           </div>
         )}
