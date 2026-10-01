@@ -106,7 +106,8 @@ const BASELINE_FILES: ReadonlySet<string> = new Set([
   // MobileNetWorth.tsx removed 26-Aug — Correction 3 rewrote every
   // `?? 0` on money fields in this file (netWorth, mtdDelta, unconvertible,
   // owing summary, portfolio total) into loading/unknown/real-0 handling.
-  "artifacts/finance-tracker/src/components/mobile/widgets.tsx",
+  // mobile/widgets.tsx deleted 1-Oct — imported by no component; this list
+  // was its only reader.
   "artifacts/finance-tracker/src/components/notifications-panel.tsx",
   "artifacts/finance-tracker/src/components/widgets/accounts-summary.tsx",
   "artifacts/finance-tracker/src/components/widgets/budget-tracker.tsx",
