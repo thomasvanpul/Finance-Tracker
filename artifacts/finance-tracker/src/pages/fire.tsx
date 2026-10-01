@@ -146,7 +146,7 @@ function InputRow({ label, help, children }: {
           {label}
         </Text>
         {help && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
             {help}
           </div>
         )}
@@ -300,8 +300,8 @@ function SurvivalGauge({ probability, withdrawalRate }: { probability: number; w
         <Text as="span" color="var(--ft-green)">90%</Text>
         <span>100%</span>
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 8 }}>
-        at {withdrawalRate}% SWR · Trinity Study / Bengen heuristic
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 8 }}>
+        at <span className="pnum">{withdrawalRate}%</span> SWR · Trinity Study / Bengen heuristic
       </div>
     </div>
   );
@@ -353,7 +353,7 @@ function HeroResult({ label, value, color, sub, note, isMobile }: {
         </div>
       )}
       {note && (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
           {note}
         </div>
       )}
@@ -385,7 +385,7 @@ function CoastCard({ coastFireNeeded, effPortfolio, coastFireGap, hasCoasted, ta
         </div>
         {hasCoasted && (
           <span style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 8,
             background: "color-mix(in srgb, var(--ft-green) 15%, transparent)",
             color: "var(--ft-green)",
@@ -401,8 +401,8 @@ function CoastCard({ coastFireNeeded, effPortfolio, coastFireGap, hasCoasted, ta
       <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 28, fontWeight: 700, color: hasCoasted ? "var(--ft-green)" : "var(--ft-accent)", lineHeight: 1, letterSpacing: "-0.025em", marginBottom: 6 }}>
         {formatBaseMoney(coastFireNeeded)}
       </div>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 10 }}>
-        stop contributing today, coast to FI by {targetYears}yr horizon
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 10 }}>
+        stop contributing today, coast to FI by <span className="pnum">{targetYears}yr</span> horizon
       </div>
 
       <div style={{ height: 5, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", overflow: "hidden", marginBottom: 5 }}>
@@ -511,12 +511,12 @@ function FireVariantCard({ v, effPortfolio }: FireVariantCardProps) {
           {v.label}
         </div>
         {v.coasted && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, background: "color-mix(in srgb, var(--ft-cyan) 15%, transparent)", color: "var(--ft-cyan)", padding: "1px 6px", letterSpacing: "0.07em" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, background: "color-mix(in srgb, var(--ft-cyan) 15%, transparent)", color: "var(--ft-cyan)", padding: "1px 6px", letterSpacing: "0.07em" }}>
             COASTED ✓
           </span>
         )}
         {reached && !v.coasted && (
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, background: "color-mix(in srgb, var(--ft-green) 15%, transparent)", color: "var(--ft-green)", padding: "1px 6px", letterSpacing: "0.07em" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, background: "color-mix(in srgb, var(--ft-green) 15%, transparent)", color: "var(--ft-green)", padding: "1px 6px", letterSpacing: "0.07em" }}>
             REACHED ✓
           </span>
         )}
@@ -535,7 +535,7 @@ function FireVariantCard({ v, effPortfolio }: FireVariantCardProps) {
       <Text as="div" mono size={9} color="var(--ft-muted)" lineHeight={1.5}>
         {v.tag}
       </Text>
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, lineHeight: 1.4 }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, lineHeight: 1.4 }}>
         {v.desc}
       </div>
     </div>
@@ -750,7 +750,7 @@ export default function Fire() {
         const msg = pid ? msgs[pid] : null;
         if (!msg) return null;
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 5%, transparent)", padding: "8px 14px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 5%, transparent)", padding: "8px 14px", display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 6 }}>
             <span style={{ color: "var(--ft-amber)", fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>FIRE TIP</span>
             <span>{msg}</span>
           </div>
@@ -1013,8 +1013,8 @@ export default function Fire() {
             <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--ft-cyan)", lineHeight: 1, letterSpacing: "-0.02em" }}>
               {formatBaseMoney(Math.round(monthlyNeededForTarget))}
             </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-              to reach FI in {targetYears} years
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+              to reach FI in <span className="pnum">{targetYears}</span> years
             </div>
           </div>
 
@@ -1158,7 +1158,7 @@ export default function Fire() {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+                <div style={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>
                   Enter values to see projection
                 </div>
               )}
@@ -1289,8 +1289,8 @@ export default function Fire() {
               </tbody>
             </table>
           </div>
-          <div style={{ padding: "6px 14px 8px", borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
-            Highlighted row = your current return rate · Monthly Needed = contribution to hit FI in {targetYears} yrs at each rate
+          <div style={{ padding: "6px 14px 8px", borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>
+            Highlighted row = your current return rate · Monthly Needed = contribution to hit FI in <span className="pnum">{targetYears}</span> yrs at each rate
           </div>
         </div>
       )}
