@@ -222,7 +222,7 @@ function CandidateRow({
         <div style={{ width: 5, height: 5, borderRadius: "50%", background: ACCENT, flexShrink: 0 }} />
 
         <span style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           color: "var(--ft-text)",
           flex: 1,
@@ -240,7 +240,7 @@ function CandidateRow({
           <Drill
             href={categoryTransactionsHref(candidate.category)}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
@@ -268,7 +268,7 @@ function CandidateRow({
           disabled={isAdding}
           onClick={onAdd}
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 9,
             letterSpacing: "0.06em",
             padding: "var(--ft-badge-py) var(--ft-badge-px)",
@@ -350,8 +350,8 @@ export function RecurringDetectorWidget() {
           {candidates.length === 0 ? (
             <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", textAlign: "center" }}>
               <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--ft-border2)", marginBottom: 8 }}>◎</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 4 }}>No patterns detected yet</div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>Add more transactions to surface recurring charges</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", marginBottom: 4 }}>No patterns detected yet</div>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>Add more transactions to surface recurring charges</div>
             </div>
           ) : (
             <>
