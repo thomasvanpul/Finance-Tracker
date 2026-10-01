@@ -566,7 +566,7 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
   };
 
   const sectionLabel: React.CSSProperties = {
-    fontSize: 9,
+    fontSize: 9, fontFamily: "var(--font-sans)",
     fontWeight: 700,
     color: "var(--ft-dim)",
     textTransform: "uppercase",
@@ -617,7 +617,7 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
                 padding: "20px 0",
                 textAlign: "center",
                 border: "1px solid var(--ft-raised)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 letterSpacing: "0.04em",
                 textTransform: "uppercase" as const,
               }}
@@ -766,7 +766,7 @@ function AccountDetailPanel({ accountName, balance, currency, nwHistory, meta, o
                   rows={3}
                   style={{
                     ...inputStyle,
-                    resize: "vertical",
+                    resize: "vertical", fontFamily: "var(--font-sans)",
                     lineHeight: 1.5,
                   }}
                 />
@@ -1565,7 +1565,7 @@ function AccountTableRow({
             style={deleteConfirmId === account.id ? { background: "var(--ft-red)", color: "#fff" } : {}}
           >
             {deleteConfirmId === account.id
-              ? <Text as="span" mono size={9} letterSpacing="0.06em">DEL?</Text>
+              ? <Text as="span" size={9} letterSpacing="0.06em">DEL?</Text>
               : <Trash2 className="w-3.5 h-3.5" style={{ color: "var(--ft-red)" }} />
             }
           </Button>}
@@ -2216,19 +2216,20 @@ export default function Accounts() {
         const accountAssets = netAccountsTotal(
           (accounts ?? []).filter(a => !isLiabilityType(a.type)));
         const portfolio = (dashData as { portfolio?: { totalValueBase?: number } } | undefined)?.portfolio?.totalValueBase ?? 0;
-        const msgs: Record<string, string | null> = {
-          market:  spendableCash > 0 ? `${formatBaseMoney(spendableCash)} cash available — allocate surplus to investment positions via Portfolio.` : null,
+        // Sentences in sans, the figures inside them in .pnum (DESIGN.md §10).
+        const msgs: Record<string, React.ReactNode | null> = {
+          market:  spendableCash > 0 ? <><span className="pnum">{formatBaseMoney(spendableCash)}</span> cash available — allocate surplus to investment positions via Portfolio.</> : null,
           budget:  `Your accounts are the source of truth for your budget — reconcile against your budget limits monthly.`,
-          wealth:  `Accounts + portfolio = ${formatBaseMoney(accountAssets + portfolio)}. Ensure cash earns yield (HYSA/money market) while idle.`,
-          social:  spendableCash > 0 ? `${formatBaseMoney(spendableCash)} liquid — keep enough buffer for group trip deposits and shared expenses.` : null,
+          wealth:  <>Accounts + portfolio = <span className="pnum">{formatBaseMoney(accountAssets + portfolio)}</span>. Ensure cash earns yield (HYSA/money market) while idle.</>,
+          social:  spendableCash > 0 ? <><span className="pnum">{formatBaseMoney(spendableCash)}</span> liquid — keep enough buffer for group trip deposits and shared expenses.</> : null,
         };
         const msg = msgs[pid];
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>·</span>
-            <span className="pnum">{msg}</span>
+            <span>{msg}</span>
           </div>
         );
       })()}
@@ -2599,8 +2600,8 @@ export default function Accounts() {
                           );
                         })}
                       {accounts!.length > 5 && (
-                        <Text as="span" mono size={9} color="var(--ft-dim)">
-                          +{accounts!.length - 5} more
+                        <Text as="span" size={9} color="var(--ft-dim)">
+                          <span className="pnum">+{accounts!.length - 5}</span> more
                         </Text>
                       )}
                     </VStack>
@@ -2634,8 +2635,8 @@ export default function Accounts() {
                             <Text as="div" mono size={9} color="var(--ft-dim)">Annual</Text>
                             <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: "var(--ft-green)", fontFamily: "var(--font-mono)" }}>+{formatBaseMoney(Math.abs(totalAnnual))}</div>
                           </div>
-                          <Text as="div" mono size={9} color="var(--ft-dim)">
-                            {apyAccounts.length} account{apyAccounts.length !== 1 ? "s" : ""} with APY
+                          <Text as="div" size={9} color="var(--ft-dim)">
+                            <span className="pnum">{apyAccounts.length}</span> account{apyAccounts.length !== 1 ? "s" : ""} with APY
                           </Text>
                         </VStack>
                       </div>
@@ -2688,7 +2689,7 @@ export default function Accounts() {
           >
             ✕
           </button>
-          <div style={{ fontSize: 11, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: isMobile ? 12 : 16 }}>
+          <div style={{ fontSize: 11, color: "var(--ft-dim)", fontFamily: "var(--font-sans)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: isMobile ? 12 : 16 }}>
             Get started — connect your accounts
           </div>
           {isMobile ? (
@@ -2702,7 +2703,7 @@ export default function Accounts() {
                 <button
                   key={title}
                   onClick={onClick}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: `${color}0A`, border: `1px solid ${color}33`, cursor: "pointer", fontFamily: "var(--font-mono)" }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: `${color}0A`, border: `1px solid ${color}33`, cursor: "pointer", fontFamily: "var(--font-sans)" }}
                 >
                   <Text as="span" size={11} weight={600} color="var(--ft-text)">{title}</Text>
                   <span style={{ fontSize: 10, color, fontWeight: 700, letterSpacing: "0.04em" }}>{action} →</span>
@@ -2767,7 +2768,7 @@ export default function Accounts() {
                 key={f}
                 onClick={() => setAccountFilter(f)}
                 style={{
-                  fontSize: 9, fontFamily: "var(--font-mono)", fontWeight: 700,
+                  fontSize: 9, fontFamily: "var(--font-sans)", fontWeight: 700,
                   letterSpacing: "0.06em", textTransform: "uppercase",
                   padding: "3px 8px", borderRadius: 2, cursor: "pointer",
                   border: accountFilter === f ? "1px solid var(--ft-green)88" : "1px solid var(--ft-border2)",
@@ -2788,7 +2789,7 @@ export default function Accounts() {
             borderBottom: "1px solid var(--ft-border)", background: "var(--ft-accent)06",
             borderTop: "1px solid var(--ft-border)", flexWrap: "wrap",
           }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)", flexShrink: 0 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "var(--ft-accent)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-sans)", flexShrink: 0 }}>
               + Quick Add
             </span>
             <input
@@ -3078,7 +3079,7 @@ export default function Accounts() {
                 </>
               )}
               {totalOwed === 0 && (
-                <Text as="span" mono size={9} color="var(--ft-green)">
+                <Text as="span" size={9} color="var(--ft-green)">
                   no overdrafts — all accounts positive
                 </Text>
               )}
