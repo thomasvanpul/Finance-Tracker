@@ -305,12 +305,12 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
         }}>
           <div style={{ minWidth: 0 }}>
             <HStack gap={6} align="center" marginBottom={3}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {nameHref ? <Drill href={nameHref} title={`Open the ${sub.name} charges`}>{sub.name}</Drill> : sub.name}
               </span>
             </HStack>
             <HStack gap={6} align="center" marginBottom={4}>
-              <Text as="span" mono size={10} color="var(--ft-dim)">{sub.category}</Text>
+              <Text as="span" size={10} color="var(--ft-dim)">{sub.category}</Text>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, padding: "0px 4px", background: `${freqColor[sub.frequency]}18`, color: freqColor[sub.frequency], letterSpacing: "0.04em", fontWeight: 700 }}>
                 {FREQ_LABELS[sub.frequency]}
               </span>
@@ -366,10 +366,10 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
         transition: "background 0.1s",
       }}>
         <div style={{ flex: 1, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 600, fontSize: 12, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nameHref ? <Drill href={nameHref} title={`Open the ${sub.name} charges`}>{sub.name}</Drill> : sub.name}</span>
-          {sub.notes && <span style={{ marginLeft: 6, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>· {sub.notes}</span>}
+          <span style={{ fontFamily: "var(--font-sans)", fontWeight: 600, fontSize: 12, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nameHref ? <Drill href={nameHref} title={`Open the ${sub.name} charges`}>{sub.name}</Drill> : sub.name}</span>
+          {sub.notes && <span style={{ marginLeft: 6, fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>· {sub.notes}</span>}
         </div>
-        <div style={{ width: 110, minWidth: 110, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{sub.category}</div>
+        <div style={{ width: 110, minWidth: 110, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)" }}>{sub.category}</div>
         <div style={{ width: "var(--sub-native-w)", minWidth: "var(--sub-native-w)", flexShrink: 0, padding: "6px 10px", borderRight: "1px solid var(--ft-border)", textAlign: "right", fontFamily: "var(--font-mono)", color: "var(--ft-dim)", fontSize: 10 }}>
           <span className="pnum">{sub.currency !== "GBP" ? `${sub.currency} ` : ""}{sub.amount.toFixed(2)}</span>
         </div>
@@ -421,7 +421,7 @@ function SubRow({ sub, last, deleteConfirmId, freqColor, onEdit, onDelete, onTog
         </div>
       </div>
       {priceIncreased && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border-b text-xs" style={{ borderColor: "rgba(230,162,60,0.2)", background: "rgba(230,162,60,0.06)", color: "var(--ft-amber)", fontFamily: "var(--font-mono)" }}>
+        <div className="flex items-center gap-2 px-3 py-1.5 border-b text-xs" style={{ borderColor: "rgba(230,162,60,0.2)", background: "rgba(230,162,60,0.06)", color: "var(--ft-amber)", fontFamily: "var(--font-sans)" }}>
           <AlertTriangle className="w-3 h-3 flex-shrink-0" />
           <span>Price increased: <span className="pnum">{formatBaseMoney(last!.prevAmount!)}</span> → <span className="pnum">{formatBaseMoney(last!.amount)}</span> (<span className="pnum">+{pricePct.toFixed(1)}% / +{formatBaseMoney(Math.abs(priceDiff))}</span>)</span>
         </div>
@@ -444,7 +444,7 @@ function RenewalRow({ sub }: { sub: Subscription & { daysAway: number | null } }
         padding: "8px 12px", borderBottom: "1px solid var(--ft-border)",
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
           <HStack gap={6} align="center" marginTop={2}>
             <Text as="span" mono size={10} color="var(--ft-muted)">
               {hasDate ? formatDateShort(sub.nextDue!) : "—"}
@@ -471,7 +471,7 @@ function RenewalRow({ sub }: { sub: Subscription & { daysAway: number | null } }
         transition: "background 0.1s",
       }}
     >
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
       <Text as="div" mono size={11} color="var(--ft-muted)">
         {hasDate ? formatDateShort(sub.nextDue!) : "—"}
       </Text>
@@ -512,7 +512,7 @@ function ThisWeekRenewalCard({ sub, isLast }: ThisWeekRenewalCardProps) {
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub.name}</div>
         <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>{formatDateShort(sub.nextDue!)}</div>
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -597,7 +597,7 @@ function CancelCandidateRow({ sub, days, onToggleActive, onDelete }: CancelCandi
     >
       <div className="flex-1 min-w-0">
         <HStack gap={6} align="center" minWidth0>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{sub.name}</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{sub.name}</span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-amber)", whiteSpace: "nowrap", flexShrink: 0 }}>
             Last used {days}d ago
           </span>
@@ -606,13 +606,13 @@ function CancelCandidateRow({ sub, days, onToggleActive, onDelete }: CancelCandi
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--ft-text)", flexShrink: 0, whiteSpace: "nowrap" }}>{formatBaseMoney(toMonthly(sub.amount, sub.frequency))}/mo</span>
       <button
         onClick={() => onToggleActive(sub.id)}
-        style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", background: "transparent", color: "var(--ft-red)", border: "1px solid var(--ft-red)", cursor: "pointer", flexShrink: 0 }}
+        style={{ fontFamily: "var(--font-sans)", fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", background: "transparent", color: "var(--ft-red)", border: "1px solid var(--ft-red)", cursor: "pointer", flexShrink: 0 }}
       >
         PAUSE
       </button>
       <button
         onClick={() => onDelete(sub.id)}
-        style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", background: "var(--ft-red)", color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}
+        style={{ fontFamily: "var(--font-sans)", fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", background: "var(--ft-red)", color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}
       >
         CANCEL
       </button>
@@ -1121,17 +1121,17 @@ export default function Subscriptions() {
         subtitle="Auto-detected recurring charges · manage and track ongoing costs"
         actions={
           <HStack gap={6} align="center">
-            <a href="/upcoming" style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent" }}>
+            <a href="/upcoming" style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent" }}>
               → Upcoming
             </a>
-            <a href="/calendar" style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent" }}>
+            <a href="/calendar" style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent" }}>
               → Calendar
             </a>
             <Button
               onClick={exportSubsCSV}
               size="sm"
               variant="ghost"
-              style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-cyan)", border: "1px solid var(--ft-cyan)", borderRadius: 2, padding: "0 10px" }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-cyan)", border: "1px solid var(--ft-cyan)", borderRadius: 2, padding: "0 10px" }}
             >
               ↓ CSV
             </Button>
@@ -1150,7 +1150,7 @@ export default function Subscriptions() {
               onClick={exportSubsCSV}
               size="sm"
               variant="ghost"
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-cyan)", border: "1px solid var(--ft-cyan)", borderRadius: 2, padding: "0 8px" }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-cyan)", border: "1px solid var(--ft-cyan)", borderRadius: 2, padding: "0 8px" }}
             >
               ↓ CSV
             </Button>
@@ -1180,7 +1180,7 @@ export default function Subscriptions() {
         const msg = msgs[pid];
         if (!msg) return null;
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", border: "1px solid var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 5%, transparent)", padding: "8px 14px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-text)", border: "1px solid var(--ft-amber)", background: "color-mix(in srgb, var(--ft-amber) 5%, transparent)", padding: "8px 14px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ color: "var(--ft-amber)", fontWeight: 700, letterSpacing: "0.06em", flexShrink: 0 }}>INSIGHT</span>
             <Text as="span" color="var(--ft-dim)">{msg}</Text>
             {couldSave > 0 && (
@@ -1330,7 +1330,7 @@ export default function Subscriptions() {
                 );
               })}
             </div>
-            <div className="px-4 py-2 border-t text-xs" style={{ borderColor: "var(--ft-border)", color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+            <div className="px-4 py-2 border-t text-xs" style={{ borderColor: "var(--ft-border)", color: "var(--ft-dim)", fontFamily: "var(--font-sans)" }}>
               Based on {cancelCandidates.length} subscription{cancelCandidates.length !== 1 ? "s" : ""} unused &gt;45 days · 7% annualised · compounded monthly · illustrative only
             </div>
           </div>
@@ -1350,12 +1350,12 @@ export default function Subscriptions() {
             placeholder="Search subscriptions…"
             value={searchText}
             onChange={e => setSearchText(e.target.value)}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", outline: "none", minWidth: 180 }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", outline: "none", minWidth: 180 }}
           />
           <select
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", cursor: "pointer" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", cursor: "pointer" }}
           >
             <option value="all">All Categories</option>
             {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -1363,7 +1363,7 @@ export default function Subscriptions() {
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value as "all" | "active" | "paused")}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", cursor: "pointer" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", cursor: "pointer" }}
           >
             <option value="all">All Status</option>
             <option value="active">Active only</option>
@@ -1372,7 +1372,7 @@ export default function Subscriptions() {
           <select
             value={sortSubs}
             onChange={e => setSortSubs(e.target.value as typeof sortSubs)}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", cursor: "pointer" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "4px 8px", cursor: "pointer" }}
           >
             <option value="next-due">Sort: Next due</option>
             <option value="monthly-high">Sort: Highest cost</option>
@@ -1382,7 +1382,7 @@ export default function Subscriptions() {
           {hasListFilters && (
             <button
               onClick={() => { setSearchText(""); setFilterCategory("all"); setFilterStatus("all"); setSortSubs("next-due"); }}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "3px 8px", cursor: "pointer" }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "3px 8px", cursor: "pointer" }}
             >
               ✕ Clear
             </button>
@@ -1410,18 +1410,18 @@ export default function Subscriptions() {
           {/* Empty states */}
           {subs.length === 0 && (
             <div style={{ padding: "40px 20px", textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 8 }}>
                 NO SUBSCRIPTIONS TRACKED
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", marginBottom: 4 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)", marginBottom: 4 }}>
                 Add subscriptions manually or confirm auto-detected candidates above.
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 20, lineHeight: 1.6 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 20, lineHeight: 1.6 }}>
                 Tracking recurring charges helps you spot unused services and understand your fixed monthly cost.
               </div>
               <button
                 onClick={() => { setForm(EMPTY_FORM); setAddOpen(true); }}
-                style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "8px 24px", cursor: "pointer" }}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", background: "var(--ft-accent)", color: "var(--ft-base)", border: "none", padding: "8px 24px", cursor: "pointer" }}
               >
                 + Add First Subscription
               </button>
