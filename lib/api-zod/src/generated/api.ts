@@ -1446,6 +1446,10 @@ export const DeleteUserAccountBody = zod.object({
 })
 
 export const DeleteUserAccountResponse = zod.object({
+  "oauthGrants": zod.object({
+  "revoked": zod.array(zod.enum(['google', 'github'])),
+  "remaining": zod.array(zod.enum(['google', 'github']))
+}).describe('Google and GitHub sign-in grants, revoked best-effort before deletion. `remaining` lists providers whose grant may still be live (no stored token, or the provider refused); the user removes those in the provider\'s own settings.'),
   "deletedRows": zod.number().describe('Rows removed across every table, the user row included'),
   "tables": zod.record(zod.string(), zod.number()).describe('Rows removed per table (request_metrics_anonymised counts rows kept with the user id removed)')
 })

@@ -39,6 +39,7 @@ import {
 } from "@/lib/auth-errors";
 import { HStack, VStack, Text, PanelBox } from "@/components/primitives";
 import { Logo } from "@/components/logo";
+import { DeletedGrantsNotice } from "@/components/deleted-grants-notice";
 import { PhoneScreenSkeleton } from "@/components/phone/PhoneScreenSkeleton";
 
 type Mode = "signin" | "signup" | "forgot" | "reset" | "twofa";
@@ -1005,6 +1006,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }}
     >
       <div style={{ width: "100%", maxWidth: 380 }}>
+        <DeletedGrantsNotice />
         <PanelBox padding={20}>
           {body}
         </PanelBox>

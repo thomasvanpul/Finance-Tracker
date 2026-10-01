@@ -5,9 +5,12 @@
  * Personal Finance Tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { DeleteUserAccountResultOauthGrants } from './deleteUserAccountResultOauthGrants';
 import type { DeleteUserAccountResultTables } from './deleteUserAccountResultTables';
 
 export interface DeleteUserAccountResult {
+  /** Google and GitHub sign-in grants, revoked best-effort before deletion. `remaining` lists providers whose grant may still be live (no stored token, or the provider refused); the user removes those in the provider's own settings. */
+  oauthGrants: DeleteUserAccountResultOauthGrants;
   /** Rows removed across every table, the user row included */
   deletedRows: number;
   /** Rows removed per table (request_metrics_anonymised counts rows kept with the user id removed) */

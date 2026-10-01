@@ -4,6 +4,7 @@ import { db, accountTable } from "@workspace/db";
 import { verifyPassword } from "better-auth/crypto";
 import { deleteUserAccount } from "../lib/account-deletion";
 import { revokeBankConsents, ConsentRevokeError } from "../lib/bank-consents";
+import { revokeOAuthGrants } from "../lib/oauth-grants";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -22,11 +23,14 @@ const router: IRouter = Router();
 // one and always hits the re-check.
 //
 // What this cannot do is make a third party forget a credential the user
-// pasted in (Wise, Alpaca, Kraken tokens; the Google/GitHub sign-in
-// grant). The row holding our encrypted copy goes; the user revokes the
-// token at the provider. The confirmation screen says so. Enable Banking
-// is the exception: its consent is ours to close, so it is closed before
-// anything is deleted (lib/bank-consents.ts, BACKLOG M10).
+// pasted in (Wise, Alpaca, Kraken tokens). The row holding our encrypted
+// copy goes; the user revokes the token at the provider. The confirmation
+// screen says so. Enable Banking is the exception: its consent is ours to
+// close, so it is closed before anything is deleted (lib/bank-consents.ts,
+// BACKLOG M10). Google and GitHub sign-in grants are revoked best-effort
+// (lib/oauth-grants.ts) and never block deletion; any still live come back
+// in `oauthGrants.remaining`, and the client tells the user where to remove
+// them.
 router.post("/account/delete", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
   const sessionUser = (req as any).user as { email?: string } | undefined;
@@ -63,6 +67,9 @@ router.post("/account/delete", async (req, res): Promise<void> => {
     return;
   }
 
+  // Before deletion: the tokens it needs go with the account rows.
+  const oauthGrants = await revokeOAuthGrants(userId);
+
   const result = await deleteUserAccount(userId);
   if (!result) {
     res.status(404).json({ error: "Account not found" });
@@ -70,8 +77,8 @@ router.post("/account/delete", async (req, res): Promise<void> => {
   }
   // Counts only — the id and email are gone and are not written to a log
   // that outlives them.
-  logger.info({ deletedRows: result.deletedRows }, "account deleted");
-  res.json(result);
+  logger.info({ deletedRows: result.deletedRows, oauthGrants }, "account deleted");
+  res.json({ ...result, oauthGrants });
 });
 
 export default router;

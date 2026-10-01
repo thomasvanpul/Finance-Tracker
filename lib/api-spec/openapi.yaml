@@ -3100,8 +3100,27 @@ components:
 
     DeleteUserAccountResult:
       type: object
-      required: [deletedRows, tables]
+      required: [deletedRows, tables, oauthGrants]
       properties:
+        oauthGrants:
+          type: object
+          required: [revoked, remaining]
+          description: >-
+            Google and GitHub sign-in grants, revoked best-effort before
+            deletion. `remaining` lists providers whose grant may still be
+            live (no stored token, or the provider refused); the user removes
+            those in the provider's own settings.
+          properties:
+            revoked:
+              type: array
+              items:
+                type: string
+                enum: [google, github]
+            remaining:
+              type: array
+              items:
+                type: string
+                enum: [google, github]
         deletedRows:
           type: integer
           description: Rows removed across every table, the user row included

@@ -677,6 +677,9 @@ export default function Profile() {
         if (/^(ft-|nr-|numeris|ix-companion)/.test(key)) localStorage.removeItem(key);
       }
       toast({ title: "Account deleted", description: `${result.deletedRows} records removed.` });
+      // Read on the sign-in screen this lands on (DeletedGrantsNotice).
+      const { rememberRemainingGrants } = await import("@/lib/deleted-grants");
+      rememberRemainingGrants(result.oauthGrants.remaining);
       const { clearNativeAuthToken } = await import("@/lib/native-auth");
       await clearNativeAuthToken();
       await authClient.signOut().catch(() => undefined);
@@ -1519,7 +1522,11 @@ export default function Profile() {
             <Text as="p" size={10} color="var(--ft-muted)" lineHeight={1.6}>
               {deleteProviders && deleteProviders.length > 0
                 ? `Your ${deleteProviders.join(", ")} credential${deleteProviders.length === 1 ? " is" : "s are"} destroyed here but not revoked at the provider. Revoke ${deleteProviders.length === 1 ? "it" : "them"} in the provider's own settings.`
-                : "A provider token you pasted in (Wise, Alpaca, Kraken) or a Google or GitHub sign-in grant is destroyed here but not revoked at the provider."}
+                : "A provider token you pasted in (Wise, Alpaca, Kraken) is destroyed here but not revoked at the provider."}
+            </Text>
+            <Text as="p" size={10} color="var(--ft-muted)" lineHeight={1.6}>
+              If you sign in with Google or GitHub, Numeris tries to remove its access there too. If that fails, the
+              account is still deleted, and the next screen tells you where to remove it yourself.
             </Text>
             <button
               type="button"

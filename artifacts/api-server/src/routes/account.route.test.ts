@@ -42,6 +42,13 @@ vi.mock("../lib/bank-consents", () => {
   };
 });
 
+// Google/GitHub grants are revoked best-effort before deletion. Default:
+// nothing to revoke.
+const revokeOAuthGrantsMock = vi.fn(async (_userId: string) => ({ revoked: [] as string[], remaining: [] as string[] }));
+vi.mock("../lib/oauth-grants", () => ({
+  revokeOAuthGrants: (userId: string) => revokeOAuthGrantsMock(userId),
+}));
+
 let server: Server;
 let baseUrl = "";
 
@@ -69,6 +76,7 @@ beforeEach(() => {
   credentialRows = [];
   deleteUserAccountMock.mockClear();
   revokeBankConsentsMock.mockClear();
+  revokeOAuthGrantsMock.mockClear();
 });
 
 async function deleteAccount(body: unknown) {
@@ -129,6 +137,29 @@ describe("POST /account/delete", () => {
     expect(res.status).toBe(200);
     expect(revokeBankConsentsMock).toHaveBeenCalledWith("user-a");
     expect(order).toEqual(["revoke", "delete"]);
+  });
+
+  it("revokes sign-in grants before deleting and reports what is still live", async () => {
+    const order: string[] = [];
+    revokeOAuthGrantsMock.mockImplementationOnce(async () => {
+      order.push("grants");
+      return { revoked: ["github"], remaining: ["google"] };
+    });
+    deleteUserAccountMock.mockImplementationOnce(async () => {
+      order.push("delete");
+      return { deletedRows: 3, tables: { user: 1 } };
+    });
+    const res = await deleteAccount({ email: "owner@example.com" });
+    expect(res.status).toBe(200);
+    expect(order).toEqual(["grants", "delete"]);
+    expect(((await res.json()) as { oauthGrants: unknown }).oauthGrants).toEqual({ revoked: ["github"], remaining: ["google"] });
+  });
+
+  it("still deletes when no sign-in grant could be revoked", async () => {
+    revokeOAuthGrantsMock.mockImplementationOnce(async () => ({ revoked: [], remaining: ["google", "github"] }));
+    const res = await deleteAccount({ email: "owner@example.com" });
+    expect(res.status).toBe(200);
+    expect(deleteUserAccountMock).toHaveBeenCalledWith("user-a");
   });
 
   it("deletes nothing when a bank consent cannot be closed", async () => {
