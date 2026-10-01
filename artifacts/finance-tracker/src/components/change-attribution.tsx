@@ -2,6 +2,7 @@ import { useGetAccountsChangeAttribution } from "@workspace/api-client-react";
 import { Text, HStack, VStack, MonoLabel } from "@/components/primitives";
 import { Drill, DrillTarget } from "@/components/drill";
 import { signColour, signedMoney } from "@/lib/utils";
+import { PHONE_GROUP_GAP, PHONE_GUTTER } from "@/components/phone/rhythm";
 import { attributionView, type AttributionRow, type AttributionBreakdownLine } from "@/lib/change-attribution-view";
 
 // ── Change attribution ──────────────────────────────────────────────────────
@@ -253,6 +254,10 @@ function PhoneBreakdownLine({ line, currency }: { line: AttributionBreakdownLine
  * net worth and its month-to-date move — this says what that move was made
  * of. Its own total is printed, small, because its window is its own.
  */
+// A group on WORTH, so it takes the phone rhythm: the gap above it and the
+// 16 gutter, like every other group there. It was inset 18 until 1 Oct 2026.
+const PHONE_BLOCK_PADDING = `${PHONE_GROUP_GAP}px ${PHONE_GUTTER}px 0`;
+
 export function ChangeAttributionBlock() {
   const { data, isLoading } = useGetAccountsChangeAttribution();
   const view = attributionView(data);
@@ -260,14 +265,14 @@ export function ChangeAttributionBlock() {
 
   if (view.status === "insufficient") {
     return (
-      <VStack padding="0 18px 18px">
+      <VStack padding={PHONE_BLOCK_PADDING}>
         <Text as="div" size={13} lineHeight="17px" color="var(--ft-dim)">{view.emptyReason}</Text>
       </VStack>
     );
   }
 
   return (
-    <VStack padding="0 18px 18px" gap={8}>
+    <VStack padding={PHONE_BLOCK_PADDING} gap={8}>
       <HStack align="baseline" justify="between" gap={8}>
         <MonoLabel size={11} letterSpacing="0.16em">WHAT CHANGED</MonoLabel>
         <Text as="span" mono size={11} color="var(--ft-dim)" numeric>

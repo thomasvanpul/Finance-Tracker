@@ -18,6 +18,7 @@ import { PhoneEntityRow, deriveTone, deriveTonesForList } from "./PhoneEntityRow
 import { SectionHeader } from "./SectionHeader";
 import { PhoneScreenSkeleton } from "./PhoneScreenSkeleton";
 import { InsightSlot } from "./InsightSlot";
+import { PHONE_GROUP_GAP, PHONE_GUTTER, PHONE_IN_GROUP } from "./rhythm";
 import { reconciliationInsight } from "@/lib/reconciliation-insight";
 import { fxDriftInsight } from "@/lib/fx-drift-insight";
 import { loadDismissedIds, dismissInsight, rankInsights } from "@/lib/spending-insights";
@@ -445,7 +446,7 @@ export function WorthScreen() {
         <ChangeAttributionBlock />
 
         {/* ── Composition chart ─────────────────────────────────────────── */}
-        <div style={{ padding: "0 16px 16px" }}>
+        <div style={{ padding: `${PHONE_GROUP_GAP}px ${PHONE_GUTTER}px 0` }}>
           <div
             style={{
               display: "flex",
@@ -483,7 +484,13 @@ export function WorthScreen() {
           <CurrencySplit exposure={currencyExposure} baseCurrency={baseCurrency} />
         )}
 
-        <InsightSlot insight={worthInsight} onDismiss={handleDismissInsight} />
+        {/* A group gap above the band, as HOME does: the band's own rule is
+            the separator and the gap lets it breathe (phone/rhythm.ts). */}
+        {worthInsight != null && (
+          <div style={{ paddingTop: PHONE_GROUP_GAP }}>
+            <InsightSlot insight={worthInsight} onDismiss={handleDismissInsight} />
+          </div>
+        )}
 
         {/* Persona ordering (lib/persona-emphasis.ts): a markets persona
             reads HOLDINGS first, everyone else CASH first. Same two
@@ -595,7 +602,7 @@ function WorthHero({
   const value = netWorth != null ? formatBaseMoney(netWorth) : (loading ? "…" : "—");
 
   return (
-    <div style={{ padding: "20px 16px 12px" }}>
+    <div style={{ padding: `${PHONE_GROUP_GAP}px ${PHONE_GUTTER}px 0` }}>
       <div
         style={{
           fontFamily: "var(--font-mono)",
@@ -669,9 +676,9 @@ function CurrencySplit({ exposure, baseCurrency }: { exposure: CurrencyExposure;
   if (materialRows.length < 2) return null;
 
   return (
-    <div>
+    <div style={{ marginTop: PHONE_GROUP_GAP }}>
       <SectionHeader label="BY CURRENCY" />
-      <div style={{ padding: "6px 16px 8px", display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ padding: `${PHONE_IN_GROUP}px ${PHONE_GUTTER}px 0`, display: "flex", flexDirection: "column", gap: PHONE_IN_GROUP }}>
       {materialRows.map((row) => {
         const pct = (row.baseValue / total) * 100;
         return (
@@ -758,7 +765,7 @@ function AccountSection({
   onTap: (a: Account) => void;
 }) {
   return (
-    <div>
+    <div style={{ marginTop: PHONE_GROUP_GAP }}>
       <SectionHeader label={label} right={<SubtotalPill subtotal={subtotal} />} />
       {accounts.map((a, i) => (
         <AccountRow
@@ -798,7 +805,7 @@ function HoldingsSection({
   const totalRows = accounts.length + positions.length;
   let rowIdx = 0;
   return (
-    <div>
+    <div style={{ marginTop: PHONE_GROUP_GAP }}>
       <SectionHeader label="HOLDINGS" right={<SubtotalPill subtotal={subtotal} />} />
       {accounts.map((a) => {
         const isLast = ++rowIdx === totalRows;
