@@ -446,8 +446,8 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
             })(),
           }}
         >
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", marginBottom: 10 }}>
-            ALERT · {ticker}
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.1em", marginBottom: 10 }}>
+            ALERT · <span style={{ fontFamily: "var(--font-mono)" }}>{ticker}</span>
           </div>
 
           <Text as="div" mono size={9} color="var(--ft-dim)" mb={6}>
@@ -455,7 +455,7 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
           </Text>
 
           <div style={{ marginBottom: 10 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 5 }}>ALERT WHEN PRICE GOES:</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 5 }}>ALERT WHEN PRICE GOES:</div>
             <div style={{ display: "flex", gap: 0, border: "1px solid var(--ft-border2)" }}>
               {(["above", "below"] as const).map((d) => (
                 <button
@@ -463,7 +463,7 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
                   onClick={() => setDirection(d)}
                   style={{
                     flex: 1, padding: "5px 8px", fontSize: 10, fontWeight: 600,
-                    fontFamily: "var(--font-mono)", letterSpacing: "0.06em", border: "none",
+                    fontFamily: "var(--font-sans)", letterSpacing: "0.06em", border: "none",
                     cursor: "pointer", textTransform: "uppercase",
                     background: direction === d ? (d === "above" ? "rgba(63,185,80,0.18)" : "rgba(248,81,73,0.18)") : "transparent",
                     color: direction === d ? (d === "above" ? "var(--ft-green)" : "var(--ft-red)") : "var(--ft-dim)",
@@ -475,7 +475,7 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
           </div>
 
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>TARGET PRICE (£)</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>TARGET PRICE (£)</div>
             <input
               type="number"
               step="0.01"
@@ -497,7 +497,7 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
               onClick={setAlert}
               style={{
                 flex: 1, padding: "6px 10px", fontSize: 10, fontWeight: 700,
-                fontFamily: "var(--font-mono)", letterSpacing: "0.06em", cursor: "pointer",
+                fontFamily: "var(--font-sans)", letterSpacing: "0.06em", cursor: "pointer",
                 background: "var(--ft-amber)", color: "var(--ft-base)", border: "none",
               }}
             >
@@ -508,7 +508,7 @@ function PriceAlertPopover({ ticker, currentPrice, alerts, onAlertsChange }: Pri
                 onClick={removeAlert}
                 style={{
                   padding: "6px 10px", fontSize: 10, fontWeight: 700,
-                  fontFamily: "var(--font-mono)", letterSpacing: "0.06em", cursor: "pointer",
+                  fontFamily: "var(--font-sans)", letterSpacing: "0.06em", cursor: "pointer",
                   background: "transparent", color: "var(--ft-red)",
                   border: "1px solid var(--ft-red)",
                 }}
@@ -657,7 +657,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
           <button
             onClick={resetToEqualWeight}
             style={{
-              padding: "5px 12px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-mono)",
+              padding: "5px 12px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-sans)",
               letterSpacing: "0.04em", border: "1px solid var(--ft-border2)",
               background: "var(--ft-raised)", color: "var(--ft-muted)", cursor: "pointer",
               borderRadius: 2,
@@ -788,7 +788,7 @@ function RebalanceTab({ classAllocData, totalPortfolioValue }: RebalanceTabProps
           { color: "var(--ft-amber)", label: "±2–5pp drift — consider rebalancing" },
           { color: "var(--ft-red)", label: ">5pp drift — rebalance recommended" },
         ].map(({ color, label }) => (
-          <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>
+          <div key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-sans)" }}>
             <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: color }} />
             {label}
           </div>
@@ -916,12 +916,12 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
       <div style={{ padding: "10px 12px" }}>
       {/* Commentary text */}
       {loading && !commentary && (
-        <Text as="div" mono size={12} color="var(--ft-dim)" letterSpacing="0.01em" lineHeight={1.75}>
+        <Text as="div" size={12} color="var(--ft-dim)" letterSpacing="0.01em" lineHeight={1.75}>
           Analysing portfolio…
         </Text>
       )}
       {commentary && (
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.75, margin: 0, letterSpacing: "0.01em" }}>
+        <p style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.75, margin: 0, letterSpacing: "0.01em" }}>
           {commentary}
         </p>
       )}
@@ -929,7 +929,7 @@ function AiPortfolioCommentary({ investments, totalValue }: AiPortfolioCommentar
           unreachable. Said in words rather than hiding the panel, which is
           what this did until 2026-09-11. */}
       {error && !commentary && !loading && (
-        <Text as="div" mono size={12} color="var(--ft-red)" letterSpacing="0.01em" lineHeight={1.75}>
+        <Text as="div" size={12} color="var(--ft-red)" letterSpacing="0.01em" lineHeight={1.75}>
           {error}
         </Text>
       )}
@@ -1053,8 +1053,8 @@ function PortfolioValueOverTimePanel({ snapshots }: PortfolioValueOverTimePanelP
         <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">{daysTracked} day{daysTracked !== 1 ? "s" : ""} tracked</Text>}>
           Portfolio Value Over Time
         </PanelHeader>
-        <div style={{ padding: "20px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
-          Collecting snapshots… check back tomorrow ({daysTracked} snapshot{daysTracked !== 1 ? "s" : ""} so far)
+        <div style={{ padding: "20px", textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)" }}>
+          Collecting snapshots… check back tomorrow (<span style={{ fontFamily: "var(--font-mono)" }}>{daysTracked}</span> snapshot{daysTracked !== 1 ? "s" : ""} so far)
         </div>
       </div>
     );
@@ -1270,7 +1270,7 @@ function PortfolioPositionsTable({
             value={tickerFilter}
             onChange={(e) => onTickerFilterChange(e.target.value)}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               padding: "3px 8px",
               background: "var(--ft-raised)",
@@ -1284,7 +1284,7 @@ function PortfolioPositionsTable({
             type="button"
             onClick={onAdd}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               letterSpacing: "0.08em",
               color: "var(--ft-accent)",
@@ -1366,7 +1366,7 @@ function PortfolioPositionsTable({
 
                   {/* NAME */}
                   <td
-                    style={{ ...TD, color: "var(--ft-muted)", cursor: "pointer", maxWidth: 200, textOverflow: "ellipsis" }}
+                    style={{ ...TD, fontFamily: "var(--font-sans)", color: "var(--ft-muted)", cursor: "pointer", maxWidth: 200, textOverflow: "ellipsis" }}
                     onClick={() => onDetailOpen(inv.id)}
                     title={inv.name}
                   >
@@ -1917,7 +1917,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 4, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 4, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -1944,19 +1944,19 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
         }}>
           <Bell style={{ width: 14, height: 14, color: "var(--ft-amber)", flexShrink: 0, marginTop: 1 }} />
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.08em", marginBottom: 5 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, color: "var(--ft-amber)", letterSpacing: "0.08em", marginBottom: 5 }}>
               PRICE ALERTS TRIGGERED
             </div>
             <VStack gap={3}>
               {triggeredAlerts.map((a) => {
                 const inv = investments?.find((i) => i.ticker === a.ticker);
                 return (
-                  <div key={a.id} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>
-                    <Text as="span" weight={700} color="var(--ft-amber)">{a.ticker}</Text>
+                  <div key={a.id} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)" }}>
+                    <Text as="span" mono weight={700} color="var(--ft-amber)">{a.ticker}</Text>
                     {" "}crossed {a.direction === "above" ? "above" : "below"}{" "}
-                    <Text as="span" weight={700}>£{a.targetPrice.toFixed(2)}</Text>
+                    <Text as="span" mono weight={700}>£{a.targetPrice.toFixed(2)}</Text>
                     {inv && inv.livePrice != null && (
-                      <Text as="span" color="var(--ft-dim)"> · current: £{inv.livePrice.toFixed(2)}</Text>
+                      <Text as="span" color="var(--ft-dim)"> · current: <Text as="span" mono>£{inv.livePrice.toFixed(2)}</Text></Text>
                     )}
                   </div>
                 );
@@ -2003,7 +2003,7 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
                   height: "var(--ft-panel-header-h)",
                   fontSize: 10,
                   fontWeight: 700,
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   letterSpacing: "0.08em",
                   border: "none",
                   borderRight: "1px solid var(--ft-border)",
@@ -2090,7 +2090,7 @@ marketsVisible
   │  Total  £ 0.00                                     │
   └─────────────────────────────────────────────────────┘`}</pre>
               <div style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 13,
                 fontWeight: 700,
                 color: "var(--ft-text)",
@@ -2100,7 +2100,7 @@ marketsVisible
               }}>
                 NO POSITIONS
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 28, maxWidth: 460, lineHeight: 1.7 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 28, maxWidth: 460, lineHeight: 1.7 }}>
                 Add a stock, ETF, crypto, or bond to start tracking live P&amp;L, allocation breakdowns, benchmark comparisons, and AI-driven portfolio decisions.
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px 40px", marginBottom: 28, maxWidth: 500, width: "100%", textAlign: "left" }}>
@@ -2114,7 +2114,7 @@ marketsVisible
                   ["●", "Concentration risk + rebalancer"],
                   ["◎", "AI-powered portfolio decisions"],
                 ].map(([glyph, text]) => (
-                  <div key={text} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)" }}>
+                  <div key={text} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>
                     <span style={{ color: "var(--ft-accent)", flexShrink: 0, fontWeight: 700 }}>{glyph}</span>
                     {text}
                   </div>
@@ -2123,7 +2123,7 @@ marketsVisible
               <button
                 onClick={openAdd}
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: "0.08em",
@@ -2142,7 +2142,7 @@ marketsVisible
               >
                 <Plus size={13} />ADD POSITION
               </button>
-              <div style={{ marginTop: 10, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", opacity: 0.6 }}>
+              <div style={{ marginTop: 10, fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", opacity: 0.6 }}>
                 US &amp; UK stocks · ETFs · crypto · bonds · mutual funds
               </div>
             </div>
@@ -2199,8 +2199,8 @@ marketsVisible
                     )}
                 </PanelHeader>
                 {benchmarkChartData.length < 2 ? (
-                  <div style={{ padding: "20px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
-                    Collecting snapshots… check back tomorrow for a chart ({portfolioHistory.length} snapshot{portfolioHistory.length !== 1 ? "s" : ""} so far)
+                  <div style={{ padding: "20px", textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)" }}>
+                    Collecting snapshots… check back tomorrow for a chart (<span style={{ fontFamily: "var(--font-mono)" }}>{portfolioHistory.length}</span> snapshot{portfolioHistory.length !== 1 ? "s" : ""} so far)
                   </div>
                 ) : (
                   <div style={{ padding: "12px 12px 4px" }}>
@@ -2580,7 +2580,7 @@ marketsVisible
                     writeAlerts(cleared);
                   }}
                   style={{
-                    fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
+                    fontFamily: "var(--font-sans)", fontSize: 9, fontWeight: 700, letterSpacing: "0.06em",
                     background: "transparent", border: "1px solid var(--ft-border2)",
                     color: "var(--ft-dim)", cursor: "pointer", padding: "3px 8px",
                   }}
@@ -2593,7 +2593,7 @@ marketsVisible
             </PanelHeader>
 
             {priceAlerts.length === 0 ? (
-              <div style={{ padding: "20px 16px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
+              <div style={{ padding: "20px 16px", textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)" }}>
                 No alerts set · use the bell icon next to any holding in the Portfolio tab
               </div>
             ) : (
