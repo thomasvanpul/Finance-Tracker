@@ -91,7 +91,7 @@ function PanelEmpty({ title, message }: { title: string; message: string }) {
   return (
     <div style={panelStyle}>
       <PanelHeader>{title}</PanelHeader>
-      <div style={{ padding: "20px 16px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.02em", lineHeight: 1.6 }}>
+      <div style={{ padding: "20px 16px", fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.02em", lineHeight: 1.6 }}>
         {message}
       </div>
     </div>
@@ -443,7 +443,7 @@ function AnnotationRow({ annotation: a, index: ai, onDelete }: AnnotationRowProp
     >
       <div style={{ width: 3, height: 16, background: "var(--ft-amber)", flexShrink: 0, opacity: 0.85 }} />
       <span style={{ ...mono, fontSize: 10, color: "var(--ft-amber)", flexShrink: 0, minWidth: 52 }}>{a.month}</span>
-      <span style={{ ...mono, fontSize: 10, color: "var(--ft-text)", flex: 1, whiteSpace: "nowrap" }}>{a.label}</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-text)", flex: 1, whiteSpace: "nowrap" }}>{a.label}</span>
       <button
         onClick={() => onDelete(a.id)}
         style={{ background: "none", border: "1px solid transparent", color: "var(--ft-dim)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1, padding: "2px 5px", flexShrink: 0 }}
@@ -550,7 +550,7 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
 
         <div style={{ flex: 1, overflowY: "auto" }}>
           {rangedExpenses.length === 0 ? (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", padding: "32px 16px", textAlign: "center" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", padding: "32px 16px", textAlign: "center" }}>
               No transactions in selected range
             </div>
           ) : (
@@ -579,7 +579,7 @@ function CategoryDrillDrawer({ category, expenses, range, onClose }: DrillDrawer
         <div style={{ borderTop: "1px solid var(--ft-border)", padding: "10px 16px", flexShrink: 0, background: "var(--ft-raised)" }}>
           <button
             onClick={() => setLocation("/transactions")}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.05em", background: "none", border: "none", color: "var(--ft-accent)", cursor: "pointer", padding: 0 }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.05em", background: "none", border: "none", color: "var(--ft-accent)", cursor: "pointer", padding: 0 }}
           >
             → View in Transactions
           </button>
@@ -864,8 +864,8 @@ function SpendingVelocity({ allExpenses, budgetTotal, range, onRangeChange }: {
             <YAxis tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }} axisLine={false} tickLine={false} tickFormatter={v => `£${(v / 1000).toFixed(0)}k`} />
             <Tooltip
               content={(p) => (
-                <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 10 }}>
-                  <div style={{ color: "var(--ft-dim)", fontSize: 9, marginBottom: 4 }}>{String(p.label ?? "")}</div>
+                <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "8px 12px", fontFamily: "var(--font-sans)", fontSize: 10 }}>
+                  <div className="pnum" style={{ color: "var(--ft-dim)", fontSize: 9, marginBottom: 4 }}>{String(p.label ?? "")}</div>
                   {(p.payload as TooltipEntry[])?.map((entry, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
                       {entry.color && <div style={{ width: 6, height: 6, borderRadius: "50%", background: entry.color, flexShrink: 0 }} />}
@@ -1335,7 +1335,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
               background: "var(--ft-raised)",
               border: "1px solid var(--ft-border)",
               padding: "8px 10px",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               zIndex: 50,
               pointerEvents: "none",
@@ -1344,7 +1344,7 @@ function CalendarHeatmap({ expenses }: { expenses: Tx[] }) {
               boxShadow: "none",
             }}>
               <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 5, letterSpacing: "0.06em" }}>
-                {tooltip.day.date} · <span className="pnum">{formatBaseMoney(tooltip.day.total)}</span>
+                <span className="pnum">{tooltip.day.date}</span> · <span className="pnum">{formatBaseMoney(tooltip.day.total)}</span>
               </div>
               {tooltip.day.txs.slice(0, 5).map(t => (
                 <div key={t.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
@@ -1782,10 +1782,10 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
                 if (!p.active || !p.payload?.length) return null;
                 const d = p.payload[0]?.payload as { rate: number | null; income: number; expense: number };
                 return (
-                  <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "8px 12px", fontFamily: "var(--font-mono)", fontSize: 10 }}>
-                    <div style={{ color: "var(--ft-dim)", fontSize: 9, marginBottom: 4 }}>{String(p.label ?? "")}</div>
+                  <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "8px 12px", fontFamily: "var(--font-sans)", fontSize: 10 }}>
+                    <div className="pnum" style={{ color: "var(--ft-dim)", fontSize: 9, marginBottom: 4 }}>{String(p.label ?? "")}</div>
                     <Text as="div" weight={700} color="var(--ft-text)" mb={2}>
-                      Rate: {d.rate !== null ? `${d.rate}%` : "—"}
+                      Rate: <span className="pnum">{d.rate !== null ? `${d.rate}%` : "—"}</span>
                     </Text>
                     <Text as="div" size={9} color="var(--ft-green)">Income: <span className="pnum">{formatBaseMoney(d.income)}</span></Text>
                     <Text as="div" size={9} color="var(--ft-red)">Expense: <span className="pnum">{formatBaseMoney(d.expense)}</span></Text>
@@ -2275,8 +2275,8 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
         })}
       </div>
       <div style={{ padding: "5px 16px 8px", borderTop: "1px solid var(--ft-border)", display: "flex", gap: 16 }}>
-        <Text as="span" mono size={7.5} color="var(--ft-dim)">right column = MoM change vs last month</Text>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>income → expenses → net savings</span>
+        <Text as="span" size={7.5} color="var(--ft-dim)">right column = MoM change vs last month</Text>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>income → expenses → net savings</span>
       </div>
     </div>
   );
@@ -2391,7 +2391,7 @@ function CategoryBenchmark({ expenses }: { expenses: Tx[] }) {
           <div style={{ width: 12, height: 4, background: "var(--ft-red)", opacity: 0.8, borderRadius: 1 }} />
           <Text as="span" mono size={7.5} color="var(--ft-dim)">over avg</Text>
         </div>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>
           3-month rolling avg
         </span>
       </div>
@@ -2494,7 +2494,7 @@ function SpendingAnomalies({ expenses }: { expenses: Tx[] }) {
           })}
         </tbody>
       </table>
-      <div style={{ padding: "4px 16px 8px", borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)" }}>
+      <div style={{ padding: "4px 16px 8px", borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 7.5, color: "var(--ft-dim)" }}>
         σ = standard deviations above your 3-month category mean · NEW CAT = first transaction in that category
       </div>
     </div>
@@ -2570,7 +2570,7 @@ function NetWorthDelta({ allTxs }: { allTxs: Tx[] }) {
           <span style={{ display: "inline-block", width: 10, height: 4, background: "var(--ft-accent)", opacity: 0.7 }} />
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)" }}>expenses</span>
         </HStack>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>delta = net saved / month</span>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>delta = net saved / month</span>
       </HStack>
     </div>
   );
@@ -2660,7 +2660,7 @@ function CategoryForecast({ expenses }: { expenses: Tx[] }) {
           })}
         </tbody>
       </table>
-      <div style={{ padding: "4px 16px 8px", borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)" }}>
+      <div style={{ padding: "4px 16px 8px", borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 7.5, color: "var(--ft-dim)" }}>
         Forecast = 0.5×this + 0.3×last + 0.2×prior · trend arrow = MoM direction · red = projected over 10% above avg
       </div>
     </div>
@@ -2735,7 +2735,7 @@ function TxAmountDistribution({ expenses }: { expenses: Tx[] }) {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)" }}>{l}</span>
           </span>
         ))}
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>right column = total spend in bucket</span>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 7.5, color: "var(--ft-dim)", marginLeft: "auto" }}>right column = total spend in bucket</span>
       </HStack>
     </div>
   );
@@ -3459,7 +3459,7 @@ export default function Analytics() {
         const color = PERSONA_COLORS[persona.id] ?? "var(--ft-amber)";
         return (
           <div style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             color: "var(--ft-dim)",
             borderBottom: "1px solid var(--ft-border)",
@@ -3513,7 +3513,7 @@ export default function Analytics() {
               if (e.key === "End") { e.preventDefault(); setActiveTab(tabs[tabs.length - 1].id); }
             }}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: isMobile ? 11 : 10,
               fontWeight: activeTab === tab.id ? 700 : 400,
               color: activeTab === tab.id ? "var(--ft-text)" : "var(--ft-dim)",
