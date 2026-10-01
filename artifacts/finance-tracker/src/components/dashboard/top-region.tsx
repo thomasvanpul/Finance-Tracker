@@ -455,8 +455,19 @@ export function DashboardTopRegion({ cells, dashboardLabel, isCustomizing, onCus
           own, under NET WORTH, and the top of the page read as broken — one
           of the things Thomas named on 30 Sep. In its own column it holds
           the top-right corner at every width, and if the readings wrap they
-          wrap inside the run. */}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", borderTop: RULE, borderBottom: RULE }}>
+          wrap inside the run.
+
+          `alignItems: "start"` on the grid is load-bearing once the run
+          itself wraps (full persona, six readings, 1280px — finding
+          70fac8d36678). A CSS grid item stretches to the row's full height
+          by default, so without this the EDIT LAYOUT column stretched to
+          match the run's now-two-line height and its icon sat vertically
+          centred across both lines — floating in the middle of the box
+          with no cell beside it, which read exactly as broken as the bug
+          this comment already describes. Pinning the column to the start
+          keeps the icon beside the run's first line (the top-right corner
+          promised above) at every width, wrapped or not. */}
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "start", borderTop: RULE, borderBottom: RULE }}>
         <Strip edges="none">
           <Divided first><HStack align="center" padding="5px 12px" shrink={false}><PageLabel label={dashboardLabel} /></HStack></Divided>
           {cells.map((cell) => (
