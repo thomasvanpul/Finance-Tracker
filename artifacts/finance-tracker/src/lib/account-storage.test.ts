@@ -11,6 +11,9 @@ const net = vi.hoisted(() => ({
 }));
 vi.mock("./api-fetch", () => ({ apiFetch: net.apiFetch }));
 
+const toastSpy = vi.hoisted(() => vi.fn());
+vi.mock("@/hooks/use-toast", () => ({ toast: toastSpy }));
+
 class FakeStorage {
   private map = new Map<string, string>();
   get length() { return this.map.size; }
@@ -41,6 +44,7 @@ beforeEach(() => {
   };
   (globalThis as any).Event = class { constructor(public type: string) {} };
   net.apiFetch.mockReset();
+  toastSpy.mockReset();
 });
 
 afterEach(async () => {
@@ -100,6 +104,8 @@ describe("account-storage · hydrate", () => {
     expect(store.getItem("ft-density")).toBe("compact");
     expect(store.getItem("nr-prefs-owner")).toBe("user-a");
     expect(JSON.parse(store.getItem("nr-prefs-shadow-v1")!).entries).toEqual({ "ft-tx-notes": "local-notes" });
+    // The shadow is not the only sign this happened — the user is told too.
+    expect(toastSpy).toHaveBeenCalledTimes(1);
     // Writing server values must not echo back to the server.
     expect(m.__pendingKeysForTests()).toEqual(["ft-nw-target"]);
 
@@ -120,6 +126,7 @@ describe("account-storage · hydrate", () => {
     await m.hydrateAccountStorage("user-a");
     expect(store.getItem("ft-tx-notes")).toBe("edited-offline");
     expect(store.getItem("nr-prefs-shadow-v1")).toBeNull();
+    expect(toastSpy).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1_000);
     expect(patchBodies()).toEqual([{ "ft-tx-notes": "edited-offline" }]);
   });

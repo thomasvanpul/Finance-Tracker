@@ -30,6 +30,7 @@
 
 import { apiFetch } from "./api-fetch";
 import { isAccountLevelKey } from "./account-storage-keys";
+import { toast } from "@/hooks/use-toast";
 
 export const OWNER_KEY = "nr-prefs-owner";
 export const PENDING_KEY = "nr-prefs-pending";
@@ -284,6 +285,14 @@ export async function hydrateAccountStorage(userId: string): Promise<HydrateOutc
     } catch {
       // quota — the shadow is a courtesy, not a contract
     }
+    // This device never hydrated for this user before, so rule 1 (an
+    // unsynced edit wins) could not have protected these keys — they were
+    // simply overwritten. The shadow above keeps them; without this, that
+    // was the only record anything had changed.
+    toast({
+      title: "A setting on this device was replaced",
+      description: "Your account's saved value was applied here. The previous value on this device is kept as a backup.",
+    });
   }
   persistPending();
   state.enabled = true;
