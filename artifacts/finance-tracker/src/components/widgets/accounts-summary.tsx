@@ -82,7 +82,7 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
           <div style={{
             height: "100%",
             width: `${barPct}%`,
-            background: isNeg ? "var(--ft-red)" : "var(--ft-green)",
+            background: isNeg ? "var(--ft-red)" : "var(--ft-muted)",
             transition: "width 0.12s ease",
           }} />
         </div>
@@ -99,7 +99,7 @@ function AccountRow({ acct, maxGbp, share, isExpanded }: AccountRowProps) {
             : "—"}
         </span>
       </td>
-      <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: gbp == null ? "var(--ft-dim)" : isNeg ? "var(--ft-red)" : "var(--ft-green)" }}>
+      <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: gbp == null ? "var(--ft-dim)" : isNeg ? "var(--ft-red)" : "var(--ft-text)" }}>
         {gbp == null ? "—" : <span className="pnum">{formatBaseMoney(gbp)}</span>}
       </td>
       {isExpanded && (
@@ -284,7 +284,7 @@ export function AccountsSummaryWidget({ isExpanded }: { isExpanded?: boolean }) 
                 {owed !== 0 ? "Accounts, net of debt" : "Accounts"} · {sorted.length} account
                 {sorted.length !== 1 ? "s" : ""}
               </td>
-              <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: netTotal < 0 ? "var(--ft-red)" : "var(--ft-green)", fontWeight: 600 }}>
+              <td style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)", textAlign: "right", fontFamily: "var(--font-mono)", fontSize: 11, color: netTotal < 0 ? "var(--ft-red)" : "var(--ft-text)", fontWeight: 600 }}>
                 <Drill
                   href="/accounts"
                   title={
