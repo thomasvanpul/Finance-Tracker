@@ -337,7 +337,7 @@ export function SpendingScreen() {
           }}
           style={{
             background: "none", border: "none", cursor: "pointer",
-            color: "var(--ft-accent)", fontFamily: "var(--font-mono)",
+            color: "var(--ft-accent)", fontFamily: "var(--font-sans)",
             fontSize: 12, padding: 0, fontWeight: 700,
           }}
         >
@@ -628,7 +628,7 @@ export function SpendingScreen() {
             list the filter is emptying, so it stands down. */}
         {hasMoreToLoad && !filtered && (
           <div ref={setSentinel} style={{ padding: "24px 16px", textAlign: "center" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--ft-text-xs)", color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
               LOADING EARLIER…
             </span>
           </div>
@@ -638,7 +638,7 @@ export function SpendingScreen() {
             nothing is loading and nothing will. State the stop instead. */}
         {atCap && !filtered && (
           <div style={{ padding: "24px 16px", textAlign: "center" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--ft-text-xs)", color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
               12 MONTHS SHOWN
             </span>
           </div>
@@ -1068,7 +1068,7 @@ function TxDetailSheet({
             background: "transparent",
             color: "var(--ft-red)",
             border: "1px solid var(--ft-red)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 12,
             fontWeight: 700,
             letterSpacing: "0.08em",
@@ -1155,7 +1155,7 @@ function FilterChips({
 function DetailRow({ label, value, href }: { label: string; value: string; href?: string }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "8px 0", borderBottom: "1px solid var(--ft-border)" }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", letterSpacing: "0.12em", color: "var(--ft-dim)" }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--ft-text-xs)", letterSpacing: "0.12em", color: "var(--ft-dim)" }}>
         {label}
       </span>
       <span style={{ fontSize: "var(--ft-text-body)", color: "var(--ft-text)", textAlign: "right", overflow: "hidden", textOverflow: "ellipsis" }}>
