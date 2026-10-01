@@ -95,6 +95,11 @@ the file's header for the full measurement), then RE-ENABLED
 overnight cold starts" below for why, and the file's own header for
 why it is not trusted as a fix without re-measuring.
 
+**Re-measured 2026-10-01: decorative again.** 57 scheduled runs over the
+9.6 days after the re-enable, median gap 250 min, 0 of 56 gaps at or under
+the 15-minute idle threshold (figures in the file's header). It does not
+keep the instance warm; cron-job.org's state is still the open question.
+
 ### 2026-09-21: overnight cold starts, and the primary pinger's state is unconfirmed
 
 Healthchecks.io fired DOWN/UP five times overnight 2026-09-20/21

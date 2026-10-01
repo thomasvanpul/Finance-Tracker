@@ -32,6 +32,16 @@
 # (or paying for Render Starter — no sleep, $7/mo, see
 # docs/OPERATIONS.md § "Upgrade signal").
 #
+# ── RE-MEASURED 2026-10-01: the drift reproduced, this is decorative ────
+# `gh run list --workflow=keep-alive.yml --limit 100`, runs after the
+# 2026-09-21 re-enable only: 57 scheduled runs from 2026-09-21 16:01Z to
+# 2026-10-01 07:43Z (9.6 days; a 10-minute cron would have fired ~1,390
+# times). 56 gaps: median 250 min, p90 349 min, min 124, max 500. Gaps at
+# or under Render's 15-minute idle threshold: 0 of 56. All 57 succeeded,
+# so the run itself is fine; GitHub simply does not schedule it anywhere
+# near every 10 minutes. It keeps nothing warm. The fix is cron-job.org
+# (or Render Starter) as stated above, not this file.
+#
 # ── Cost ──────────────────────────────────────────────────────────────────
 # thomasvanpul/Finance-Tracker is a public repo, so Actions minutes are
 # free/unlimited regardless of run count. The cost that DOES apply is
