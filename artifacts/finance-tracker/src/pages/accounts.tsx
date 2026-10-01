@@ -1028,7 +1028,6 @@ interface CurrencyExposureRowProps {
 }
 
 const ACCT_COLORS = ["var(--ft-blue)", "var(--ft-green)", "var(--ft-amber)", "var(--ft-cyan)", "var(--ft-red)", "var(--ft-muted)"];
-const ACCT_EXPOSURE_COLORS = ACCT_COLORS;
 
 function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex }: CurrencyExposureRowProps) {
   const [hov, setHov] = React.useState(false);
@@ -1037,7 +1036,7 @@ function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex
   // rather than 0% — the currency total beside it already em-dashes when
   // it has no FX, and the two must not disagree.
   const pct: number | null = total != null && totalCash > 0 ? (total / totalCash) * 100 : null;
-  const color = ACCT_EXPOSURE_COLORS[colorIndex % ACCT_EXPOSURE_COLORS.length];
+  const color = ACCT_COLORS[colorIndex % ACCT_COLORS.length];
   return (
     <div
       style={{
@@ -1085,11 +1084,9 @@ interface AccountAllocationRowProps {
   href: string;
 }
 
-const ACCT_ALLOC_COLORS = ["var(--ft-blue)", "var(--ft-green)", "var(--ft-amber)", "var(--ft-cyan)", "var(--ft-red)", "var(--ft-muted)"];
-
 function AccountAllocationRow({ name, pct, colorIndex, href }: AccountAllocationRowProps) {
   const [hov, setHov] = React.useState(false);
-  const color = ACCT_ALLOC_COLORS[colorIndex % ACCT_ALLOC_COLORS.length];
+  const color = ACCT_COLORS[colorIndex % ACCT_COLORS.length];
   return (
     <div
       style={{
@@ -2574,7 +2571,7 @@ export default function Accounts() {
                           // visible shares add up to more than 100%.
                           const pct: number | null = assetsTotal > 0 ? (a.baseEquivalent / assetsTotal) * 100 : null;
                           return (
-                            <div key={a.id} style={{ width: `${pct ?? 0}%`, background: ACCT_ALLOC_COLORS[i % ACCT_ALLOC_COLORS.length], minWidth: (pct ?? 0) > 0.5 ? 2 : 0 }} title={`${a.name}: ${pct == null ? "—" : `${pct.toFixed(1)}%`}`} />
+                            <div key={a.id} style={{ width: `${pct ?? 0}%`, background: ACCT_COLORS[i % ACCT_COLORS.length], minWidth: (pct ?? 0) > 0.5 ? 2 : 0 }} title={`${a.name}: ${pct == null ? "—" : `${pct.toFixed(1)}%`}`} />
                           );
                         })}
                     </div>
