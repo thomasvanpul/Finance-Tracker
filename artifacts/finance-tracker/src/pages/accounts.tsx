@@ -1703,14 +1703,20 @@ export default function Accounts() {
   const deleteAccount = useDeleteAccount();
   const syncWise = useSyncWiseTransactions();
 
-  // Health data: last 90 days of transactions for all accounts
-  const ninetyDaysAgo = useMemo(() => {
+  // Health data: six calendar months of transactions, shared by per-account
+  // dormancy stats and the MONTHLY CASH FLOW chart below. The chart groups
+  // by calendar month and keeps the last 6 that actually have transactions
+  // (monthlyFlow, below) — a 90-day window used to back it, which spans at
+  // most 4 calendar months, so the chart drew 4 bars under a "Last 6 Months"
+  // header. Dormancy only looks at the single most recent transaction per
+  // account, so the wider window doesn't change that computation.
+  const sixMonthsAgo = useMemo(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 90);
+    d.setMonth(d.getMonth() - 6);
     return d.toISOString().slice(0, 10);
   }, []);
 
-  const { data: healthTxs } = useListTransactions({ dateFrom: ninetyDaysAgo });
+  const { data: healthTxs } = useListTransactions({ dateFrom: sixMonthsAgo });
   const { data: dashData } = useGetDashboard();
 
   const [nwHistory, setNwHistory] = useState<{ date: string; netWorth: number }[]>(() => loadNwHistory());
