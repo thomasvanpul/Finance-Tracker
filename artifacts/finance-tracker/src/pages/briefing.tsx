@@ -123,7 +123,7 @@ function NarrativeBox({ text, icon: Icon }: { text: string; icon?: React.Element
     // already paints --ft-surface behind a --ft-border frame. The fill was
     // invisible; the frame was a frame inside a frame (DESIGN.md § 1).
     <div style={{
-      padding: "12px 16px", fontFamily: "var(--font-mono)", fontSize: 12,
+      padding: "12px 16px", fontFamily: "var(--font-sans)", fontSize: 12,
       color: "var(--ft-text)", lineHeight: 1.8, display: "flex", gap: 10,
     }}>
       {Icon && <Icon size={12} style={{ color: "var(--ft-accent)", flexShrink: 0, marginTop: 3 }} />}
@@ -155,7 +155,7 @@ function KeyFindingRow({ finding, index }: { finding: string; index: number }) {
         </Text>
       </div>
       <div style={{ padding: "10px 14px", flex: 1 }}>
-        <Text as="span" mono size={12} color="var(--ft-text)" lineHeight={1.65}>{finding}</Text>
+        <Text as="span" size={12} color="var(--ft-text)" lineHeight={1.65}>{finding}</Text>
       </div>
     </div>
   );
@@ -198,7 +198,7 @@ function SpendingCatRow({
           The bar and the share are proportions of a whole (DESIGN.md §14). */}
       <span style={{ color: "var(--ft-text)" }}>
         <Drill href={categoryTransactionsHref(cat, range)} title={`Open the ${cat} transactions this month`}>
-          <Text as="span" mono size={11}>{cat}</Text>
+          <Text as="span" size={11}>{cat}</Text>
         </Drill>
       </span>
       {!isMobile && (
@@ -257,7 +257,7 @@ function BudgetPerfRow({
         {over && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-red)", flexShrink: 0 }} />}
         {warn && !over && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-amber)", flexShrink: 0 }} />}
         {!over && !warn && <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-border2)", flexShrink: 0 }} />}
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)" }}>
           <Drill href={categoryTransactionsHref(budget.category, range)} title={`Open the ${budget.category} transactions this month`}>{budget.category}</Drill>
         </span>
       </div>
@@ -313,13 +313,13 @@ function RecommendationRow({
     >
       <div style={{ width: 44, flexShrink: 0, background: bgTint, borderRight: "1px solid var(--ft-border)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, padding: "10px 0" }}>
         <Icon size={12} style={{ color }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 7, color, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 7, color, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 700 }}>
           {rec.priority}
         </span>
       </div>
       <div style={{ padding: "11px 14px", flex: 1 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 4, lineHeight: 1.5 }}>{rec.action}</div>
-        <Text as="div" mono size={10} color="var(--ft-dim)" lineHeight={1.5}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", fontWeight: 600, marginBottom: 4, lineHeight: 1.5 }}>{rec.action}</div>
+        <Text as="div" size={10} color="var(--ft-dim)" lineHeight={1.5}>
           <ArrowUpRight size={10} style={{ display: "inline", verticalAlign: "middle", color: "var(--ft-accent)", marginRight: 5 }} />{rec.impact}
         </Text>
       </div>
@@ -359,11 +359,11 @@ function RiskRow({
     >
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <div style={{ width: 7, height: 7, borderRadius: "50%", background: riskColor, flexShrink: 0 }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: riskColor, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: riskColor, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 700 }}>
           {risk.level}
         </span>
       </div>
-      <Text as="span" mono size={11} color="var(--ft-text)" lineHeight={1.65}>{risk.description}</Text>
+      <Text as="span" size={11} color="var(--ft-text)" lineHeight={1.65}>{risk.description}</Text>
     </div>
   );
 }
@@ -493,7 +493,7 @@ export default function Briefing() {
         actions={
           <HStack gap={10} align="center">
             {generatedAgo != null && (
-              <Text as="span" mono size={9} color="var(--ft-dim)">
+              <Text as="span" size={9} color="var(--ft-dim)">
                 Generated {generatedAgo < 1 ? "just now" : `${generatedAgo}m ago`}
               </Text>
             )}
@@ -503,7 +503,7 @@ export default function Briefing() {
               disabled={generating}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
-                fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
+                fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700,
                 letterSpacing: "0.06em", textTransform: "uppercase",
                 background: generating ? "var(--ft-raised)" : "var(--ft-accent)",
                 border: "none", color: "var(--ft-base)",
@@ -550,11 +550,11 @@ export default function Briefing() {
             "POWERED BY GROQ",
           ].map((label, i, arr) => (
             <span key={label} style={{ display: "flex", alignItems: "center" }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em", padding: "0 20px" }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.12em", padding: "0 20px" }}>
                 {label}
               </span>
               {i < arr.length - 1 && (
-                <span style={{ color: "var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 10 }}>·</span>
+                <span style={{ color: "var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 10 }}>·</span>
               )}
             </span>
           ))}
@@ -562,7 +562,7 @@ export default function Briefing() {
       )}
 
       {error && (
-        <div style={{ marginBottom: 6, padding: "10px 14px", background: "rgba(230,80,80,0.06)", border: "1px solid rgba(230,80,80,0.2)", fontSize: 11, color: "var(--ft-red)", fontFamily: "var(--font-mono)" }}>
+        <div style={{ marginBottom: 6, padding: "10px 14px", background: "rgba(230,80,80,0.06)", border: "1px solid rgba(230,80,80,0.2)", fontSize: 11, color: "var(--ft-red)", fontFamily: "var(--font-sans)" }}>
           {error}
         </div>
       )}
@@ -629,10 +629,10 @@ export default function Briefing() {
               <FileText size={22} style={{ color: "var(--ft-accent)" }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", marginBottom: 5 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 700, color: "var(--ft-text)", marginBottom: 5 }}>
                 {monthLabel(ym)} Report Not Yet Generated
               </div>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.7, maxWidth: 480 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.7, maxWidth: 480 }}>
                 Generate your monthly intelligence briefing. The AI will analyse your spending, budgets, goals, and investments to produce a structured report with actionable recommendations.
               </div>
             </div>
@@ -640,7 +640,7 @@ export default function Briefing() {
               type="button"
               onClick={generate}
               style={{
-                fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
+                fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700,
                 letterSpacing: "0.08em", textTransform: "uppercase", whiteSpace: "nowrap",
                 background: "var(--ft-accent)", border: "none",
                 color: "var(--ft-base)", padding: "10px 20px", cursor: "pointer",
@@ -665,10 +665,10 @@ export default function Briefing() {
             </div>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", letterSpacing: "0.06em", marginBottom: 4 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", letterSpacing: "0.06em", marginBottom: 4 }}>
               Generating {monthLabel(ym)} Briefing
             </div>
-            <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.06em">
+            <Text as="div" size={9} color="var(--ft-dim)" letterSpacing="0.06em">
               Analysing spending, budgets, investments and goals…
             </Text>
           </div>
@@ -689,10 +689,10 @@ export default function Briefing() {
               <div>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 5 }}>Situation Assessment · {monthLabel(ym)}</div>
                 <HStack gap={10} align="baseline">
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: rating?.color, letterSpacing: "0.04em" }}>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 22, fontWeight: 700, color: rating?.color, letterSpacing: "0.04em" }}>
                     {rating?.label}
                   </div>
-                  <Text as="div" mono size={9} color="var(--ft-dim)">
+                  <Text as="div" size={9} color="var(--ft-dim)">
                     {briefing.situationRating === "strong" ? "All metrics healthy" : briefing.situationRating === "healthy" ? "Generally on track" : briefing.situationRating === "cautious" ? "Some areas need attention" : "Immediate action required"}
                   </Text>
                 </HStack>
@@ -719,7 +719,7 @@ export default function Briefing() {
             {generatedAgo != null && (
               <div style={{ borderTop: "1px solid var(--ft-border)", padding: "4px 18px", display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--ft-green)", flexShrink: 0 }} />
-                <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
+                <Text as="span" size={8} color="var(--ft-dim)" letterSpacing="0.06em">
                   Generated {generatedAgo < 1 ? "just now" : `${generatedAgo}m ago`} · Data current as of session load
                 </Text>
               </div>
@@ -887,7 +887,7 @@ export default function Briefing() {
                 onClick={generate}
                 disabled={generating}
                 style={{
-                  fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)",
+                  fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)",
                   background: "none", border: "1px solid var(--ft-border2)",
                   padding: "3px 8px", cursor: "pointer", letterSpacing: "0.06em",
                   display: "flex", alignItems: "center", gap: 4,
