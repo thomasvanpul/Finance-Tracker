@@ -777,7 +777,7 @@ export default function CashflowPage() {
         />
         <KpiTile
           label="Avg Net / Month"
-          value={`${baseMonthlyNet >= 0 ? "+" : ""}${formatBaseMoney(Math.abs(baseMonthlyNet))}`}
+          value={`${baseMonthlyNet >= 0 ? "+" : ""}${formatBaseMoney(baseMonthlyNet)}`}
           color={baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
           sub={`${baseDailyIncome > 0 ? `in ${formatBaseMoney(baseDailyIncome * 30)}/mo` : "no income"} · out ${formatBaseMoney(baseDailyExpense * 30)}/mo`}
         />
