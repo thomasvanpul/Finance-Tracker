@@ -303,7 +303,13 @@ export async function processInvestments(investments: Investment[], baseCurrency
   // an undated baseline, or a baseline from a different session than the
   // rest. The session is returned alongside so the screen dates the delta
   // (close-to-close spans a weekend on a Monday) instead of calling it 24H.
-  const { dayChangeBase, dayChangePrevValueBase, dayChangeFromSession } = foldDayChange(dayLegs);
+  //
+  // foldDayChange([]) is 0 because an empty fold means nothing is held. Here
+  // something is held (the empty portfolio returned above), so no legs means
+  // every position was at cost or unavailable and nobody knows how it moved.
+  const { dayChangeBase, dayChangePrevValueBase, dayChangeFromSession } = dayLegs.length === 0
+    ? { dayChangeBase: null, dayChangePrevValueBase: null, dayChangeFromSession: null }
+    : foldDayChange(dayLegs);
   return {
     portfolioValueBase, portfolioCostBase, dayChangeBase, dayChangePrevValueBase,
     unavailablePositions, positionsAtCost,

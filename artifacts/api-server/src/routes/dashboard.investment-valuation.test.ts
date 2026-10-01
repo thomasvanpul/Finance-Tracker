@@ -147,3 +147,27 @@ describe("dashboard portfolio total and net worth — market data off (L1, L2)",
     expect(reportableTotalValue(r.portfolioValueBase, 0, r.unavailablePositions)).toBe(0);
   });
 });
+
+// Found 2 Oct 2026 verifying L1 against the dev API: with every position at
+// cost, no leg reaches foldDayChange, whose empty case means "nothing held"
+// and returns 0. The market persona's hero then printed a £0.00 day change
+// for a portfolio whose movement nobody knows.
+describe("day change when nothing is priced", () => {
+  it("every position at cost: the day change is unknown, not 0", async () => {
+    mockPriceMap = new Map();
+    const r = await processInvestments([inv("AAPL", "10", "180.00"), inv("VOD.L", "5", "100.00")] as never, "GBP");
+    expect(r.dayChangeBase).toBeNull();
+    expect(r.dayChangePrevValueBase).toBeNull();
+  });
+
+  it("every position unavailable: the day change is unknown, not 0", async () => {
+    mockPriceMap = new Map();
+    const r = await processInvestments([inv("AAPL", "10", "180.00")] as never, "THB");
+    expect(r.dayChangeBase).toBeNull();
+  });
+
+  it("nothing held: still an honest 0", async () => {
+    mockPriceMap = new Map();
+    expect((await processInvestments([], "GBP")).dayChangeBase).toBe(0);
+  });
+});
