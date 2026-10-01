@@ -452,7 +452,7 @@ function AccountTableRow({ acct, isFirst }: AccountTableRowProps) {
       {/* Same destination as the dashboard ACCOUNTS row and every other
           account name in the product (DESIGN.md §14). The currency code and
           the native balance beside it are not made of rows. */}
-      <td style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", padding: "7px 0 7px 0", paddingRight: 8, maxWidth: 110, whiteSpace: "nowrap" }}>
+      <td style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", padding: "7px 0 7px 0", paddingRight: 8, maxWidth: 110, whiteSpace: "nowrap" }}>
         <Drill href={entityHref("account", acct.id)}>{acct.name}</Drill>
       </td>
       <td style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", padding: "7px 8px 7px 0" }}>
@@ -600,7 +600,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
       </div>
 
       {filteredHistory.length < 2 ? (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", padding: "20px 0" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", padding: "20px 0" }}>
           Not enough data for this period
         </div>
       ) : (
