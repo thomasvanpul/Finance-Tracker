@@ -475,7 +475,7 @@ export function WorthScreen() {
               <ViewTab label="BLOCKS" active={chartView === "blocks"} onClick={() => setChartView("blocks")} />
             </div>
           </div>
-          {chartView === "ring" && <RingView holdings={holdings} />}
+          {chartView === "ring" && <RingView holdings={holdings} baseCurrency={baseCurrency} />}
           {chartView === "bands" && <BandsView months={bandsMonths} />}
           {chartView === "blocks" && <BlocksView holdings={holdings} />}
         </div>

@@ -6,6 +6,7 @@
 //          bucket constants, RingView, BandsView.
 
 import { BlockField } from "@/components/primitives/block-field";
+import { CURRENCY_SYMBOLS } from "@/components/mobile/mobile-format";
 
 // ── Holdings types ────────────────────────────────────────────────────────────
 // Exported so MobileHome can re-export them for backward-compat callers
@@ -130,7 +131,7 @@ export function BlocksView({ holdings }: { holdings: Holdings }) {
 
 // ── RING ──────────────────────────────────────────────────────────────────────
 
-export function RingView({ holdings }: { holdings: Holdings }) {
+export function RingView({ holdings, baseCurrency }: { holdings: Holdings; baseCurrency: string | null }) {
   const total = bucketTotal(holdings);
   if (total <= 0) {
     return (
@@ -158,6 +159,9 @@ export function RingView({ holdings }: { holdings: Holdings }) {
     segments.push({ key, length, offset, color: BUCKET_COLOR[key] });
     offset += length;
   }
+  // The total is in the user's base currency. Until that is known the figure
+  // renders bare rather than under a guessed "£".
+  const symbol = baseCurrency == null ? "" : CURRENCY_SYMBOLS[baseCurrency] ?? `${baseCurrency} `;
   const totalLabel = total.toLocaleString("en-GB", { maximumFractionDigits: 0 });
   return (
     <div
@@ -182,7 +186,7 @@ export function RingView({ holdings }: { holdings: Holdings }) {
             />
           ))}
           <text x={100} y={100} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-mono)" fontSize={11} fill="var(--ft-dim)" letterSpacing="0.12em">HOLDINGS</text>
-          <text x={100} y={116} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-mono)" fontSize={11} fontWeight={700} fill="var(--ft-text)">£{totalLabel}</text>
+          <text className="pnum" x={100} y={116} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-mono)" fontSize={11} fontWeight={700} fill="var(--ft-text)">{symbol}{totalLabel}</text>
         </svg>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
@@ -190,7 +194,7 @@ export function RingView({ holdings }: { holdings: Holdings }) {
           <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 10, height: 10, background: BUCKET_COLOR[k], flex: "none" }} />
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.08em", color: "var(--ft-dim)" }}>{BUCKET_LABEL[k]}</span>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", marginLeft: "auto" }}>
+            <span className="pnum" style={{ fontSize: 11, color: "var(--ft-text)", marginLeft: "auto" }}>
               {Math.round((holdings[k] / total) * 100)}%
             </span>
           </div>
