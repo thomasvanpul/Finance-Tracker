@@ -207,7 +207,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               background: "none",
               border: "1px solid var(--ft-border)",
               color: "var(--ft-dim)",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
@@ -242,7 +242,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           <header>
             <div
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 9,
                 letterSpacing: "0.2em",
                 color: "var(--ft-accent)",
@@ -310,7 +310,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 background: "transparent",
                 border: "1px solid var(--ft-accent)",
                 color: "var(--ft-accent)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
@@ -414,7 +414,7 @@ function AccountStep({ persona, onDone }: {
       <header>
         <div
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 9,
             letterSpacing: "0.2em",
             color: "var(--ft-accent)",
@@ -527,7 +527,7 @@ function AccountStep({ persona, onDone }: {
               background: "none",
               border: "1px solid var(--ft-border)",
               color: "var(--ft-dim)",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
@@ -544,7 +544,7 @@ function AccountStep({ persona, onDone }: {
               background: "transparent",
               border: `1px solid ${canSubmit ? "var(--ft-accent)" : "var(--ft-border)"}`,
               color: canSubmit ? "var(--ft-accent)" : "var(--ft-dim)",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 12,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
