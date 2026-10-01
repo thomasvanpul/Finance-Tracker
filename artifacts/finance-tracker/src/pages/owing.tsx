@@ -274,7 +274,7 @@ function StrategyTab() {
   if (pendingDebts.length === 0) {
     return (
       <div style={{ padding: "48px 0", textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-dim)" }}>
           No pending debts to analyse. Add IOUs to use the payoff strategy planner.
         </div>
       </div>
@@ -298,7 +298,7 @@ function StrategyTab() {
                 onClick={() => setMode(m)}
                 style={{
                   padding: "5px 14px",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 10,
                   fontWeight: 700,
                   letterSpacing: "0.08em",
@@ -315,7 +315,7 @@ function StrategyTab() {
               </button>
             ))}
           </HStack>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, lineHeight: 1.5 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4, lineHeight: 1.5 }}>
             {mode === "snowball"
               ? "Pay smallest balance first — motivational wins"
               : "Pay highest APR first — minimises total interest"}
@@ -364,8 +364,8 @@ function StrategyTab() {
           <Text as="div" mono size={18} weight={700} color="var(--ft-red)">
             <span className="pnum">{formatBaseMoney(totalBalance)}</span>
           </Text>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
-            {pendingDebts.length} debt{pendingDebts.length !== 1 ? "s" : ""}
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 2 }}>
+            <span style={{ fontFamily: "var(--font-mono)" }}>{pendingDebts.length}</span> debt{pendingDebts.length !== 1 ? "s" : ""}
           </div>
         </div>
         </HStack>
@@ -376,7 +376,7 @@ function StrategyTab() {
           background: "rgba(248,81,73,0.08)",
           border: "1px solid rgba(248,81,73,0.3)",
           padding: "10px 14px",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           color: "var(--ft-red)",
         }}>
@@ -390,7 +390,7 @@ function StrategyTab() {
       {debtsAwaitingApr.length > 0 && (
         <PanelBox>
           <PanelHeader><span style={{ color: "var(--ft-amber)" }}>APR needed · {debtsAwaitingApr.length} debt{debtsAwaitingApr.length !== 1 ? "s" : ""} not in strategy</span></PanelHeader>
-          <div style={{ padding: "8px 14px 4px", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.6 }}>
+          <div style={{ padding: "8px 14px 4px", fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", lineHeight: 1.6 }}>
             Enter each debt's annual interest rate to include it in the payoff strategy. We won't guess a default — interest cost depends entirely on the rate, and inventing one would misprice the payoff order.
           </div>
           <VStack gap={6} padding={10}>
@@ -410,10 +410,10 @@ function StrategyTab() {
                 }}
               >
                 <div style={{ flex: 1, minWidth: 120 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>
                     {d.personName} — {d.description}
                   </div>
-                  <Text as="div" mono size={9} color="var(--ft-dim)">
+                  <Text as="div" size={9} color="var(--ft-dim)">
                     Balance: <span className="pnum">{formatBaseMoney(d.baseEquivalent!)}</span>
                   </Text>
                 </div>
@@ -446,7 +446,7 @@ function StrategyTab() {
                 </HStack>
                 <div style={{ textAlign: "right", minWidth: 90 }}>
                   <Text as="div" mono size={11} color="var(--ft-dim)" weight={700}>—</Text>
-                  <Text as="div" mono size={9} color="var(--ft-dim)">no interest cost</Text>
+                  <Text as="div" size={9} color="var(--ft-dim)">no interest cost</Text>
                 </div>
               </div>
             ))}
@@ -460,7 +460,7 @@ function StrategyTab() {
           background: "rgba(163,113,247,0.05)",
           border: "1px solid var(--ft-border2)",
           padding: "14px 16px",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           color: "var(--ft-dim)",
           lineHeight: 1.7,
@@ -488,8 +488,8 @@ function StrategyTab() {
             <Text as="div" mono size={20} weight={700} color="var(--ft-amber)" lineHeight={1}>
               <span className="pnum">{formatBaseMoney(result.totalInterest)}</span>
             </Text>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
-              over {result.months} months
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
+              over <span style={{ fontFamily: "var(--font-mono)" }}>{result.months}</span> months
             </div>
           </PanelBox>
 
@@ -498,7 +498,7 @@ function StrategyTab() {
             <Text as="div" mono size={20} weight={700} color={savingsVsAlt >= 0 ? "var(--ft-cyan)" : "var(--ft-red)"} lineHeight={1}>
               {savingsVsAlt >= 0 ? "saves " : "costs "}<span className="pnum">{formatBaseMoney(Math.abs(savingsVsAlt))}</span>
             </Text>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>
               {savingsVsAlt >= 0 ? "this strategy is better" : "other strategy saves more"}
             </div>
           </PanelBox>
@@ -546,10 +546,10 @@ function StrategyTab() {
                   </div>
 
                   <div style={{ flex: 1, minWidth: 120 }}>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600, color: "var(--ft-text)", marginBottom: 2 }}>
                       {debt.name}
                     </div>
-                    <Text as="div" mono size={9} color="var(--ft-dim)">
+                    <Text as="div" size={9} color="var(--ft-dim)">
                       Balance: <span className="pnum">{formatBaseMoney(debt.balance)}</span> · Min: <span className="pnum">{formatBaseMoney(debt.minimumPayment)}</span>/mo
                     </Text>
                   </div>
@@ -1027,10 +1027,10 @@ export default function Owing() {
         subtitle="Track who owes who — split bills, IOUs, shared expenses"
         actions={
           <div className="flex items-center gap-2">
-            <a href="/calendar" style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent", whiteSpace: "nowrap" }}>
+            <a href="/calendar" style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent", whiteSpace: "nowrap" }}>
               → Calendar
             </a>
-            <a href="/split" style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent", whiteSpace: "nowrap" }}>
+            <a href="/split" style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ft-muted)", textDecoration: "none", padding: "4px 8px", border: "1px solid var(--ft-border)", background: "transparent", whiteSpace: "nowrap" }}>
               → Group Split
             </a>
             <Button
@@ -1123,7 +1123,7 @@ export default function Owing() {
           ) : (
             <Skeleton className="h-8 w-28" />
           )}
-          <div style={{ fontSize: 9, fontFamily: "var(--font-mono)", color: "var(--ft-dim)", marginTop: 5 }}>
+          <div style={{ fontSize: 9, fontFamily: "var(--font-sans)", color: "var(--ft-dim)", marginTop: 5 }}>
             {netPosition >= 0 ? "net owed to you" : "net you owe"}
           </div>
         </div>
@@ -1140,7 +1140,7 @@ export default function Owing() {
           ) : (
             <Skeleton className="h-5 w-20" />
           )}
-          <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-mono)" }}>{theyOwe.length} open</div>
+          <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-sans)" }}><span style={{ fontFamily: "var(--font-mono)" }}>{theyOwe.length}</span> open</div>
         </div>
 
         {!isMobile && <div style={{ width: 1, height: 44, background: "var(--ft-border)", flexShrink: 0 }} />}
@@ -1155,7 +1155,7 @@ export default function Owing() {
           ) : (
             <Skeleton className="h-5 w-20" />
           )}
-          <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-mono)" }}>{iOwe.length} open</div>
+          <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-sans)" }}><span style={{ fontFamily: "var(--font-mono)" }}>{iOwe.length}</span> open</div>
         </div>
 
         {!isMobile && <div style={{ width: 1, height: 44, background: "var(--ft-border)", flexShrink: 0 }} />}
@@ -1166,7 +1166,7 @@ export default function Owing() {
           <div style={{ fontSize: 18, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--ft-blue)", lineHeight: 1 }}>
             {isLoading ? <Skeleton className="h-5 w-12 inline-block" /> : settledThisMonth}
           </div>
-          <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-mono)" }}>this month</div>
+          <div style={{ fontSize: 9, color: "var(--ft-dim)", marginTop: 3, fontFamily: "var(--font-sans)" }}>this month</div>
         </div>
         </HStack>
       </PanelBox>
@@ -1208,7 +1208,7 @@ export default function Owing() {
           onClick={() => { setMainTab("debts"); setDirectionFilter("i-owe"); }}
           style={{
             padding: "5px 14px",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.08em",
@@ -1223,13 +1223,13 @@ export default function Owing() {
             whiteSpace: "nowrap",
           }}
         >
-          I OWE{iOweTotal > 0 ? ` · ${formatBaseMoney(iOweTotal)}` : ""}
+          I OWE{iOweTotal > 0 && <> · <span style={{ fontFamily: "var(--font-mono)" }}>{formatBaseMoney(iOweTotal)}</span></>}
         </button>
         <button
           onClick={() => { setMainTab("debts"); setDirectionFilter("owed-to-me"); }}
           style={{
             padding: "5px 14px",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.08em",
@@ -1244,13 +1244,13 @@ export default function Owing() {
             whiteSpace: "nowrap",
           }}
         >
-          OWED TO ME{owedToMeTotal > 0 ? ` · ${formatBaseMoney(owedToMeTotal)}` : ""}
+          OWED TO ME{owedToMeTotal > 0 && <> · <span style={{ fontFamily: "var(--font-mono)" }}>{formatBaseMoney(owedToMeTotal)}</span></>}
         </button>
         <button
           onClick={() => { setMainTab("debts"); setDirectionFilter("all"); }}
           style={{
             padding: "5px 14px",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.08em",
@@ -1270,7 +1270,7 @@ export default function Owing() {
           onClick={() => setMainTab("strategy")}
           style={{
             padding: "5px 14px",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 11,
             fontWeight: 700,
             letterSpacing: "0.08em",
@@ -1479,7 +1479,7 @@ export default function Owing() {
                     style={{
                       padding: isMobile ? "7px 12px" : "8px 14px",
                       fontSize: isMobile ? 10 : 11,
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                       fontWeight: 600,
                       textTransform: "uppercase",
                       letterSpacing: "0.06em",
@@ -1494,8 +1494,8 @@ export default function Owing() {
                   </button>
                 ))}
                 <div style={{ flex: 1 }} />
-                <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-mono)", paddingRight: 10 }}>
-                  {filtered.length} entr{filtered.length === 1 ? "y" : "ies"}
+                <span style={{ fontSize: 9, color: "var(--ft-dim)", fontFamily: "var(--font-sans)", paddingRight: 10 }}>
+                  <span style={{ fontFamily: "var(--font-mono)" }}>{filtered.length}</span> entr{filtered.length === 1 ? "y" : "ies"}
                 </span>
               </div>
               {/* Row 2: direction pills + search + sort */}
@@ -1512,7 +1512,7 @@ export default function Owing() {
                         style={{
                           padding: "3px 8px",
                           fontSize: 9,
-                          fontFamily: "var(--font-mono)",
+                          fontFamily: "var(--font-sans)",
                           textTransform: "uppercase",
                           letterSpacing: "0.05em",
                           borderRadius: 2,
@@ -1535,7 +1535,7 @@ export default function Owing() {
                     onChange={(e) => setPersonSearch(e.target.value)}
                     placeholder="Search person…"
                     className="ft-filter-input"
-                    style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 10, padding: "3px 8px", borderRadius: 2, outline: "none", width: "100%", fontFamily: "var(--font-mono)" }}
+                    style={{ background: "var(--ft-base)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", fontSize: 10, padding: "3px 8px", borderRadius: 2, outline: "none", width: "100%", fontFamily: "var(--font-sans)" }}
                   />
                   {personSearch && (
                     <button onClick={() => setPersonSearch("")} style={{ background: "none", border: "none", color: "var(--ft-dim)", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1, flexShrink: 0 }}>×</button>
@@ -1884,7 +1884,7 @@ export default function Owing() {
                       background: form.description === p ? "rgba(31,111,235,0.15)" : "var(--ft-base)",
                       borderColor: form.description === p ? "rgba(31,111,235,0.5)" : "var(--ft-border2)",
                       color: form.description === p ? "var(--ft-blue)" : "var(--ft-muted)",
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                     }}
                   >
                     {p}
@@ -1967,7 +1967,7 @@ export default function Owing() {
                         : linkStatus === "not_found" || linkStatus === "invalid"
                         ? "var(--ft-red)"
                         : "var(--ft-dim)",
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                     }}
                   >
                     {linkStatus === "checking" && (
@@ -2220,7 +2220,7 @@ export default function Owing() {
                           border: "none",
                           borderBottom: `1px solid ${person.linkedEmail && looksLikeEmail(person.linkedEmail) ? "var(--ft-cyan, #56b6c2)" : "var(--ft-border2)"}`,
                           color: person.linkedEmail && looksLikeEmail(person.linkedEmail) ? "var(--ft-cyan, #56b6c2)" : "var(--ft-dim)",
-                          fontFamily: "var(--font-mono)",
+                          fontFamily: "var(--font-sans)",
                           fontSize: 9,
                           height: 20,
                           outline: "none",
