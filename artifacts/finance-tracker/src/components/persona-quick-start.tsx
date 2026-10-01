@@ -15,7 +15,7 @@ interface QsStep { id: string; label: string; desc: string; href: string; }
 
 export const PERSONA_QS_STEPS: Record<PersonaId, QsStep[]> = {
   market: [
-    { id: "market-position", label: "Add first position", desc: "Track holdings with live P&L and price alerts", href: "/investments" },
+    { id: "market-position", label: "Add first position", desc: "Record what you hold and what you paid", href: "/portfolio" },
     { id: "market-decisions", label: "Review AI decisions", desc: "Data-driven buy / sell / hold recommendations", href: "/decisions" },
     { id: "market-coach", label: "Ask your AI coach", desc: "Get personalised investment and market analysis", href: "/ai-coach" },
   ],

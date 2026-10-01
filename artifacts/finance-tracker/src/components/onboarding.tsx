@@ -61,7 +61,11 @@ type VisibilityChoice = "focused" | "everything";
 type Step = "ask" | "account";
 
 const TRACK_OPTIONS: { id: TrackChoice; label: string; sub: string }[] = [
-  { id: "market", label: "Investments and market prices", sub: "Live prices, portfolio P&L, earnings calendar" },
+  // Described by what the user enters, not by market data: prices are off on
+  // this deployment (ENABLE_MARKET_DATA, 19 Sep 2026), and the first screen a
+  // tester sees must offer nothing it cannot serve (BACKLOG L3). True with
+  // the flag on as well, so the copy does not branch on it.
+  { id: "market", label: "Investments I hold",            sub: "Holdings and what I paid, in their own currency" },
   { id: "budget", label: "Day-to-day spending",           sub: "Where the money goes each month" },
   { id: "wealth", label: "Net worth over time",           sub: "Long-term growth, goals, savings rate" },
   { id: "social", label: "Money owed between people",     sub: "Split expenses, settle debts" },

@@ -105,11 +105,13 @@ export const PERSONAS: Persona[] = [
     id: "market",
     code: "MKT·01",
     label: "Market Terminal",
-    tagline: "Watch stocks, track your portfolio",
+    tagline: "Track what you hold and what you paid",
     description:
-      "Built for investors who want live prices, portfolio P&L, earnings calendars, and market news — without any bank linking.",
+      "Built for investors who want their holdings and what they paid in one place — without any bank linking.",
     defaultPage: "/portfolio",
-    highlights: ["Live market data & charts", "Portfolio P&L tracking", "Earnings calendar", "AI-powered decisions"],
+    // Holdings and cost only: quotes are off on this deployment
+    // (ENABLE_MARKET_DATA), so nothing here promises a quote (BACKLOG L3).
+    highlights: ["Holdings and cost basis", "Native currency first", "AI-powered decisions"],
     pinnedHrefs: ["/portfolio", "/investments", "/calendar"],
     visibleHrefs: [
       "/", "/portfolio", "/investments", "/calendar", "/decisions",
@@ -235,7 +237,7 @@ export const PERSONA_FOCUS: Record<PersonaId, string> = {
 
 export const PERSONA_INSIGHT_PREVIEWS: Record<PersonaId, { page: string; msg: string }[]> = {
   market: [
-    { page: "Portfolio", msg: "Market Terminal active — live prices and P&L on all positions. Tap any ticker for intraday chart." },
+    { page: "Portfolio", msg: "Market Terminal active — every holding at what you paid, in its own currency first." },
     { page: "Cashflow",  msg: "Monthly net +£1,240: 30-day forecast shows investable surplus trajectory." },
     { page: "Tax",       msg: "£6,000 of CGT allowance still available — rebalancing within this limit is tax-free." },
   ],
