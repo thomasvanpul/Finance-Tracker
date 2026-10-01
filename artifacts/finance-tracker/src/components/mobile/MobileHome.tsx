@@ -31,6 +31,8 @@ import {
 } from "@/components/phone/CompositionChart";
 import { useMarketDataEnabled } from "@/lib/market-visibility";
 import { lowestSoFar, type DailyBalance } from "@/lib/lowest-so-far";
+import { buildDailyBalances } from "@/lib/daily-balances";
+import { projectedEvents } from "@/lib/projected-trough";
 import { cashflowBars } from "@/lib/cashflow-bars";
 import {
   selectInsight,
@@ -204,7 +206,13 @@ export function MobileHome(_props: MobileHomeProps) {
   ).getDate();
 
   // Cashflow: rolling daily balance from txns this month (past only).
-  const dailyBalances = buildDailyBalances(txns, now, totalCash);
+  // The dotted days are the trough insight's own projection — the same
+  // recurring series, from the same full-ledger history — so a month the
+  // insight calls overdrawn on the 7th shows the 7th dipping. Without a
+  // confident income and outgoing series the list is empty and the dotted
+  // days carry today's balance forward.
+  const projected = useMemo(() => projectedEvents(allTxns ?? [], now), [allTxns]);
+  const dailyBalances = buildDailyBalances(txns, now, totalCash, projected);
   const monthLow = lowestSoFar(dailyBalances);
 
   const timeStr = now.toLocaleTimeString("en-GB", {
@@ -512,38 +520,6 @@ export function MobileHome(_props: MobileHomeProps) {
 }
 
 // ── Cashflow chart (bar per day, past = fg, today = accent, future = dim) ───
-
-function buildDailyBalances(
-  txns: Array<{ date: string; baseEquivalent: number | null; type: string }>,
-  now: Date,
-  currentBalance: number,
-): DailyBalance[] {
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const today = now.getDate();
-  // Compute the balance at the START of the current month by rolling back
-  // today's balance through all this-month transactions. Skip rows whose
-  // FX is unavailable — including a fabricated 0 in monthNet would
-  // shift the rolled-back start balance and skew the whole curve.
-  const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthTxns = txns.filter((t) => t.date.startsWith(thisMonthPrefix) && t.baseEquivalent != null) as Array<{ date: string; baseEquivalent: number; type: string }>;
-  const monthNet = monthTxns.reduce((s, t) => {
-    const signed = t.type === "expense" ? -Math.abs(t.baseEquivalent) : Math.abs(t.baseEquivalent);
-    return s + signed;
-  }, 0);
-  let running = currentBalance - monthNet;
-  const perDay: number[] = new Array(daysInMonth).fill(0);
-  for (const t of monthTxns) {
-    const day = parseInt(t.date.slice(8, 10), 10);
-    const signed = t.type === "expense" ? -Math.abs(t.baseEquivalent) : Math.abs(t.baseEquivalent);
-    perDay[day - 1] += signed;
-  }
-  const result: DailyBalance[] = [];
-  for (let d = 0; d < daysInMonth; d++) {
-    running += perDay[d];
-    result.push({ day: d + 1, balance: running, future: d + 1 > today });
-  }
-  return result;
-}
 
 // Until 16 Sep 2026 this drew thirty bars with no scale, a red bar and a
 // yellow bar with no legend, each bar carrying a 5px offset shadow, and four

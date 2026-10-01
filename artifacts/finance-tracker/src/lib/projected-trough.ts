@@ -54,7 +54,7 @@ const MIN_OCCURRENCES = 3;
 // pay it"; two means "you can pay it and absorb one surprise".
 const COMFORT_MULTIPLE = 2;
 
-interface ProjectedEvent {
+export interface ProjectedEvent {
   date: string;
   /** Signed base amount: income positive, outgoing negative. */
   amount: number;
@@ -87,23 +87,17 @@ function occurrencesOf(
   return events;
 }
 
-export function projectedTrough(
-  txs: readonly Transaction[],
-  context: InsightContext,
+/**
+ * The recurring series projected forward from today to the horizon, sorted.
+ * Empty unless both an income and an outgoing series clear the confidence
+ * bar (condition 1 below). The trough insight reads its low point from this
+ * list and HOME's LIQUID strip draws its dotted days from the same one, so
+ * the chart cannot disagree with the sentence above it.
+ */
+export function projectedEvents(
+  source: readonly Transaction[],
   now: Date = new Date(),
-): Insight | null {
-  const balance = context.cashBalanceBase;
-  // No balance, no projection. A trough is a level, and a level needs a
-  // starting point the API supplied.
-  if (balance == null || !Number.isFinite(balance)) return null;
-
-  // A recurring series needs months, and the screen this producer runs on
-  // hands `txs` the current month alone — three occurrences of anything are
-  // impossible inside it, so the producer could never fire. Read the history
-  // the context carries, exactly as unbudgetedCategory does, and fall back to
-  // `txs` only for a caller that passes the full ledger as its first argument.
-  const source = context.historyTxs ?? txs;
-
+): ProjectedEvent[] {
   // A row whose base equivalent the API could not supply is dropped, not
   // coerced to zero — Lock #16's rule. A dropped row weakens the series'
   // confidence, which is the correct consequence.
@@ -123,17 +117,36 @@ export function projectedTrough(
 
   // Condition 1. Outgoings alone would project a balance that only falls,
   // and would fire every month for everyone.
-  if (income.length === 0 || outgoing.length === 0) return null;
+  if (income.length === 0 || outgoing.length === 0) return [];
 
   const today = now.toISOString().slice(0, 10);
   const horizon = addDays(today, HORIZON_DAYS);
-  const events = [
+  return [
     ...income.flatMap((p) => occurrencesOf(p, 1, today, horizon)),
     ...outgoing.flatMap((p) => occurrencesOf(p, -1, today, horizon)),
   ].sort((a, b) => (a.date === b.date ? a.amount - b.amount : a.date.localeCompare(b.date)));
   // Same-day ties settle outgoings first: the pessimistic reading, and the
   // one that matches how a bank actually clears a morning direct debit
   // against an afternoon credit.
+}
+
+export function projectedTrough(
+  txs: readonly Transaction[],
+  context: InsightContext,
+  now: Date = new Date(),
+): Insight | null {
+  const balance = context.cashBalanceBase;
+  // No balance, no projection. A trough is a level, and a level needs a
+  // starting point the API supplied.
+  if (balance == null || !Number.isFinite(balance)) return null;
+
+  // A recurring series needs months, and the screen this producer runs on
+  // hands `txs` the current month alone — three occurrences of anything are
+  // impossible inside it, so the producer could never fire. Read the history
+  // the context carries, exactly as unbudgetedCategory does, and fall back to
+  // `txs` only for a caller that passes the full ledger as its first argument.
+  const events = projectedEvents(context.historyTxs ?? txs, now);
+  const today = now.toISOString().slice(0, 10);
 
   if (events.length === 0) return null;
 

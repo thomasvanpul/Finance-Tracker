@@ -199,7 +199,7 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/components/mobile/mobile-format.ts", line: 10, reason: "default decimals count (2) for nfmt when unspecified" },
   { path: "artifacts/finance-tracker/src/lib/currency-query.ts", line: 105, reason: "decimal-place count for the palette conversion result: 2dp at |value| >= 1, 4dp below a unit where 2dp would round a real difference to nothing. A precision setting, not a figure — the value itself comes from convertVia, which returns null rather than a fallback when a leg is unpriced." },
   { path: "artifacts/finance-tracker/src/lib/currency-query.ts", line: 114, reason: "decimal-place count for the unit rate, mirroring FxRateCell in accounts.tsx: 2dp at >= 100, else 4dp. A precision setting, not a figure." },
-  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 53, reason: "default decimals count (2) for local nfmt fallback" },
+  { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", line: 55, reason: "default decimals count (2) for local nfmt fallback" },
   { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", line: 242, reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
 
   // Streaks, thresholds — non-money integers.
