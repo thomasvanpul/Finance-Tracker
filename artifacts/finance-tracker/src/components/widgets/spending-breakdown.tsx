@@ -87,7 +87,7 @@ function CategoryBarRow({ cat, amount, pct, color, rank, prevHasData, trend, ran
             {rank}
           </span>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: color, flexShrink: 0 }} />
-          <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-sans)", fontSize: 11, letterSpacing: "0.02em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {cat}
           </Drill>
         </div>
@@ -149,7 +149,7 @@ function DonutLegendItem({ cat, amt, total, color, range }: DonutLegendItemProps
       }}
     >
       <div style={{ width: 5, height: 5, borderRadius: "50%", background: color, flexShrink: 0 }} />
-      <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 9, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat}</Drill>
+      <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-sans)", fontSize: 9, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cat}</Drill>
       <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color }}>{total > 0 ? ((amt / total) * 100).toFixed(0) : 0}%</span>
     </div>
   );
@@ -187,7 +187,7 @@ function VsLastMonthRow({ cat, amount, prev, color, range }: VsLastMonthRowProps
       }}
     >
       <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0 }} />
-      <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-mono)", fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <Drill href={categoryTransactionsHref(cat, range)} style={{ fontFamily: "var(--font-sans)", fontSize: 11, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {cat}
       </Drill>
       {pctChange !== null && (
@@ -291,7 +291,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
   );
 
   const barList = sorted.length === 0 ? (
-    <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
+    <div style={{ padding: "var(--ft-empty-py) var(--ft-empty-px)", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>
       No expenses for {label}
     </div>
   ) : (
@@ -381,7 +381,7 @@ export function SpendingBreakdownWidget({ isExpanded }: { isExpanded?: boolean }
         vs Last Month
       </div>
       {sorted.length === 0 ? (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", paddingTop: 20 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center", paddingTop: 20 }}>
           No data to compare
         </div>
       ) : (
