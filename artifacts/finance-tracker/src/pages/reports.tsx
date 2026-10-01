@@ -510,7 +510,7 @@ function ExpenseReportRow({ cat, amount, i, totalExpenses, range }: ExpenseRepor
       {/* The category and its amount are the same set of rows, so both
           open it. "% of Total" and the share bar are proportions of a
           whole and stay flat (DESIGN.md §14). */}
-      <td style={{ ...TD, borderRight: "1px solid var(--ft-raised)" }}>
+      <td style={{ ...TD, fontFamily: "var(--font-sans)", borderRight: "1px solid var(--ft-raised)" }}>
         <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: color, marginRight: 8, verticalAlign: "middle" }} />
         <Drill href={categoryTransactionsHref(cat, range)} title={`Open the ${cat} transactions in this period`}>{cat}</Drill>
       </td>
@@ -750,7 +750,7 @@ function WaterfallChart({ income, expenses, categories }: {
         <ComposedChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -4 }}>
           <XAxis
             dataKey="name"
-            tick={{ fontFamily: "var(--font-mono)", fontSize: 8, fill: "var(--ft-dim)" }}
+            tick={{ fontFamily: "var(--font-sans)", fontSize: 8, fill: "var(--ft-dim)" }}
             axisLine={false}
             tickLine={false}
           />
@@ -767,7 +767,7 @@ function WaterfallChart({ income, expenses, categories }: {
               if (!active || !payload?.length) return null;
               const val = payload[0]?.value as number;
               return (
-                <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "7px 12px", fontFamily: "var(--font-mono)", fontSize: 10 }}>
+                <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", padding: "7px 12px", fontFamily: "var(--font-sans)", fontSize: 10 }}>
                   <div style={{ color: "var(--ft-dim)", fontSize: 9, marginBottom: 3 }}>{label}</div>
                   <div className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{formatBaseMoney(val)}</div>
                 </div>
@@ -812,7 +812,7 @@ function CategorySparklineRow({ cat, amount, i, totalExpenses, sparkVals, last3M
       }}
     >
       <HStack align="center" justify="between" marginBottom={3}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)" }}>{cat}</span>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)" }}>{cat}</span>
         <HStack gap={10} align="center">
           {sparkVals.length > 0 && (
             <HStack gap={2} align="end" height={16}>
@@ -911,11 +911,11 @@ function BiggestTxRow({ tx, rowIdx }: BiggestTxRowProps) {
       <div style={{ width: 100, minWidth: 100, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-muted)", fontSize: 11, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" }}>
         {formatDate(tx.date)}
       </div>
-      <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
+      <div style={{ flex: 1, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)", color: "var(--ft-text)", fontSize: 12, fontFamily: "var(--font-sans)", whiteSpace: "nowrap" }}>
         <Drill href={merchantTransactionsHref(tx.description)} title="Open this merchant's history">{tx.description}</Drill>
       </div>
       <div style={{ width: 130, minWidth: 130, padding: "7px 12px", borderRight: "1px solid var(--ft-raised)" }}>
-        <span style={{ fontSize: 10, fontFamily: "var(--font-mono)", padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
+        <span style={{ fontSize: 10, fontFamily: "var(--font-sans)", padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
           <Drill href={categoryTransactionsHref(tx.category)} title={`Open the ${tx.category} transactions`}>{tx.category}</Drill>
         </span>
       </div>
@@ -1238,7 +1238,7 @@ export default function Reports() {
             REPORTS
           </span>
           {!isMobile && (
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", whiteSpace: "nowrap", minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", whiteSpace: "nowrap", minWidth: 0 }}>
               income · expenses · trends
             </span>
           )}
@@ -1254,7 +1254,7 @@ export default function Reports() {
                   padding: isMobile ? "4px 7px" : "3px 8px",
                   minHeight: isMobile ? 32 : undefined,
                   fontSize: isMobile ? 9 : 10,
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   background: activeQuick === qr.label ? "var(--ft-raised)" : "transparent",
                   color: activeQuick === qr.label ? "var(--ft-text)" : "var(--ft-dim)",
                   border: activeQuick === qr.label ? "1px solid var(--ft-border2)" : "1px solid var(--ft-border)",
@@ -1273,14 +1273,14 @@ export default function Reports() {
           {/* Custom date range — hidden on mobile to save space */}
           {!isMobile && (
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <Text as="span" mono size={10} color="var(--ft-dim)">From</Text>
+              <Text as="span" size={10} color="var(--ft-dim)">From</Text>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => { setDateFrom(e.target.value); setActiveQuick("Custom"); }}
                 style={{ height: 26, padding: "0 6px", fontSize: 11, fontFamily: "var(--font-mono)", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", borderRadius: 2, color: "var(--ft-text)", outline: "none" }}
               />
-              <Text as="span" mono size={10} color="var(--ft-dim)">To</Text>
+              <Text as="span" size={10} color="var(--ft-dim)">To</Text>
               <input
                 type="date"
                 value={dateTo}
@@ -1293,7 +1293,7 @@ export default function Reports() {
           <button
             onClick={() => exportCsv(txList as CsvRow[], currentReportLabel)}
             title="Export transactions to CSV"
-            style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 11, fontFamily: "var(--font-mono)", padding: isMobile ? "6px 10px" : "4px 10px", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
+            style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 11, fontFamily: "var(--font-sans)", padding: isMobile ? "6px 10px" : "4px 10px", cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}
           >
             ↓ CSV
           </button>
@@ -1301,7 +1301,7 @@ export default function Reports() {
             <button
               onClick={() => window.print()}
               title="Print / save as PDF"
-              style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 11, fontFamily: "var(--font-mono)", padding: "4px 10px", cursor: "pointer" }}
+              style={{ background: "var(--ft-raised)", color: "var(--ft-text)", border: "1px solid var(--ft-border2)", borderRadius: 2, fontSize: 11, fontFamily: "var(--font-sans)", padding: "4px 10px", cursor: "pointer" }}
             >
               ⎙ Print
             </button>
@@ -1326,7 +1326,7 @@ export default function Reports() {
             key={rt.id}
             onClick={() => setReportType(rt.id)}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               fontWeight: reportType === rt.id ? 700 : 400,
               color: reportType === rt.id ? "var(--ft-text)" : "var(--ft-dim)",
@@ -1420,7 +1420,7 @@ export default function Reports() {
       {reportType === "income-statement" && (
         <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minWidth: 0 }}>
           <div style={{ borderRight: "1px solid var(--ft-border)", borderBottom: "1px solid var(--ft-border)" }}>
-            <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)">monthly breakdown</Text>}>Income Statement</PanelHeader>
+            <PanelHeader right={<Text as="span" size={9} color="var(--ft-dim)">monthly breakdown</Text>}>Income Statement</PanelHeader>
             <IncomeStatementTable rows={monthlyHistory} range={{ from: dateFrom, to: dateTo }} />
           </div>
           <div style={{ borderBottom: "1px solid var(--ft-border)" }}>
@@ -1453,7 +1453,7 @@ export default function Reports() {
               </div>
             )}
             {monthlyHistory.length === 0 && (
-              <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No monthly data available</div>
+              <div style={{ padding: 20, fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No monthly data available</div>
             )}
           </div>
         </div>
@@ -1465,7 +1465,7 @@ export default function Reports() {
             <PanelHeader right={
               <button
                 onClick={() => exportCsv(txList.filter((t) => t.type === "expense") as CsvRow[], "Expense Report")}
-                style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "2px 7px", cursor: "pointer", borderRadius: 2 }}
+                style={{ fontFamily: "var(--font-sans)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "2px 7px", cursor: "pointer", borderRadius: 2 }}
               >↓ CSV</button>
             }>Expense Breakdown by Category</PanelHeader>
             <ExpenseReportTable categories={topCategories} totalExpenses={totalExpenses} range={{ from: dateFrom, to: dateTo }} />
@@ -1511,7 +1511,7 @@ export default function Reports() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No data available</div>
+              <div style={{ padding: 20, fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No data available</div>
             )}
           </div>
         </div>
@@ -1545,7 +1545,7 @@ export default function Reports() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div style={{ padding: 20, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No data available</div>
+              <div style={{ padding: 20, fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", textAlign: "center" }}>No data available</div>
             )}
           </div>
         </div>
@@ -1574,10 +1574,10 @@ export default function Reports() {
       <div style={{ borderTop: "1px solid var(--ft-border)" }}>
         <PanelHeader right={
           <HStack gap={6}>
-            <Text as="span" mono size={9} color="var(--ft-dim)">Top 10 by GBP value</Text>
+            <Text as="span" size={9} color="var(--ft-dim)">Top 10 by GBP value</Text>
             <button
               onClick={() => exportCsv(biggestTxs as CsvRow[], "Biggest Transactions")}
-              style={{ fontFamily: "var(--font-mono)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "1px 6px", cursor: "pointer", borderRadius: 2 }}
+              style={{ fontFamily: "var(--font-sans)", fontSize: 9, background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-dim)", padding: "1px 6px", cursor: "pointer", borderRadius: 2 }}
             >↓ CSV</button>
           </HStack>
         }>Biggest Transactions</PanelHeader>
@@ -1592,9 +1592,9 @@ export default function Reports() {
             </HStack>
 
             {isLoading ? (
-              <div style={{ padding: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>Loading…</div>
+              <div style={{ padding: 20, textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)" }}>Loading…</div>
             ) : biggestTxs.length === 0 ? (
-              <div style={{ padding: 20, textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>No transactions in this range</div>
+              <div style={{ padding: 20, textAlign: "center", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)" }}>No transactions in this range</div>
             ) : (
               biggestTxs.map((tx, rowIdx) => (
                 <BiggestTxRow key={tx.id} tx={tx} rowIdx={rowIdx} />
@@ -1609,7 +1609,7 @@ export default function Reports() {
         <PanelHeader>Tax Year Export</PanelHeader>
         <div className="ft-filter-bar" style={{ padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, background: "var(--ft-surface)", flexWrap: "wrap" }}>
           <HStack gap={8} align="center">
-            <Text as="span" mono size={10} color="var(--ft-dim)" letterSpacing="0.04em">TAX YEAR</Text>
+            <Text as="span" size={10} color="var(--ft-dim)" letterSpacing="0.04em">TAX YEAR</Text>
             <select
               value={selectedTaxYear}
               onChange={(e) => { setSelectedTaxYear(Number(e.target.value)); setTaxYearError(null); }}
@@ -1618,20 +1618,20 @@ export default function Reports() {
               {TAX_YEARS.map((yr) => <option key={yr} value={yr}>{formatTaxYear(yr)}</option>)}
             </select>
           </HStack>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", padding: "4px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderRadius: 2 }}>
-            UK Tax Year: 6 April {selectedTaxYear} – 5 April {selectedTaxYear + 1}
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", padding: "4px 10px", background: "var(--ft-raised)", border: "1px solid var(--ft-border)", borderRadius: 2 }}>
+            UK Tax Year: <span style={MONO}>6 April {selectedTaxYear} – 5 April {selectedTaxYear + 1}</span>
           </div>
           <button
             onClick={handleTaxYearDownload}
             disabled={taxYearDownloading}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-raised)", color: taxYearDownloading ? "var(--ft-dim)" : "var(--ft-text)", border: `1px solid ${taxYearDownloading ? "var(--ft-border)" : "var(--ft-border2)"}`, borderRadius: 2, padding: "5px 12px", cursor: taxYearDownloading ? "not-allowed" : "pointer" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-raised)", color: taxYearDownloading ? "var(--ft-dim)" : "var(--ft-text)", border: `1px solid ${taxYearDownloading ? "var(--ft-border)" : "var(--ft-border2)"}`, borderRadius: 2, padding: "5px 12px", cursor: taxYearDownloading ? "not-allowed" : "pointer" }}
           >
-            {taxYearDownloading ? "Downloading…" : `↓ Download CSV (${formatTaxYear(selectedTaxYear)})`}
+            {taxYearDownloading ? "Downloading…" : <>↓ Download CSV (<span style={MONO}>{formatTaxYear(selectedTaxYear)}</span>)</>}
           </button>
           {taxYearError && (
-            <Text as="span" mono size={11} color="var(--ft-red)">{taxYearError}</Text>
+            <Text as="span" size={11} color="var(--ft-red)">{taxYearError}</Text>
           )}
-          <div style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
+          <div style={{ marginLeft: "auto", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em" }}>
             Columns: Date · Description · Amount · Type · Category · Account · Notes
           </div>
         </div>
