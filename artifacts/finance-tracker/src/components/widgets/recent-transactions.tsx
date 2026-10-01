@@ -126,7 +126,7 @@ function TxSummaryCard({ type, count, total }: TxSummaryCardProps) {
         {TYPE_PREFIX[type]}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {type}
         </div>
         <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -275,7 +275,7 @@ export function RecentTransactionsWidget({ isExpanded }: { isExpanded?: boolean 
           </div>
           <div style={{ padding: "var(--ft-widget-py) var(--ft-widget-px)" }}>
             <div style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
