@@ -1899,48 +1899,11 @@ function WidgetPicker({ disabledIds, onAdd }: { disabledIds: WidgetId[]; onAdd: 
   );
 }
 
-// ── Persona quick start ────────────────────────────────────────────────────────
-
-// ── Bloomberg KPI Bar ─────────────────────────────────────────────────────────
-
-const KPI_VALUE_STYLE: React.CSSProperties = {
-  display: "block",
-  fontFamily: "var(--font-mono)",
-  fontSize: "clamp(13px, 1.4vw, 18px)",
-  fontWeight: 700,
-  letterSpacing: "-0.01em",
-  lineHeight: 1,
-  fontVariantNumeric: "tabular-nums",
-  whiteSpace: "nowrap",
-};
-
-/**
- * The lead cell. Every KPI value used to render at exactly 18px at 1440,
- * which meant net worth — the number this product exists to state — was
- * the same size as MoM SPEND. Six figures at one size is not a hierarchy;
- * it is six figures.
- *
- * One promotion, not a ladder: this style applies to a single cell and
- * the other five hold 18. Tighter tracking because a larger mono figure
- * needs less of it, and the clamp floor is raised in step so the whole
- * range stays above the others rather than crossing under them on a
- * narrow viewport.
- */
-const KPI_LEAD_VALUE_STYLE: React.CSSProperties = {
-  ...KPI_VALUE_STYLE,
-  fontSize: "clamp(18px, 1.9vw, 25px)",
-  letterSpacing: "-0.02em",
-};
+// ── KPI cells (rendered by DashboardTopRegion) ─────────────────────────────────
 
 interface KpiCellData {
   label: string;
   value: string;
-  /**
-   * Renders at KPI_LEAD_VALUE_STYLE rather than KPI_VALUE_STYLE. At most
-   * one cell in a set should set it — two lead figures is the flat row
-   * this exists to fix, with an extra step.
-   */
-  lead?: boolean;
   delta?: string;
   deltaColor?: string;
   valueColor?: string;
@@ -2644,7 +2607,6 @@ export default function Dashboard() {
 
     const NET_WORTH: KpiCellData = {
       label: "NET WORTH",
-      lead: true,
       href: drillWhen(hasAccounts, "/net-worth"),
       value: formatBaseMoney(netWorth),
       delta: netWorth > 0 ? undefined : "—",
