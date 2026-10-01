@@ -174,7 +174,7 @@ function BudgetCard({
               promise about the same empty list, so it goes flat with it. */}
           {s === 0 ? (
             <span style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               color: "var(--ft-text)",
               textOverflow: "ellipsis",
@@ -187,7 +187,7 @@ function BudgetCard({
           <Drill
             href={categoryTransactionsHref(budget.category, { from: monthFrom })}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               textOverflow: "ellipsis",
               overflow: "hidden",
@@ -213,7 +213,7 @@ function BudgetCard({
           <button
             onClick={() => onRemove(budget)}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               color: "var(--ft-dim)",
               background: "none",
@@ -448,7 +448,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
           <button
             onClick={() => setAdding((a) => !a)}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               letterSpacing: "0.06em",
               color: "var(--ft-accent)",
@@ -595,7 +595,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
               onChange={(e) => setNewCat(e.target.value)}
               style={{
                 flex: 1,
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 11,
                 background: "var(--ft-raised)",
                 border: "1px solid var(--ft-border2)",
@@ -623,7 +623,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
             <button
               onClick={addBudget}
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 11,
                 color: "var(--ft-base)",
                 background: "var(--ft-accent)",
@@ -678,7 +678,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
             </svg>
             <span
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 11,
                 color: "var(--ft-dim)",
                 textAlign: "center",
@@ -689,7 +689,7 @@ export function BudgetTrackerWidget({ isExpanded }: { isExpanded?: boolean }) {
             </span>
             <span
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 9,
                 color: "var(--ft-dim)",
                 textAlign: "center",
