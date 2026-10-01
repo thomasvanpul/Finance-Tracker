@@ -40,6 +40,7 @@ import { MobileEmptyState } from "@/components/mobile/mobile-ui";
 import { PhoneSectionError } from "@/components/mobile/mobile-ui";
 import { QuickAddTransaction } from "@/components/quick-add-transaction";
 import { MobileSheet } from "@/components/mobile-sheet";
+import { LEDGER_MONTH_CAP, ledgerPaging } from "@/lib/ledger-paging";
 import {
   selectInsight,
   loadDismissedIds,
@@ -435,12 +436,9 @@ export function SpendingScreen() {
   // the sentinel reporting "more to load" forever for any account with over
   // a year of history. `atCap` names that state so it renders as a stop,
   // not a stuck spinner.
-  const atCap = monthsShown >= 12 && months.length > monthsShown;
-  const hasMoreToLoad = !atCap && (months.length > monthsShown || monthsShown < 12);
-  //                                                               ^ 12-month floor: user can
-  // always request one more month even if the current fetch is empty (a genuine
-  // gap in history rather than "nothing more exists"). Capped at 12 to bound
-  // the query size.
+  // The rule lives in lib/ledger-paging, which has the test. Capped at
+  // LEDGER_MONTH_CAP to bound the query size.
+  const { atCap, hasMoreToLoad } = ledgerPaging(months.length, monthsShown);
 
   // Hero: MTD spend + delta vs same-point last month.
   //
@@ -492,7 +490,7 @@ export function SpendingScreen() {
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            setMonthsShown((s) => Math.min(s + 1, 12));
+            setMonthsShown((s) => Math.min(s + 1, LEDGER_MONTH_CAP));
             break;
           }
         }
