@@ -1057,7 +1057,7 @@ function TxDetailSheet({
           <DetailRow label="DESCRIPTION" value={tx.description} href={tx.description ? merchantTransactionsHref(tx.description) : undefined} />
           <DetailRow label="CATEGORY" value={tx.category} href={tx.category ? categoryTransactionsHref(tx.category) : undefined} />
           <DetailRow label="ACCOUNT" value={tx.accountName} href={tx.accountId != null ? entityHref("account", tx.accountId) : undefined} />
-          <DetailRow label="DATE" value={tx.date} />
+          <DetailRow label="DATE" value={tx.date} mono />
         </div>
         <button
           type="button"
@@ -1152,13 +1152,16 @@ function FilterChips({
 // flat: a single day is a range the ledger has no filter chip for, and a
 // drill that lands on a filter the user cannot see or clear is worse than
 // none. DESIGN.md §14.
-function DetailRow({ label, value, href }: { label: string; value: string; href?: string }) {
+//
+// `mono` marks a value as data (DESIGN.md §10): the date is; the three names
+// are language and stay in the inherited sans.
+export function DetailRow({ label, value, href, mono = false }: { label: string; value: string; href?: string; mono?: boolean }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "8px 0", borderBottom: "1px solid var(--ft-border)" }}>
       <span style={{ fontFamily: "var(--font-sans)", fontSize: "var(--ft-text-xs)", letterSpacing: "0.12em", color: "var(--ft-dim)" }}>
         {label}
       </span>
-      <span style={{ fontSize: "var(--ft-text-body)", color: "var(--ft-text)", textAlign: "right", overflow: "hidden", textOverflow: "ellipsis" }}>
+      <span style={{ ...(mono ? { fontFamily: "var(--font-mono)" } : {}), fontSize: "var(--ft-text-body)", color: "var(--ft-text)", textAlign: "right", overflow: "hidden", textOverflow: "ellipsis" }}>
         {href ? <Drill href={href}>{value}</Drill> : value}
       </span>
     </div>
