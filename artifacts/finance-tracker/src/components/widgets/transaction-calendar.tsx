@@ -223,7 +223,7 @@ function DayDetailRow({ tx }: DayDetailRowProps) {
       />
       <span
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           color: "var(--ft-text)",
           flex: 1,
@@ -236,7 +236,7 @@ function DayDetailRow({ tx }: DayDetailRowProps) {
       </span>
       <span
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 9,
           color: "var(--ft-dim)",
           flexShrink: 0,
@@ -324,7 +324,7 @@ export function TransactionCalendarWidget() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 12px 6px" }}>
               <button
                 onClick={handlePrev}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 13, padding: "var(--ft-badge-py) var(--ft-badge-px)", lineHeight: 1 }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", fontSize: 13, padding: "var(--ft-badge-py) var(--ft-badge-px)", lineHeight: 1 }}
                 aria-label="Previous month"
               >
                 ‹
@@ -334,7 +334,7 @@ export function TransactionCalendarWidget() {
               </span>
               <button
                 onClick={handleNext}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-muted)", fontFamily: "var(--font-mono)", fontSize: 13, padding: "var(--ft-badge-py) var(--ft-badge-px)", lineHeight: 1 }}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ft-muted)", fontFamily: "var(--font-sans)", fontSize: 13, padding: "var(--ft-badge-py) var(--ft-badge-px)", lineHeight: 1 }}
                 aria-label="Next month"
               >
                 ›
@@ -490,7 +490,7 @@ export function TransactionCalendarWidget() {
                   marginTop: 10,
                   padding: "var(--ft-widget-py) var(--ft-widget-px)",
                   background: "var(--ft-raised)",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 11,
                   color: "var(--ft-dim)",
                   textAlign: "center",
