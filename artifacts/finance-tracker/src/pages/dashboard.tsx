@@ -18,6 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { LongPressPointerSensor } from "@/lib/long-press-sensor";
 
 import { apiFetch } from "@/lib/api-fetch";
 import { splitInsight } from "@/lib/insight-split";
@@ -2349,9 +2350,10 @@ export default function Dashboard() {
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
 
-  // Long-press sensors for view-mode drag (hold 250ms anywhere on widget)
+  // Long-press sensors for view-mode drag (hold 250ms anywhere on widget
+  // except its own buttons — a slow press on one must stay a click).
   const longPressDesktopSensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
+    useSensor(LongPressPointerSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
   // Market widgets are dropped from BOTH lists when this deployment does
