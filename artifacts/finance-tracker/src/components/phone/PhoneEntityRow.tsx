@@ -252,15 +252,19 @@ export function PhoneEntityRow({
         >
           {primary}
         </span>
+        {/* A data secondary carries figures ("AAPL · 12.5 shares", "3 Oct ·
+            4d late") and wraps at its spaces rather than crop one: "12.5…"
+            reads as a different number. Only a language secondary — a
+            category or account name — may ellipsise. */}
         {secondary && (
           <span
             style={{
               fontFamily: secondaryMono ? "var(--font-mono)" : "var(--font-sans)",
               fontSize: "var(--ft-text-xs)",
               color: "var(--ft-muted)",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              ...(secondaryMono
+                ? { overflowWrap: "break-word" as const }
+                : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }),
             }}
           >
             {secondary}
