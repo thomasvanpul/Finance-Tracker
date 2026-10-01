@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { Play } from "lucide-react";
+import { formatAxisPounds } from "@/lib/axis-pounds";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -599,7 +600,7 @@ function MonthByMonth({ txs, year }: { txs: Tx[]; year: number }) {
               tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
+              tickFormatter={formatAxisPounds}
             />
             <Tooltip
               content={(p) => (
@@ -702,7 +703,7 @@ function YearOverYear({ currentTxs, prevTxs, year }: { currentTxs: Tx[]; prevTxs
               tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-dim)", className: "pnum" }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v: number) => `£${(v / 1000).toFixed(0)}k`}
+              tickFormatter={formatAxisPounds}
             />
             <Tooltip
               content={(p) => (
