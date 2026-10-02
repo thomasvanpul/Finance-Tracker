@@ -59,6 +59,7 @@ describe.skipIf(!enabled)("data export · complete, and carries no credential (r
     await db.insert(s.dismissedSubscriptionsTable).values({ userId: me, description: "d" });
     await db.insert(s.connectionsTable).values({ userId: me, provider: "wise", label: "w", credentialCiphertext: secret("cipher") });
     await db.insert(s.nwSnapshotsTable).values({ userId: me, month: "2026-09", cash: "1", investment: "0", pension: "0", property: "0", other: "0" });
+    await db.insert(s.netWorthSnapshotsTable).values({ userId: me, date: "2026-09-13", baseCurrency: "GBP", assets: "1", portfolio: "0", liabilities: "0", owingNet: "0", netWorth: "1", partial: false });
     await db.insert(s.accountBalanceSnapshotsTable).values({ userId: me, accountId: acct.id, date: "2026-09-13", balance: "1", currency: "GBP" });
     await db.insert(s.recurringPatternsTable).values({ userId: me, normalizedKey: `k-${stamp}`, displayName: "r", intervalDays: 30, expectedAmount: "1", currency: "GBP", lastOccurrence: "2026-09-13" });
     const [exp] = await db.insert(s.sharedExpensesTable).values({ userId: me, description: "mine", date: "2026-09-13", totalAmount: "2", splitRule: "equal" }).returning({ id: s.sharedExpensesTable.id });

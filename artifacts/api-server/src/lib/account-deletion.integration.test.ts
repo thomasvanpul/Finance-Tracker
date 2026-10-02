@@ -57,6 +57,7 @@ describe.skipIf(!enabled)("account deletion · nothing survives (real database)"
     await db.insert(s.dismissedSubscriptionsTable).values({ userId: victim, description: "d" });
     await db.insert(s.connectionsTable).values({ userId: victim, provider: "wise", label: "w", credentialCiphertext: "ct" });
     await db.insert(s.nwSnapshotsTable).values({ userId: victim, month: "2026-09", cash: "1", investment: "0", pension: "0", property: "0", other: "0" });
+    await db.insert(s.netWorthSnapshotsTable).values({ userId: victim, date: "2026-09-05", baseCurrency: "GBP", assets: "1", portfolio: "0", liabilities: "0", owingNet: "0", netWorth: "1", partial: false });
     await db.insert(s.accountBalanceSnapshotsTable).values({ userId: victim, accountId: acct.id, date: "2026-09-05", balance: "1", currency: "GBP" });
     await db.insert(s.recurringPatternsTable).values({ userId: victim, normalizedKey: `k-${stamp}`, displayName: "r", intervalDays: 30, expectedAmount: "1", currency: "GBP", lastOccurrence: "2026-09-05" });
     const [exp] = await db.insert(s.sharedExpensesTable).values({ userId: victim, description: "e", date: "2026-09-05", totalAmount: "2", splitRule: "equal" }).returning({ id: s.sharedExpensesTable.id });
