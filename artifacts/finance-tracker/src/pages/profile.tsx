@@ -1659,7 +1659,7 @@ export default function Profile() {
               <HStack gap={8}>
                 <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); }} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
                 <button onClick={handle2FaEnable} disabled={twoFaLoading || !twoFaPassword} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-accent)", background: "transparent", border: "1px solid var(--ft-accent)", padding: "6px 14px", cursor: twoFaLoading || !twoFaPassword ? "not-allowed" : "pointer", opacity: twoFaLoading || !twoFaPassword ? 0.5 : 1 }}>
-                  {twoFaLoading ? "…" : "&gt; Continue"}
+                  {twoFaLoading ? "…" : "> Continue"}
                 </button>
               </HStack>
             </VStack>
@@ -1692,7 +1692,7 @@ export default function Profile() {
               <HStack gap={8}>
                 <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); setTwoFaUri(""); setTwoFaCode(""); }} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
                 <button onClick={handle2FaVerify} disabled={twoFaLoading || twoFaCode.length < 6} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-green)", background: "transparent", border: "1px solid var(--ft-green)", padding: "6px 14px", cursor: twoFaLoading || twoFaCode.length < 6 ? "not-allowed" : "pointer", opacity: twoFaLoading || twoFaCode.length < 6 ? 0.5 : 1 }}>
-                  {twoFaLoading ? "Verifying…" : "&gt; Verify &amp; Activate"}
+                  {twoFaLoading ? "Verifying…" : "> Verify & Activate"}
                 </button>
               </HStack>
             </VStack>
@@ -1712,7 +1712,7 @@ export default function Profile() {
               <HStack gap={8}>
                 <button onClick={() => { setTwoFaStep("idle"); setTwoFaPassword(""); }} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)", background: "transparent", border: "1px solid var(--ft-border)", padding: "6px 14px", cursor: "pointer" }}>Cancel</button>
                 <button onClick={handle2FaDisable} disabled={twoFaLoading || !twoFaPassword} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-red)", background: "transparent", border: "1px solid var(--ft-red)", padding: "6px 14px", cursor: twoFaLoading || !twoFaPassword ? "not-allowed" : "pointer", opacity: twoFaLoading || !twoFaPassword ? 0.5 : 1 }}>
-                  {twoFaLoading ? "Disabling…" : "&gt; Disable 2FA"}
+                  {twoFaLoading ? "Disabling…" : "> Disable 2FA"}
                 </button>
               </HStack>
             </VStack>

@@ -418,7 +418,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
             letterSpacing: "0.04em",
           }}
         >
-          {createMutation.isPending ? "VALIDATING…" : "&gt; VALIDATE + ADD"}
+          {createMutation.isPending ? "VALIDATING…" : "> VALIDATE + ADD"}
         </button>
       </HStack>
       {errorMessage && (
