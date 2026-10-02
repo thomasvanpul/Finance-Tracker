@@ -110,7 +110,7 @@ function applyPreset(preset: FormatPreset, headers: string[]): { colMap: Partial
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
 
 const labelStyle: React.CSSProperties = {
-  ...mono,
+  fontFamily: "var(--font-sans)",
   fontSize: 9,
   color: "var(--ft-dim)",
   letterSpacing: "0.08em",
@@ -152,7 +152,7 @@ const td: React.CSSProperties = {
 };
 
 const BTN_PRIMARY: React.CSSProperties = {
-  ...mono,
+  fontFamily: "var(--font-sans)",
   fontSize: 10,
   fontWeight: 700,
   letterSpacing: "0.06em",
@@ -168,7 +168,7 @@ const BTN_PRIMARY: React.CSSProperties = {
 };
 
 const BTN_GHOST: React.CSSProperties = {
-  ...mono,
+  fontFamily: "var(--font-sans)",
   fontSize: 10,
   fontWeight: 400,
   letterSpacing: "0.06em",
@@ -448,7 +448,7 @@ function AmountFormatOption({ value, label, selected, onSelect }: AmountFormatOp
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        ...mono,
+        fontFamily: "var(--font-sans)",
         fontSize: 9,
         padding: "5px 10px",
         border: `1px solid ${selected ? "var(--ft-accent)" : hovered ? "var(--ft-border2)" : "var(--ft-border)"}`,
@@ -531,7 +531,7 @@ function StepIndicator({ current }: { current: ImportStep }) {
               </div>
               <span
                 style={{
-                  ...mono,
+                  fontFamily: "var(--font-sans)",
                   fontSize: 9,
                   letterSpacing: "0.10em",
                   color: active
@@ -619,7 +619,7 @@ function DropZone({
       />
       <div
         style={{
-          ...mono,
+          fontFamily: "var(--font-sans)",
           fontSize: 10,
           color: dragging ? "var(--ft-accent)" : "var(--ft-muted)",
           fontWeight: 700,
@@ -673,7 +673,7 @@ function Step1({
     <div style={card}>
       <PanelHeader>Step 1 — Paste or Upload File</PanelHeader>
       <div style={cardBody}>
-      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
         Paste your bank export below, or upload a .csv, .ofx, or .qif file
       </div>
 
@@ -698,7 +698,7 @@ function Step1({
         }}
       >
         <div style={{ flex: 1, height: 1, background: "var(--ft-border)" }} />
-        <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
           OR PASTE BELOW
         </span>
         <div style={{ flex: 1, height: 1, background: "var(--ft-border)" }} />
@@ -821,7 +821,7 @@ function Step2({
         value={colMap[field]}
         onChange={(e) => onColMapChange(field, e.target.value)}
         style={{
-          ...mono,
+          fontFamily: "var(--font-sans)",
           fontSize: 10,
           background: "var(--ft-base)",
           border: `1px solid ${colMap[field] ? "var(--ft-green)" : "var(--ft-border)"}`,
@@ -844,7 +844,7 @@ function Step2({
     <div style={card}>
       <PanelHeader>Step 2 — Map Columns</PanelHeader>
       <div style={cardBody}>
-      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
         Tell Numeris which CSV column maps to each field · <span className="pnum">{headers.length}</span> columns detected
       </div>
 
@@ -982,7 +982,7 @@ function PresetButton({
       onMouseLeave={() => setHovered(false)}
       onClick={() => onApply(preset)}
       style={{
-        ...mono,
+        fontFamily: "var(--font-sans)",
         fontSize: 9,
         fontWeight: 600,
         padding: "4px 10px",
@@ -1040,7 +1040,7 @@ function Step3({
     <div style={card}>
       <PanelHeader>Step 3 — Review &amp; Import</PanelHeader>
       <div style={cardBody}>
-      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", marginBottom: 16 }}>
         <span className="pnum">{selectedCount}</span> of <span className="pnum">{rows.length}</span> transactions selected · <span className="pnum">{incomeCount}</span> income · <span className="pnum">{expenseCount}</span> expenses
       </div>
 
@@ -1087,7 +1087,7 @@ function Step3({
           value={accountId}
           onChange={(e) => onAccountChange(e.target.value)}
           style={{
-            ...mono,
+            fontFamily: "var(--font-sans)",
             fontSize: 10,
             background: "var(--ft-base)",
             border: "1px solid var(--ft-border)",
@@ -1105,7 +1105,7 @@ function Step3({
           ))}
         </select>
         {!accountId && (
-          <span style={{ ...mono, fontSize: 9, color: "var(--ft-amber)", display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-amber)", display: "flex", alignItems: "center", gap: 4 }}>
             <AlertTriangle size={10} />
             Required to import
           </span>
@@ -1127,7 +1127,7 @@ function Step3({
           }}
         >
           <AlertTriangle size={12} color="var(--ft-amber)" style={{ flexShrink: 0 }} />
-          <span style={{ ...mono, fontSize: 10, color: "var(--ft-amber)", flex: 1 }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-amber)", flex: 1 }}>
             <span className="pnum">{dupCount}</span> potential duplicate{dupCount !== 1 ? "s" : ""} detected — these are pre-deselected
           </span>
           <button
@@ -1293,6 +1293,7 @@ function ImportRow({
       <td
         style={{
           ...tdStyle,
+          fontFamily: "var(--font-sans)",
           maxWidth: 220,
           overflow: "hidden",
           textOverflow: "ellipsis",
@@ -1317,7 +1318,7 @@ function ImportRow({
         <span
           style={{
             fontSize: 9,
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             padding: "1px 7px",
             fontWeight: 700,
             letterSpacing: "0.06em",
@@ -1328,7 +1329,7 @@ function ImportRow({
           {row.type.toUpperCase()}
         </span>
       </td>
-      <td style={{ ...tdStyle, color: "var(--ft-muted)" }}>
+      <td style={{ ...tdStyle, fontFamily: "var(--font-sans)", color: "var(--ft-muted)" }}>
         {row.category}
       </td>
       <td style={{ ...tdStyle, textAlign: "center", fontSize: 9 }}>
@@ -1336,6 +1337,7 @@ function ImportRow({
           <span
             title={errorMsg}
             style={{
+              fontFamily: "var(--font-sans)",
               color: "var(--ft-red)",
               display: "flex",
               alignItems: "center",
@@ -1347,7 +1349,7 @@ function ImportRow({
             ERROR
           </span>
         ) : importing && row.selected ? (
-          <span style={{ color: "var(--ft-dim)", fontFamily: "var(--font-mono)" }}>…</span>
+          <span style={{ color: "var(--ft-dim)", fontFamily: "var(--font-sans)" }}>…</span>
         ) : row.isDuplicate ? (
           <span
             style={{
@@ -1355,7 +1357,7 @@ function ImportRow({
               background: "color-mix(in srgb, var(--ft-amber) 15%, transparent)",
               padding: "1px 6px",
               fontSize: 9,
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontWeight: 700,
               letterSpacing: "0.06em",
             }}
@@ -1366,7 +1368,7 @@ function ImportRow({
           <span
             style={{
               color: "var(--ft-green)",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontWeight: 700,
               fontSize: 9,
               letterSpacing: "0.06em",
@@ -1605,7 +1607,7 @@ export default function ImportPage() {
         actions={
           history.length > 0 ? (
             <div style={{ textAlign: "right" }}>
-              <div style={{ ...labelStyle, marginBottom: 6 }}>Recent imports</div>
+              <div style={{ ...labelStyle, ...mono, marginBottom: 6 }}>Recent imports</div>
               {history.map((h, i) => (
                 <HistoryEntryItem key={i} entry={h} />
               ))}
@@ -1631,7 +1633,7 @@ export default function ImportPage() {
         return (
           <div
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               color: "var(--ft-muted)",
               border: "1px solid var(--ft-border)",
@@ -1674,7 +1676,7 @@ export default function ImportPage() {
           )}
           <div
             style={{
-              ...mono,
+              fontFamily: "var(--font-sans)",
               fontSize: 13,
               fontWeight: 700,
               color: errorCount === 0 ? "var(--ft-green)" : "var(--ft-amber)",
