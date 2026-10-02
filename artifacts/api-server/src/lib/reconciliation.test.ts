@@ -68,9 +68,42 @@ describe("period rule", () => {
     expect(choosePeriod(["2026-08-20", "2026-09-03"], "2026-09-05")).toEqual({ rule: "since-first-snapshot", from: "2026-08-20" });
     expect(choosePeriod([], "2026-09-05")).toBeNull();
   });
+  // Measured 2026-10-03 on the seed account: 26 days of complete snapshots
+  // (since 2026-09-07), yet /api/allocation measured drift over 2 days
+  // because the 1st qualified, and the allocation engine's 7-day floor then
+  // withheld the allowance. Every user, days 1-7 of every month.
+  it("skips month-to-date when it is shorter than minDays and older history exists", () => {
+    expect(choosePeriod(["2026-09-07", "2026-10-01"], "2026-10-03", 7))
+      .toEqual({ rule: "since-first-snapshot", from: "2026-09-07" });
+  });
+  it("keeps month-to-date once it reaches minDays", () => {
+    expect(choosePeriod(["2026-09-07", "2026-10-01"], "2026-10-08", 7))
+      .toEqual({ rule: "month-to-date", from: "2026-10-01" });
+  });
+  it("keeps month-to-date when there is no older history to fall back to", () => {
+    expect(choosePeriod(["2026-10-01"], "2026-10-03", 7))
+      .toEqual({ rule: "month-to-date", from: "2026-10-01" });
+  });
+  it("without minDays, month-to-date wins however short — /accounts/reconciliation reports facts", () => {
+    expect(choosePeriod(["2026-09-07", "2026-10-01"], "2026-10-03"))
+      .toEqual({ rule: "month-to-date", from: "2026-10-01" });
+  });
 });
 
 describe("computeReconciliation", () => {
+  it("passes minDays through to the period choice", async () => {
+    const snaps = [
+      { accountId: 1, date: "2026-09-07", balance: 100, capturedAt: T0 },
+      { accountId: 1, date: "2026-10-01", balance: 100, capturedAt: T0 },
+    ];
+    const short = await computeReconciliation(base({ snapshots: snaps, today: "2026-10-03" }));
+    expect(short.periodFrom).toBe("2026-10-01");
+    expect(short.days).toBe(2);
+    const floored = await computeReconciliation(base({ snapshots: snaps, today: "2026-10-03", minDays: 7 }));
+    expect(floored.periodRule).toBe("since-first-snapshot");
+    expect(floored.periodFrom).toBe("2026-09-07");
+    expect(floored.days).toBe(26);
+  });
   it("is insufficient with no qualifying baseline, and carries no figure", async () => {
     const r = await computeReconciliation(base({ snapshots: [{ accountId: 1, date: "2026-09-05", balance: 100, capturedAt: T0 }] }));
     expect(r.status).toBe("insufficient");

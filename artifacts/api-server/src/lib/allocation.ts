@@ -75,6 +75,12 @@ export const HORIZON_DAYS = 30;
 // lower. It is not an argument for 14 — the amplification does not vanish at
 // any floor below 30, and since the term is a DISCOUNT, over-discounting is
 // the safe error and under-sampling it is not.
+//
+// "Once" holds only because routes/allocation.ts passes this floor to
+// computeReconciliation as minDays. Without it the period rule prefers
+// month-to-date whenever the 1st qualifies, so a user with weeks of history
+// had a 2-day sample on the 3rd and no allowance on days 1-7 of EVERY month
+// (seed account, measured 2026-10-03: 26 days of history, driftDays 2).
 export const MIN_DRIFT_DAYS = 7;
 
 // Days in a year, for turning a monthly contribution into a daily claim.

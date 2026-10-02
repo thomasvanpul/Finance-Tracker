@@ -62,6 +62,12 @@ export interface ReconciliationInput {
   today: string; // YYYY-MM-DD, server-local
   baseCurrency: string;
   convert: Convert;
+  // Shortest period the caller can use. /accounts/reconciliation passes
+  // nothing: "£40 unexplained over 2 days" is a true statement. The
+  // allocation engine passes MIN_DRIFT_DAYS, because it extrapolates, and a
+  // month-to-date period two days old would otherwise withhold the allowance
+  // from a user with weeks of history on days 1-7 of every month.
+  minDays?: number;
 }
 
 export interface ReconciliationAccountResult {
@@ -138,15 +144,18 @@ export function completeBaselineDates(
 export function choosePeriod(
   completeDates: readonly string[],
   today: string,
+  minDays = 0,
 ): { rule: PeriodRule; from: string } | null {
   if (completeDates.length === 0) return null;
   const monthStart = `${today.slice(0, 7)}-01`;
-  if (completeDates.includes(monthStart)) return { rule: "month-to-date", from: monthStart };
-  return { rule: "since-first-snapshot", from: completeDates[0] };
+  const earliest = completeDates[0];
+  const monthToDateTooShort = daysBetween(monthStart, today) < minDays && earliest < monthStart;
+  if (completeDates.includes(monthStart) && !monthToDateTooShort) return { rule: "month-to-date", from: monthStart };
+  return { rule: "since-first-snapshot", from: earliest };
 }
 
 export async function computeReconciliation(input: ReconciliationInput): Promise<ReconciliationReport> {
-  const { cashAccounts, snapshots, transactions, today, baseCurrency, convert } = input;
+  const { cashAccounts, snapshots, transactions, today, baseCurrency, convert, minDays } = input;
   const ids = cashAccounts.map((a) => a.id);
   const cashSnapshots = snapshots.filter((s) => ids.includes(s.accountId));
   const dataAvailableSince = cashSnapshots.length === 0
@@ -167,7 +176,7 @@ export async function computeReconciliation(input: ReconciliationInput): Promise
   });
 
   if (cashAccounts.length === 0) return insufficient();
-  const period = choosePeriod(completeBaselineDates(ids, cashSnapshots, today), today);
+  const period = choosePeriod(completeBaselineDates(ids, cashSnapshots, today), today, minDays);
   if (period == null) return insufficient();
 
   const accounts: ReconciliationAccountResult[] = [];

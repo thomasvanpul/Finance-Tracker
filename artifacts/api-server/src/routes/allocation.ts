@@ -12,7 +12,7 @@ import { getBaseCurrency } from "../lib/app-settings-db";
 import { localDateString } from "../lib/date-ranges";
 import { toBase } from "../lib/market";
 import { computeReconciliation } from "../lib/reconciliation";
-import { computeAllocation, HORIZON_DAYS, addDays } from "../lib/allocation";
+import { computeAllocation, HORIZON_DAYS, MIN_DRIFT_DAYS, addDays } from "../lib/allocation";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
 import { GetAllocationResponse } from "@workspace/api-zod";
 
@@ -130,6 +130,7 @@ router.get("/allocation", async (req, res): Promise<void> => {
     today,
     baseCurrency,
     convert: toBase,
+    minDays: MIN_DRIFT_DAYS,
   });
 
   const result = await computeAllocation({
