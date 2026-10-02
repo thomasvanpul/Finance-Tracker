@@ -235,7 +235,6 @@ export function DirectoryScreen() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontFamily: "var(--font-mono)",
               letterSpacing: "0.06em",
             }}
           >
@@ -245,7 +244,6 @@ export function DirectoryScreen() {
         {activeGroup ? (
           <span
             style={{
-              fontFamily: "var(--font-mono)",
               fontSize: 12,
               color: "var(--ft-dim)",
               letterSpacing: "0.08em",

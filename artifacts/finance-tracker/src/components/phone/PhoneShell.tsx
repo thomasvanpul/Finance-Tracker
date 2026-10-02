@@ -151,7 +151,6 @@ function DirectoryItemScreen({ title, children }: { title: string; children: Rea
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontFamily: "var(--font-mono)",
             letterSpacing: "0.06em",
           }}
         >
@@ -159,7 +158,6 @@ function DirectoryItemScreen({ title, children }: { title: string; children: Rea
         </button>
         <span
           style={{
-            fontFamily: "var(--font-mono)",
             fontSize: 12,
             color: "var(--ft-dim)",
             letterSpacing: "0.08em",
@@ -186,7 +184,6 @@ const placeholderStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontFamily: "var(--font-mono)",
   fontSize: 28,
   letterSpacing: "0.15em",
   color: "var(--ft-dim)",

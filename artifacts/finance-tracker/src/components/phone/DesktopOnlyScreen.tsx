@@ -63,7 +63,6 @@ export function DesktopOnlyScreen({ title, body }: DesktopOnlyScreenProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontFamily: "var(--font-mono)",
             letterSpacing: "0.06em",
           }}
         >
@@ -71,7 +70,6 @@ export function DesktopOnlyScreen({ title, body }: DesktopOnlyScreenProps) {
         </button>
         <span
           style={{
-            fontFamily: "var(--font-mono)",
             fontSize: 12,
             color: "var(--ft-dim)",
             letterSpacing: "0.08em",
@@ -103,7 +101,6 @@ export function DesktopOnlyScreen({ title, body }: DesktopOnlyScreenProps) {
         >
           <div
             style={{
-              fontFamily: "var(--font-mono)",
               fontSize: "var(--ft-text-xs)",
               letterSpacing: "0.16em",
               color: "var(--ft-dim)",
