@@ -127,12 +127,19 @@ export function localMonthString(date: Date): string {
 // local getDate()/setDate() round-trip returns the wrong day. Anchoring on
 // Date.UTC keeps the arithmetic in the same frame the string was written in.
 //
-// Day-of-month overflow follows JS: 2026-01-31 plus one month is 2026-03-03,
-// not 2026-02-28. That is the behaviour the installment generator already
-// had, preserved deliberately — clamping is a product decision, not a
-// timezone fix, and belongs in its own change.
+// The day is clamped to the target month's last day rather than left to
+// JS's native overflow: 2026-01-31 plus one month is 2026-02-28, not
+// 2026-03-03. Finding 834794750989 (closed 2026-10-02): unclamped overflow
+// drifted a monthly installment schedule started late in a month forward by
+// a few days every time it crossed a shorter month, which is not what a
+// fixed-day-of-month schedule means. Clamping is the standard convention for
+// recurring monthly schedules (e.g. billing-cycle dates).
 export function addCalendarMonths(dateStr: string, months: number): string {
-  const d = new Date(Date.UTC(+dateStr.slice(0, 4), +dateStr.slice(5, 7) - 1, +dateStr.slice(8, 10)));
-  d.setUTCMonth(d.getUTCMonth() + months);
+  const year = +dateStr.slice(0, 4);
+  const month = +dateStr.slice(5, 7) - 1;
+  const day = +dateStr.slice(8, 10);
+  const targetMonth = month + months;
+  const daysInTargetMonth = new Date(Date.UTC(year, targetMonth + 1, 0)).getUTCDate();
+  const d = new Date(Date.UTC(year, targetMonth, Math.min(day, daysInTargetMonth)));
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 }

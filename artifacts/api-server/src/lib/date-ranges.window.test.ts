@@ -113,9 +113,16 @@ describe("addCalendarMonths", () => {
     });
   });
 
-  it("preserves the JS day-overflow the installment generator already had", () => {
-    // 31 Jan + 1 month is 3 Mar, not 28 Feb. Clamping is a product decision
-    // about what an installment schedule should do, not a timezone fix.
-    expect(addCalendarMonths("2026-01-31", 1)).toBe("2026-03-03");
+  it("clamps day-of-month overflow to the target month's last day", () => {
+    // Finding 834794750989: unclamped, 31 Jan + 1 month is 3 Mar (JS native
+    // overflow), drifting a monthly schedule forward every time it crosses
+    // a shorter month. Clamped, it lands on the month's last day instead.
+    expect(addCalendarMonths("2026-01-31", 1)).toBe("2026-02-28");
+    expect(addCalendarMonths("2026-01-31", 2)).toBe("2026-03-31");
+    expect(addCalendarMonths("2026-01-31", 13)).toBe("2027-02-28");
+  });
+
+  it("clamps correctly across a leap-year February", () => {
+    expect(addCalendarMonths("2028-01-31", 1)).toBe("2028-02-29");
   });
 });
