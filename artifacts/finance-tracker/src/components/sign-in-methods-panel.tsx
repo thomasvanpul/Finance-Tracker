@@ -18,7 +18,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useAuthProviders, type ProviderId } from "@/lib/auth-providers";
-import { HStack, VStack, Text, MonoLabel } from "@/components/primitives";
+import { HStack, VStack, Text } from "@/components/primitives";
 import { Shield, Plus, Trash2, Fingerprint } from "lucide-react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -221,7 +221,7 @@ export function SignInMethodsPanel({ panelStyle, headerStyle }: Props) {
       <div style={{ background: "var(--ft-surface)" }}>
         {loading || providersLoading ? (
           <div style={{ padding: "14px 16px" }}>
-            <MonoLabel size={9} color="var(--ft-dim)">Loading…</MonoLabel>
+            <Text size={11} color="var(--ft-dim)">Loading…</Text>
           </div>
         ) : (
           <>
@@ -232,7 +232,7 @@ export function SignInMethodsPanel({ panelStyle, headerStyle }: Props) {
                   padding: "10px 14px",
                   background: "color-mix(in srgb, var(--ft-red) 8%, transparent)",
                   borderBottom: "1px solid color-mix(in srgb, var(--ft-red) 40%, var(--ft-border))",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 11,
                   color: "var(--ft-red)",
                 }}
@@ -263,11 +263,11 @@ export function SignInMethodsPanel({ panelStyle, headerStyle }: Props) {
                         }}
                       />
                       <VStack gap={2}>
-                        <Text as="span" mono size={11} color="var(--ft-text)">{label}</Text>
+                        <Text as="span" size={11} color="var(--ft-text)">{label}</Text>
                         {acc.createdAt && (
-                          <MonoLabel size={9} color="var(--ft-dim)">
-                            Added {fmtDate(acc.createdAt)}
-                          </MonoLabel>
+                          <Text size={9} color="var(--ft-dim)" upper letterSpacing="0.08em">
+                            Added <span className="pnum">{fmtDate(acc.createdAt)}</span>
+                          </Text>
                         )}
                       </VStack>
                     </HStack>
@@ -280,7 +280,7 @@ export function SignInMethodsPanel({ panelStyle, headerStyle }: Props) {
                         background: "transparent",
                         border: "1px solid var(--ft-border)",
                         color: check.allowed ? "var(--ft-dim)" : "var(--ft-border2)",
-                        fontFamily: "var(--font-mono)",
+                        fontFamily: "var(--font-sans)",
                         fontSize: 9,
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
@@ -312,13 +312,13 @@ export function SignInMethodsPanel({ panelStyle, headerStyle }: Props) {
                     <HStack gap={10} align="center">
                       <Fingerprint size={12} style={{ color: "var(--ft-accent)" }} />
                       <VStack gap={2}>
-                        <Text as="span" mono size={11} color="var(--ft-text)">
+                        <Text as="span" size={11} color="var(--ft-text)">
                           {pk.name ?? "Passkey"}
                         </Text>
                         {pk.createdAt && (
-                          <MonoLabel size={9} color="var(--ft-dim)">
-                            Registered {fmtDate(pk.createdAt)}
-                          </MonoLabel>
+                          <Text size={9} color="var(--ft-dim)" upper letterSpacing="0.08em">
+                            Registered <span className="pnum">{fmtDate(pk.createdAt)}</span>
+                          </Text>
                         )}
                       </VStack>
                     </HStack>
@@ -330,7 +330,7 @@ export function SignInMethodsPanel({ panelStyle, headerStyle }: Props) {
                       background: "transparent",
                       border: "1px solid var(--ft-border)",
                       color: "var(--ft-dim)",
-                      fontFamily: "var(--font-mono)",
+                      fontFamily: "var(--font-sans)",
                       fontSize: 9,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
@@ -353,7 +353,7 @@ export function SignInMethodsPanel({ panelStyle, headerStyle }: Props) {
             {(canLinkProviders.length > 0 || passkeyAvailable) && (
               <div style={{ borderTop: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
               <VStack gap={8} padding="12px 14px">
-                <MonoLabel size={9} letterSpacing="0.1em" color="var(--ft-dim)">Add another</MonoLabel>
+                <Text size={9} letterSpacing="0.1em" color="var(--ft-dim)" upper>Add another</Text>
                 <HStack gap={8} wrap>
                   {passkeyAvailable && (
                     <button
@@ -364,7 +364,7 @@ export function SignInMethodsPanel({ panelStyle, headerStyle }: Props) {
                         background: "transparent",
                         border: "1px solid var(--ft-border2)",
                         color: "var(--ft-text)",
-                        fontFamily: "var(--font-mono)",
+                        fontFamily: "var(--font-sans)",
                         fontSize: 11,
                         padding: "8px 12px",
                         cursor: busy != null ? "not-allowed" : "pointer",
@@ -388,7 +388,7 @@ export function SignInMethodsPanel({ panelStyle, headerStyle }: Props) {
                         background: "transparent",
                         border: "1px solid var(--ft-border2)",
                         color: "var(--ft-text)",
-                        fontFamily: "var(--font-mono)",
+                        fontFamily: "var(--font-sans)",
                         fontSize: 11,
                         padding: "8px 12px",
                         cursor: busy != null ? "not-allowed" : "pointer",
