@@ -75,7 +75,7 @@ export default function SharedExpensesPage() {
           <button
             onClick={() => setCreating((v) => !v)}
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               color: creating ? "var(--ft-muted)" : "var(--ft-accent)",
               background: "transparent",
@@ -99,12 +99,12 @@ export default function SharedExpensesPage() {
       )}
 
       {isLoading && (
-        <Text mono size={11} color="var(--ft-dim)">Loading…</Text>
+        <Text size={11} color="var(--ft-dim)">Loading…</Text>
       )}
 
       {!isLoading && expenses.length === 0 && !creating && (
         <PanelBox padding={16}>
-          <Text mono size={11} color="var(--ft-dim)">
+          <Text size={11} color="var(--ft-dim)">
             No shared bills yet. Click "New Bill" to record one.
           </Text>
         </PanelBox>
@@ -139,7 +139,7 @@ function ExpenseCard({
             {expense.date} · {expense.currency} {expense.totalAmount.toFixed(2)} · {expense.splitRule}
           </Text>
         </VStack>
-        <Text mono size={10} color="var(--ft-dim)" letterSpacing="0.06em">
+        <Text size={10} color="var(--ft-dim)" letterSpacing="0.06em">
           {isPayer ? "YOU PAID" : "SHARED WITH YOU"}
         </Text>
       </HStack>
@@ -167,7 +167,7 @@ function ExpenseCard({
                 <Text as="div" size={12} weight={500}>
                   {p.name}{isMe ? " (you)" : ""}{p.isPayer ? " · payer" : ""}
                 </Text>
-                <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">
+                <Text as="div" size={9} color="var(--ft-dim)" letterSpacing="0.04em">
                   {p.linkedUserId ? "linked" : p.linkedEmail ?? "unlinked"}
                 </Text>
               </div>
@@ -176,7 +176,7 @@ function ExpenseCard({
               </Text>
               <span
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 9,
                   letterSpacing: "0.08em",
                   fontWeight: 700,
@@ -254,7 +254,7 @@ function SmallBtn({ label, onClick, danger }: { label: string; onClick: () => vo
     <button
       onClick={onClick}
       style={{
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         color,
         background: "transparent",
@@ -346,9 +346,11 @@ function CreateForm({
     background: "var(--ft-raised)",
     border: "1px solid var(--ft-border2)",
     color: "var(--ft-text)",
-    fontFamily: "var(--font-mono)",
+    fontFamily: "var(--font-sans)",
     fontSize: 11,
   };
+  // A date, a currency code, an amount or a share count typed into a field is data.
+  const dataInputStyle: React.CSSProperties = { ...inputStyle, fontFamily: "var(--font-mono)" };
 
   return (
     <PanelBox padding={16}>
@@ -365,13 +367,13 @@ function CreateForm({
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          style={inputStyle}
+          style={dataInputStyle}
         />
         <input
           value={currency}
           onChange={(e) => setCurrency(e.target.value.toUpperCase())}
           maxLength={3}
-          style={inputStyle}
+          style={dataInputStyle}
         />
       </div>
 
@@ -382,7 +384,7 @@ function CreateForm({
           placeholder="Total amount"
           value={totalAmount}
           onChange={(e) => setTotalAmount(e.target.value)}
-          style={inputStyle}
+          style={dataInputStyle}
         />
         <select
           value={splitRule}
@@ -395,7 +397,7 @@ function CreateForm({
         </select>
       </div>
 
-      <Text mono size={9} color="var(--ft-dim)" letterSpacing="0.06em" mb={6}>
+      <Text size={9} color="var(--ft-dim)" letterSpacing="0.06em" mb={6}>
         PARTICIPANTS
       </Text>
       <div style={rowStyle}>
@@ -413,7 +415,7 @@ function CreateForm({
           <input
             value={r.shareInput}
             onChange={(e) => updateRow(i, { shareInput: e.target.value })}
-            style={inputStyle}
+            style={dataInputStyle}
             disabled={splitRule === "equal"}
             placeholder={splitRule === "shares" ? "e.g. 2" : splitRule === "exact" ? "e.g. 8.20" : ""}
           />
@@ -426,7 +428,7 @@ function CreateForm({
               color: "var(--ft-dim)",
               padding: "6px 10px",
               cursor: rows.length <= 1 ? "not-allowed" : "pointer",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
             }}
           >
@@ -442,7 +444,7 @@ function CreateForm({
           color: "var(--ft-dim)",
           padding: "6px 12px",
           cursor: "pointer",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 10,
           letterSpacing: "0.06em",
           marginTop: 6,
@@ -459,7 +461,7 @@ function CreateForm({
             padding: "8px 12px",
             background: "var(--ft-red)11",
             color: "var(--ft-red)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 11,
           }}
         >
@@ -473,7 +475,7 @@ function CreateForm({
           onClick={submit}
           disabled={create.isPending}
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 11,
             color: "var(--ft-base)",
             background: create.isPending ? "var(--ft-muted)" : "var(--ft-accent)",
