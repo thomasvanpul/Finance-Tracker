@@ -221,7 +221,7 @@ function SpendingHeatmap({ txs, year }: { txs: Tx[]; year: number }) {
         </div>
         {/* Legend */}
         <HStack gap={6} align="center" justify="end">
-          <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>Low spend</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)" }}>Low spend</span>
           {[0.1, 0.3, 0.5, 0.7, 0.9].map((v) => (
             <div
               key={v}
@@ -233,7 +233,7 @@ function SpendingHeatmap({ txs, year }: { txs: Tx[]; year: number }) {
               }}
             />
           ))}
-          <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>High spend</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)" }}>High spend</span>
         </HStack>
       </div>
     </div>
@@ -323,7 +323,7 @@ function QuarterBreakdown({ txs, year, prevTxs }: { txs: Tx[]; year: number; pre
                   </div>
                 </>
               ) : (
-                <div style={{ ...mono, fontSize: 10, color: "var(--ft-border2)" }}>No data</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-border2)" }}>No data</div>
               )}
             </div>
           );
@@ -499,7 +499,7 @@ function CategoryRow({ row, rank }: CategoryRowProps) {
       }}
     >
       <div style={{ ...mono, fontSize: 9, color: "var(--ft-border2)", width: 14, textAlign: "right", flexShrink: 0 }}>{rank + 1}</div>
-      <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", width: 130, whiteSpace: "nowrap", flexShrink: 0 }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", width: 130, whiteSpace: "nowrap", flexShrink: 0 }}>
         {row.cat}
       </div>
       <div style={{ flex: 1, height: 12, background: "var(--ft-raised)", position: "relative", flexShrink: 1, border: "1px solid var(--ft-border)" }}>
@@ -539,7 +539,7 @@ function CategoryBreakdown({ expenses }: { expenses: Tx[] }) {
         {top5.length === 0 ? (
           <div style={{ textAlign: "center", padding: "28px 0", border: "1px dashed var(--ft-border)" }}>
             <div style={{ ...mono, fontSize: 20, color: "var(--ft-border2)", marginBottom: 8 }}>—</div>
-            <div style={{ ...label }}>No expense data for this year</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>No expense data for this year</div>
           </div>
         ) : (
           <VStack gap={4}>
@@ -872,7 +872,7 @@ function StreaksAndFacts({ txs, year }: { txs: Tx[]; year: number }) {
             }}
           >
             <span style={{ ...mono, fontSize: 8, color: "var(--ft-border2)", letterSpacing: "0.06em", width: 18, flexShrink: 0 }}>{f.marker}</span>
-            <span className="pnum" style={{ ...mono, fontSize: 11, color: "var(--ft-text)" }}>{f.text}</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)" }}>{f.text}</span>
           </HoverRow>
         ))}
       </VStack>
@@ -899,7 +899,7 @@ function NetWorthDelta({ txs }: { txs: Tx[] }) {
           <div className="pnum" style={{ ...mono, fontSize: 32, fontWeight: 700, color: accentCol, letterSpacing: "-0.03em", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
             {delta >= 0 ? "+" : ""}{formatBaseMoney(delta)}
           </div>
-          <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>
             Based on income vs expenses tracked
           </div>
         </div>
@@ -914,10 +914,10 @@ function NetWorthDelta({ txs }: { txs: Tx[] }) {
           <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>
             {delta >= 0 ? "Year in the green" : "Year in the red"}
           </div>
-          <div style={{ ...mono, fontSize: 13, fontWeight: 600, color: accentCol, lineHeight: 1.4 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600, color: accentCol, lineHeight: 1.4 }}>
             {delta >= 0 ? "Your finances grew this year." : "Expenses outpaced income."}
           </div>
-          <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
             {delta >= 0 ? "Keep momentum going →" : "Review spending categories ↑"}
           </div>
         </div>
@@ -1007,7 +1007,7 @@ function ShareableCard({ income, expenses, txCount, year }: {
           background: savingsRate == null ? "var(--ft-border2)" : savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)",
         }} />
       </div>
-      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>
         Savings rate: <span className="pnum" style={{ color: savingsRate == null ? "var(--ft-dim)" : savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)", fontWeight: 600 }}>{savingsRate == null ? "—" : `${savingsRate.toFixed(1)}%`}</span>
         {savingsRate != null && (
           <span style={{ marginLeft: 12 }}>
@@ -1144,7 +1144,7 @@ export default function YearReviewPage() {
   if (isLoading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
           Loading year data…
         </div>
       </div>
@@ -1159,7 +1159,7 @@ export default function YearReviewPage() {
           position: "fixed", inset: 0, zIndex: 1000,
           background: "var(--ft-base)",
           display: "flex", flexDirection: "column",
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
         }}>
           {/* Progress bar */}
           <HStack gap={3} padding="16px 24px 0">
@@ -1192,14 +1192,14 @@ export default function YearReviewPage() {
             opacity: chapFade ? 1 : 0, transform: chapFade ? "translateY(0)" : "translateY(12px)",
             transition: "opacity 0.18s ease, transform 0.18s ease",
           }}>
-            <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: ACCENT_COLORS[chapter], marginBottom: 12, opacity: 0.8 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: ACCENT_COLORS[chapter], marginBottom: 12, opacity: 0.8 }}>
               {["· INTRO ·", "· INCOME ·", "· SPENDING ·", "· SAVINGS ·", "· TOP CATEGORY ·", "· BIGGEST MOMENTS ·", "· HABITS ·", "· SUMMARY ·"][chapter]}
             </div>
 
             {chapter === 0 && (
               <>
                 <div style={{ fontSize: 14, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 6, textTransform: "uppercase" }}>Your</div>
-                <div style={{ fontSize: 88, fontWeight: 900, color: "var(--ft-accent)", letterSpacing: "-0.04em", lineHeight: 0.9, marginBottom: 8 }}>{year}</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 88, fontWeight: 900, color: "var(--ft-accent)", letterSpacing: "-0.04em", lineHeight: 0.9, marginBottom: 8 }}>{year}</div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 24 }}>Wrapped</div>
                 <Text as="div" size={11} color="var(--ft-dim)" letterSpacing="0.04em">{yearTxs.length} transactions · press → to begin</Text>
               </>
@@ -1212,9 +1212,9 @@ export default function YearReviewPage() {
                 <Text as="div" size={12} color="var(--ft-muted)">across {yearTxs.filter(t => t.type === "income").length} income transactions</Text>
                 {wrappedData.biggestIncome && (
                   <div style={{ marginTop: 24, padding: "12px 20px", border: "1px solid var(--ft-border)", maxWidth: 360 }}>
-                    <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 4 }}>LARGEST SINGLE INCOME</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 4 }}>LARGEST SINGLE INCOME</div>
                     <div className="pnum" style={{ fontSize: 18, fontWeight: 700, color: "var(--ft-green)" }}>{formatBaseMoney(wrappedData.biggestIncome.baseEquivalent)}</div>
-                    <div style={{ fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>{wrappedData.biggestIncome.description} · {wrappedData.biggestIncome.date}</div>
+                    <div style={{ fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>{wrappedData.biggestIncome.description} · <span className="pnum">{wrappedData.biggestIncome.date}</span></div>
                   </div>
                 )}
               </>
@@ -1227,7 +1227,7 @@ export default function YearReviewPage() {
                 <Text as="div" size={12} color="var(--ft-muted)">across {yearTxs.filter(t => t.type === "expense").length} expense transactions</Text>
                 {wrappedData.topCatEntry && (
                   <div style={{ marginTop: 24, padding: "12px 20px", border: "1px solid var(--ft-border)", maxWidth: 360 }}>
-                    <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 4 }}>TOP SPENDING CATEGORY</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.1em", marginBottom: 4 }}>TOP SPENDING CATEGORY</div>
                     <Text as="div" size={18} weight={700} color="var(--ft-red)">{wrappedData.topCatEntry[0]}</Text>
                     <div className="pnum" style={{ fontSize: 10, color: "var(--ft-muted)", marginTop: 2 }}>{formatBaseMoney(wrappedData.topCatEntry[1])} total</div>
                   </div>
@@ -1244,7 +1244,7 @@ export default function YearReviewPage() {
                   {formatBaseMoney(Math.abs(net))}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--ft-muted)", marginBottom: 20 }}>
-                  Savings rate: {wrappedData.savingsRate == null ? "—" : `${wrappedData.savingsRate.toFixed(1)}%`}
+                  Savings rate: <span className="pnum">{wrappedData.savingsRate == null ? "—" : `${wrappedData.savingsRate.toFixed(1)}%`}</span>
                 </div>
                 <div style={{ width: "100%", maxWidth: 320, height: 8, background: "var(--ft-border2)", overflow: "hidden" }}>
                   <div style={{
@@ -1292,16 +1292,16 @@ export default function YearReviewPage() {
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, width: "100%", maxWidth: 520 }}>
                   {wrappedData.biggestExpense && (
                     <div style={{ padding: "16px", border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.05)", textAlign: "left" }}>
-                      <div style={{ fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-red)", marginBottom: 8 }}>BIGGEST EXPENSE</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-red)", marginBottom: 8 }}>BIGGEST EXPENSE</div>
                       <div className="pnum" style={{ fontSize: 22, fontWeight: 700, color: "var(--ft-red)", marginBottom: 4 }}>{formatBaseMoney(wrappedData.biggestExpense.baseEquivalent)}</div>
                       <div style={{ fontSize: 10, color: "var(--ft-muted)", marginBottom: 2 }}>{wrappedData.biggestExpense.description}</div>
-                      <Text as="div" size={9} color="var(--ft-dim)">{wrappedData.biggestExpense.date}</Text>
+                      <Text as="div" mono size={9} color="var(--ft-dim)">{wrappedData.biggestExpense.date}</Text>
                     </div>
                   )}
                   {wrappedData.bestMonthEntry && (
                     <div style={{ padding: "16px", border: "1px solid rgba(63,185,80,0.3)", background: "rgba(63,185,80,0.05)", textAlign: "left" }}>
-                      <div style={{ fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-green)", marginBottom: 8 }}>BEST MONTH</div>
-                      <div style={{ fontSize: 22, fontWeight: 700, color: "var(--ft-green)", marginBottom: 4 }}>{fmtYM(wrappedData.bestMonthEntry[0])}</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", color: "var(--ft-green)", marginBottom: 8 }}>BEST MONTH</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-green)", marginBottom: 4 }}>{fmtYM(wrappedData.bestMonthEntry[0])}</div>
                       <div className="pnum" style={{ fontSize: 10, color: "var(--ft-muted)" }}>Saved {formatBaseMoney(wrappedData.bestMonthEntry[1])}</div>
                     </div>
                   )}
@@ -1324,7 +1324,7 @@ export default function YearReviewPage() {
 
             {chapter === 7 && (
               <>
-                <div style={{ fontSize: 12, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 24 }}>YOUR {year} IN NUMBERS</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 24 }}>YOUR {year} IN NUMBERS</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, width: "100%", maxWidth: 480, marginBottom: 20 }}>
                   {[
                     { label: "Earned", value: formatBaseMoney(totalIncome), color: "var(--ft-green)" },
@@ -1332,17 +1332,17 @@ export default function YearReviewPage() {
                     { label: "Saved", value: (net >= 0 ? "+" : "") + formatBaseMoney(net), color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
                     { label: "Savings Rate", value: wrappedData.savingsRate == null ? "—" : `${wrappedData.savingsRate.toFixed(1)}%`, color: "var(--ft-amber)" },
                     { label: "Transactions", value: String(yearTxs.length), color: "var(--ft-text)" },
-                    { label: "Top Category", value: wrappedData.topCatEntry?.[0] ?? "—", color: "var(--ft-accent)" },
+                    { label: "Top Category", value: wrappedData.topCatEntry?.[0] ?? "—", color: "var(--ft-accent)", isName: true },
                   ].map(item => (
                     <div key={item.label} style={{ padding: "10px 12px", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", textAlign: "left" }}>
-                      <div style={{ fontSize: 8, letterSpacing: "0.1em", color: "var(--ft-dim)", marginBottom: 4, textTransform: "uppercase" }}>{item.label}</div>
-                      <div className="pnum" style={{ fontSize: 14, fontWeight: 700, color: item.color }}>{item.value}</div>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, letterSpacing: "0.1em", color: "var(--ft-dim)", marginBottom: 4, textTransform: "uppercase" }}>{item.label}</div>
+                      <div className={item.isName ? undefined : "pnum"} style={{ fontFamily: item.isName ? "var(--font-sans)" : "var(--font-mono)", fontSize: 14, fontWeight: 700, color: item.color }}>{item.value}</div>
                     </div>
                   ))}
                 </div>
                 <button
                   onClick={() => { setWrappedActive(false); setChapter(0); }}
-                  style={{ fontFamily: "var(--font-mono)", fontSize: 11, padding: "8px 20px", border: "1px solid var(--ft-accent)", background: "transparent", color: "var(--ft-accent)", cursor: "pointer", letterSpacing: "0.06em" }}
+                  style={{ fontFamily: "var(--font-sans)", fontSize: 11, padding: "8px 20px", border: "1px solid var(--ft-accent)", background: "transparent", color: "var(--ft-accent)", cursor: "pointer", letterSpacing: "0.06em" }}
                 >
                   → See Full Report
                 </button>
@@ -1375,7 +1375,7 @@ export default function YearReviewPage() {
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", lineHeight: 1 }}>
             YEAR IN REVIEW · {year}
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", marginTop: 4 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", letterSpacing: "0.04em", marginTop: 4 }}>
             your financial year — wrapped
           </div>
         </div>
@@ -1384,7 +1384,7 @@ export default function YearReviewPage() {
             <button
               onClick={() => { setChapter(0); setChapFade(true); setWrappedActive(true); }}
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 9,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
@@ -1427,7 +1427,7 @@ export default function YearReviewPage() {
               <button
                 onClick={() => exportYearCSV(yearTxs, year)}
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 9,
                   letterSpacing: "0.06em",
                   textTransform: "uppercase",
@@ -1444,7 +1444,7 @@ export default function YearReviewPage() {
                 onClick={() => window.print()}
                 className="ft-no-print"
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 9,
                   letterSpacing: "0.06em",
                   textTransform: "uppercase",
@@ -1477,9 +1477,9 @@ export default function YearReviewPage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
-            <span className="pnum">{msg}</span>
+            <span>{msg}</span>
           </div>
         );
       })()}
@@ -1493,16 +1493,16 @@ export default function YearReviewPage() {
             <path d="M13 27h8M13 33h14" stroke="var(--ft-text)" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--ft-muted)", marginBottom: 6, fontWeight: 700 }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--ft-muted)", marginBottom: 6, fontWeight: 700 }}>
               No transactions recorded for {year}
             </div>
-            <Text as="div" mono size={10} color="var(--ft-dim)" letterSpacing="0.06em">
+            <Text as="div" size={10} color="var(--ft-dim)" letterSpacing="0.06em">
               Import or add transactions to unlock your {year} wrapped report — top categories, biggest moments, and month-by-month breakdown.
             </Text>
           </div>
           <a
             href="/transactions"
-            style={{ display: "inline-block", padding: "10px 20px", background: "var(--ft-accent)", color: "var(--ft-base)", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", border: "none", cursor: "pointer", textDecoration: "none", minHeight: 44, lineHeight: "24px" }}
+            style={{ display: "inline-block", padding: "10px 20px", background: "var(--ft-accent)", color: "var(--ft-base)", fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", border: "none", cursor: "pointer", textDecoration: "none", minHeight: 44, lineHeight: "24px" }}
           >
             + ADD TRANSACTIONS
           </a>
