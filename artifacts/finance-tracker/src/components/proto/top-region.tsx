@@ -139,7 +139,7 @@ function CauseRow({ row, currency, size }: { row: AttributionRow; currency: stri
           </Drill>
         </span>
         <HStack grow minWidth0>
-          <Text as="span" mono size={size - 1} color="var(--ft-dim)">{row.detail}</Text>
+          <Text as="span" size={size - 1} color="var(--ft-dim)">{row.detail}</Text>
         </HStack>
         <HStack shrink={false}>
           <Text as="span" mono size={size} numeric color={signColour(row.amountBase)}>{signedMoney(row.amountBase, currency)}</Text>
@@ -330,7 +330,7 @@ function TopChangeLeads({ cells, dashboardLabel, isCustomizing, onCustomize }: P
         <VStack gap={5} grow minWidth={340} maxWidth={520}>
           {ok?.rows.map((row) => <CauseRow key={row.kind} row={row} currency={currency} size={11} />)}
           {ok?.warning != null && (
-            <Text as="div" mono size={9} mt={3} color="var(--ft-amber)" letterSpacing="0.04em">{ok.warning}</Text>
+            <Text as="div" size={9} mt={3} color="var(--ft-amber)" letterSpacing="0.04em">{ok.warning}</Text>
           )}
         </VStack>
       </HStack>

@@ -76,7 +76,7 @@ export function AttributionWorkings({ rows, currency, warning, density = "deskto
         <Line key={row.kind} row={row} currency={currency} />
       ))}
       {warning != null && (
-        <Text as="div" mono size={density === "phone" ? 11 : 9} mt={3}
+        <Text as="div" size={density === "phone" ? 11 : 9} mt={3}
           lineHeight={density === "phone" ? "15px" : undefined}
           color="var(--ft-amber)" letterSpacing="0.04em">
           {warning}
@@ -135,7 +135,7 @@ function AttributionLine({ row, currency }: { row: AttributionRow; currency: str
             the surface's own instance of alignment never having been
             chosen. */}
         <HStack grow minWidth0>
-          <Text as="span" mono size={11} color="var(--ft-dim)">
+          <Text as="span" size={11} color="var(--ft-dim)">
             {row.detail}
           </Text>
         </HStack>
@@ -194,7 +194,7 @@ function PhoneAttributionLine({ row, currency }: { row: AttributionRow; currency
             <span className="ft-drill">
               <Text as="span" size={13} color="var(--ft-text)">{row.label}</Text>
             </span>
-            <Text as="div" mono size={11} color="var(--ft-dim)" lineHeight="15px">{row.detail}</Text>
+            <Text as="div" size={11} color="var(--ft-dim)" lineHeight="15px">{row.detail}</Text>
           </VStack>
           <Text as="span" mono size={13} color={signColour(row.amountBase)} numeric>
             {signedMoney(row.amountBase, currency)}

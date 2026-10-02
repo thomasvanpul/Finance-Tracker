@@ -5,8 +5,14 @@
 // a figure. §10: sentences are sans. It was drawn mono on the phone WORTH
 // block and in the desktop top region (finding 5b584e056530).
 //
-// What this locks: no JSX element whose child is `finding.support` carries
-// the `mono` attribute, in either file that renders it.
+// The same holds for the two other sentences in that block: a row's
+// evidence (`row.detail` — "Monzo, no transaction", "from the ledger") and
+// the arithmetic/coverage `warning` ("These do not add up — …"). Both were
+// still mono after the support line was fixed (phone-design-rules §13 §10).
+//
+// What this locks: no JSX element whose child is `finding.support`,
+// `row.detail` or `warning` carries the `mono` attribute, in either file
+// that renders them.
 
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -25,7 +31,7 @@ function monoSupportSites(rel: string): { found: number; mono: number[] } {
   const visit = (node: ts.Node): void => {
     if (ts.isJsxElement(node)) {
       const rendersSupport = node.children.some(
-        (c) => ts.isJsxExpression(c) && c.expression != null && /finding\.support$/.test(c.expression.getText(sf)),
+        (c) => ts.isJsxExpression(c) && c.expression != null && /(finding\.support|row\.detail|(^|\.)warning)$/.test(c.expression.getText(sf)),
       );
       if (rendersSupport) {
         found += 1;
