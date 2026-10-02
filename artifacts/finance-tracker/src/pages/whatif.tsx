@@ -126,7 +126,7 @@ function SliderRow({
   return (
     <div style={{ marginBottom: 16 }}>
       <HStack align="baseline" justify="between" marginBottom={6}>
-        <label style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.07em", textTransform: "uppercase" as const }}>
+        <label style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.07em", textTransform: "uppercase" as const }}>
           {label}
         </label>
         <span style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>
@@ -218,7 +218,7 @@ interface InflationKpiTileProps {
   label: string;
   value: string;
   color: string;
-  note: string;
+  note: React.ReactNode;
 }
 
 function InflationKpiTile({ label, value, color, note }: InflationKpiTileProps) {
@@ -241,7 +241,7 @@ function InflationKpiTile({ label, value, color, note }: InflationKpiTileProps) 
     >
       <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: 5 }}>{label}</div>
       <div style={{ ...mono, fontSize: 18, fontWeight: 700, color, lineHeight: 1, marginBottom: 3 }}><span className="pnum">{value}</span></div>
-      <div className="pnum" style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{note}</div>
+      <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>{note}</div>
     </div>
   );
 }
@@ -252,7 +252,7 @@ function InflationLegendItem({ color, label }: { color: string; label: string })
   return (
     <HStack gap={5} align="center">
       <div style={{ width: 12, height: 2, background: color, borderRadius: 2 }} />
-      <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{label}</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)" }}>{label}</span>
     </HStack>
   );
 }
@@ -272,7 +272,7 @@ function ScenarioButton({ label, change, isSelected, onClick }: ScenarioButtonPr
     <button
       onClick={onClick}
       style={{
-        ...mono,
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         fontWeight: 600,
         padding: "6px 12px",
@@ -576,7 +576,7 @@ function ExpenseCategoryRow({ c, i, onCutChange }: ExpenseCategoryRowProps) {
   return (
     <div style={{ marginBottom: 14 }}>
       <HStack align="baseline" justify="between" marginBottom={4}>
-        <label style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>
+        <label style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>
           {c.label}
         </label>
         <div style={{ ...mono, fontSize: 10 }}>
@@ -669,7 +669,7 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
   if (categories.length === 0) {
     return (
       <Panel title="Expense Cut Calculator" padding="12px 16px">
-        <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", padding: "20px 16px", lineHeight: 1.7, letterSpacing: "0.02em" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", padding: "20px 16px", lineHeight: 1.7, letterSpacing: "0.02em" }}>
           Add a budget or import transactions to model expense cuts. The sliders need a baseline monthly figure to work against.
         </div>
       </Panel>
@@ -686,7 +686,7 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
             key={s.label}
             onClick={() => setCategories((prev) => s.apply(prev))}
             style={{
-              ...mono,
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               letterSpacing: "0.05em",
               padding: "5px 12px",
@@ -705,7 +705,7 @@ function ExpenseCutTab({ baseExpenses }: { baseExpenses: number }) {
         ))}
         <button
           onClick={() => setCategories((prev) => prev.map((c) => ({ ...c, cut: 0 })))}
-          style={{ ...mono, fontSize: 9, letterSpacing: "0.05em", padding: "5px 12px", background: "transparent", color: "var(--ft-dim)", border: "1px solid var(--ft-border2)", cursor: "pointer" }}
+          style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.05em", padding: "5px 12px", background: "transparent", color: "var(--ft-dim)", border: "1px solid var(--ft-border2)", cursor: "pointer" }}
         >
           Reset all
         </button>
@@ -808,7 +808,7 @@ function LumpSumTab() {
                 <BigNumber value={`+${formatBaseMoney(Math.abs(Math.round(interestEarned)))}`} label="Total Interest Earned" color="var(--ft-green)" size={20} />
                 <BigNumber value={formatBaseMoney(Math.round(monthlyEq))} label="Monthly Equivalent" color="var(--ft-cyan)" size={16} />
               </VStack>
-              <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 6 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)", marginTop: 6 }}>
                 Monthly equivalent = what you'd need to invest monthly at the same rate to get the same result
               </div>
             </>
@@ -828,7 +828,7 @@ function LumpSumTab() {
               formatter={(v: number, name: string) => [formatBaseMoney(v), name === "principal" ? "Principal" : "Interest"]}
               contentStyle={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", fontFamily: "var(--font-mono)", fontSize: 10 }}
             />
-            <Legend iconType="square" iconSize={8} wrapperStyle={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }} />
+            <Legend iconType="square" iconSize={8} wrapperStyle={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)" }} />
             <Bar dataKey="principal" stackId="a" fill="var(--ft-raised)" stroke="var(--ft-border2)" strokeWidth={1} />
             <Bar dataKey="interest" stackId="a" fill="var(--ft-green)" radius={[1, 1, 0, 0]} />
           </BarChart>
@@ -886,7 +886,7 @@ function DebtPayoffTab() {
           {formulaBlock(
             <>
               <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 12 }}>MINIMUM PAYMENT</div>
-              <div style={{ ...mono, fontSize: 11, color: "var(--ft-amber)", marginBottom: 12 }}>
+              <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-amber)", marginBottom: 12 }}>
                 <span className="pnum">{formatBaseMoney(minPay)}</span>/mo min to cover interest
               </div>
               <div className="ft-two-col" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
@@ -932,11 +932,11 @@ function DebtPayoffTab() {
             <div style={{ display: "flex", gap: 16, paddingLeft: 44, marginTop: 6 }}>
               <HStack gap={5} align="center">
                 <div style={{ width: 16, height: 2, background: "var(--ft-red)" }} />
-                <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>Minimum payment</span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)" }}>Minimum payment</span>
               </HStack>
               <HStack gap={5} align="center">
                 <div style={{ width: 16, height: 2, background: "var(--ft-green)", borderTop: "1px dashed var(--ft-green)" }} />
-                <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>With extra payment</span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)" }}>With extra payment</span>
               </HStack>
             </div>
           )}
@@ -963,7 +963,7 @@ function DebtPayoffTab() {
                 ))}
                 {baseMonths > 24 && (
                   <tr>
-                    <td colSpan={5} style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", padding: "6px 10px", textAlign: "center" }}>
+                    <td colSpan={5} style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)", padding: "6px 10px", textAlign: "center" }}>
                       + <span className="pnum">{baseMonths - 24}</span> more months not shown
                     </td>
                   </tr>
@@ -1060,25 +1060,25 @@ function InflationTab() {
               label="Real value of cash in hand"
               value={formatBaseMoney(finalReal)}
               color="var(--ft-red)"
-              note={`Lost ${formatBaseMoney(amount - finalReal)} to inflation`}
+              note={<>Lost <span className="pnum">{formatBaseMoney(amount - finalReal)}</span> to inflation</>}
             />
             <InflationKpiTile
               label="$ needed for same purchasing power"
               value={formatBaseMoney(finalNeeded)}
               color="var(--ft-amber)"
-              note={`${inflationRate.toFixed(1)}%/yr price rise`}
+              note={<><span className="pnum">{inflationRate.toFixed(1)}%</span>/yr price rise</>}
             />
             <InflationKpiTile
               label="Invested (nominal)"
               value={formatBaseMoney(finalInvested)}
               color="var(--ft-green)"
-              note={`${investReturn.toFixed(1)}%/yr gross return`}
+              note={<><span className="pnum">{investReturn.toFixed(1)}%</span>/yr gross return</>}
             />
             <InflationKpiTile
               label="Invested (real, inflation-adj)"
               value={formatBaseMoney(finalInvestedReal)}
               color={finalInvestedReal > amount ? "var(--ft-cyan)" : "var(--ft-red)"}
-              note={`Real return: ${realReturn.toFixed(1)}%/yr`}
+              note={<>Real return: <span className="pnum">{realReturn.toFixed(1)}%</span>/yr</>}
             />
           </div>
         </div>
@@ -1239,10 +1239,10 @@ function PortfolioShockTab() {
           <br />
           {`└─────────────────────────────┘`}
         </div>
-        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
           No positions found
         </div>
-        <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", maxWidth: 320, margin: "0 auto" }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", maxWidth: 320, margin: "0 auto" }}>
           Add positions in the Portfolio tab to use this simulator.
         </div>
       </div>
@@ -1264,7 +1264,7 @@ function PortfolioShockTab() {
           ))}
         </HStack>
         <HStack gap={8} align="center">
-          <span style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}>Custom change %:</span>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>Custom change %:</span>
           <input
             type="number"
             value={customPct}
@@ -1377,7 +1377,7 @@ export default function WhatIf() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -1399,7 +1399,7 @@ export default function WhatIf() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             style={{
-              ...mono,
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               letterSpacing: "0.1em",
               textTransform: "uppercase" as const,
