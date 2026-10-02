@@ -133,14 +133,14 @@ export function KeyboardShortcuts({ open, onClose }: Props) {
           padding: "12px 16px", borderBottom: "1px solid var(--ft-border)",
           background: "var(--ft-raised)",
         }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", color: "var(--ft-dim)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", color: "var(--ft-dim)" }}>
             KEYBOARD SHORTCUTS
           </span>
           <span
             onClick={onClose}
-            style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", cursor: "pointer", letterSpacing: "0.08em" }}
+            style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", cursor: "pointer", letterSpacing: "0.08em" }}
           >
-            ESC TO CLOSE
+            <span style={{ fontFamily: "var(--font-mono)" }}>ESC</span> TO CLOSE
           </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
@@ -167,7 +167,7 @@ export function KeyboardShortcuts({ open, onClose }: Props) {
                     display: "flex", justifyContent: "space-between", alignItems: "center",
                     padding: "5px 14px", borderBottom: "1px solid var(--ft-border)",
                   }}>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)" }}>{label}</span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)" }}>{label}</span>
                     <kbd style={{
                       fontFamily: "var(--font-mono)", fontSize: 9,
                       color: accent ?? "var(--ft-accent)", background: "var(--ft-raised)",
