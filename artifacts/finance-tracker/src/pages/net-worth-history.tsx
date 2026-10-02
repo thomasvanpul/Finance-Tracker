@@ -25,6 +25,7 @@ import {
 import { formatBaseMoney } from "@/lib/utils";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { netAccountsTotal } from "@/lib/account-sign";
+import { completePortfolioTotal } from "@/lib/portfolio-total";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -554,14 +555,18 @@ export default function NetWorthHistory() {
   const { data: invSummary } = useGetInvestmentSummary();
   const { data: rawDebts = [] } = useListDebts();
 
-  const liveAssets = useMemo(() => {
+  const liveAssets = useMemo((): number | null => {
     // Liability ACCOUNTS were being added here while liveLiabilities below
     // counts only the `debts` table — so a season-ticket loan was auto-filled
     // onto the assets side of a net-worth snapshot and omitted from the
     // liabilities side, moving the recorded figure by twice the loan.
     const accountTotal = netAccountsTotal(
       rawAccounts as Array<{ type: string; baseEquivalent: number | null }>);
-    const investTotal = (invSummary as { totalValueBase?: number } | undefined)?.totalValueBase ?? 0;
+    // Null until the summary loads, and while any position is unvalued: the
+    // portfolio read as 0 here once put an accounts-only figure on screen as
+    // "Current Net Worth" and into history as an "auto" snapshot (BACKLOG L2).
+    const investTotal = completePortfolioTotal(invSummary);
+    if (investTotal == null) return null;
     return Math.round((accountTotal + investTotal) * 100) / 100;
   }, [rawAccounts, invSummary]);
 
@@ -575,7 +580,7 @@ export default function NetWorthHistory() {
   }, [rawDebts]);
 
   function autoFillFromLiveData() {
-    setFormAssets(liveAssets > 0 ? String(liveAssets) : "");
+    setFormAssets(liveAssets != null && liveAssets > 0 ? String(liveAssets) : "");
     setFormLiabilities(liveLiabilities > 0 ? String(liveLiabilities) : "");
     if (!showForm) setShowForm(true);
   }
@@ -587,7 +592,7 @@ export default function NetWorthHistory() {
 
   // Auto-snapshot: save today's NW from live data if no entry exists for today
   useEffect(() => {
-    if (liveAssets <= 0) return;
+    if (liveAssets == null || liveAssets <= 0) return;
     const today = todayStr();
     const existing = loadHistory();
     if (existing.some((e) => e.date === today)) return;
@@ -918,7 +923,7 @@ export default function NetWorthHistory() {
       )}
 
       {/* ── Live data mini strip (only if no history yet) ── */}
-      {liveAssets > 0 && history.length === 0 && (
+      {liveAssets != null && liveAssets > 0 && history.length === 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", marginBottom: 6 }}>
           {[
             { label: "Live Assets", value: formatBaseMoney(liveAssets), color: "var(--ft-green)" },
@@ -937,7 +942,7 @@ export default function NetWorthHistory() {
       {showForm && (
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", marginBottom: 6, overflow: "hidden" }}>
           <PanelHeader
-            right={liveAssets > 0 && (
+            right={liveAssets != null && liveAssets > 0 && (
               <button
                 onClick={autoFillFromLiveData}
                 style={{ fontFamily: "var(--font-sans)", fontSize: 10, letterSpacing: "0.04em", textTransform: "uppercase" as const, padding: "3px 10px", border: "1px solid color-mix(in srgb, var(--ft-blue) 40%, transparent)", background: "color-mix(in srgb, var(--ft-blue) 8%, transparent)", color: "var(--ft-blue)", cursor: "pointer" }}

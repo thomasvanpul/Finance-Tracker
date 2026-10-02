@@ -1,7 +1,7 @@
 // BACKLOG L1: phone HOME printed "PORTFOLIO £0" for a user who holds stock,
 // because the API sent totalValueBase: 0 and `0 != null` passed the guard.
 import { describe, expect, it } from "vitest";
-import { knownPortfolioTotal, plTone, signedPl } from "./portfolio-total";
+import { completePortfolioTotal, knownPortfolioTotal, plTone, signedPl } from "./portfolio-total";
 
 describe("knownPortfolioTotal — a portfolio nobody could value is unknown, not £0", () => {
   it("null from the API stays null", () => {
@@ -22,6 +22,25 @@ describe("knownPortfolioTotal — a portfolio nobody could value is unknown, not
 
   it("no portfolio block at all is unknown", () => {
     expect(knownPortfolioTotal(undefined)).toBeNull();
+  });
+});
+
+// BACKLOG L2: /accounts and /net-worth-history add the portfolio to account
+// balances in the browser. A sum that leaves positions out, unsaid, is a
+// net worth that reads as a different, plausible number.
+describe("completePortfolioTotal — only a total covering every position may be summed", () => {
+  it("every position valued: the total", () => {
+    expect(completePortfolioTotal({ totalValueBase: 1440, unavailablePositions: 0 })).toBe(1440);
+  });
+  it("an empty portfolio is an honest 0", () => {
+    expect(completePortfolioTotal({ totalValueBase: 0, unavailablePositions: 0 })).toBe(0);
+  });
+  it("a partly-valued total cannot be summed", () => {
+    expect(completePortfolioTotal({ totalValueBase: 1440, unavailablePositions: 1 })).toBeNull();
+  });
+  it("an unknown total cannot be summed", () => {
+    expect(completePortfolioTotal({ totalValueBase: null, unavailablePositions: 2 })).toBeNull();
+    expect(completePortfolioTotal(undefined)).toBeNull();
   });
 });
 

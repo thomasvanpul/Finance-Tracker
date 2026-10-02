@@ -87,6 +87,7 @@ import {
 import { HStack, MonoLabel, Panel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { ReconciliationPanel } from "@/components/widgets/reconciliation-panel";
 import { isLiabilityType, netAccountsTotal, signedAccountAmount } from "@/lib/account-sign";
+import { completePortfolioTotal } from "@/lib/portfolio-total";
 
 type Currency =
   | "GBP"
@@ -2191,12 +2192,14 @@ export default function Accounts() {
           (accounts ?? []).filter(a => a.type === "cash"));
         const accountAssets = netAccountsTotal(
           (accounts ?? []).filter(a => !isLiabilityType(a.type)));
-        const portfolio = (dashData as { portfolio?: { totalValueBase?: number } } | undefined)?.portfolio?.totalValueBase ?? 0;
+        // Null while any position is unvalued: summed as 0 it made
+        // "Accounts + portfolio" an accounts-only figure (BACKLOG L2).
+        const portfolio = completePortfolioTotal(dashData?.portfolio);
         // Sentences in sans, the figures inside them in .pnum (DESIGN.md §10).
         const msgs: Record<string, React.ReactNode | null> = {
           market:  spendableCash > 0 ? <><span className="pnum">{formatBaseMoney(spendableCash)}</span> cash available — allocate surplus to investment positions via Portfolio.</> : null,
           budget:  `Your accounts are the source of truth for your budget — reconcile against your budget limits monthly.`,
-          wealth:  <>Accounts + portfolio = <span className="pnum">{formatBaseMoney(accountAssets + portfolio)}</span>. Ensure cash earns yield (HYSA/money market) while idle.</>,
+          wealth:  portfolio == null ? null : <>Accounts + portfolio = <span className="pnum">{formatBaseMoney(accountAssets + portfolio)}</span>. Ensure cash earns yield (HYSA/money market) while idle.</>,
           social:  spendableCash > 0 ? <><span className="pnum">{formatBaseMoney(spendableCash)}</span> liquid — keep enough buffer for group trip deposits and shared expenses.</> : null,
         };
         const msg = msgs[pid];

@@ -14,6 +14,15 @@ export function knownPortfolioTotal(p: PortfolioTotalInput | null | undefined): 
   return p.totalValueBase;
 }
 
+// The total a screen may ADD to account balances. A partly-valued total is
+// fine printed beside its "N unavailable" note, but summed into a net worth
+// it vanishes into a plausible figure (BACKLOG L2), so only a total that
+// covers every position counts here.
+export function completePortfolioTotal(p: PortfolioTotalInput | null | undefined): number | null {
+  if (p == null || p.unavailablePositions > 0) return null;
+  return knownPortfolioTotal(p);
+}
+
 // P/L is null when positions are held and none is priced (valued at cost a
 // position has no known return). These keep the "—" and its neutral colour
 // in one place instead of a `>= 0` that reads null as a gain.
