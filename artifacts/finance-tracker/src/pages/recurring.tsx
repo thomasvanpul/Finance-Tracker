@@ -38,6 +38,7 @@ interface RecurringRule {
 // ─── style atoms ─────────────────────────────────────────────────────────────
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+const sans: React.CSSProperties = { fontFamily: "var(--font-sans)" };
 const labelStyle: React.CSSProperties = {
   ...mono,
   fontSize: 9,
@@ -71,8 +72,28 @@ const td: React.CSSProperties = {
   borderBottom: "1px solid var(--ft-border)",
   whiteSpace: "nowrap",
 };
+// A cell holding a name a human wrote (match text, category, notes,
+// description) rather than a date or an amount.
+const tdText: React.CSSProperties = { ...td, ...sans };
+// A form field's label names the field; it is not a legend over a figure.
+const fieldLabel: React.CSSProperties = {
+  ...sans,
+  fontSize: 9,
+  color: "var(--ft-dim)",
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+};
+// An empty or loading line is a sentence.
+const emptyLine: React.CSSProperties = {
+  ...sans,
+  fontSize: 9,
+  color: "var(--ft-dim)",
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  textAlign: "center",
+};
 const BTN: React.CSSProperties = {
-  ...mono,
+  ...sans,
   fontSize: 9,
   fontWeight: 700,
   letterSpacing: "0.06em",
@@ -84,7 +105,7 @@ const BTN: React.CSSProperties = {
   cursor: "pointer",
 };
 const BTN_GHOST: React.CSSProperties = {
-  ...mono,
+  ...sans,
   fontSize: 9,
   letterSpacing: "0.06em",
   textTransform: "uppercase",
@@ -155,7 +176,7 @@ function KpiBar({ patterns, rules }: KpiBarProps) {
     {
       label: "Monthly Commitment",
       value: formatBaseMoney(monthlyTotal),
-      sub: `${patterns.length} active patterns`,
+      sub: <><span className="pnum">{patterns.length}</span> active patterns</>,
       color: monthlyTotal > 0 ? "var(--ft-red)" : "var(--ft-muted)",
     },
     {
@@ -175,7 +196,7 @@ function KpiBar({ patterns, rules }: KpiBarProps) {
     {
       label: "Active Rules",
       value: String(activeRules),
-      sub: `${rules.length} total rules`,
+      sub: <><span className="pnum">{rules.length}</span> total rules</>,
       color: "var(--ft-accent)",
     },
   ];
@@ -205,7 +226,7 @@ function KpiBar({ patterns, rules }: KpiBarProps) {
           }}>
             <span className="pnum">{k.value}</span>
           </div>
-          <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {k.sub}
           </div>
         </div>
@@ -245,7 +266,7 @@ function CategoryLegendRow({ category, monthly, pct, color }: CategoryLegendRowP
       }}
     >
       <div style={{ width: 8, height: 8, background: color, flexShrink: 0 }} />
-      <span style={{ ...mono, fontSize: 10, color: "var(--ft-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <span style={{ ...sans, fontSize: 10, color: "var(--ft-muted)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         <Drill href={categoryTransactionsHref(category)} title={`Open the ${category} transactions`}>{category}</Drill>
       </span>
       {/* The monthly figure is a normalised estimate (weekly × 4.33 and
@@ -284,7 +305,7 @@ function CategoryBreakdown({ patterns }: { patterns: RecurringPattern[] }) {
 
   if (breakdown.length === 0) {
     return (
-      <div style={{ ...labelStyle, textAlign: "center", padding: "20px 0", letterSpacing: "0.08em" }}>
+      <div style={{ ...emptyLine, padding: "20px 0" }}>
         — NO CATEGORY DATA — patterns need categories assigned
       </div>
     );
@@ -336,7 +357,7 @@ function CategoryBreakdown({ patterns }: { patterns: RecurringPattern[] }) {
           />
         ))}
         {segments.length > 6 && (
-          <div style={{ ...labelStyle }}>+{segments.length - 6} more categories</div>
+          <div style={{ ...emptyLine, textAlign: "left" }}>+<span className="pnum">{segments.length - 6}</span> more categories</div>
         )}
       </VStack>
     </HStack>
@@ -391,7 +412,7 @@ function CalendarCell({ day, payments, isToday, isPast }: CalendarCellProps) {
       {hasPayments && (
         <VStack gap={1}>
           {payments.slice(0, 2).map((p) => (
-            <div key={p.id} style={{ ...mono, fontSize: 7, color: "var(--ft-red)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div key={p.id} style={{ ...sans, fontSize: 7, color: "var(--ft-red)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {p.merchantName.slice(0, 8)}
             </div>
           ))}
@@ -451,7 +472,7 @@ function CalendarView({ patterns }: { patterns: RecurringPattern[] }) {
           {today.toLocaleDateString("en-GB", { month: "long", year: "numeric" }).toUpperCase()} — PAYMENT CALENDAR
         </Text>
         {monthTotal > 0 && (
-          <div style={{ ...mono, fontSize: 10, color: "var(--ft-red)" }}>
+          <div style={{ ...sans, fontSize: 10, color: "var(--ft-red)" }}>
             <span className="pnum">{formatBaseMoney(monthTotal)}</span> due this month
           </div>
         )}
@@ -544,7 +565,7 @@ function TrendStrip({ txs }: { txs: Tx[] }) {
             <span style={{ fontSize: 10, marginLeft: 4 }}>(<span className="pnum">{sign}{pct.toFixed(0)}</span>%)</span>
           )}
         </div>
-        <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)" }}>
+        <div style={{ ...sans, fontSize: 10, color: "var(--ft-dim)" }}>
           {up ? "↑ recurring costs rising" : "↓ recurring costs down"}
         </div>
       </div>
@@ -620,11 +641,12 @@ function PatternCard({ pattern: p, today, in7d, onAddRule }: PatternCardProps) {
             (DESIGN.md §14). The confidence score, the estimated amount
             and the next-estimated date are a score, an average and a
             projection — no rows exist behind those, and they stay flat. */}
-        <div style={{ ...mono, fontSize: 12, color: "var(--ft-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+        <div style={{ ...sans, fontSize: 12, color: "var(--ft-text)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
           <Drill href={merchantTransactionsHref(p.merchantName)} title={`Open the ${p.merchantName} transactions this series was detected from`}>{p.merchantName}</Drill>
         </div>
         <HStack gap={4} shrink={false}>
-          <span style={{ ...mono, fontSize: 9, padding: "1px 6px", background: "var(--ft-accent)22", color: "var(--ft-accent)" }}>
+          {/* "monthly" is a word; "~11d" is a duration, and a duration is data. */}
+          <span style={{ ...(/\d/.test(p.frequency) ? mono : sans), fontSize: 9, padding: "1px 6px", background: "var(--ft-accent)22", color: "var(--ft-accent)" }}>
             {p.frequency}
           </span>
         </HStack>
@@ -673,7 +695,7 @@ function PatternCard({ pattern: p, today, in7d, onAddRule }: PatternCardProps) {
       </div>
 
       {p.category && (
-        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", padding: "1px 6px", background: "var(--ft-raised)", alignSelf: "flex-start" }}>
+        <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)", padding: "1px 6px", background: "var(--ft-raised)", alignSelf: "flex-start" }}>
           <Drill href={categoryTransactionsHref(p.category)} title={`Open the ${p.category} transactions`}>{p.category}</Drill>
         </div>
       )}
@@ -745,7 +767,7 @@ function AutoDetected({
               </button>
             ))}
           </HStack>
-        }>AUTO-DETECTED RECURRING TRANSACTIONS <Text as="span" mono size={10} color="var(--ft-muted)">Matched by description + interval + amount within ±10% · Confidence scored 0–100</Text></PanelHeader>
+        }>AUTO-DETECTED RECURRING TRANSACTIONS <Text as="span" size={10} color="var(--ft-muted)">Matched by description + interval + amount within ±10% · Confidence scored 0–100</Text></PanelHeader>
       <div style={{ padding: 20 }}>
 
       {viewMode === "calendar" && (
@@ -769,7 +791,7 @@ function AutoDetected({
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search merchant…"
                 style={{
-                  ...mono,
+                  ...sans,
                   fontSize: 11,
                   background: "var(--ft-base)",
                   border: "1px solid var(--ft-border)",
@@ -784,7 +806,7 @@ function AutoDetected({
                 value={freqFilter}
                 onChange={(e) => setFreqFilter(e.target.value)}
                 style={{
-                  ...mono,
+                  ...sans,
                   fontSize: 10,
                   background: "var(--ft-base)",
                   border: "1px solid var(--ft-border)",
@@ -808,7 +830,7 @@ function AutoDetected({
                 </button>
               )}
               {hasFilters && (
-                <span style={{ ...labelStyle, alignSelf: "center" }}>
+                <span style={{ ...emptyLine, alignSelf: "center" }}>
                   <span className="pnum">{visible.length}</span> of <span className="pnum">{patterns.length}</span>
                 </span>
               )}
@@ -816,11 +838,11 @@ function AutoDetected({
           )}
 
           {visible.length === 0 && patterns.length > 0 ? (
-            <div style={{ ...labelStyle, textAlign: "center", padding: "24px 0", letterSpacing: "0.08em" }}>
+            <div style={{ ...emptyLine, padding: "24px 0" }}>
               — NO PATTERNS MATCH CURRENT FILTERS —
             </div>
           ) : patterns.length === 0 ? (
-            <div style={{ ...labelStyle, textAlign: "center", padding: "24px 0", letterSpacing: "0.08em" }}>
+            <div style={{ ...emptyLine, padding: "24px 0" }}>
               — NO RECURRING PATTERNS DETECTED — add more transactions to build history
             </div>
           ) : (
@@ -881,7 +903,7 @@ function RuleTableRow({
           <button
             onClick={() => onToggle(rule.id)}
             style={{
-              ...mono, fontSize: 9, padding: "2px 6px", border: "none", cursor: "pointer",
+              ...sans, fontSize: 9, padding: "2px 6px", border: "none", cursor: "pointer",
               background: rule.isActive ? "var(--ft-green)22" : "var(--ft-border)",
               color: rule.isActive ? "var(--ft-green)" : "var(--ft-dim)",
             }}
@@ -889,15 +911,15 @@ function RuleTableRow({
             {rule.isActive ? "ON" : "OFF"}
           </button>
         </td>
-        <td style={{ ...td, fontWeight: 600, color: "var(--ft-accent)" }}>
+        <td style={{ ...tdText, fontWeight: 600, color: "var(--ft-accent)" }}>
           {rule.matchText}
         </td>
-        <td style={td}>
+        <td style={tdText}>
           <span style={{ fontSize: 9, padding: "1px 6px", background: "var(--ft-raised)", color: "var(--ft-muted)" }}>
             {rule.category}
           </span>
         </td>
-        <td style={{ ...td, color: "var(--ft-dim)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
+        <td style={{ ...tdText, color: "var(--ft-dim)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
           {rule.notes || "—"}
         </td>
         <td style={{ ...td, textAlign: "right" }}>
@@ -944,26 +966,26 @@ function RuleTableRow({
               background: "var(--ft-amber)08", border: "1px solid var(--ft-amber)33",
               padding: "10px 14px",
             }}>
-              <div style={{ ...labelStyle, color: "var(--ft-amber)", marginBottom: 8 }}>
+              <div style={{ ...emptyLine, textAlign: "left", color: "var(--ft-amber)", marginBottom: 8 }}>
                 Top matching transactions (showing up to 5)
               </div>
               {testMatches.map((t) => (
                 <div key={t.id} style={{ display: "flex", gap: 16, marginBottom: 4, alignItems: "center" }}>
                   <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", width: 80 }}>{t.date}</span>
-                  <span style={{ ...mono, fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <span style={{ ...sans, fontSize: 10, color: "var(--ft-text)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     <Drill href={merchantTransactionsHref(t.description)} title="Open this merchant's history">{t.description}</Drill>
                   </span>
-                  <span style={{ ...mono, fontSize: 9, color: "var(--ft-muted)" }}>
+                  <span style={{ ...sans, fontSize: 9, color: "var(--ft-muted)" }}>
                     {t.category ? <Drill href={categoryTransactionsHref(t.category)} title={`Open the ${t.category} transactions`}>{t.category}</Drill> : "—"}
                   </span>
-                  <span style={{ ...mono, fontSize: 9, color: "var(--ft-amber)" }}>→ {rule.category}</span>
+                  <span style={{ ...sans, fontSize: 9, color: "var(--ft-amber)" }}>→ {rule.category}</span>
                   <span style={{ ...mono, fontSize: 10, color: "var(--ft-red)" }}>
                     <span className="pnum">{formatBaseMoney(t.baseEquivalent)}</span>
                   </span>
                 </div>
               ))}
               {matchCount > 5 && (
-                <div style={{ ...labelStyle, marginTop: 4 }}>…and <span className="pnum">{matchCount - 5}</span> more</div>
+                <div style={{ ...emptyLine, textAlign: "left", marginTop: 4 }}>…and <span className="pnum">{matchCount - 5}</span> more</div>
               )}
             </div>
           </td>
@@ -1017,14 +1039,14 @@ function PreviewTableRow({ tx, newCategory, rule }: PreviewTableRowProps) {
       }}
     >
       <td style={{ ...td, color: "var(--ft-dim)" }}>{tx.date}</td>
-      <td style={{ ...td, maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis" }}>
+      <td style={{ ...tdText, maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis" }}>
         <Drill href={merchantTransactionsHref(tx.description)} title="Open this merchant's history">{tx.description}</Drill>
       </td>
-      <td style={{ ...td, color: "var(--ft-muted)" }}>
+      <td style={{ ...tdText, color: "var(--ft-muted)" }}>
         {tx.category ? <Drill href={categoryTransactionsHref(tx.category)} title={`Open the ${tx.category} transactions`}>{tx.category}</Drill> : <em style={{ color: "var(--ft-dim)" }}>none</em>}
       </td>
-      <td style={{ ...td, color: "var(--ft-accent)", fontSize: 9 }}>{rule.matchText}</td>
-      <td style={td}>
+      <td style={{ ...tdText, color: "var(--ft-accent)", fontSize: 9 }}>{rule.matchText}</td>
+      <td style={tdText}>
         <span style={{ fontSize: 9, padding: "1px 6px", background: "var(--ft-green)22", color: "var(--ft-green)" }}>
           {newCategory}
         </span>
@@ -1090,7 +1112,7 @@ function ManualRules({
               ↓ CSV
             </button>
           ) : undefined
-        }>MANUAL RULES <Text as="span" mono size={10} color="var(--ft-muted)">Define rules to auto-categorize transactions by description keyword</Text></PanelHeader>
+        }>MANUAL RULES <Text as="span" size={10} color="var(--ft-muted)">Define rules to auto-categorize transactions by description keyword</Text></PanelHeader>
       <div style={{ padding: 20 }}>
 
       {/* Add form */}
@@ -1105,28 +1127,28 @@ function ManualRules({
         flexWrap: "wrap",
       }}>
         <VStack gap={4} grow={2} minWidth={140}>
-          <div style={labelStyle}>Match text (substring)</div>
+          <div style={fieldLabel}>Match text (substring)</div>
           <input
             value={form.matchText}
             onChange={(e) => setForm((f) => ({ ...f, matchText: e.target.value }))}
             onKeyDown={(e) => { if (e.key === "Enter") handleAdd(); }}
             placeholder="e.g. Netflix"
             style={{
-              ...mono, fontSize: 11,
+              ...sans, fontSize: 11,
               background: "var(--ft-surface)", border: "1px solid var(--ft-border)",
               color: "var(--ft-text)", padding: "6px 10px", outline: "none",
             }}
           />
         </VStack>
         <VStack gap={4} grow minWidth={120}>
-          <div style={labelStyle}>Assign category</div>
+          <div style={fieldLabel}>Assign category</div>
           <input
             value={form.category}
             onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
             list="rule-categories"
             placeholder="e.g. Subscriptions"
             style={{
-              ...mono, fontSize: 11,
+              ...sans, fontSize: 11,
               background: "var(--ft-surface)", border: "1px solid var(--ft-border)",
               color: "var(--ft-text)", padding: "6px 10px", outline: "none",
             }}
@@ -1136,13 +1158,13 @@ function ManualRules({
           </datalist>
         </VStack>
         <VStack gap={4} grow={2} minWidth={120}>
-          <div style={labelStyle}>Notes (optional)</div>
+          <div style={fieldLabel}>Notes (optional)</div>
           <input
             value={form.notes}
             onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             placeholder="e.g. Monthly subscription"
             style={{
-              ...mono, fontSize: 11,
+              ...sans, fontSize: 11,
               background: "var(--ft-surface)", border: "1px solid var(--ft-border)",
               color: "var(--ft-text)", padding: "6px 10px", outline: "none",
             }}
@@ -1163,7 +1185,7 @@ function ManualRules({
       </div>
 
       {rules.length === 0 ? (
-        <div style={{ ...labelStyle, textAlign: "center", padding: "16px 0", letterSpacing: "0.08em" }}>
+        <div style={{ ...emptyLine, padding: "16px 0" }}>
           — NO MANUAL RULES — add one above
         </div>
       ) : (
@@ -1196,28 +1218,28 @@ function ManualRules({
                           padding: "10px 14px", display: "flex", gap: 10, alignItems: "flex-end", flexWrap: "wrap",
                         }}>
                           <VStack gap={4} grow={2} minWidth={120}>
-                            <div style={labelStyle}>Match text</div>
+                            <div style={fieldLabel}>Match text</div>
                             <input
                               value={editForm.matchText}
                               onChange={(e) => setEditForm((f) => ({ ...f, matchText: e.target.value }))}
-                              style={{ ...mono, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}
+                              style={{ ...sans, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}
                             />
                           </VStack>
                           <VStack gap={4} grow minWidth={100}>
-                            <div style={labelStyle}>Category</div>
+                            <div style={fieldLabel}>Category</div>
                             <input
                               value={editForm.category}
                               onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
                               list="rule-categories"
-                              style={{ ...mono, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}
+                              style={{ ...sans, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}
                             />
                           </VStack>
                           <VStack gap={4} grow={2} minWidth={100}>
-                            <div style={labelStyle}>Notes</div>
+                            <div style={fieldLabel}>Notes</div>
                             <input
                               value={editForm.notes}
                               onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
-                              style={{ ...mono, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}
+                              style={{ ...sans, fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border)", color: "var(--ft-text)", padding: "5px 8px", outline: "none" }}
                             />
                           </VStack>
                           <HStack gap={6}>
@@ -1358,11 +1380,11 @@ function ApplyRules({
 
   return (
     <div style={{ ...card, padding: 0 }}>
-      <PanelHeader>APPLY RULES <Text as="span" mono size={10} color="var(--ft-muted)">Preview and apply active rules to un-categorized transactions</Text></PanelHeader>
+      <PanelHeader>APPLY RULES <Text as="span" size={10} color="var(--ft-muted)">Preview and apply active rules to un-categorized transactions</Text></PanelHeader>
       <div style={{ padding: 20 }}>
 
       <HStack gap={10} align="start" wrap marginBottom={16}>
-        <div style={{ ...mono, fontSize: 11, color: "var(--ft-text)", alignSelf: "center" }}>
+        <div style={{ ...sans, fontSize: 11, color: "var(--ft-text)", alignSelf: "center" }}>
           <span className="pnum">{activeRules.length}</span> active rule{activeRules.length !== 1 ? "s" : ""} · <span className="pnum">{preview.length}</span> un-categorized transaction{preview.length !== 1 ? "s" : ""} would be updated
         </div>
         <button
@@ -1389,7 +1411,7 @@ function ApplyRules({
             {applying ? "Applying…" : confirmApply ? `Confirm Apply (${preview.length}) →` : `Apply ${preview.length > 0 ? `(${preview.length})` : ""}`}
           </button>
           {confirmApply && !applying && (
-            <div style={{ ...mono, fontSize: 9, color: "var(--ft-amber)", letterSpacing: "0.04em", opacity: 0.85 }}>
+            <div style={{ ...sans, fontSize: 9, color: "var(--ft-amber)", letterSpacing: "0.04em", opacity: 0.85 }}>
               This will update <span className="pnum">{preview.length}</span> transaction{preview.length !== 1 ? "s" : ""}. Click again to confirm.
             </div>
           )}
@@ -1412,7 +1434,7 @@ function ApplyRules({
               ))}
               {preview.length > 50 && (
                 <tr>
-                  <td colSpan={5} style={{ ...td, textAlign: "center", color: "var(--ft-dim)" }}>
+                  <td colSpan={5} style={{ ...tdText, textAlign: "center", color: "var(--ft-dim)" }}>
                     …and <span className="pnum">{preview.length - 50}</span> more rows
                   </td>
                 </tr>
@@ -1423,7 +1445,7 @@ function ApplyRules({
       )}
 
       {showPreview && preview.length === 0 && (
-        <div style={{ ...labelStyle, textAlign: "center", padding: "16px 0", letterSpacing: "0.08em" }}>
+        <div style={{ ...emptyLine, padding: "16px 0" }}>
           — ALL TRANSACTIONS CATEGORIZED — no active rules match uncategorized transactions
         </div>
       )}
@@ -1484,7 +1506,7 @@ export default function RecurringPage() {
 
   if (isLoading) {
     return (
-      <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", padding: "40px 0", textAlign: "center", letterSpacing: "0.08em" }}>
+      <div style={{ ...emptyLine, fontSize: 11, padding: "40px 0" }}>
         — LOADING TRANSACTION DATA —
       </div>
     );
@@ -1529,7 +1551,7 @@ export default function RecurringPage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ ...sans, fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
