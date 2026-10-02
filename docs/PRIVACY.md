@@ -252,8 +252,11 @@ except:
   **their** records;
 - the database restore window `[TO CONFIRM: 6 hours]`;
 - anything already sent to the services in sections 5 and 6;
-- tokens and sign-in grants you gave to Wise, Kraken, Alpaca, Google, Apple,
-  GitHub or your bank — revoke those in each service;
+- tokens you gave Numeris for Wise, Kraken or Alpaca. They are destroyed here
+  but not revoked at the provider — revoke them in each service. Your bank
+  consent is closed before anything is deleted, and Numeris tries to remove its
+  Google, Apple or GitHub sign-in access; if that fails, the next screen tells
+  you where to remove it yourself;
 - the copy on your device (section 10).
 
 `[BLOCKED: a copy of the production database, carrying real data, is kept as a

@@ -47,13 +47,15 @@ It does not touch:
 - server logs (§3.1) and server memory (§3.2);
 - the IndexedDB copy of the user's data on any device, including the one they
   deleted from (§3.4);
-- any grant at a third party. Wise, Kraken and Alpaca tokens and the Google or
-  GitHub sign-in grant are destroyed locally and not revoked at the provider,
-  and the delete screen says so (`A/routes/account.ts:8-15`,
-  `F/pages/profile.tsx:1488-1490`). The Enable Banking bank consent is not
-  revoked either — the adapter has no revoke call
-  (`A/adapters/enable-banking.ts:154,206,221`) — and the delete screen names
-  neither Enable Banking nor Apple sign-in;
+- any grant at a third party, in part. *Updated 3 Oct 2026 at `ec5f253`.* Wise,
+  Kraken and Alpaca tokens are destroyed locally and not revoked at the
+  provider, and the delete screen says so (`F/pages/profile.tsx:1522-1525`).
+  The Enable Banking consent is closed before deletion (`7d02175`,
+  `A/routes/account.ts:59`). Google, GitHub and Apple grants are revoked
+  best-effort (`225c592`, `2db7c46`, `A/lib/oauth-grants.ts`), but `fcbfa2d`
+  (1 Oct) stopped storing OAuth tokens, so for a sign-in linked after it there
+  is no token to revoke with (`A/lib/oauth-grants.ts:85-86`) and the grant
+  stays at the provider;
 - anything already sent to the AI providers or Resend (§4, §5);
 - the Neon `dev` branch, a copy-on-write clone of production carrying real data
   (`CLAUDE.md`, "Local development points at the Neon branch `dev`").
@@ -132,7 +134,7 @@ audit.
 
 | What | Where | Why | How long | Removed by |
 | --- | --- | --- | --- | --- |
-| Wise API token, Kraken key pair, Alpaca key pair, Enable Banking session id and expiry. **Encrypted** with AES-256-GCM, random 12-byte IV and auth tag (`A/lib/crypto.ts:18-69`). The key is loaded on first use, not checked at boot (`A/lib/crypto.ts:42-47`; nothing in `A/index.ts` references it), so `docs/CREDENTIAL-ENCRYPTION.md:18-19`'s "refuses to boot" is not what the code does | `connections.credential_ciphertext` — `S/connections.ts:36-37` | Syncing balances and transactions | Until the connection or the account is removed | Cascade. What happens at the provider: §5 |
+| Wise API token, Kraken key pair, Alpaca key pair, Enable Banking session id and expiry. **Encrypted** with AES-256-GCM, random 12-byte IV and auth tag (`A/lib/crypto.ts:18-69`). The key is loaded on first use, not checked at boot (`A/lib/crypto.ts:42-47`; nothing in `A/index.ts` references it) (`docs/CREDENTIAL-ENCRYPTION.md` corrected to match, 3 Oct 2026) | `connections.credential_ciphertext` — `S/connections.ts:36-37` | Syncing balances and transactions | Until the connection or the account is removed | Cascade. What happens at the provider: §5 |
 | Connection label, last error text, institution — **plaintext** | `connections` — `S/connections.ts:25-46` | Display, diagnostics | Same | Cascade |
 
 ### 2.7 Operational

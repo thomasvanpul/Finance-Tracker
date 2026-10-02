@@ -66,11 +66,12 @@ available to every signed-in user with no opt-in.]`
   authentication.
 - You can delete your account at any time from your profile. You confirm by
   typing your email address. Deletion happens at once and cannot be undone.
-- Download a backup before deleting. The backup does not yet include everything
-  Numeris holds about you; the Privacy Policy, section 8, lists what is missing.
+- Download a backup before deleting. It holds your whole account except
+  credentials; the Privacy Policy, section 8, lists what is left out and why.
 - Deleting your account does not revoke a token you gave Numeris for Wise,
-  Kraken or Alpaca, a Google, Apple or GitHub sign-in, or a bank connection.
-  Revoke those in each service's own settings.
+  Kraken or Alpaca; revoke those in each service's own settings. A bank
+  connection is closed before deletion, and Numeris tries to remove its Google,
+  Apple or GitHub sign-in access but cannot guarantee it.
 
 `[TO CONFIRM: minimum age. The app does not check anyone's age today.]`
 
