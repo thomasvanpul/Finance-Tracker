@@ -59,6 +59,8 @@ export function CategoryStrip({ txs }: CategoryStripProps) {
     <div style={{ padding: "0 16px 16px" }}>
       <StatGrid
         columns={(top.length as 1 | 2 | 3)}
+        // Category names are names a human wrote, so sans (DESIGN.md §10).
+        labelMono={false}
         // Each cell is a category's expense total for the month, so it opens
         // that category's rows for THAT MONTH (DESIGN.md §14). The range was
         // missing, so the figure was September's and the rows it opened were

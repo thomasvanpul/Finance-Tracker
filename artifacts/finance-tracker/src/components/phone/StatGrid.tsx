@@ -38,11 +38,17 @@ interface StatGridItem {
 interface StatGridProps {
   items: StatGridItem[];
   columns?: 1 | 2 | 3 | 4;
+  /**
+   * Whether the labels are legends (DESIGN.md §10 — "NET WORTH" over its
+   * figure, mono) rather than names a human wrote (a category, sans).
+   * Default true; SPENDING's CategoryStrip passes false.
+   */
+  labelMono?: boolean;
 }
 
-type StatCellProps = StatGridItem;
+type StatCellProps = StatGridItem & { labelMono: boolean };
 
-function StatCell({ label, value, sub, accent, icon, isFinancial, href }: StatCellProps) {
+function StatCell({ label, value, sub, accent, icon, isFinancial, href, labelMono }: StatCellProps) {
   const cell = (
     <HoverRow
       style={{
@@ -60,7 +66,7 @@ function StatCell({ label, value, sub, accent, icon, isFinancial, href }: StatCe
         {icon && <span style={{ color: "var(--ft-dim)", display: "flex" }}>{icon}</span>}
         <span
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: labelMono ? "var(--font-mono)" : "var(--font-sans)",
             fontSize: "var(--ft-text-xs)",
             fontWeight: 600,
             letterSpacing: "0.08em",
@@ -112,7 +118,7 @@ function StatCell({ label, value, sub, accent, icon, isFinancial, href }: StatCe
   );
 }
 
-export function StatGrid({ items, columns = 2 }: StatGridProps) {
+export function StatGrid({ items, columns = 2, labelMono = true }: StatGridProps) {
   return (
     <div
       style={{
@@ -126,6 +132,7 @@ export function StatGrid({ items, columns = 2 }: StatGridProps) {
         <StatCell
           key={item.label}
           {...item}
+          labelMono={labelMono}
         />
       ))}
     </div>

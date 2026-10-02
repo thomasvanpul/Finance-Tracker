@@ -75,7 +75,7 @@ export function PWAInstallButton() {
       <button
         onClick={install}
         style={{
-          fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
+          fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 700,
           background: "var(--ft-accent)", color: "var(--ft-base)", border: "none",
           padding: "4px 10px", cursor: "pointer", letterSpacing: "0.06em",
         }}
@@ -86,7 +86,7 @@ export function PWAInstallButton() {
         onClick={() => { setDismissed(true); try { localStorage.setItem("nr-pwa-dismissed", "1"); } catch {} }}
         aria-label="Dismiss install prompt"
         style={{
-          fontFamily: "var(--font-mono)", fontSize: 13, background: "none", border: "none",
+          fontFamily: "var(--font-sans)", fontSize: 13, background: "none", border: "none",
           color: "var(--ft-dim)", cursor: "pointer", lineHeight: 1, padding: "0 2px",
         }}
       >
