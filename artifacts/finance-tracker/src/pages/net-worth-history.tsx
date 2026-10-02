@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import {
-  useListAccounts,
+  getGetNetWorthHistoryQueryKey,
+  useGetDashboard,
   useGetInvestmentSummary,
+  useGetNetWorthHistory,
+  useListAccounts,
   useListDebts,
 } from "@workspace/api-client-react";
 import { PersonaQuickStart } from "@/components/persona-quick-start";
@@ -26,6 +29,8 @@ import { formatBaseMoney } from "@/lib/utils";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { netAccountsTotal } from "@/lib/account-sign";
 import { completePortfolioTotal } from "@/lib/portfolio-total";
+import { HYDRATED_EVENT } from "@/lib/account-storage";
+import { ledgerFromHistory, manualEntries, type LedgerEntry, type ManualEntry } from "@/lib/net-worth-ledger";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -45,18 +50,31 @@ interface Milestone {
 
 // ── localStorage helpers ───────────────────────────────────────────────────
 
-function loadHistory(): NWEntry[] {
+// The whole server history: the "All" period means all of it.
+const NW_HISTORY_DAYS = 3650;
+
+function loadStoredHistory(): unknown[] {
   try {
     const raw = localStorage.getItem("ft-nw-history");
-    if (raw) return JSON.parse(raw) as NWEntry[];
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    if (Array.isArray(parsed)) return parsed;
   } catch {}
   return [];
 }
 
-function saveHistory(entries: NWEntry[]): void {
+// Writes the manual entries back. Everything else in the key (older machine
+// captures the page no longer draws) is left as it was.
+function saveManualEntries(manual: ManualEntry[]): void {
   try {
-    localStorage.setItem("ft-nw-history", JSON.stringify(entries));
+    const others = loadStoredHistory().filter((e) => manualEntries([e]).length === 0);
+    localStorage.setItem("ft-nw-history", JSON.stringify([...others, ...manual]));
   } catch {}
+}
+
+// What the Note column shows: the user's note, or that a captured day's
+// figure left something out (an account with no FX rate, an unvalued holding).
+function rowNote(e: { note?: string; partial?: boolean }): string {
+  return e.note ?? (e.partial ? "partial" : "");
 }
 
 function loadMilestones(): Milestone[] {
@@ -401,7 +419,7 @@ function MilestoneRow({ m, isHit, currentNW }: { m: { value: number; date: strin
 }
 
 function SnapshotRow({ e, prev, onDelete, deleteConfirmDate }: {
-  e: { date: string; totalAssets: number; totalLiabilities: number; netWorth: number; note?: string };
+  e: LedgerEntry;
   prev?: { netWorth: number };
   onDelete: (date: string) => void;
   deleteConfirmDate: string | null;
@@ -436,9 +454,9 @@ function SnapshotRow({ e, prev, onDelete, deleteConfirmDate }: {
       <td className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: deltaPct === null ? "var(--ft-dim)" : deltaPct >= 0 ? "var(--ft-green)" : "var(--ft-red)", padding: "7px 8px" }}>
         {deltaPct === null ? "—" : `${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%`}
       </td>
-      <td style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", padding: "7px 8px", maxWidth: 160, whiteSpace: "nowrap" }}>{e.note ?? ""}</td>
+      <td style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", padding: "7px 8px", maxWidth: 160, whiteSpace: "nowrap" }}>{rowNote(e)}</td>
       <td style={{ padding: "7px 8px" }}>
-        <button
+        {e.source === "manual" && <button
           onClick={() => onDelete(e.date)}
           style={{
             background: isConfirming ? "var(--ft-red)" : "none",
@@ -455,7 +473,7 @@ function SnapshotRow({ e, prev, onDelete, deleteConfirmDate }: {
           title={isConfirming ? "Click again to confirm delete" : "Delete entry"}
         >
           {isConfirming ? "DEL?" : "×"}
-        </button>
+        </button>}
       </td>
     </tr>
   );
@@ -527,7 +545,7 @@ function TargetRateRow({ r, yrs, nw10, nw20, isCagr, currentNW, targetNw, arriva
 
 export default function NetWorthHistory() {
   const isMobile = useIsMobile();
-  const [history, setHistory] = useState<NWEntry[]>([]);
+  const [manual, setManual] = useState<ManualEntry[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [showMilestoneForm, setShowMilestoneForm] = useState(false);
@@ -585,29 +603,27 @@ export default function NetWorthHistory() {
     if (!showForm) setShowForm(true);
   }
 
+  // Both keys are account-level: on a device's first load the preferences
+  // read writes them after this page has mounted, so read again when it lands.
   useEffect(() => {
-    setHistory(loadHistory());
-    setMilestones(loadMilestones());
+    const load = () => {
+      setManual(manualEntries(loadStoredHistory()));
+      setMilestones(loadMilestones());
+    };
+    load();
+    window.addEventListener(HYDRATED_EVENT, load);
+    return () => window.removeEventListener(HYDRATED_EVENT, load);
   }, []);
 
-  // Auto-snapshot: save today's NW from live data if no entry exists for today
-  useEffect(() => {
-    if (liveAssets == null || liveAssets <= 0) return;
-    const today = todayStr();
-    const existing = loadHistory();
-    if (existing.some((e) => e.date === today)) return;
-    const entry: NWEntry = {
-      date: today,
-      totalAssets: liveAssets,
-      totalLiabilities: liveLiabilities,
-      netWorth: liveAssets - liveLiabilities,
-      note: "auto",
-    };
-    const updated = [...existing, entry].sort((a, b) => a.date.localeCompare(b.date));
-    saveHistory(updated);
-    setHistory(updated);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveAssets, liveLiabilities]);
+  // Each day comes from the server snapshot the dashboard read captures, so the
+  // history is asked for once the dashboard has answered. This page used to
+  // write its own "auto" snapshot under its own net-worth definition.
+  const { data: dashData } = useGetDashboard();
+  const nwHistoryParams = { days: NW_HISTORY_DAYS };
+  const { data: nwHistory } = useGetNetWorthHistory(nwHistoryParams, {
+    query: { queryKey: getGetNetWorthHistoryQueryKey(nwHistoryParams), enabled: !!dashData },
+  });
+  const history = useMemo(() => ledgerFromHistory(nwHistory?.points, manual), [nwHistory, manual]);
 
   // Derived
   const filtered = useMemo(() => filterByPeriod(history, period), [history, period]);
@@ -724,16 +740,17 @@ export default function NetWorthHistory() {
     const assets = parseFloat(formAssets);
     const liabilities = parseFloat(formLiabilities) || 0;
     if (isNaN(assets) || assets < 0) return;
-    const entry: NWEntry = {
+    const entry: ManualEntry = {
       date: todayStr(),
       totalAssets: assets,
       totalLiabilities: liabilities,
       netWorth: assets - liabilities,
       note: formNote.trim() || undefined,
     };
-    const updated = [...history, entry].sort((a, b) => a.date.localeCompare(b.date));
-    setHistory(updated);
-    saveHistory(updated);
+    // One manual entry per day: recording today again replaces the earlier one.
+    const updated = [...manual.filter((e) => e.date !== entry.date), entry];
+    setManual(updated);
+    saveManualEntries(updated);
     setFormAssets("");
     setFormLiabilities("");
     setFormNote("");
@@ -758,9 +775,9 @@ export default function NetWorthHistory() {
       return;
     }
     setDeleteConfirmDate(null);
-    const updated = history.filter((e) => e.date !== date);
-    setHistory(updated);
-    saveHistory(updated);
+    const updated = manual.filter((e) => e.date !== date);
+    setManual(updated);
+    saveManualEntries(updated);
   }
 
   // Milestone dates intersecting with chart x-axis
@@ -1497,7 +1514,7 @@ export default function NetWorthHistory() {
                         <span className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: e.netWorth >= 0 ? "var(--ft-text)" : "var(--ft-red)" }}>
                           {formatBaseMoney(e.netWorth)}
                         </span>
-                        <button
+                        {e.source === "manual" && <button
                           onClick={() => handleDeleteEntry(e.date)}
                           style={{
                             background: isConfirming ? "var(--ft-red)" : "none",
@@ -1513,7 +1530,7 @@ export default function NetWorthHistory() {
                           }}
                         >
                           {isConfirming ? "DEL?" : "×"}
-                        </button>
+                        </button>}
                       </HStack>
                     </HStack>
                     <HStack gap={10} wrap>
@@ -1531,9 +1548,9 @@ export default function NetWorthHistory() {
                           {deltaPct !== null && ` (${deltaPct >= 0 ? "+" : ""}${deltaPct.toFixed(1)}%)`}
                         </span>
                       )}
-                      {e.note && (
+                      {rowNote(e) && (
                         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap", maxWidth: 140 }}>
-                          {e.note}
+                          {rowNote(e)}
                         </span>
                       )}
                     </HStack>

@@ -6,9 +6,9 @@
 // lives on one device. The server snapshot is one figure, captured on every
 // dashboard read, the same on every device.
 //
-// Not covered here: pages/net-worth-history.tsx. Its chart also holds manual
-// entries with notes, which the server does not store, so it needs a merge
-// rather than a swap.
+// pages/net-worth-history.tsx is the exception below: it still keeps the
+// manual entries the user types in ft-nw-history, which the server does not
+// store, and merges them over the server history (lib/net-worth-ledger.ts).
 
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
@@ -43,4 +43,22 @@ describe("net-worth history readers use the server history", () => {
       expect(src).not.toMatch(/\.length\s*-\s*2\]\.netWorth/);
     });
   }
+});
+
+describe("/net-worth merges manual entries over the server history", () => {
+  const file = "pages/net-worth-history.tsx";
+  const src = readFileSync(join(SRC_DIR, file), "utf8");
+
+  it(`${file} reads useGetNetWorthHistory`, () => {
+    expect(src).toMatch(/useGetNetWorthHistory\(/);
+  });
+
+  it(`${file} draws through ledgerFromHistory`, () => {
+    expect(src).toMatch(/ledgerFromHistory\(/);
+  });
+
+  it(`${file} no longer writes its own auto snapshot`, () => {
+    // The server captures the day on the dashboard read, under one definition.
+    expect(src).not.toMatch(/note:\s*"auto"/);
+  });
 });
