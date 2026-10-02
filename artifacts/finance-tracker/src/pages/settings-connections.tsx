@@ -129,7 +129,7 @@ function StatusPill({ status }: { status: string }) {
   return (
     <span
       style={{
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         letterSpacing: "0.08em",
         fontWeight: 700,
@@ -220,10 +220,10 @@ function ConnectionRow({ connection }: { connection: Connection }) {
       {/* Top row: label + status pill + provider tag */}
       <HStack align="center" gap={10} justify="between">
         <VStack gap={2} minWidth0>
-          <Text as="div" mono size={12} weight={600} color="var(--ft-text)">
+          <Text as="div" size={12} weight={600} color="var(--ft-text)">
             {connection.label}
           </Text>
-          <Text as="div" mono size={10} color="var(--ft-muted)">
+          <Text as="div" size={10} color="var(--ft-muted)">
             {connection.provider.toUpperCase()} · Last synced {formatTs(connection.lastSyncedAt)}
           </Text>
         </VStack>
@@ -237,7 +237,7 @@ function ConnectionRow({ connection }: { connection: Connection }) {
             padding: "6px 10px",
             border: "1px solid var(--ft-red)44",
             background: "var(--ft-red)11",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10.5,
             color: "var(--ft-red)",
             letterSpacing: "0.03em",
@@ -277,7 +277,7 @@ function ConnectionRow({ connection }: { connection: Connection }) {
               variant="muted"
               onClick={() => setConfirmDelete(false)}
             />
-            <Text as="span" mono size={10} color="var(--ft-dim)" letterSpacing="0.04em">
+            <Text as="span" size={10} color="var(--ft-dim)" letterSpacing="0.04em">
               Imported accounts and transactions survive
             </Text>
           </>
@@ -352,7 +352,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
     width: "100%",
     marginTop: 4,
     padding: "6px 8px",
-    fontFamily: "var(--font-mono)",
+    fontFamily: "var(--font-sans)",
     fontSize: 12,
     background: "var(--ft-raised)",
     border: "1px solid var(--ft-border2)",
@@ -363,7 +363,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
     <form onSubmit={handleSubmit} style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10, background: "var(--ft-surface)" }}>
       <HStack gap={10} align="end" wrap>
         <div style={{ flex: "0 0 140px", minWidth: 140 }}>
-          <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
+          <Text as="label" size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
             Provider
           </Text>
           <select
@@ -378,7 +378,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
         </div>
         {providerMeta?.fields.map((f) => (
           <div key={f.key} style={{ flex: 1, minWidth: 220 }}>
-            <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
+            <Text as="label" size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
               {f.label}
             </Text>
             <input
@@ -392,7 +392,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
           </div>
         ))}
         <div style={{ flex: "0 0 180px", minWidth: 140 }}>
-          <Text as="label" mono size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
+          <Text as="label" size={9} upper letterSpacing="0.08em" color="var(--ft-dim)">
             Label <span style={{ color: "var(--ft-muted)", textTransform: "none" }}>(optional)</span>
           </Text>
           <input
@@ -407,7 +407,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
           type="submit"
           disabled={createMutation.isPending}
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 11,
             color: "var(--ft-accent)",
             background: "transparent",
@@ -427,7 +427,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
             padding: "6px 10px",
             border: "1px solid var(--ft-red)44",
             background: "var(--ft-red)11",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 10.5,
             color: "var(--ft-red)",
           }}
@@ -435,7 +435,7 @@ function AddConnectionForm({ onCreated }: { onCreated: () => void }) {
           {errorMessage}
         </div>
       )}
-      <Text as="div" mono size={9} letterSpacing="0.04em" color="var(--ft-dim)">
+      <Text as="div" size={9} letterSpacing="0.04em" color="var(--ft-dim)">
         Validated against {providerMeta?.label ?? provider} before it is stored. AES-256-GCM at rest.
         Never returned to this page or anywhere else.
       </Text>
@@ -458,7 +458,7 @@ export function ConnectionsPanel() {
           <div
             style={{
               padding: "14px 16px",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               color: "var(--ft-dim)",
               fontStyle: "italic",
@@ -498,7 +498,7 @@ export function ConnectionsPanel() {
             padding: "8px 14px",
             background: "var(--ft-raised)",
             borderTop: "1px solid var(--ft-border)",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 9,
             color: "var(--ft-dim)",
             letterSpacing: "0.04em",
