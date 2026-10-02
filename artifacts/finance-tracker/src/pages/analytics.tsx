@@ -3164,7 +3164,7 @@ function SavingsProjection({ allTxs }: { allTxs: Tx[] }) {
                     <div style={{ fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>{label === 0 ? "Now" : `Year ${label}`}</div>
                     {payload.map((e, i) => (
                       <div key={i} style={{ display: "flex", gap: 8, justifyContent: "space-between", fontSize: 9, color: (e as { color?: string }).color ?? "var(--ft-text)" }}>
-                        <span>{e.name}</span>
+                        <span style={{ fontFamily: "var(--font-sans)" }}>{e.name}</span>
                         <span className="pnum">{formatBaseMoney(e.value as number)}</span>
                       </div>
                     ))}

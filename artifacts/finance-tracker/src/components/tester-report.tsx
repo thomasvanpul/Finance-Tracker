@@ -101,7 +101,7 @@ export function TesterReportProvider({ children }: { children: React.ReactNode }
 }
 
 const label: React.CSSProperties = {
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 11,
   letterSpacing: "0.08em",
   textTransform: "uppercase",

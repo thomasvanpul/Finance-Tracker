@@ -30,7 +30,7 @@ export function UnconvertibleAccountsBadge({ count, compact = false }: Props) {
   return (
     <div
       style={{
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: compact ? 9 : 10,
         letterSpacing: "0.06em",
         color: "var(--ft-amber)",

@@ -50,7 +50,7 @@ export function MonoTooltip({
             {entry.color && (
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: entry.color, flexShrink: 0 }} />
             )}
-            {displayName && <span style={{ color: "var(--ft-dim)", fontSize: 9 }}>{displayName}</span>}
+            {displayName && <span style={{ fontFamily: "var(--font-sans)", color: "var(--ft-dim)", fontSize: 9 }}>{displayName}</span>}
             <span className="pnum" style={{ color: "var(--ft-text)", fontWeight: 700 }}>{displayVal}</span>
           </div>
         );
