@@ -1,3 +1,9 @@
+// Imported by nothing (2026-10-02: rg over artifacts/finance-tracker/src
+// returns only this file). The phone draws the desktop settings page inside
+// the shell instead. Kept, not deleted: BACKLOG N3 decides revive versus
+// rewrite from a measured diff against pages/settings.tsx, and this file is
+// one side of that diff. Font-rule sweeps (DESIGN.md §10) skip it until N3
+// is decided — a type pass here changes nothing a user sees.
 import { useState } from "react";
 import { usePrivacy } from "@/contexts/privacy-context";
 import { useFintrackTheme, type FintrackTheme } from "@/contexts/theme-context";
