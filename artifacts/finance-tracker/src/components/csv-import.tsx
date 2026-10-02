@@ -208,7 +208,7 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
         background: "var(--ft-surface)",
         border: "1px solid var(--ft-border2)",
         width: "100%", maxWidth: 480,
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
       }}>
         {/* Header */}
         <div style={{
@@ -238,7 +238,7 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                       style={{
                         flex: 1,
                         padding: "6px 0",
-                        fontSize: 11, fontFamily: "var(--font-mono)",
+                        fontSize: 11, fontFamily: "inherit",
                         background: provider === p.id ? "var(--ft-accent)" : "var(--ft-raised)",
                         border: `1px solid ${provider === p.id ? "var(--ft-accent)" : "var(--ft-border)"}`,
                         color: provider === p.id ? "var(--ft-base)" : "var(--ft-muted)",
@@ -272,9 +272,12 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                   {file ? "✓" : "↑"}
                 </div>
                 <div style={{ fontSize: 11, color: file ? "var(--ft-green)" : "var(--ft-muted)", marginBottom: 4 }}>
-                  {file ? file.name : "Drop .csv file here or click to browse"}
+                  {/* A file name is data; the prompt is a sentence. */}
+                  {file ? (
+                    <span style={{ fontFamily: "var(--font-mono)" }}>{file.name}</span>
+                  ) : "Drop .csv file here or click to browse"}
                 </div>
-                <div style={{ fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
                   {file ? `${(file.size / 1024).toFixed(1)} KB · ${fileType.toUpperCase()}` : "CSV · OFX · QIF"}
                 </div>
                 <input
@@ -297,7 +300,7 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                     onChange={e => setOfxQifAccountId(e.target.value)}
                     style={{
                       width: "100%", background: "var(--ft-raised)", border: "1px solid var(--ft-border)",
-                      color: "var(--ft-text)", fontFamily: "var(--font-mono)", fontSize: 11, padding: "6px 10px",
+                      color: "var(--ft-text)", fontFamily: "inherit", fontSize: 11, padding: "6px 10px",
                       cursor: "pointer", outline: "none",
                     }}
                   >
@@ -334,7 +337,7 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                   onClick={handleClose}
                   style={{
                     background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)",
-                    fontSize: 10, fontFamily: "var(--font-mono)", padding: "6px 14px", cursor: "pointer",
+                    fontSize: 10, fontFamily: "inherit", padding: "6px 14px", cursor: "pointer",
                     letterSpacing: "0.06em", textTransform: "uppercase",
                   }}
                 >
@@ -347,7 +350,7 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                     background: file && !isPending ? "var(--ft-accent)" : "var(--ft-border)",
                     border: "none",
                     color: file && !isPending ? "var(--ft-base)" : "var(--ft-dim)",
-                    fontSize: 10, fontFamily: "var(--font-mono)", padding: "6px 18px",
+                    fontSize: 10, fontFamily: "inherit", padding: "6px 18px",
                     cursor: file && !isPending ? "pointer" : "not-allowed",
                     fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
                     transition: "all 0.1s",
@@ -372,8 +375,8 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                   { label: "Skipped", value: result.skipped, color: "var(--ft-dim)" },
                 ].map(item => (
                   <div key={item.label} style={{ background: "var(--ft-raised)", padding: "10px" }}>
-                    <div style={{ fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>{item.label}</div>
-                    <div style={{ fontSize: 20, fontWeight: 700, color: item.color }}>{item.value}</div>
+                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>{item.label}</div>
+                    <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: item.color }}>{item.value}</div>
                   </div>
                 ))}
               </div>
@@ -392,7 +395,7 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                   onClick={() => { reset(); }}
                   style={{
                     background: "none", border: "1px solid var(--ft-border)", color: "var(--ft-muted)",
-                    fontSize: 10, fontFamily: "var(--font-mono)", padding: "6px 14px", cursor: "pointer",
+                    fontSize: 10, fontFamily: "inherit", padding: "6px 14px", cursor: "pointer",
                     letterSpacing: "0.06em", textTransform: "uppercase",
                   }}
                 >
@@ -402,7 +405,7 @@ export function CsvImportModal({ open, onClose, onSuccess }: Props) {
                   onClick={handleClose}
                   style={{
                     background: "var(--ft-accent)", border: "none", color: "var(--ft-base)",
-                    fontSize: 10, fontFamily: "var(--font-mono)", padding: "6px 18px",
+                    fontSize: 10, fontFamily: "inherit", padding: "6px 18px",
                     cursor: "pointer", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
                   }}
                 >
