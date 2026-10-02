@@ -107,8 +107,8 @@ export function RecBar({ trend }: { trend: { strongBuy: number; buy: number; hol
       </div>
       <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap" }}>
         {segs.map((s) => s.val > 0 && (
-          <span key={s.label} style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: s.color }}>
-            {s.label}: {s.val}
+          <span key={s.label} style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: s.color }}>
+            {s.label}: <span className="pnum">{s.val}</span>
           </span>
         ))}
       </div>
@@ -120,7 +120,7 @@ export function RecBar({ trend }: { trend: { strongBuy: number; buy: number; hol
 export function RatingBar({ label, score, color }: { label: string; score: number; color: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", width: 70, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", width: 70, flexShrink: 0 }}>{label}</span>
       <div style={{ flex: 1, height: 5, background: "var(--ft-raised)", borderRadius: 2, position: "relative" }}>
         <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${score * 10}%`, background: color, borderRadius: 2 }} />
       </div>
