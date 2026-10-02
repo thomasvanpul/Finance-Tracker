@@ -1872,7 +1872,10 @@ what they *should* hold is a regulated activity and is ruled out.
   writing. Decision is Thomas's; see the roadmap's decision 4.
 - **J2 · Alpaca commercial licensing — revisit ~Mar 2027 — PARKED · NOT YET.** [H5]
 - **J3 · Index levels refused server-side, by shape and provider type — DONE (`45d284b`).** [A9]
-- **J28 · `fxRatesFromYahoo` is not behind `ENABLE_MARKET_DATA` — TODO · NOW.**
+- **J28 · `fxRatesFromYahoo` is not behind `ENABLE_MARKET_DATA` — PARTLY DONE (`bb8edf6`).**
+  Done 2 Oct: with the flag off the Yahoo lane is skipped and every rate is the
+  ECB fixing via Frankfurter. Still open: the `fx_rates` table and "ECB" in the
+  `fx` provenance mark.
   `api-server/src/routes/market.ts:103-130` still scrapes Yahoo for FX on a
   cache miss (in-process, 5-minute TTL) while the product says markets are off
   and Yahoo is out (scraping, `Atlas/Settled.md`). Found 19 Sep by the code
@@ -1959,7 +1962,7 @@ Added 19 Sep 2026. The switch in `3d8d8e4` is correct and the server is safe.
 These are the places the product does not yet tell the truth about the absence.
 L1 to L4 are tester-visible today.
 
-- **L1 · Phone HOME prints `PORTFOLIO £0` for a market-persona user with holdings — TODO · NOW.**
+- **L1 · Phone HOME prints `PORTFOLIO £0` for a market-persona user with holdings — DONE (`c83b349`, `2abb90b`, `52c3b8d`).**
   Chain: `lib/market-eod.ts:350-352` returns an empty price map when the flag is
   off; `routes/dashboard.ts:230-232` returns all-null for an unpriced position
   and `:268` skips it, so `portfolioValueBase` stays 0; `:819` serialises
@@ -1972,7 +1975,9 @@ L1 to L4 are tester-visible today.
   they do not know.
   Done when: a user with holdings and the flag off sees a stated unknown rather
   than a number, on phone HOME, phone WORTH and the desktop dashboard.
-- **L2 · Net worth silently omits the whole portfolio — TODO · NOW.**
+- **L2 · Net worth silently omits the whole portfolio — DONE (`c83b349` lock, `9dfba29`).**
+  `9dfba29` closed the two client-side sums (`/accounts` wealth strip,
+  `/net-worth-history` live strip, auto-fill and auto snapshot).
   `routes/dashboard.ts:798` computes net worth from `portfolioValueBase`, which
   is 0 for every position. `pages/investments.tsx:1817-1824` and
   `pages/dashboard.tsx:3558` do caption `unavailablePositions`; the two phone
@@ -1984,7 +1989,7 @@ L1 to L4 are tester-visible today.
   This is the defect class `CLAUDE.md` names as the worst a finance app ships.
   Done when: a lock test asserts the behaviour under both flag states, and no
   surface shows a net-worth figure that excludes a position without saying so.
-- **L3 · Onboarding still sells market data — TODO · NOW.**
+- **L3 · Onboarding still sells market data — DONE (`fdb5f53`).**
   `components/onboarding.tsx:64` offers "Investments and market prices / Live
   prices, portfolio P&L, earnings calendar" as the first of four tracks. Neither
   `onboarding.tsx` nor `components/persona-quick-start.tsx` contains
@@ -1995,7 +2000,7 @@ L1 to L4 are tester-visible today.
   Done when: the first screen a tester sees offers nothing the deployment
   cannot serve, and the market persona either goes behind the flag or is
   re-described around holdings and cost.
-- **L4 · `/portfolio` empty state and benchmark panel still promise prices — TODO · NOW.**
+- **L4 · `/portfolio` empty state and benchmark panel still promise prices — DONE (`40fc2ad`).**
   `pages/investments.tsx:2075` prints "vs S&P 500 ± 0.00%" inside the ASCII
   terminal a brand-new user meets; `:2093-2096` lists "Live prices via Yahoo
   Finance", "Portfolio vs S&P 500 benchmark" and "Dividend tracker + earnings
