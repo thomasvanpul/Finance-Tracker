@@ -208,7 +208,7 @@ function ToggleBtn({ label, active, color, onClick }: { label: string; active: b
     <button
       onClick={onClick}
       style={{
-        fontFamily: "var(--font-mono)", fontSize: 9, padding: "3px 8px",
+        fontFamily: "var(--font-sans)", fontSize: 9, padding: "3px 8px",
         border: `1px solid ${active ? color : "var(--ft-border2)"}`,
         background: active ? `${color}22` : "transparent",
         color: active ? color : "var(--ft-dim)",
@@ -319,7 +319,7 @@ export function ChartAnalysisModal({
           <div style={{ width: 1, height: 16, background: "var(--ft-border2)" }} />
           {/* Overlays */}
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginRight: 2 }}>OVERLAYS</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginRight: 2 }}>OVERLAYS</span>
             <ToggleBtn label="SMA 20" active={showSMA20} color="var(--ft-green)" onClick={() => setShowSMA20(v => !v)} />
             <ToggleBtn label="SMA 50" active={showSMA50} color="var(--ft-amber)" onClick={() => setShowSMA50(v => !v)} />
             <ToggleBtn label="BB (20,2)" active={showBB} color="var(--ft-cyan)" onClick={() => setShowBB(v => !v)} />
@@ -327,7 +327,7 @@ export function ChartAnalysisModal({
           <div style={{ width: 1, height: 16, background: "var(--ft-border2)" }} />
           {/* Panels */}
           <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginRight: 2 }}>PANELS</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginRight: 2 }}>PANELS</span>
             <ToggleBtn label="VOL" active={showVolume} color="var(--ft-blue)" onClick={() => setShowVolume(v => !v)} />
             <ToggleBtn label="RSI (14)" active={showRSI} color="var(--ft-id-6)" onClick={() => setShowRSI(v => !v)} />
             <ToggleBtn label="MACD" active={showMACD} color="var(--ft-red)" onClick={() => setShowMACD(v => !v)} />
@@ -337,11 +337,11 @@ export function ChartAnalysisModal({
         {/* Charts */}
         <div style={{ flex: 1, padding: "0", overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 0 }}>
           {isFetching ? (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-sans)", fontSize: 12 }}>
               Loading chart data…
             </div>
           ) : enriched.length === 0 ? (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-mono)", fontSize: 12 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ft-dim)", fontFamily: "var(--font-sans)", fontSize: 12 }}>
               No data available
             </div>
           ) : (
@@ -479,11 +479,11 @@ export function ChartAnalysisModal({
                   {showSMA20 && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-green)" }}>── SMA 20</span>}
                   {showSMA50 && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-amber)" }}>── SMA 50</span>}
                   {showBB && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-cyan)" }}>- - BB (20,2) · bands show volatility range</span>}
-                  {showRSI && rsiSignal && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: rsiSignal.color, fontWeight: 700 }}>{rsiSignal.text}</span>}
-                  {!showRSI && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)" }}>RSI: &lt;30 oversold · &gt;70 overbought</span>}
-                  {showMACD && macdSignal && <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: macdSignal.color, fontWeight: 700 }}>{macdSignal.text}</span>}
+                  {showRSI && rsiSignal && <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: rsiSignal.color, fontWeight: 700 }}>{rsiSignal.text}</span>}
+                  {!showRSI && <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-dim)" }}>RSI: &lt;30 oversold · &gt;70 overbought</span>}
+                  {showMACD && macdSignal && <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: macdSignal.color, fontWeight: 700 }}>{macdSignal.text}</span>}
                 </div>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-muted)" }}>Data via Yahoo Finance</span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 8, color: "var(--ft-muted)" }}>Data via Yahoo Finance</span>
               </div>
             </div>
           );

@@ -438,7 +438,7 @@ const BENCHMARKS: Record<string, BenchmarkDef> = {
 // ── Chart for EPS history ─────────────────────────────────────────────────────
 
 function EpsChart({ data }: { data: EarningsEntry[] }) {
-  if (!data.length) return <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", padding: "20px 0" }}>No earnings history available.</div>;
+  if (!data.length) return <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", padding: "20px 0" }}>No earnings history available.</div>;
 
   const chartData = data.slice(-8).map((e) => ({
     label: e.date,
@@ -551,7 +551,7 @@ export function StatDrillModal({ label, value, info, earningsHistory = [], recTr
                 <div style={{ background: qcWash(assessment.quality, 13), border: `1px solid ${qcWash(assessment.quality, 33)}`, color: QC[assessment.quality], fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, padding: "3px 10px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                   {assessment.badge}
                 </div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.4, maxWidth: 280 }}>{assessment.context}</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.4, maxWidth: 280 }}>{assessment.context}</div>
               </div>
             )}
           </div>
@@ -567,7 +567,7 @@ export function StatDrillModal({ label, value, info, earningsHistory = [], recTr
           {/* Full explanation */}
           <div>
             <div style={{ fontFamily: "var(--font-mono)", fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>What This Measures</div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.7 }}>{info}</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", lineHeight: 1.7 }}>{info}</div>
           </div>
 
           {/* Key insights */}
@@ -578,7 +578,7 @@ export function StatDrillModal({ label, value, info, earningsHistory = [], recTr
                 {bench.insights.map((ins, i) => (
                   <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                     <span style={{ color: "var(--ft-accent)", fontSize: 8, marginTop: 2, flexShrink: 0 }}>▸</span>
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5 }}>{ins}</span>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-muted)", lineHeight: 1.5 }}>{ins}</span>
                   </div>
                 ))}
               </div>
@@ -589,7 +589,7 @@ export function StatDrillModal({ label, value, info, earningsHistory = [], recTr
           {showEpsChart && <EpsChart data={earningsHistory} />}
           {showAnalystChart && <AnalystChart data={recTrend} />}
           {!bench && !showEpsChart && !showAnalystChart && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", fontStyle: "italic" }}>No benchmark data available for this metric.</div>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", fontStyle: "italic" }}>No benchmark data available for this metric.</div>
           )}
 
           {/* Quality scale legend */}
