@@ -202,7 +202,7 @@ function ComponentRow({ label, description, pts, maxPts, isWeakest }: ComponentR
         >
           <span
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
@@ -213,7 +213,7 @@ function ComponentRow({ label, description, pts, maxPts, isWeakest }: ComponentR
           </span>
           <span
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 9,
               color: "var(--ft-dim)",
               overflow: "hidden",
@@ -315,7 +315,7 @@ function BreakdownItem({ label, impact, message }: BreakdownItemProps) {
       <div style={{ minWidth: 0 }}>
         <div
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 9,
             color: "var(--ft-muted)",
             fontWeight: 600,
@@ -327,7 +327,7 @@ function BreakdownItem({ label, impact, message }: BreakdownItemProps) {
         </div>
         <div
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 9,
             color: "var(--ft-dim)",
           }}
@@ -531,7 +531,7 @@ export function FinancialHealthWidget() {
               {/* Verdict */}
               <div
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--font-sans)",
                   fontSize: 11,
                   color: "var(--ft-muted)",
                   lineHeight: 1.45,
