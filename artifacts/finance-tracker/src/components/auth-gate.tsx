@@ -120,7 +120,7 @@ const INPUT_STYLE: React.CSSProperties = {
   background: "var(--ft-base)",
   border: "1px solid var(--ft-border)",
   color: "var(--ft-text)",
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 13,
   padding: "10px 12px",
   outline: "none",
@@ -137,7 +137,7 @@ const PRIMARY_BTN: React.CSSProperties = {
   background: "transparent",
   color: "var(--ft-accent)",
   border: "1.5px solid var(--ft-accent)",
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 12,
   fontWeight: 700,
   letterSpacing: "0.08em",
@@ -152,7 +152,7 @@ const SECONDARY_BTN: React.CSSProperties = {
   background: "transparent",
   color: "var(--ft-text)",
   border: "1px solid var(--ft-border2)",
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 12,
   padding: "10px 14px",
   cursor: "pointer",
@@ -166,7 +166,7 @@ const LINK_BTN: React.CSSProperties = {
   background: "none",
   border: "none",
   color: "var(--ft-accent)",
-  fontFamily: "var(--font-mono)",
+  fontFamily: "var(--font-sans)",
   fontSize: 11,
   cursor: "pointer",
   padding: 0,
@@ -388,7 +388,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           >
             <span
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 color: "var(--ft-dim)",
                 textAlign: "center",
@@ -686,7 +686,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           marginBottom: 12,
         }}
       >
-        <Text as="div" color="var(--ft-red)" mono size={11} lineHeight={1.45}>
+        <Text as="div" color="var(--ft-red)" size={11} lineHeight={1.45}>
           {error.message}
         </Text>
         {error.action && (
@@ -713,7 +713,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return (
       <VStack gap={8} padding="12px 0 0">
         <div style={{ borderTop: "1px solid var(--ft-border)", paddingTop: 12 }}>
-          <Text as="div" mono upper letterSpacing="0.08em" color="var(--ft-dim)" size={9} mb={8} align="center">
+          <Text as="div" upper letterSpacing="0.08em" color="var(--ft-dim)" size={9} mb={8} align="center">
             OR
           </Text>
           <VStack gap={8}>
@@ -769,7 +769,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value)}
                 placeholder="000000"
-                style={INPUT_STYLE}
+                // A six-digit code is read digit by digit: data, so mono (DESIGN.md §10).
+                style={{ ...INPUT_STYLE, fontFamily: "var(--font-mono)" }}
               />
               <button type="submit" className="ft-auth-primary" disabled={submitting || totpCode.length < 6} style={{ ...PRIMARY_BTN, opacity: submitting || totpCode.length < 6 ? 0.5 : 1 }}>
                 {submitting ? "Verifying…" : "Verify"}
