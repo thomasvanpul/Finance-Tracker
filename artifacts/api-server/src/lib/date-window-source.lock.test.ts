@@ -92,8 +92,8 @@ const ALLOWLIST: readonly Allowed[] = [
     why: "The same consent TTL. A TTL genuinely is n times 86,400 seconds — it is a duration, not a count of calendar days, so millisecond arithmetic is the correct model here.",
   },
   {
-    file: "lib/recurring-detector-server.ts", rule: "A", status: "deferred-bug",
-    why: "addDays parses a date string as UTC midnight then shifts it with LOCAL setDate/getDate, so west of Greenwich it returns the previous day — and its output IS shown to the user as a predicted next occurrence. Same defect. recurring_patterns was declared out of scope by the task that wrote this lock. FINDING recorded in .review/report.md 2026-09-11.",
+    file: "lib/recurring-detector-server.ts", rule: "A", status: "correct",
+    why: "addDays parses a date string as UTC midnight and walks it with setUTCDate/getUTCDate before toISOString, the same UTC-only frame as allocation.addDays. Was a deferred-bug entry (local setDate, a day early across DST) until 982b121; the mechanism test pins nextExpected across the 2026-03-08 US spring-forward."
   },
 ];
 
@@ -221,11 +221,11 @@ describe("date windows are built from one helper", () => {
 
   it("the allowlist has not grown", () => {
     // Widening the allowlist is how a lock dies. These counts make it a
-    // deliberate, reviewable edit. Two of the six are known defects that
-    // were out of the fixing task's scope and are recorded as findings; if
-    // one is fixed, drop its entry and this number together.
-    expect(ALLOWLIST.filter((a) => a.status === "correct")).toHaveLength(8);
-    expect(ALLOWLIST.filter((a) => a.status === "deferred-bug")).toHaveLength(1);
+    // deliberate, reviewable edit. A known defect left out of a fixing
+    // task's scope is listed as "deferred-bug" with its finding; when it is
+    // fixed, reclassify or drop its entry and move these numbers together.
+    expect(ALLOWLIST.filter((a) => a.status === "correct")).toHaveLength(9);
+    expect(ALLOWLIST.filter((a) => a.status === "deferred-bug")).toHaveLength(0);
     for (const a of ALLOWLIST) expect(a.why.length).toBeGreaterThan(60);
   });
 });
