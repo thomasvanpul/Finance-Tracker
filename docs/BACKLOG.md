@@ -174,9 +174,9 @@ cap can be re-imposed per phase rather than across the whole tier.
 | G47 | Receipt scan AI budget economics | DECIDE | NOT YET |
 | G48 | Offline wipe unverified in iOS WebView | TODO | NEXT |
 | G49 | Unsendable queued writes discarded at sign-out | DECIDE | NOT YET |
-| G50 | 2fa-attempts row survives deletion | TODO | NOT YET |
+| G50 | 2fa-attempts row survives deletion | DONE | — |
 | G51 | Settings "all local state" copy | DONE | — |
-| G52 | Export built in memory per request | TODO | NOT YET |
+| G52 | Export built in memory per request | DONE | — |
 | G53 | Offline replay has no idempotency key | TODO | NOT YET |
 | G54 | Dedup import unreachable; CSV path drops real duplicates | TODO | NOT YET |
 | G55 | Settings still asks for WISE_API_TOKEN | TODO | NOT YET |
@@ -1604,9 +1604,9 @@ of that check.
 - **G47 · Receipt photo spends the same 30/min AI budget as a one-line chat message — DECIDE · NOT YET.** [G23] Kept deliberately in `cc64e4d`; economics unmeasured.
 - **G48 · Offline wipe verified in Chromium only, not the iOS WebView — TODO · NOT YET.** [G24] `7ed1426` says Chromium; no iOS evidence in the repo.
 - **G49 · Queued offline writes unsendable at sign-out are discarded — DECIDE · NOT YET.** [G25] Already disclosed at `docs/PRIVACY.md:295-297`; the decision is whether to tell the user in the moment.
-- **G50 · `2fa-attempts-*` counter row survives account deletion — TODO · NOT YET.** [G26]
+- **G50 · `2fa-attempts-*` counter row survives account deletion — DONE in `bbc4c19`.** [G26] Reached through the user's own challenge row, exact identifier; integration-tested on Neon dev.
 - **G51 · Settings copy "Includes all local state stored by this app" is loosely worded — DONE.** [G27] The sentence now says what each button downloads: the server account less credentials, or this device's local settings only (2026-10-02).
-- **G52 · The export file is built in memory per request (busiest user 18,019 request-metric rows) — TODO · NOT YET.** [G28]
+- **G52 · The export file is built in memory per request (busiest user 18,019 request-metric rows) — DONE in `eb7ff92`** (streams a section and a page at a time); this line was left stale. [G28]
 
 *Register G22 (I3 shown as TODO though shipped) is resolved by this edit — see I3 — and is not carried as an item.*
 
