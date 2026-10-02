@@ -70,6 +70,13 @@ describe.skipIf(!enabled)("account deletion · nothing survives (real database)"
       // The other user's address ends with the victim's. A suffix match
       // (the old LIKE '%<email>') deleted this row.
       { id: `ver-c-${stamp}`, identifier: `x${victimEmail}`, value: "code", expiresAt: new Date(Date.now() + 60_000) },
+      // A 2FA challenge and the attempt counter better-auth writes beside
+      // it (value "0", so only the challenge row names the user).
+      { id: `ver-d-${stamp}`, identifier: `2fa-${stamp}`, value: victim, expiresAt: new Date(Date.now() + 60_000) },
+      { id: `ver-e-${stamp}`, identifier: `2fa-attempts-2fa-${stamp}`, value: "0", expiresAt: new Date(Date.now() + 60_000) },
+      // The other user's challenge and counter, which must survive.
+      { id: `ver-f-${stamp}`, identifier: `2fa-o${stamp}`, value: other, expiresAt: new Date(Date.now() + 60_000) },
+      { id: `ver-g-${stamp}`, identifier: `2fa-attempts-2fa-o${stamp}`, value: "0", expiresAt: new Date(Date.now() + 60_000) },
     ]);
     const [metric] = await db.insert(s.requestMetricsTable).values({ route: "/api/del-test", method: "GET", statusCode: 200, durationMs: 1, userId: victim }).returning({ id: s.requestMetricsTable.id });
     metricId = metric.id;
@@ -89,7 +96,7 @@ describe.skipIf(!enabled)("account deletion · nothing survives (real database)"
     const { eq } = await import("drizzle-orm");
     await schema.db.delete(schema.userTable).where(eq(schema.userTable.id, other));
     await schema.db.delete(schema.userTable).where(eq(schema.userTable.id, victim));
-    await schema.db.delete(schema.verificationTable).where(eq(schema.verificationTable.id, `ver-c-${stamp}`));
+    for (const id of ["c", "f", "g"]) await schema.db.delete(schema.verificationTable).where(eq(schema.verificationTable.id, `ver-${id}-${stamp}`));
     if (metricId) await schema.db.delete(schema.requestMetricsTable).where(eq(schema.requestMetricsTable.id, metricId));
     await schema.pool.end();
   }, NEON_TIMEOUT_MS);
@@ -106,7 +113,7 @@ describe.skipIf(!enabled)("account deletion · nothing survives (real database)"
     expect(result).not.toBeNull();
     // Everything counted before the delete is reported as deleted.
     for (const [name, n] of Object.entries(seeded)) expect(result!.tables[name], name).toBe(n);
-    expect(result!.tables.verification).toBe(2);
+    expect(result!.tables.verification).toBe(4);
     expect(result!.tables.request_metrics_anonymised).toBe(1);
 
     const survivors: string[] = [];
@@ -122,6 +129,12 @@ describe.skipIf(!enabled)("account deletion · nothing survives (real database)"
     expect(byEmail).toEqual([]);
     const suffixed = await schema.db.select().from(schema.verificationTable).where(eq(schema.verificationTable.identifier, `x${victimEmail}`));
     expect(suffixed).toHaveLength(1);
+    const attempts = await schema.db.select().from(schema.verificationTable).where(eq(schema.verificationTable.identifier, `2fa-attempts-2fa-${stamp}`));
+    expect(attempts).toEqual([]);
+    const othersTwoFactor = await schema.db.select().from(schema.verificationTable).where(eq(schema.verificationTable.value, other));
+    expect(othersTwoFactor).toHaveLength(1);
+    const othersAttempts = await schema.db.select().from(schema.verificationTable).where(eq(schema.verificationTable.identifier, `2fa-attempts-2fa-o${stamp}`));
+    expect(othersAttempts).toHaveLength(1);
 
     const [metric] = await schema.db.select().from(schema.requestMetricsTable).where(eq(schema.requestMetricsTable.id, metricId));
     expect(metric).toBeDefined();

@@ -15,7 +15,7 @@ vi.hoisted(() => {
 });
 
 import { PgDialect } from "drizzle-orm/pg-core";
-import { verificationRowsFor } from "./account-deletion";
+import { verificationRowsFor, twoFactorAttemptRowsFor, TWO_FACTOR_ATTEMPTS_PREFIX } from "./account-deletion";
 
 const dialect = new PgDialect();
 
@@ -70,5 +70,29 @@ describe("account deletion · verification rows are matched exactly", () => {
 
   it("does not match a bystander's row whose value is their own id", () => {
     expect(matches(victim, { identifier: "reset-password:tok2", value: bystander.id })).toBe(false);
+  });
+});
+
+// The 2FA attempt counter (`2fa-attempts-<challenge>`, value a number) is
+// reached through the user's own challenge row. It survived deletions
+// until 2026-10-02 (BACKLOG G50). Same rule: exact matches only.
+describe("account deletion · the 2FA attempt counter is reached through the user's own challenge", () => {
+  const victim = { id: "user-victim-0001" };
+
+  it("renders no pattern operator and binds the user id and the prefix as whole values", () => {
+    const { sql, params } = dialect.sqlToQuery(twoFactorAttemptRowsFor(victim));
+    expect(sql).not.toMatch(/like|similar|~/i);
+    expect(params.sort()).toEqual([TWO_FACTOR_ATTEMPTS_PREFIX, victim.id].sort());
+  });
+
+  it("matches an identifier equal to the prefix plus a challenge identifier whose value is the user id", () => {
+    const { sql } = dialect.sqlToQuery(twoFactorAttemptRowsFor(victim));
+    expect(sql).toBe(
+      '"verification"."identifier" in (select $1 || "identifier" from "verification" where "value" = $2)',
+    );
+  });
+
+  it("uses the prefix better-auth writes", () => {
+    expect(TWO_FACTOR_ATTEMPTS_PREFIX).toBe("2fa-attempts-");
   });
 });

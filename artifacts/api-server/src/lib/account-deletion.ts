@@ -11,7 +11,9 @@
 //                   the user id as its whole `value` (password reset, 2FA
 //                   challenge, trust-this-device, delete-account token).
 //                   A row keyed by the bare email is matched too. Both are
-//                   EXACT matches — see verificationRowsFor.
+//                   EXACT matches — see verificationRowsFor. The 2FA
+//                   attempt counter is reached through its challenge
+//                   row — see twoFactorAttemptRowsFor.
 //   request_metrics user_id is deliberately not a foreign key (see the
 //                   schema comment: the p95 series must not be rewritten
 //                   when a user leaves). The timing rows stay; the link to
@@ -87,6 +89,17 @@ export function verificationRowsFor(user: { id: string; email: string }): SQL {
   )!;
 }
 
+// The attempt counter better-auth writes beside each 2FA challenge:
+// identifier `2fa-attempts-<challenge identifier>`, value a number, so
+// verificationRowsFor cannot reach it. It names the user only through the
+// challenge row (value = user.id), so it is found through that row, by
+// exact identifier, and must be deleted BEFORE the challenge row goes.
+export const TWO_FACTOR_ATTEMPTS_PREFIX = "2fa-attempts-";
+
+export function twoFactorAttemptRowsFor(user: { id: string }): SQL {
+  return sql`${verificationTable.identifier} in (select ${TWO_FACTOR_ATTEMPTS_PREFIX} || "identifier" from "verification" where "value" = ${user.id})`;
+}
+
 export interface DeletionResult {
   deletedRows: number;
   tables: Record<string, number>;
@@ -119,10 +132,13 @@ export async function deleteUserAccount(userId: string): Promise<DeletionResult 
       .where(eq(requestMetricsTable.userId, userId));
     tables.request_metrics_anonymised = rowCount(anonymised);
 
+    const attempts = await tx
+      .delete(verificationTable)
+      .where(twoFactorAttemptRowsFor(user));
     const verifications = await tx
       .delete(verificationTable)
       .where(verificationRowsFor(user));
-    tables.verification = rowCount(verifications);
+    tables.verification = rowCount(attempts) + rowCount(verifications);
 
     await tx.delete(userTable).where(eq(userTable.id, userId));
 
