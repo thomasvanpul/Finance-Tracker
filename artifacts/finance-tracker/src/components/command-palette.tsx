@@ -420,7 +420,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
               background: "transparent",
               border: "none",
               outline: "none",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 14,
               color: "var(--ft-text)",
               padding: "14px 0",
@@ -440,7 +440,7 @@ export function CommandPalette({ open, onClose, onNewTransaction, onToggleAlerts
           {flatFiltered.length === 0 ? (
             <div
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 color: "var(--ft-dim)",
                 padding: "20px 14px",
@@ -543,7 +543,7 @@ function CommandRow({ cmd, isSelected, onMouseEnter, onClick }: CommandRowProps)
       </span>
       <span
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: cmd.section === "convert" ? "var(--font-mono)" : "var(--font-sans)",
           fontSize: 13,
           color: isSelected ? "var(--ft-text)" : "var(--ft-muted)",
           flex: 1,
@@ -574,7 +574,7 @@ function HintItem({ keys, label }: { keys: string; label: string }) {
   return (
     <span
       style={{
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: 10,
         color: "var(--ft-dim)",
         display: "flex",
@@ -584,6 +584,7 @@ function HintItem({ keys, label }: { keys: string; label: string }) {
     >
       <span
         style={{
+          fontFamily: "var(--font-mono)",
           background: "var(--ft-base)",
           border: "1px solid var(--ft-border2)",
           padding: "0px 4px",
