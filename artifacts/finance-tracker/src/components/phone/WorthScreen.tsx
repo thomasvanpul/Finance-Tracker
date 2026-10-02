@@ -401,7 +401,7 @@ export function WorthScreen() {
         title="No accounts or holdings yet."
         description="Connect a bank account or add a holding to see your balance sheet across currencies."
         ctaLabel="Open settings"
-        onCta={() => { window.location.hash = ""; window.location.assign(entityHref("settings", "connections")); }}
+        onCta={() => navigate(entityHref("settings", "connections"))}
       />
     );
   }
