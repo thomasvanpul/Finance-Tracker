@@ -77,7 +77,7 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
       }}>
         <div>
           <div style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 8,
             letterSpacing: "0.14em",
             color: tool.accent,
@@ -85,7 +85,7 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
           }}>
             {tool.tag}
           </div>
-          <Text as="div" mono size={13} weight={700} color="var(--ft-text)" letterSpacing="0.06em">
+          <Text as="div" size={13} weight={700} color="var(--ft-text)" letterSpacing="0.06em">
             {tool.label}
           </Text>
         </div>
@@ -106,7 +106,7 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
       </div>
       <div style={{ padding: "12px 16px 8px", flex: 1 }}>
         <p style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 10,
           color: "var(--ft-muted)",
           lineHeight: 1.65,
@@ -117,7 +117,7 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
         </p>
         <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 4 }}>
           {tool.bullets.map((b) => (
-            <li key={b} style={{ display: "flex", alignItems: "baseline", gap: 7, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.03em" }}>
+            <li key={b} style={{ display: "flex", alignItems: "baseline", gap: 7, fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.03em" }}>
               <span style={{ color: tool.accent, flexShrink: 0, fontSize: 8 }}>›</span>
               {b}
             </li>
@@ -140,7 +140,7 @@ function ToolCard({ tool, onLaunch }: { tool: Tool; onLaunch: () => void }) {
             background: "none",
             border: `1px solid ${tool.accent}`,
             color: tool.accent,
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: 9,
             fontWeight: 700,
             letterSpacing: "0.1em",
@@ -165,13 +165,13 @@ export default function Calculators() {
     <div style={{ maxWidth: 1080, margin: "0 auto" }}>
       {/* Page header */}
       <div style={{ marginBottom: 28, paddingBottom: 16, borderBottom: "1px solid var(--ft-border)" }}>
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.16em", marginBottom: 4 }}>
+        <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.16em", marginBottom: 4 }}>
           TOOLS › CALCULATORS
         </div>
-        <h1 style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.04em", margin: 0 }}>
+        <h1 style={{ fontFamily: "var(--font-sans)", fontSize: 20, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.04em", margin: 0 }}>
           PLANNING TOOLS
         </h1>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginTop: 6, letterSpacing: "0.04em" }}>
+        <p style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", marginTop: 6, letterSpacing: "0.04em" }}>
           Four calculators for long-range financial planning. Select a tool to launch it in full.
         </p>
       </div>
@@ -190,7 +190,7 @@ export default function Calculators() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
             <span>{msg}</span>
           </div>
@@ -205,7 +205,7 @@ export default function Calculators() {
       </div>
 
       {/* Footer note */}
-      <div style={{ marginTop: 28, paddingTop: 12, borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
+      <div style={{ marginTop: 28, paddingTop: 12, borderTop: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em" }}>
         TIP — Keyboard shortcuts still work directly: G then the key shown on each card to jump straight to any tool.
       </div>
     </div>
