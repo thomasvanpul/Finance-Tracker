@@ -9,14 +9,31 @@
 //
 // Constitution:
 //   - hairline structure (border-top on strips), no shadows
-//   - MonoLabel typography, tabular-nums where numeric
+//   - DESIGN.md §10: the legends and provider names are MonoLabel; the
+//     words around them, the sentences and the user's queued text are sans
 //   - semantic color only: amber = degraded/reduced, red = error
 //   - no animation on state changes (150ms cap holds)
 //   - status label always uppercase mono, glyph on the left
 
+import type { ReactNode } from "react";
 import { MonoLabel } from "@/components/primitives";
 import { HStack, VStack } from "@/components/primitives";
 import { AlertTriangle } from "lucide-react";
+
+// Language runs inside a strip. Same size, case and tracking as the
+// MonoLabel they sit beside, in sans (DESIGN.md §10).
+function Words({ size, color, letterSpacing = "0.08em", children }: {
+  size: number;
+  color: string;
+  letterSpacing?: string;
+  children: ReactNode;
+}) {
+  return (
+    <span style={{ fontFamily: "var(--font-sans)", fontSize: size, color, letterSpacing, textTransform: "uppercase" }}>
+      {children}
+    </span>
+  );
+}
 
 // Prefix glyph — same shape everywhere for scannability. A
 // caret-forward mark reads "in progress" without needing motion.
@@ -39,9 +56,9 @@ export function StreamingProgress({ caption }: { caption: string }) {
       >
         {PREFIX_GLYPH}
       </span>
-      <MonoLabel size={10} color="var(--ft-dim)" letterSpacing="0.04em">
+      <Words size={10} color="var(--ft-dim)" letterSpacing="0.04em">
         {caption}
-      </MonoLabel>
+      </Words>
     </HStack>
   );
 }
@@ -51,7 +68,7 @@ export function StreamingChainAttempt({ provider }: { provider: string }) {
   return (
     <HStack gap={6} align="baseline">
       <span aria-hidden style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 10 }}>{PREFIX_GLYPH}</span>
-      <MonoLabel size={10} color="var(--ft-dim)">Asking</MonoLabel>
+      <Words size={10} color="var(--ft-dim)">Asking</Words>
       <MonoLabel size={10} color="var(--ft-accent)" letterSpacing="0.1em">{provider.toUpperCase()}</MonoLabel>
     </HStack>
   );
@@ -63,7 +80,7 @@ export function StreamingChainFallthrough({ from, to }: { from: string; to: stri
     <HStack gap={6} align="baseline">
       <AlertTriangle aria-hidden size={10} style={{ color: "var(--ft-amber)", flexShrink: 0 }} />
       <MonoLabel size={10} color="var(--ft-amber)" letterSpacing="0.1em">{from.toUpperCase()}</MonoLabel>
-      <MonoLabel size={10} color="var(--ft-dim)">failed → trying</MonoLabel>
+      <Words size={10} color="var(--ft-dim)">failed → trying</Words>
       <MonoLabel size={10} color="var(--ft-accent)" letterSpacing="0.1em">{to.toUpperCase()}</MonoLabel>
     </HStack>
   );
@@ -82,7 +99,8 @@ export function StreamingReducedCapacity({ provider }: { provider: string }) {
     }}>
       <HStack gap={6} align="baseline">
         <MonoLabel size={9} color="var(--ft-amber)" letterSpacing="0.1em">REDUCED CAPACITY</MonoLabel>
-        <MonoLabel size={9} color="var(--ft-dim)">· served by {provider.toUpperCase()}</MonoLabel>
+        <Words size={9} color="var(--ft-dim)">· served by</Words>
+        <MonoLabel size={9} color="var(--ft-dim)">{provider.toUpperCase()}</MonoLabel>
       </HStack>
     </div>
   );
@@ -104,9 +122,11 @@ export function StreamingCut({ provider, reason }: { provider: string; reason: s
       <VStack gap={2}>
         <HStack gap={6} align="baseline">
           <MonoLabel size={9} color="var(--ft-amber)" letterSpacing="0.1em">RESPONSE ENDED EARLY</MonoLabel>
-          <MonoLabel size={9} color="var(--ft-dim)">· {provider.toUpperCase()} disconnected mid-reply</MonoLabel>
+          <Words size={9} color="var(--ft-dim)">·</Words>
+          <MonoLabel size={9} color="var(--ft-dim)">{provider.toUpperCase()}</MonoLabel>
+          <Words size={9} color="var(--ft-dim)">disconnected mid-reply</Words>
         </HStack>
-        <MonoLabel size={9} color="var(--ft-dim)">Ask again to retry — the partial reply above is what did stream</MonoLabel>
+        <Words size={9} color="var(--ft-dim)">Ask again to retry — the partial reply above is what did stream</Words>
       </VStack>
     </div>
   );
@@ -119,7 +139,7 @@ export function StreamingError({ message }: { message: string }) {
     <HStack gap={6} align="baseline">
       <span aria-hidden style={{ color: "var(--ft-red)", fontFamily: "var(--font-mono)", fontSize: 10 }}>✕</span>
       <MonoLabel size={10} color="var(--ft-red)" letterSpacing="0.1em">ERROR</MonoLabel>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-red)", lineHeight: 1.5 }}>
+      <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-red)", lineHeight: 1.5 }}>
         {message}
       </span>
     </HStack>
@@ -147,7 +167,7 @@ export function QueuedPromptChip({ text }: { text: string }) {
       }}>
         <MonoLabel size={8} color="var(--ft-dim)" letterSpacing="0.14em">QUEUED</MonoLabel>
         <span style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           color: "var(--ft-muted)",
           lineHeight: 1.5,
