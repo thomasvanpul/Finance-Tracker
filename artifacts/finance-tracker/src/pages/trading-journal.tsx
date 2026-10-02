@@ -209,6 +209,7 @@ function winRateColor(pct: number): string {
 // ── Style atoms ────────────────────────────────────────────────────────────────
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+const sans: React.CSSProperties = { fontFamily: "var(--font-sans)" };
 
 const panel: React.CSSProperties = {
   background: "var(--ft-surface)",
@@ -239,6 +240,9 @@ const td: React.CSSProperties = {
   whiteSpace: "nowrap",
 };
 
+// A cell holding a word rather than a figure: a setup name.
+const tdText: React.CSSProperties = { ...td, ...sans };
+
 const inputStyle: React.CSSProperties = {
   ...mono,
   fontSize: 12,
@@ -252,8 +256,13 @@ const inputStyle: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
-const labelStyle: React.CSSProperties = {
-  ...mono,
+// An input that takes words (tags, notes, the setup) rather than a ticker,
+// a date or a figure.
+const inputText: React.CSSProperties = { ...inputStyle, ...sans };
+
+// A form field's label names the field; it is not a legend over a figure.
+const fieldLabel: React.CSSProperties = {
+  ...sans,
   fontSize: 9,
   color: "var(--ft-dim)",
   letterSpacing: "0.08em",
@@ -263,7 +272,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 const btnPrimary: React.CSSProperties = {
-  ...mono,
+  ...sans,
   fontSize: 11,
   padding: "6px 14px",
   background: "var(--ft-accent)",
@@ -276,7 +285,7 @@ const btnPrimary: React.CSSProperties = {
 };
 
 const btnGhost: React.CSSProperties = {
-  ...mono,
+  ...sans,
   fontSize: 11,
   padding: "6px 12px",
   background: "transparent",
@@ -320,7 +329,7 @@ function BarTooltip({ active, payload, label }: { active?: boolean; payload?: { 
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: "var(--ft-raised)", border: "1px solid var(--ft-border)", padding: "6px 10px" }}>
-      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>{label}</div>
+      <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)", marginBottom: 4 }}>{label}</div>
       {payload.map((p) => (
         <div key={p.name} style={{ ...mono, fontSize: 11, color: "var(--ft-text)" }}>
           {p.name}: <span className="pnum">{p.name === "Win %" ? p.value.toFixed(1) + "%" : formatBaseMoney(p.value)}</span>
@@ -370,7 +379,7 @@ function KpiCell({
   label: string;
   value: string;
   color?: string;
-  sub?: string;
+  sub?: React.ReactNode;
   hero?: boolean;
 }) {
   return (
@@ -389,7 +398,7 @@ function KpiCell({
       <div style={{ ...mono, fontSize: hero ? 20 : 16, fontWeight: 700, color: color ?? "var(--ft-text)", fontVariantNumeric: "tabular-nums" }}>
         <span className="pnum">{value}</span>
       </div>
-      {sub && <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{sub}</div>}
+      {sub && <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }
@@ -429,7 +438,7 @@ function StreakCell({ streak }: { streak: { type: "win" | "loss" | null; count: 
           ))}
         </HStack>
       </HStack>
-      <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{isWin ? "winning" : "losing"} run</div>
+      <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)", marginTop: 3 }}>{isWin ? "winning" : "losing"} run</div>
     </div>
   );
 }
@@ -440,7 +449,7 @@ function DirectionBadge({ direction }: { direction: TradeDirection }) {
   return (
     <span
       style={{
-        ...mono,
+        ...sans,
         fontSize: 8,
         fontWeight: 700,
         letterSpacing: "0.06em",
@@ -459,7 +468,7 @@ function StatusBadge({ status }: { status: TradeStatus }) {
   return (
     <span
       style={{
-        ...mono,
+        ...sans,
         fontSize: 9,
         letterSpacing: "0.06em",
         color: status === "open" ? "var(--ft-amber)" : "var(--ft-dim)",
@@ -505,7 +514,7 @@ function TradeCallouts({ closed }: { closed: Trade[] }) {
           {trade ? (
             <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "4px 12px", alignItems: "baseline" }}>
               <span style={{ ...mono, fontSize: 14, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.02em" }}>{trade.ticker}</span>
-              <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{fmtDate(trade.closeDate ?? trade.date)} · {trade.setup}</span>
+              <span style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>{fmtDate(trade.closeDate ?? trade.date)} · <span style={{ ...sans }}>{trade.setup}</span></span>
               <span style={{ ...mono, fontSize: 14, fontWeight: 700, color }}>
                 <span className="pnum">{calcPnl(trade) >= 0 ? "+" : ""}{formatBaseMoney(calcPnl(trade))}</span>
               </span>
@@ -645,7 +654,7 @@ function OpenPositionCard({ trade, onEdit, onDelete }: OpenPositionCardProps) {
         </div>
         <div>
           <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>SETUP</div>
-          <div style={{ ...mono, fontSize: 11, color: "var(--ft-muted)" }}>{trade.setup}</div>
+          <div style={{ ...sans, fontSize: 11, color: "var(--ft-muted)" }}>{trade.setup}</div>
         </div>
         {unrealizedPnl != null && (
           <div style={{ gridColumn: "1 / -1", marginTop: 6, paddingTop: 6, borderTop: "1px solid var(--ft-border)" }}>
@@ -744,7 +753,7 @@ function TradeRow({ trade, isExpanded, rowBg, onToggleExpand, onEdit, onDelete, 
         >
           <span className="pnum">{trade.status === "closed" ? fmtPct(pct) : "—"}</span>
         </td>
-        <td style={{ ...td, color: "var(--ft-muted)", fontSize: 10 }}>{trade.setup}</td>
+        <td style={{ ...tdText, color: "var(--ft-muted)", fontSize: 10 }}>{trade.setup}</td>
         <td style={td}>
           <StatusBadge status={trade.status} />
         </td>
@@ -757,7 +766,7 @@ function TradeRow({ trade, isExpanded, rowBg, onToggleExpand, onEdit, onDelete, 
           <HStack gap={4} justify="center">
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(trade); }}
-              style={{ ...mono, fontSize: 9, padding: "2px 7px", background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", cursor: "pointer" }}
+              style={{ ...sans, fontSize: 9, padding: "2px 7px", background: "transparent", border: "1px solid var(--ft-border)", color: "var(--ft-muted)", cursor: "pointer" }}
             >
               Edit
             </button>
@@ -776,7 +785,7 @@ function TradeRow({ trade, isExpanded, rowBg, onToggleExpand, onEdit, onDelete, 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", gap: "12px 24px", alignItems: "start" }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", marginBottom: 4 }}>JOURNAL NOTES</div>
-                <div style={{ ...mono, fontSize: 10, color: "var(--ft-text)", lineHeight: 1.6 }}>
+                <div style={{ ...sans, fontSize: 10, color: "var(--ft-text)", lineHeight: 1.6 }}>
                   {trade.notes || <Text as="span" color="var(--ft-dim)">No notes recorded.</Text>}
                 </div>
               </div>
@@ -788,7 +797,7 @@ function TradeRow({ trade, isExpanded, rowBg, onToggleExpand, onEdit, onDelete, 
                       {trade.tags.map((tag) => (
                         <span
                           key={tag}
-                          style={{ ...mono, fontSize: 9, padding: "2px 6px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-muted)" }}
+                          style={{ ...sans, fontSize: 9, padding: "2px 6px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-muted)" }}
                         >
                           {tag}
                         </span>
@@ -849,7 +858,7 @@ function SetupRow({ s }: SetupRowProps) {
       onTouchEnd={() => setHov(false)}
       onTouchCancel={() => setHov(false)}
     >
-      <td style={{ ...td, textTransform: "capitalize", fontWeight: 600 }}>{s.setup}</td>
+      <td style={{ ...tdText, textTransform: "capitalize", fontWeight: 600 }}>{s.setup}</td>
       <td style={{ ...td, textAlign: "center", color: "var(--ft-muted)" }}><span className="pnum">{s.count}</span></td>
       <td style={{ ...td, textAlign: "right", color: winRateColor(s.winPct) }}>
         <span className="pnum">{s.winPct.toFixed(1)}%</span>
@@ -916,7 +925,7 @@ function MonthCell({ m }: MonthCellProps) {
           </HStack>
         </>
       ) : (
-        <div style={{ ...mono, fontSize: 10, color: "var(--ft-border2)" }}>No trades</div>
+        <div style={{ ...sans, fontSize: 10, color: "var(--ft-border2)" }}>No trades</div>
       )}
     </div>
   );
@@ -1238,14 +1247,14 @@ export default function TradingJournal() {
           label="Win Rate"
           value={stats.totalTrades > 0 ? stats.winRate.toFixed(1) + "%" : "—"}
           color={stats.totalTrades > 0 ? winRateColor(stats.winRate) : undefined}
-          sub={`${stats.totalTrades} closed`}
+          sub={<><span className="pnum">{stats.totalTrades}</span> closed</>}
           hero
         />
         <KpiCell
           label="Total Trades"
           value={String(trades.length)}
           color="var(--ft-text)"
-          sub={`${openTrades.length} open`}
+          sub={<><span className="pnum">{openTrades.length}</span> open</>}
         />
         <KpiCell
           label="Avg Win"
@@ -1299,7 +1308,7 @@ export default function TradingJournal() {
         >
           <PanelHeader right={
             <>
-              <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>Tab to navigate · Enter to submit</span>
+              <span style={{ ...sans, fontSize: 8, color: "var(--ft-dim)" }}>Tab to navigate · Enter to submit</span>
               <button
                 type="button"
                 onClick={handleCancel}
@@ -1315,7 +1324,7 @@ export default function TradingJournal() {
             {/* Row 1: Ticker, Date, Close Date, Direction, Status */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "12px 16px", marginBottom: 14 }}>
               <div>
-                <label style={labelStyle}>Ticker *</label>
+                <label style={fieldLabel}>Ticker *</label>
                 <input
                   ref={symbolInputRef}
                   style={inputStyle}
@@ -1327,7 +1336,7 @@ export default function TradingJournal() {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Entry Date *</label>
+                <label style={fieldLabel}>Entry Date *</label>
                 <input
                   type="date"
                   style={inputStyle}
@@ -1337,7 +1346,7 @@ export default function TradingJournal() {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Close Date</label>
+                <label style={fieldLabel}>Close Date</label>
                 <input
                   type="date"
                   style={inputStyle}
@@ -1346,7 +1355,7 @@ export default function TradingJournal() {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Direction *</label>
+                <label style={fieldLabel}>Direction *</label>
                 <HStack gap={0}>
                   {(["long", "short"] as TradeDirection[]).map((d) => (
                     <button
@@ -1354,7 +1363,7 @@ export default function TradingJournal() {
                       type="button"
                       onClick={() => updateForm("direction", d)}
                       style={{
-                        ...mono,
+                        ...sans,
                         flex: 1,
                         fontSize: 11,
                         padding: "6px 0",
@@ -1375,7 +1384,7 @@ export default function TradingJournal() {
                 </HStack>
               </div>
               <div>
-                <label style={labelStyle}>Status *</label>
+                <label style={fieldLabel}>Status *</label>
                 <HStack gap={0}>
                   {(["open", "closed"] as TradeStatus[]).map((s) => (
                     <button
@@ -1383,7 +1392,7 @@ export default function TradingJournal() {
                       type="button"
                       onClick={() => updateForm("status", s)}
                       style={{
-                        ...mono,
+                        ...sans,
                         flex: 1,
                         fontSize: 11,
                         padding: "6px 0",
@@ -1406,7 +1415,7 @@ export default function TradingJournal() {
             {/* Row 2: Entry, Exit, Qty, Currency, Setup */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "12px 16px", marginBottom: 14 }}>
               <div>
-                <label style={labelStyle}>Entry Price *</label>
+                <label style={fieldLabel}>Entry Price *</label>
                 <input
                   style={inputStyle}
                   type="number"
@@ -1418,7 +1427,7 @@ export default function TradingJournal() {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Exit Price</label>
+                <label style={fieldLabel}>Exit Price</label>
                 <input
                   style={inputStyle}
                   type="number"
@@ -1429,7 +1438,7 @@ export default function TradingJournal() {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Quantity *</label>
+                <label style={fieldLabel}>Quantity *</label>
                 <input
                   style={inputStyle}
                   type="number"
@@ -1441,7 +1450,7 @@ export default function TradingJournal() {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Currency</label>
+                <label style={fieldLabel}>Currency</label>
                 <select
                   style={{ ...inputStyle, cursor: "pointer" }}
                   value={form.currency}
@@ -1453,9 +1462,9 @@ export default function TradingJournal() {
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>Setup</label>
+                <label style={fieldLabel}>Setup</label>
                 <select
-                  style={{ ...inputStyle, cursor: "pointer" }}
+                  style={{ ...inputText, cursor: "pointer" }}
                   value={form.setup}
                   onChange={(e) => updateForm("setup", e.target.value as TradeSetup)}
                 >
@@ -1469,17 +1478,17 @@ export default function TradingJournal() {
             {/* Row 3: Confidence, Execution, Tags */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "12px 16px", marginBottom: 14 }}>
               <div>
-                <label style={labelStyle}>Pre-trade Conviction</label>
+                <label style={fieldLabel}>Pre-trade Conviction</label>
                 <StarRating value={form.confidence} onChange={(v) => updateForm("confidence", v)} />
               </div>
               <div>
-                <label style={labelStyle}>Execution Quality</label>
+                <label style={fieldLabel}>Execution Quality</label>
                 <StarRating value={form.execution} onChange={(v) => updateForm("execution", v)} />
               </div>
               <div>
-                <label style={labelStyle}>Tags (comma-separated)</label>
+                <label style={fieldLabel}>Tags (comma-separated)</label>
                 <input
-                  style={inputStyle}
+                  style={inputText}
                   value={form.tags}
                   onChange={(e) => updateForm("tags", e.target.value)}
                   placeholder="earnings, swing, weekly"
@@ -1489,9 +1498,9 @@ export default function TradingJournal() {
 
             {/* Row 4: Notes */}
             <div style={{ marginBottom: 16 }}>
-              <label style={labelStyle}>Journal Notes</label>
+              <label style={fieldLabel}>Journal Notes</label>
               <textarea
-                style={{ ...inputStyle, resize: "vertical", minHeight: 72, lineHeight: 1.5 }}
+                style={{ ...inputText, resize: "vertical", minHeight: 72, lineHeight: 1.5 }}
                 value={form.notes}
                 onChange={(e) => updateForm("notes", e.target.value)}
                 placeholder="Why did you take this trade? What was the thesis? How did it play out?"
@@ -1548,7 +1557,7 @@ export default function TradingJournal() {
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
-                style={{ ...mono, fontSize: 8, padding: "2px 6px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-amber)", cursor: "pointer", letterSpacing: "0.05em", textTransform: "uppercase" }}
+                style={{ ...sans, fontSize: 8, padding: "2px 6px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-amber)", cursor: "pointer", letterSpacing: "0.05em", textTransform: "uppercase" }}
               >
                 Clear Filters
               </button>
@@ -1562,7 +1571,7 @@ export default function TradingJournal() {
                   key={f}
                   onClick={() => setFilterStatus(f)}
                   style={{
-                    ...mono,
+                    ...sans,
                     fontSize: 9,
                     padding: "3px 8px",
                     background: filterStatus === f ? "var(--ft-accent)" : "var(--ft-raised)",
@@ -1579,7 +1588,7 @@ export default function TradingJournal() {
             </HStack>
             {/* Setup filter */}
             <select
-              style={{ ...mono, fontSize: 9, padding: "3px 8px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: filterSetup !== "all" ? "var(--ft-text)" : "var(--ft-muted)", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}
+              style={{ ...sans, fontSize: 9, padding: "3px 8px", background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: filterSetup !== "all" ? "var(--ft-text)" : "var(--ft-muted)", cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}
               value={filterSetup}
               onChange={(e) => setFilterSetup(e.target.value as TradeSetup | "all")}
             >
@@ -1639,10 +1648,10 @@ export default function TradingJournal() {
 
         {filtered.length === 0 ? (
           <div style={{ padding: "36px 24px", textAlign: "center", borderTop: "1px solid var(--ft-border)" }}>
-            <div style={{ ...mono, fontSize: 11, color: "var(--ft-border2)", marginBottom: 8, letterSpacing: "0.05em" }}>
+            <div style={{ ...sans, fontSize: 11, color: "var(--ft-border2)", marginBottom: 8, letterSpacing: "0.05em" }}>
               [ NO TRADES MATCH ]
             </div>
-            <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               {hasActiveFilters ? "Adjust or clear active filters" : "Log your first trade to begin"}
             </div>
           </div>
@@ -1774,7 +1783,7 @@ export default function TradingJournal() {
                       <YAxis
                         type="category"
                         dataKey="setup"
-                        tick={{ fontFamily: "var(--font-mono)", fontSize: 9, fill: "var(--ft-muted)" }}
+                        tick={{ fontFamily: "var(--font-sans)", fontSize: 9, fill: "var(--ft-muted)" }}
                         axisLine={false}
                         tickLine={false}
                         width={68}
@@ -1835,7 +1844,7 @@ export default function TradingJournal() {
       {trades.length === 0 && (
         <div
           style={{
-            ...mono,
+            ...sans,
             textAlign: "center",
             padding: "48px 24px",
             border: "1px solid var(--ft-border)",
@@ -1844,7 +1853,7 @@ export default function TradingJournal() {
             background: "var(--ft-surface)",
           }}
         >
-          <div style={{ fontSize: 11, color: "var(--ft-border2)", marginBottom: 12, letterSpacing: "0.06em" }}>
+          <div style={{ ...mono, fontSize: 11, color: "var(--ft-border2)", marginBottom: 12, letterSpacing: "0.06em" }}>
             {`┌─────────────────────────┐`}
             <br />
             {`│   JOURNAL  EMPTY        │`}
