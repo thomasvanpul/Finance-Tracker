@@ -32,7 +32,7 @@ vi.mock("../lib/market-eod", () => ({
 }));
 
 const { processInvestments, computeNetWorth } = await import("./dashboard");
-const { reportableTotalValue } = await import("../lib/enrich-investment");
+const { reportableTotalValue, reportablePl } = await import("../lib/enrich-investment");
 
 interface FakeInvestment { ticker: string; shares: string; costPricePerShare: string }
 function inv(ticker: string, shares: string, costPricePerShare: string): FakeInvestment {
@@ -169,5 +169,23 @@ describe("day change when nothing is priced", () => {
   it("nothing held: still an honest 0", async () => {
     mockPriceMap = new Map();
     expect((await processInvestments([], "GBP")).dayChangeBase).toBe(0);
+  });
+});
+
+describe("portfolio P/L when nothing is priced", () => {
+  it("every position at cost: reportablePl is null, not 0", async () => {
+    mockPriceMap = new Map();
+    const r = await processInvestments([inv("AAPL", "10", "180.00")] as never, "GBP");
+    expect(reportablePl(r.portfolioValueBase - r.portfolioCostBase, 1, r.positionsAtCost, r.unavailablePositions)).toBeNull();
+  });
+
+  it("a priced position: reportablePl is its gain", async () => {
+    mockPriceMap = new Map([["AAPL", { ticker: "AAPL", price: 200, currency: "USD", previousClose: null, updatedAt: "2026-09-18T21:00:00Z" }]]);
+    const r = await processInvestments([inv("AAPL", "10", "180.00")] as never, "GBP");
+    expect(reportablePl(r.portfolioValueBase - r.portfolioCostBase, 1, r.positionsAtCost, r.unavailablePositions)).toBe(160);
+  });
+
+  it("nothing held: 0", () => {
+    expect(reportablePl(0, 0, 0, 0)).toBe(0);
   });
 });

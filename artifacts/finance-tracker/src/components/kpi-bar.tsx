@@ -8,6 +8,7 @@ import { PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useMemo } from "react";
 import { Link } from "wouter";
+import { knownPortfolioTotal, plTone } from "@/lib/portfolio-total";
 
 function KpiValue({ raw, color, fmt }: { raw: number | null; color: string; fmt: (v: number) => string }) {
   // Null-value (an unknown or undefined-in-the-data case) renders as
@@ -94,7 +95,7 @@ export function KpiBar() {
       case "market":
         return [
           { label: "Portfolio", raw: data.portfolio.totalValueBase, color: "var(--ft-blue)", fmt, href: "/investments" },
-          { label: "P&L", raw: data.portfolio.totalPlBase, color: data.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt, href: "/investments" },
+          { label: "P&L", raw: data.portfolio.totalPlBase, color: plTone(data.portfolio.totalPlBase), fmt, href: "/investments" },
           { label: "Return", raw: data.portfolio.totalPlPercent, color: (data.portfolio.totalPlPercent ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt: fmtPct },
           { label: "Accounts", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
         ];
@@ -126,7 +127,7 @@ export function KpiBar() {
           { label: "Net Worth", raw: data.netWorth, color: "var(--ft-blue)", fmt, href: "/net-worth" },
           { label: "Liquidity", raw: data.netLiquidity, color: "var(--ft-green)", fmt, href: "/accounts" },
           { label: "Accounts", raw: data.totalCash, color: "var(--ft-text)", fmt, href: "/accounts" },
-          { label: "Portfolio", raw: data.portfolio.totalValueBase, color: data.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", fmt, href: "/investments" },
+          { label: "Portfolio", raw: knownPortfolioTotal(data.portfolio), color: plTone(data.portfolio.totalPlBase), fmt, href: "/investments" },
         ];
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

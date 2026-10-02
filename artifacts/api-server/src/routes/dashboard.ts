@@ -5,7 +5,7 @@ import { GetDashboardResponse } from "@workspace/api-zod";
 import { toBase, txToBase } from "../lib/market";
 import { getValuationPrices } from "../lib/market-eod";
 import { nativeCurrencyForTicker } from "../lib/ticker-currency";
-import { reportableTotalValue } from "../lib/enrich-investment";
+import { reportableTotalValue, reportablePl } from "../lib/enrich-investment";
 import { foldDayChange, type DayChangeLeg } from "../lib/portfolio-day-change";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { ensureGeneratedUpcoming } from "../lib/subscription-upcoming";
@@ -838,11 +838,13 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     baseCurrency,
     partial: unconvertibleAccounts > 0 || unavailablePositions > 0,
   });
-  const portfolioPlBase = portfolioValueBase - portfolioCostBase;
+  // Null when positions are held and none is priced: at cost there is no
+  // known return (reportablePl).
+  const portfolioPlBase = reportablePl(portfolioValueBase - portfolioCostBase, investments.length, positionsAtCost, unavailablePositions);
   // No cost basis (empty portfolio) → no return to compute. Null, not 0
   // — a "+0.00%" render for a user who holds nothing is a fabricated
   // return the data does not support. Client renders "—" when null.
-  const portfolioPlPercent: number | null = portfolioCostBase > 0 ? (portfolioPlBase / portfolioCostBase) * 100 : null;
+  const portfolioPlPercent: number | null = portfolioPlBase != null && portfolioCostBase > 0 ? (portfolioPlBase / portfolioCostBase) * 100 : null;
   const dayChangePercent: number | null =
     dayChangeBase == null || dayChangePrevValueBase == null || dayChangePrevValueBase === 0
       ? null
@@ -861,7 +863,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         // Null when positions are held and none could be valued (L1). Net
         // worth then excludes them, and unavailablePositions says so.
         totalValueBase: reportableTotalValue(Math.round(portfolioValueBase * 100) / 100, investments.length, unavailablePositions),
-        totalPlBase: Math.round(portfolioPlBase * 100) / 100,
+        totalPlBase: portfolioPlBase == null ? null : Math.round(portfolioPlBase * 100) / 100,
         totalPlPercent: portfolioPlPercent == null ? null : Math.round(portfolioPlPercent * 100) / 100,
         dayChangeBase: dayChangeBase == null ? null : Math.round(dayChangeBase * 100) / 100,
         dayChangePercent: dayChangePercent == null ? null : Math.round(dayChangePercent * 100) / 100,

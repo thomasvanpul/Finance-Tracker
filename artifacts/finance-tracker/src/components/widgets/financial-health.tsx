@@ -22,7 +22,7 @@ type ScoreResult = {
 function computeScore(d: {
   thisMonth: { savingsRate: number | null; expenses: number };
   netLiquidity: number;
-  portfolio: { totalPlBase: number; totalValueBase: number | null };
+  portfolio: { totalPlBase: number | null; totalValueBase: number | null };
   totalCash: number;
 }): ScoreResult {
   // OPEN QUESTION (raised 2026-09-06, not decided here): savingsRate is now
@@ -43,11 +43,11 @@ function computeScore(d: {
         ? 0
         : Math.max(0, 12 + (rawLiquidity / Math.abs(rawLiquidity || 1)) * 12);
 
-  // A null total (holdings, none valued) scores like an empty portfolio:
-  // there is no return to reward.
+  // A null total (holdings, none valued) or a null P/L (nothing priced)
+  // scores like an empty portfolio: there is no known return to reward.
   const portfolioValue = d.portfolio.totalValueBase;
   const portfolioRatio =
-    portfolioValue != null && portfolioValue > 0
+    portfolioValue != null && portfolioValue > 0 && d.portfolio.totalPlBase != null
       ? d.portfolio.totalPlBase / portfolioValue
       : 0;
   const portfolio = Math.min(20, Math.max(0, portfolioRatio * 200));

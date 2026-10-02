@@ -112,7 +112,7 @@ import {
 // watchlist tickers.
 import { MarketsTab, alertTriggered } from "./investments/markets-tab";
 import { useMarketDataEnabled } from "@/lib/market-visibility";
-import { knownPortfolioTotal } from "@/lib/portfolio-total";
+import { knownPortfolioTotal, plTone, signedPl } from "@/lib/portfolio-total";
 
 const TH: React.CSSProperties = {
   padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)",
@@ -1195,7 +1195,7 @@ function InvKpiBar({ cells, style }: { cells: KpiCell[]; style?: React.CSSProper
 
 interface PortfolioPositionsTableProps {
   investments: Investment[];
-  summary: { totalValueBase: number | null; totalPlBase: number; totalPlPercent: number | null; unavailablePositions: number } | null | undefined;
+  summary: { totalValueBase: number | null; totalPlBase: number | null; totalPlPercent: number | null; unavailablePositions: number } | null | undefined;
   quoteMap: Map<string, QuoteData>;
   classMap: Record<number, AssetClass>;
   tickerFilter: string;
@@ -1493,8 +1493,8 @@ function PortfolioPositionsTable({
                 <td style={{ ...TD, textAlign: "right", fontWeight: 700, color: "var(--ft-text)", fontSize: 12, borderBottom: "none" }} className="pnum">
                   {knownTotal != null ? formatBaseMoney(knownTotal) : "—"}
                 </td>
-                <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "none", color: summary.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
-                  {summary.totalPlBase >= 0 ? "+" : ""}{formatBaseMoney(summary.totalPlBase)}
+                <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 12, borderBottom: "none", color: plTone(summary.totalPlBase) }} className="pnum">
+                  {signedPl(summary.totalPlBase, formatBaseMoney)}
                 </td>
                 <td style={{ ...TD, textAlign: "right", fontWeight: 700, fontSize: 11, borderBottom: "none", color: summary.totalPlPercent == null ? "var(--ft-dim)" : summary.totalPlPercent >= 0 ? "var(--ft-green)" : "var(--ft-red)" }} className="pnum">
                   {summary.totalPlPercent == null
@@ -1837,11 +1837,11 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     },
     {
       label: "TOTAL P&L",
-      value: `${summary.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(summary.totalPlBase)}`,
+      value: signedPl(summary.totalPlBase, formatBaseMoney),
       delta: summary.totalPlPercent == null
         ? "—"
         : `${summary.totalPlPercent >= 0 ? "▲" : "▼"} ${Math.abs(summary.totalPlPercent).toFixed(2)}%`,
-      deltaPositive: summary.totalPlBase >= 0,
+      deltaPositive: summary.totalPlBase == null ? null : summary.totalPlBase >= 0,
     },
     {
       label: "PORTFOLIO BETA",

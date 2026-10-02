@@ -2583,8 +2583,10 @@ components:
         # an unknown, not a portfolio worth zero. An empty portfolio is 0.
         totalValueBase:
           type: ["number", "null"]
+        # Null when positions are held and none is priced: valued at cost a
+        # position has no known return. Nothing held is 0.
         totalPlBase:
-          type: number
+          type: ["number", "null"]
         # Nullable: percentage is undefined when the portfolio's cost
         # basis is zero (no holdings). Rendering "+0.00%" for a user who
         # holds nothing is a fabricated return the data does not support;
@@ -3304,8 +3306,10 @@ components:
             # an unknown, not a portfolio worth zero. An empty portfolio is 0.
             totalValueBase:
               type: ["number", "null"]
+            # Null when positions are held and none is priced: valued at cost a
+            # position has no known return. Nothing held is 0.
             totalPlBase:
-              type: number
+              type: ["number", "null"]
             # Nullable: undefined when the portfolio has no cost basis
             # (empty portfolio). Same reason as InvestmentSummary above.
             totalPlPercent:

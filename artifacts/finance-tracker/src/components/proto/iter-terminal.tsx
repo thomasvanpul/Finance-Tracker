@@ -39,6 +39,7 @@ import { formatBaseMoney, formatMoney, formatNative } from "@/lib/utils";
 import { sinceCloseLabel } from "@/components/FixingMark";
 import { useProtoData, shortDay, daysUntil, type ProtoData } from "@/components/proto/proto-data";
 import { accountTransactionsHref, categoryTransactionsHref, entityHref } from "@/lib/entity-href";
+import { signedPl } from "@/lib/portfolio-total";
 
 const RULE = "1px solid var(--ft-border)";
 
@@ -79,7 +80,7 @@ function StatusStrip({ data }: { data: ProtoData }) {
     { k: "LIQ", v: data.netLiquidity === null ? "—" : formatBaseMoney(data.netLiquidity) },
     { k: "CASH", v: data.totalCash === null ? "—" : formatBaseMoney(data.totalCash) },
     { k: "PORT", v: p === null ? "—" : formatBaseMoney(p.totalValueBase) },
-    { k: "P/L", v: p === null ? "—" : `${p.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(p.totalPlBase)}`, color: p === null ? undefined : sign(p.totalPlBase) },
+    { k: "P/L", v: p === null ? "—" : signedPl(p.totalPlBase, formatBaseMoney), color: p === null || p.totalPlBase == null ? undefined : sign(p.totalPlBase) },
     { k: sinceCloseLabel(p?.dayChangeFromSession), v: p?.dayChangeBase == null ? "—" : `${p.dayChangeBase >= 0 ? "+" : ""}${formatBaseMoney(p.dayChangeBase)}`, color: p?.dayChangeBase == null ? "var(--ft-dim)" : sign(p.dayChangeBase) },
     { k: "DELTA", v: attr === null ? "—" : `${attr.totalBase >= 0 ? "+" : ""}${formatMoney(attr.totalBase, data.baseCurrency)}`, color: attr === null ? undefined : sign(attr.totalBase) },
     { k: "MTD", v: data.thisMonth === null ? "—" : formatBaseMoney(data.thisMonth.expenses), color: "var(--ft-red)" },
@@ -160,7 +161,7 @@ export function TerminalDashboard() {
             <>
               <Row a="Value" c={formatBaseMoney(data.portfolio.totalValueBase)} />
               <Row a="P/L" b={data.portfolio.totalPlPercent === null ? "—" : `${data.portfolio.totalPlPercent.toFixed(2)}%`}
-                c={`${data.portfolio.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(data.portfolio.totalPlBase)}`} cColor={sign(data.portfolio.totalPlBase)} />
+                c={signedPl(data.portfolio.totalPlBase, formatBaseMoney)} cColor={data.portfolio.totalPlBase == null ? undefined : sign(data.portfolio.totalPlBase)} />
               <Row a="Day" b={data.portfolio.dayChangePercent === null ? "—" : `${data.portfolio.dayChangePercent.toFixed(2)}%`}
                 c={data.portfolio.dayChangeBase === null ? "—" : `${data.portfolio.dayChangeBase >= 0 ? "+" : ""}${formatBaseMoney(data.portfolio.dayChangeBase)}`}
                 cColor={data.portfolio.dayChangeBase === null ? "var(--ft-dim)" : sign(data.portfolio.dayChangeBase)} />

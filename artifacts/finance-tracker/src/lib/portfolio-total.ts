@@ -13,3 +13,16 @@ export function knownPortfolioTotal(p: PortfolioTotalInput | null | undefined): 
   if (p.totalValueBase === 0 && p.unavailablePositions > 0) return null;
   return p.totalValueBase;
 }
+
+// P/L is null when positions are held and none is priced (valued at cost a
+// position has no known return). These keep the "—" and its neutral colour
+// in one place instead of a `>= 0` that reads null as a gain.
+export function plTone(pl: number | null | undefined): string {
+  if (pl == null) return "var(--ft-dim)";
+  return pl >= 0 ? "var(--ft-green)" : "var(--ft-red)";
+}
+
+export function signedPl(pl: number | null | undefined, format: (v: number) => string): string {
+  if (pl == null) return "—";
+  return `${pl >= 0 ? "+" : ""}${format(pl)}`;
+}

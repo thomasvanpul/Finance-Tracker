@@ -44,6 +44,7 @@ import { Drill } from "@/components/drill";
 import { formatBaseMoney, formatMoney, formatNative } from "@/lib/utils";
 import { useProtoData, shortDay, daysUntil, type ProtoData } from "@/components/proto/proto-data";
 import { categoryTransactionsHref, entityHref, ledgerHref, thisMonthRange } from "@/lib/entity-href";
+import { plTone, signedPl } from "@/lib/portfolio-total";
 
 const SERIF = 'Georgia, "Times New Roman", "Iowan Old Style", serif';
 
@@ -144,7 +145,7 @@ function secondaries(data: ProtoData) {
         : `It moved ${formatBaseMoney(Math.abs(p.dayChangeBase))} ${p.dayChangeBase >= 0 ? "up" : "down"} over the last day, a separate move from the currency.`,
       figures: [
         { label: "Value", value: formatBaseMoney(p.totalValueBase) },
-        { label: "Gain", value: `${p.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(p.totalPlBase)}`, color: p.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
+        { label: "Gain", value: signedPl(p.totalPlBase, formatBaseMoney), color: plTone(p.totalPlBase) },
         { label: "Last day", value: p.dayChangeBase === null ? "—" : `${p.dayChangeBase >= 0 ? "+" : ""}${formatBaseMoney(p.dayChangeBase)}`, color: p.dayChangeBase === null ? "var(--ft-dim)" : p.dayChangeBase >= 0 ? "var(--ft-green)" : "var(--ft-red)" },
       ],
       href: "/portfolio",

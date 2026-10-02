@@ -58,6 +58,7 @@ import { createPortal } from "react-dom";
 import { useCountUp } from "@/hooks/use-count-up";
 import { useToast } from "@/hooks/use-toast";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
+import { plTone } from "@/lib/portfolio-total";
 import { oneShotInsight } from "@/lib/ai-chat-client";
 import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboard-customize-context";
 import { entityHref, ledgerHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
@@ -2501,7 +2502,8 @@ export default function Dashboard() {
     const savingsRate = dashData.thisMonth?.savingsRate ?? 0;
     const netSavings = dashData.thisMonth?.netSavings ?? 0;
     const portfolioVal = dashData.portfolio?.totalValueBase ?? 0;
-    const portfolioPl  = dashData.portfolio?.totalPlBase ?? 0;
+    // Null when nothing is priced (valued at cost there is no known return).
+    const portfolioPl  = dashData.portfolio?.totalPlBase ?? null;
     const portfolioPct = dashData.portfolio?.totalPlPercent ?? null;
     // Intraday delta (P1b). Nullable — the server returns null when
     // ANY contributing position lacks previousClose or an FX leg.
@@ -2670,7 +2672,7 @@ export default function Dashboard() {
       // secondary line on this cell for continuity; the intraday
       // headline lives on PORTFOLIO_DAY (below) for the market persona.
       delta: [
-        portfolioPl !== 0
+        portfolioPl != null && portfolioPl !== 0
           ? `${portfolioPl >= 0 ? "+" : ""}${formatBaseMoney(portfolioPl)}`
           : null,
         portfolioCloseText,
@@ -2683,7 +2685,7 @@ export default function Dashboard() {
       deltaColor:
         portfolioCloseText || portfolioUnpriced > 0 || portfolioAtCost > 0
           ? "var(--ft-dim)"
-          : portfolioPl >= 0 ? "var(--ft-green)" : "var(--ft-red)",
+          : plTone(portfolioPl),
       valueColor: "var(--ft-text)",
     };
     // Total return-since-inception percent. Not the market-persona

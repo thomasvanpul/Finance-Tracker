@@ -11,6 +11,7 @@ import { useCountUp } from "@/hooks/use-count-up";
 import { CurrencyMark } from "@/components/currency-mark";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { signedAccountAmount } from "@/lib/account-sign";
+import { knownPortfolioTotal, plTone, signedPl } from "@/lib/portfolio-total";
 
 // Every captured day the API will return (its ceiling): the ALL period is
 // all of it, and the shorter periods filter by date below.
@@ -483,7 +484,7 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   const kpis = d ? [
     { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Accounts + Portfolio + owed − liabilities", animate: true, href: drillWhen(d.accountBreakdown.length > 0, "/net-worth") },
     { label: "Accounts",     raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
-    { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(d.portfolio.totalValueBase), color: d.portfolio.totalPlBase >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: `P&L ${d.portfolio.totalPlBase >= 0 ? "+" : ""}${formatBaseMoney(d.portfolio.totalPlBase)}`, animate: false, href: drillWhen(d.portfolio.totalValueBase !== 0, "/investments") },
+    { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(knownPortfolioTotal(d.portfolio)), color: plTone(d.portfolio.totalPlBase), sub: `P&L ${signedPl(d.portfolio.totalPlBase, formatBaseMoney)}`, animate: false, href: drillWhen(d.portfolio.totalValueBase !== 0, "/investments") },
     { label: "Net Liquidity",raw: null,                                   value: formatBaseMoney(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
   ] : [];
 

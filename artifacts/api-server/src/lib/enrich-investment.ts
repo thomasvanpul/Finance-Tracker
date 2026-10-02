@@ -91,7 +91,8 @@ export interface InvestmentTotals {
   /** Null when positions are held but none of them could be valued — see
    *  reportableTotalValue. */
   totalValueBase: number | null;
-  totalPlBase: number;
+  /** Null when positions are held and none is priced — see reportablePl. */
+  totalPlBase: number | null;
   totalPlPercent: number | null;
   positions: number;
   /** Priced positions valued at cost basis instead of a live price — value
@@ -126,6 +127,20 @@ export function reportableTotalValue(
   return totalValueBase;
 }
 
+// The P/L a response may state. A position valued at cost has no known
+// return, so a portfolio with nothing priced has an unknown P/L rather than
+// +£0.00 / 0.00%, which is what /portfolio printed for the dev seed account
+// on 2 Oct 2026 with market data off. Nothing held is an honest 0.
+export function reportablePl(
+  plBase: number,
+  positions: number,
+  positionsAtCost: number,
+  unavailablePositions: number,
+): number | null {
+  if (positions > 0 && positionsAtCost + unavailablePositions === positions) return null;
+  return plBase;
+}
+
 export function summarizeInvestments(enriched: readonly EnrichedPosition[]): InvestmentTotals {
   let totalValueBase = 0;
   let totalPlBase = 0;
@@ -147,10 +162,11 @@ export function summarizeInvestments(enriched: readonly EnrichedPosition[]): Inv
   const totalCostBase = totalValueBase - totalPlBase;
   // No cost basis → no return to compute. Null, not 0 — see plPercent
   // above for the same rule and reason.
-  const totalPlPercent: number | null = totalCostBase > 0 ? (totalPlBase / totalCostBase) * 100 : null;
+  const plBase = reportablePl(round(totalPlBase), enriched.length, positionsAtCost, unavailablePositions);
+  const totalPlPercent: number | null = plBase != null && totalCostBase > 0 ? (totalPlBase / totalCostBase) * 100 : null;
   return {
     totalValueBase: reportableTotalValue(round(totalValueBase), enriched.length, unavailablePositions),
-    totalPlBase: round(totalPlBase),
+    totalPlBase: plBase,
     totalPlPercent: totalPlPercent == null ? null : round(totalPlPercent),
     positions: enriched.length,
     positionsAtCost,

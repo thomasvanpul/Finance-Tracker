@@ -246,6 +246,22 @@ describe("summarizeInvestments — net worth must not silently drop the unpriced
     expect(totals.unavailablePositions).toBe(1);
   });
 
+  // Found 2 Oct 2026 on the dev API: five positions all at cost served
+  // totalPlBase 0 and totalPlPercent 0, which /portfolio printed as
+  // "+£0.00 ▲ 0.00%". Valued at what was paid, a position has no known return.
+  it("nothing priced: P/L is unknown, not +£0.00 / 0.00%", () => {
+    const totals = summarizeInvestments([enrichInvestment(row, new Map(), fx, "GBP")]);
+    expect(totals.totalPlBase).toBeNull();
+    expect(totals.totalPlPercent).toBeNull();
+  });
+
+  it("one priced and one at cost: P/L is the priced position's", () => {
+    const good: StockPriceData = { ticker: "AAPL", price: 210, currency: "USD", previousClose: null, updatedAt: "2026-08-15T00:00:00Z" };
+    const priced = enrichInvestment(row, new Map([["AAPL", good]]), fx, "GBP");
+    const atCost = enrichInvestment({ ...row, ticker: "VOD.L" }, new Map(), fx, "GBP");
+    expect(summarizeInvestments([priced, atCost]).totalPlBase).toBe(240);
+  });
+
   it("an empty portfolio totals 0 — nothing is held, so nothing is unknown", () => {
     expect(summarizeInvestments([]).totalValueBase).toBe(0);
   });

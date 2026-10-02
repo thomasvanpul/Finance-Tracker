@@ -1,7 +1,7 @@
 // BACKLOG L1: phone HOME printed "PORTFOLIO £0" for a user who holds stock,
 // because the API sent totalValueBase: 0 and `0 != null` passed the guard.
 import { describe, expect, it } from "vitest";
-import { knownPortfolioTotal } from "./portfolio-total";
+import { knownPortfolioTotal, plTone, signedPl } from "./portfolio-total";
 
 describe("knownPortfolioTotal — a portfolio nobody could value is unknown, not £0", () => {
   it("null from the API stays null", () => {
@@ -22,5 +22,21 @@ describe("knownPortfolioTotal — a portfolio nobody could value is unknown, not
 
   it("no portfolio block at all is unknown", () => {
     expect(knownPortfolioTotal(undefined)).toBeNull();
+  });
+});
+
+describe("plTone / signedPl — an unknown P/L is neither a gain nor a loss", () => {
+  const fmt = (v: number) => `£${v.toFixed(2)}`;
+  it("null is a dash in the neutral colour", () => {
+    expect(signedPl(null, fmt)).toBe("—");
+    expect(plTone(null)).toBe("var(--ft-dim)");
+  });
+  it("a real zero is still +£0.00", () => {
+    expect(signedPl(0, fmt)).toBe("+£0.00");
+  });
+  it("signs a gain and leaves a loss's own minus", () => {
+    expect(signedPl(12.5, fmt)).toBe("+£12.50");
+    expect(signedPl(-3, fmt)).toBe("£-3.00");
+    expect(plTone(-3)).toBe("var(--ft-red)");
   });
 });

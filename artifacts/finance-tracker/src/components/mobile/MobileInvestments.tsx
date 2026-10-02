@@ -2,6 +2,7 @@ import { useListInvestments, useGetInvestmentSummary } from "@workspace/api-clie
 import { useLocation } from "wouter";
 import { MobileEmptyState, MobileScreenHeader } from "./mobile-ui";
 import { HStack, MonoLabel, Text, VStack } from "@/components/primitives";
+import { knownPortfolioTotal, plTone } from "@/lib/portfolio-total";
 import { nfmt } from "./mobile-format";
 import { isPriced } from "@/lib/investments";
 
@@ -63,8 +64,11 @@ export function MobileInvestments() {
   // Totals sum priced positions only — never fabricate a zero for an
   // unquoted ticker (see G10). The API's summary already applies the same
   // filter, so prefer it when present.
-  const totalValue = summary?.totalValueBase ?? priced.reduce((s, i) => s + i.baseEquivalent, 0);
-  const totalPl = summary?.totalPlBase ?? priced.reduce((s, i) => s + i.plBase, 0);
+  // Both from the API summary only. A priced-only fallback summed to £0 for
+  // a portfolio held entirely at cost, and the summary is null exactly when
+  // positions are held and none could be valued or priced (BACKLOG L1).
+  const totalValue = knownPortfolioTotal(summary);
+  const totalPl = summary?.totalPlBase ?? null;
   // Percent has no honest fallback — a 0.00% badge next to a real +£3.20 P&L
   // reads as "no movement", the exact opposite of what happened.
   const totalPlPct = summary?.totalPlPercent ?? null;
@@ -101,7 +105,7 @@ export function MobileInvestments() {
         <HStack align="baseline" gap={4} marginTop={6}>
           <Text as="span" size={17} color="var(--ft-dim)">£</Text>
           <Text as="span" size={34} weight={600} letterSpacing="-0.035em" numeric>
-            {nfmt(totalValue, { decimals: 2 })}
+            {totalValue != null ? nfmt(totalValue, { decimals: 2 }) : "—"}
           </Text>
         </HStack>
         <HStack gap={10} marginTop={6} align="baseline">
@@ -111,19 +115,19 @@ export function MobileInvestments() {
             mono
             size={13}
             weight={600}
-            color={totalPl >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+            color={plTone(totalPl)}
             numeric
           >
-            {totalPl >= 0 ? "+" : "−"}£{nfmt(Math.abs(totalPl), { decimals: 2 })}
+            {totalPl == null ? "—" : `${totalPl >= 0 ? "+" : "−"}£${nfmt(Math.abs(totalPl), { decimals: 2 })}`}
           </Text>
           <Text
             as="span"
             mono
             size={11}
-            color={totalPl >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
+            color={plTone(totalPl)}
             numeric
           >
-            {totalPlPct == null ? "—" : `${totalPl >= 0 ? "+" : "−"}${nfmt(Math.abs(totalPlPct), { decimals: 2 })}%`}
+            {totalPlPct == null || totalPl == null ? "—" : `${totalPl >= 0 ? "+" : "−"}${nfmt(Math.abs(totalPlPct), { decimals: 2 })}%`}
           </Text>
         </HStack>
       </VStack>
