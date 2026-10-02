@@ -91,8 +91,8 @@ export function InvestmentFormFields({ form, setForm, idPrefix = "inv" }: Invest
                 {ex.label} · {ex.currency}
               </Text>
             ) : (
-              <Text as="div" mono size={10} color="var(--ft-muted)">
-                US market · {form.nativeCurrency}
+              <Text as="div" size={10} color="var(--ft-muted)">
+                US market <Text as="span" mono>· {form.nativeCurrency}</Text>
               </Text>
             );
           })()}
@@ -114,7 +114,7 @@ export function InvestmentFormFields({ form, setForm, idPrefix = "inv" }: Invest
         <Label>Asset Class</Label>
         <Select value={form.assetClass || (form.ticker ? detectAssetClass(form.ticker) : "Stock")}
           onValueChange={(v) => setField("assetClass", v as AssetClass)}>
-          <SelectTrigger style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>
+          <SelectTrigger style={{ fontFamily: "var(--font-sans)", fontSize: 12 }}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -122,7 +122,7 @@ export function InvestmentFormFields({ form, setForm, idPrefix = "inv" }: Invest
           </SelectContent>
         </Select>
         {form.ticker && !form.assetClass && (
-          <Text as="div" mono size={10} color="var(--ft-blue)">
+          <Text as="div" size={10} color="var(--ft-blue)">
             Auto-detected: {detectAssetClass(form.ticker)}
           </Text>
         )}
@@ -137,7 +137,7 @@ export function InvestmentFormFields({ form, setForm, idPrefix = "inv" }: Invest
               onClick={() => setField("inputMode", mode)}
               style={{
                 flex: 1, padding: "6px 10px", fontSize: 10, fontWeight: 600,
-                fontFamily: "var(--font-mono)", letterSpacing: "0.06em",
+                fontFamily: "var(--font-sans)", letterSpacing: "0.06em",
                 border: "none", cursor: "pointer", transition: "background 0.1s",
                 background: form.inputMode === mode ? "var(--ft-accent)" : "var(--ft-raised)",
                 color: form.inputMode === mode ? "var(--ft-base)" : "var(--ft-muted)",
