@@ -43,7 +43,7 @@ Do not retire an item for touching `lib/market.ts`; FX lives there too.
 
 ## Index
 
-206 items · 154 open · 52 closed. Open by tier: NOW 28 · NEXT 20 · NOT YET 106.
+206 items · 149 open · 57 closed. Open by tier: NOW 28 · NEXT 20 · NOT YET 101.
 Update the counts when a row changes.
 
 **Counts recounted 19 Sep 2026, and the old line was wrong before this session
@@ -257,7 +257,7 @@ cap can be re-imposed per phase rather than across the whole tier.
 | M7 | Reviewer demo account for a login-gated app | TODO | NOT YET |
 | M8 | Screenshots, age rating, review notes, export compliance | TODO | NOT YET |
 | M9 | Enable Banking is on a Restricted Production tier that a public app does not fit | DECIDE | NOT YET |
-| M10 | Account deletion does not revoke the Enable Banking consent | DONE | 7d02175 |
+| M10 | Account deletion does not revoke the Enable Banking consent | DONE | — |
 | M11 | Android platform does not exist | DECIDE | NOT YET |
 | M12 | `docs/DATA-INVENTORY.md` is stale on the deletion LIKE bug | TODO | NOT YET |
 | N1 | Phone UPCOMING's Add CTA is wired to a no-op, and no add path exists on phone | TODO | NOW |
