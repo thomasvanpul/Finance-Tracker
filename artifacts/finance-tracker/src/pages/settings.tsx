@@ -2913,7 +2913,7 @@ export default function Settings() {
             <div style={PANEL_STYLE}>
               <PanelHeader>Export</PanelHeader>
               <div style={{ padding: "12px 14px" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 10 }}>Download all app data as a JSON file. Includes all local state stored by this app.</div>
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 10 }}>Export All Data downloads your account from the server as a JSON file, without sign-in credentials. Export with Session Data downloads only this device's local settings.</div>
                 <HStack gap={8} wrap>
                   <ActionBtn label="Export All Data" onClick={handleExportBackup} />
                   <ActionBtn label="Export with Session Data" variant="muted" onClick={handleExportData} />
