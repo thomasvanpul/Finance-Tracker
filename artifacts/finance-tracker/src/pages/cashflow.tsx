@@ -103,6 +103,7 @@ function saveMultipliers(m: ScenarioMultipliers): void {
 // ─── style atoms ─────────────────────────────────────────────────────────────
 
 const mono: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+const sans: React.CSSProperties = { fontFamily: "var(--font-sans)" };
 const labelStyle: React.CSSProperties = {
   ...mono,
   fontSize: 9,
@@ -403,7 +404,7 @@ function MultiplierInput({
 
   return (
     <VStack gap={4}>
-      <span style={{ ...labelStyle, fontSize: 8 }}>{labelText}</span>
+      <span style={{ ...sans, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{labelText}</span>
       <HStack gap={4} align="center">
         <input
           type="number"
@@ -465,7 +466,7 @@ function ScenarioLegendItem({ s, multipliers }: ScenarioLegendItemProps) {
   return (
     <HStack gap={6} align="center">
       <div style={{ width: 24, height: 2, background: SCENARIO_COLORS[s] }} />
-      <span style={{ ...mono, fontSize: 10, color: SCENARIO_COLORS[s] }}>
+      <span style={{ ...sans, fontSize: 10, color: SCENARIO_COLORS[s] }}>
         {s === "optimistic"
           ? `Optimistic (income +${multipliers.optimisticIncomeBoost}%, spend -${multipliers.optimisticExpenseCut}%)`
           : s === "pessimistic"
@@ -546,7 +547,7 @@ export default function CashflowPage() {
 
   if (isLoading) {
     return (
-      <div style={{ ...mono, fontSize: 11, color: "var(--ft-dim)", padding: "40px 0", textAlign: "center" }}>
+      <div style={{ ...sans, fontSize: 11, color: "var(--ft-dim)", padding: "40px 0", textAlign: "center" }}>
         Loading cash flow data…
       </div>
     );
@@ -555,7 +556,7 @@ export default function CashflowPage() {
   if (accounts.length === 0) {
     return (
       <div>
-        <div style={{ ...mono, fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 20 }}>
+        <div style={{ ...sans, fontSize: 18, fontWeight: 700, color: "var(--ft-text)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 20 }}>
           CASH FLOW FORECAST
         </div>
         <div style={{ background: "var(--ft-surface)", border: "1px solid var(--ft-border)", padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 16, minHeight: "calc(100vh - 160px)", justifyContent: "center" }}>
@@ -568,16 +569,16 @@ export default function CashflowPage() {
             <circle cx="40" cy="26" r="2" fill="var(--ft-text)" />
           </svg>
           <div>
-            <div style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 8 }}>
+            <div style={{ ...sans, fontSize: 13, fontWeight: 700, color: "var(--ft-text)", marginBottom: 8 }}>
               Add an account to see your cash flow forecast
             </div>
-            <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", maxWidth: 340, lineHeight: 1.7, margin: "0 auto" }}>
+            <div style={{ ...sans, fontSize: 10, color: "var(--ft-dim)", maxWidth: 340, lineHeight: 1.7, margin: "0 auto" }}>
               Cash flow projections use your account balances, upcoming bills, and 3-month spending average to show where your money is headed.
             </div>
           </div>
           <a
             href="/accounts"
-            style={{ display: "inline-block", padding: "10px 20px", background: "var(--ft-accent)", color: "var(--ft-base)", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textDecoration: "none", minHeight: 44, lineHeight: "24px" }}
+            style={{ display: "inline-block", padding: "10px 20px", background: "var(--ft-accent)", color: "var(--ft-base)", fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textDecoration: "none", minHeight: 44, lineHeight: "24px" }}
           >
             + ADD ACCOUNT
           </a>
@@ -624,7 +625,7 @@ export default function CashflowPage() {
                 key={s}
                 onClick={() => setScenario(s)}
                 style={{
-                  ...mono,
+                  ...sans,
                   fontSize: 9,
                   letterSpacing: "0.06em",
                   textTransform: "uppercase",
@@ -648,7 +649,7 @@ export default function CashflowPage() {
           <button
             onClick={() => setShowSettings((v) => !v)}
             style={{
-              ...mono,
+              ...sans,
               fontSize: 9,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
@@ -676,7 +677,7 @@ export default function CashflowPage() {
           <PanelHeader>Scenario Multipliers</PanelHeader>
           <HStack gap={32} align="start" wrap padding="14px 20px">
             <div>
-              <div style={{ ...mono, fontSize: 9, color: "var(--ft-green)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+              <div style={{ ...sans, fontSize: 9, color: "var(--ft-green)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
                 Optimistic
               </div>
               <HStack gap={20}>
@@ -686,7 +687,7 @@ export default function CashflowPage() {
             </div>
             <div style={{ width: 1, background: "var(--ft-border)", alignSelf: "stretch" }} />
             <div>
-              <div style={{ ...mono, fontSize: 9, color: "var(--ft-red)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+              <div style={{ ...sans, fontSize: 9, color: "var(--ft-red)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
                 Pessimistic
               </div>
               <HStack gap={20}>
@@ -695,21 +696,21 @@ export default function CashflowPage() {
               </HStack>
             </div>
             <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+              <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)" }}>
                 Base: 3-month avg net/day = <span className="pnum" style={{ color: baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>
                   {baseMonthlyNet >= 0 ? "+" : ""}{formatBaseMoney(baseMonthlyNet)}/mo
                 </span>
               </div>
-              <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+              <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)" }}>
                 Avg income: <span className="pnum" style={{ color: "var(--ft-green)" }}>+{formatBaseMoney(Math.abs(baseDailyIncome * 30))}/mo</span>
               </div>
-              <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)" }}>
+              <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)" }}>
                 Avg expense: <span className="pnum" style={{ color: "var(--ft-red)" }}>-{formatBaseMoney(Math.abs(baseDailyExpense * 30))}/mo</span>
               </div>
               <button
                 onClick={() => setMultipliers(DEFAULT_MULTIPLIERS)}
                 style={{
-                  ...mono,
+                  ...sans,
                   fontSize: 9,
                   color: "var(--ft-dim)",
                   background: "var(--ft-raised)",
@@ -746,9 +747,9 @@ export default function CashflowPage() {
         if (!msg) return null;
         const color = PERSONA_COLORS[pid as keyof typeof PERSONA_COLORS] ?? "var(--ft-accent)";
         return (
-          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ ...sans, fontSize: 10, color: "var(--ft-dim)", border: "1px solid var(--ft-border)", background: "var(--ft-surface)", padding: "7px 12px", marginBottom: 6, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ color, fontWeight: 700, flexShrink: 0 }}>·</span>
-            <span className="pnum">{msg}</span>
+            <span>{msg}</span>
           </div>
         );
       })()}
@@ -819,7 +820,7 @@ export default function CashflowPage() {
           }}>
             {formatBaseMoney(finalBalance)}
           </div>
-          <div style={{ ...mono, fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>
+          <div style={{ ...sans, fontSize: 10, color: "var(--ft-dim)", marginTop: 4 }}>
             <span className="pnum">{`${finalBalance >= startingBalance ? "+" : ""}${formatBaseMoney(finalBalance - startingBalance)}`}</span> vs today
           </div>
         </div>
@@ -834,7 +835,7 @@ export default function CashflowPage() {
             <div style={{ ...mono, fontSize: 14, fontWeight: 700, color: "var(--ft-red)" }}>
               {formatShortDate(breakEvenDate)}
             </div>
-            <div style={{ ...mono, fontSize: 9, color: "var(--ft-red)", marginTop: 2, opacity: 0.75 }}>
+            <div style={{ ...sans, fontSize: 9, color: "var(--ft-red)", marginTop: 2, opacity: 0.75 }}>
               Balance crosses zero
             </div>
           </div>
@@ -848,7 +849,7 @@ export default function CashflowPage() {
             marginLeft: breakEvenDate ? 0 : "auto",
           }}>
             <div style={{ ...labelStyle, color: "var(--ft-red)", marginBottom: 4 }}>WARNING — BALANCE GOES NEGATIVE</div>
-            <div style={{ ...mono, fontSize: 12, color: "var(--ft-red)" }}>
+            <div style={{ ...sans, fontSize: 12, color: "var(--ft-red)" }}>
               Lowest projected: <span className="pnum">{formatBaseMoney(lowestPoint)}</span>
             </div>
           </div>
@@ -859,7 +860,7 @@ export default function CashflowPage() {
       <div style={{ ...card, padding: 0 }}>
         <PanelHeader>
           Balance Projection
-          <Text as="span" mono size={10} color="var(--ft-muted)">Day-by-day projected cumulative balance · based on 3-month avg trend</Text>
+          <Text as="span" size={10} color="var(--ft-muted)">Day-by-day projected cumulative balance · based on 3-month avg trend</Text>
         </PanelHeader>
         <div style={{ padding: 20 }}>
         <ResponsiveContainer width="100%" height={240}>
@@ -937,7 +938,7 @@ export default function CashflowPage() {
       <div style={{ ...card, padding: 0 }}>
         <PanelHeader>
           Scheduled Events
-          <Text as="span" mono size={10} color="var(--ft-muted)">Upcoming bills and income within the {horizon}-day horizon</Text>
+          <Text as="span" size={10} color="var(--ft-muted)">Upcoming bills and income within the {horizon}-day horizon</Text>
         </PanelHeader>
         <div style={{ padding: 20 }}>
         {eventRows.length === 0 ? (
@@ -945,7 +946,7 @@ export default function CashflowPage() {
             border: "1px solid var(--ft-border)",
             background: "var(--ft-surface)",
             padding: "24px 20px",
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
           }}>
             <div style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>
               NO SCHEDULED EVENTS
@@ -977,11 +978,11 @@ export default function CashflowPage() {
 
       {/* Scenario legend */}
       <div style={{ ...card, padding: "12px 16px", display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={labelStyle}>SCENARIOS:</div>
+        <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase" }}>SCENARIOS:</div>
         {(["optimistic", "base", "pessimistic"] as Scenario[]).map((s) => (
           <ScenarioLegendItem key={s} s={s} multipliers={multipliers} />
         ))}
-        <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", marginLeft: "auto" }}>
+        <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)", marginLeft: "auto" }}>
           Variable trend based on 3-month avg · scheduled items use exact amounts
         </div>
       </div>
