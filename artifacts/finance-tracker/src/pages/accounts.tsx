@@ -70,7 +70,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryParam } from "@/hooks/use-query-param";
 import { DetailSurface } from "@/components/detail-surface";
 import { ENTITY_PARAM, categoryTransactionsHref, entityHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
-import { Drill, DrillTarget } from "@/components/drill";
+import { Drill, DrillButton, DrillTarget } from "@/components/drill";
 import {
   AreaChart,
   Area,
@@ -1016,11 +1016,13 @@ interface CurrencyExposureRowProps {
   totalCash: number;
   acctCount: number;
   colorIndex: number;
+  /** Filters the accounts table below to this currency — the row's only honest destination; see ledger-query.ts for why it does not link into /transactions. */
+  onSelectCurrency: (currency: string) => void;
 }
 
 const ACCT_COLORS = ["var(--ft-blue)", "var(--ft-green)", "var(--ft-amber)", "var(--ft-cyan)", "var(--ft-red)", "var(--ft-muted)"];
 
-function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex }: CurrencyExposureRowProps) {
+function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex, onSelectCurrency }: CurrencyExposureRowProps) {
   const [hov, setHov] = React.useState(false);
   // A share needs a positive base total to divide by. totalCash can be
   // zero or negative (overdrafts), and then the exposure share is unknown
@@ -1043,9 +1045,13 @@ function CurrencyExposureRow({ currency, total, totalCash, acctCount, colorIndex
       onMouseLeave={() => setHov(false)}
     >
       <div style={{ width: 8, height: 8, background: color, flexShrink: 0 }} />
-      <span style={{ fontSize: 11, fontWeight: 700, color, fontFamily: "var(--font-mono)", width: 32, flexShrink: 0 }}>
+      <DrillButton
+        onClick={() => onSelectCurrency(currency)}
+        title={`Filter accounts to ${currency}`}
+        style={{ fontSize: 11, fontWeight: 700, color, fontFamily: "var(--font-mono)", width: 32, flexShrink: 0, textAlign: "left" }}
+      >
         {currency}
-      </span>
+      </DrillButton>
       {/* No overflow:hidden + text-overflow:ellipsis on a .pnum —
           clips digits. If the currency total is very long the row
           wraps to the next column of the auto-fill grid or the
@@ -1791,6 +1797,18 @@ export default function Accounts() {
   const [accountSearch, setAccountSearch] = useState("");
   const [accountSort, setAccountSort] = useState<"default" | "balance-high" | "balance-low" | "name-az" | "name-za" | "currency">("default");
 
+  // The accounts table below, scrolled to when a currency-exposure row is
+  // pressed — see handleSelectCurrency.
+  const accountsPanelRef = useRef<HTMLDivElement>(null);
+  // CurrencyExposureRow has no href to drill into (ledger-query.ts's six
+  // filters are deliberately not all of them, and currency is not one).
+  // The honest destination it does have is this page's own account search,
+  // which already matches on currency — see filteredAccounts above.
+  const handleSelectCurrency = (currency: string) => {
+    setAccountSearch(currency);
+    accountsPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const filteredAccounts = useMemo(() => {
     if (!accounts) return [];
     let list = accounts;
@@ -2487,6 +2505,7 @@ export default function Accounts() {
                       totalCash={totalCash}
                       acctCount={accounts!.filter(a => a.currency === currency).length}
                       colorIndex={i}
+                      onSelectCurrency={handleSelectCurrency}
                     />
                   ))}
                 </div>
@@ -2705,7 +2724,7 @@ export default function Accounts() {
       <ReconciliationPanel />
 
       {/* Accounts spreadsheet table */}
-      <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
+      <div ref={accountsPanelRef} style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
         {/* Section title — no controls */}
         <PanelHeader right={<Text as="span" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em">{baseCurrency} base</Text>}>ACCOUNTS</PanelHeader>
         {/* Filter bar — separate row, wraps fine */}
@@ -2713,6 +2732,7 @@ export default function Accounts() {
           <input
             type="text"
             placeholder="Search…"
+            title="Matches account name or currency code"
             value={accountSearch}
             onChange={(e) => setAccountSearch(e.target.value)}
             className="ft-filter-input"
