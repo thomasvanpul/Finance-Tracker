@@ -638,7 +638,7 @@ function CashflowChart({
           flexWrap: "wrap",
           gap: "6px 12px",
           marginTop: 6,
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 11,
           color: "var(--ft-dim)",
         }}
@@ -650,7 +650,7 @@ function CashflowChart({
           PROJECTED
         </span>
         {low && (
-          <span className="pnum" style={{ color: low.balance < 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
+          <span className="pnum" style={{ fontFamily: "var(--font-mono)", color: low.balance < 0 ? "var(--ft-red)" : "var(--ft-muted)" }}>
             LOW SO FAR {nfmt(low.balance, { symbol: "£" })} · {low.day} {monthShortMixed}
           </span>
         )}

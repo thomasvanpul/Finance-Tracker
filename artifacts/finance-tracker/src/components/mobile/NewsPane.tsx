@@ -110,7 +110,7 @@ export function NewsPane({ investmentsHref }: { investmentsHref?: string }) {
                 display: "flex",
                 alignItems: "baseline",
                 gap: 8,
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 11,
                 color: "var(--ft-dim)",
                 letterSpacing: "0.06em",
@@ -118,7 +118,7 @@ export function NewsPane({ investmentsHref }: { investmentsHref?: string }) {
             >
               {/* A tag that reads, not a control: muted, not the accent
                   (DESIGN.md §11). */}
-              <span style={{ color: "var(--ft-muted)" }}>
+              <span style={{ fontFamily: "var(--font-mono)", color: "var(--ft-muted)" }}>
                 {it.connectedTo.kind === "ticker" ? "YOUR " : "YOUR "}{it.connectedTo.label}
               </span>
               <span>·</span>
@@ -126,7 +126,7 @@ export function NewsPane({ investmentsHref }: { investmentsHref?: string }) {
               {it.publishedAt && (
                 <>
                   <span>·</span>
-                  <span>{formatWhen(it.publishedAt)}</span>
+                  <span style={{ fontFamily: "var(--font-mono)" }}>{formatWhen(it.publishedAt)}</span>
                 </>
               )}
             </div>

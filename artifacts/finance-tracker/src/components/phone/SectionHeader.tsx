@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { PHONE_GUTTER, PHONE_HEADER_H } from "./rhythm";
 
-// SectionHeader — the mono-uppercase section titlebar used across the
+// SectionHeader — the uppercase section titlebar used across the
 // wrapped desktop pages Thomas already reads well narrow. Left slot for
 // label + optional icon; right slot for status / count / badge.
 //
@@ -17,10 +17,15 @@ import { PHONE_GUTTER, PHONE_HEADER_H } from "./rhythm";
 // Height and gutter come from components/phone/rhythm.ts — the phone's one
 // rhythm, decided there rather than per screen.
 //
-//   :77  mono label at var(--ft-text-xs) = 11px (raised from historical
+//   :77  label at var(--ft-text-xs) = 11px (raised from historical
 //        9-10px on the hand-rolled sites during extraction, per the
 //        30 Aug survey — "extraction is when Amendment fixes land, not
 //        after")
+//
+// The label is sans (DESIGN.md §2 sets a section title in Plex Sans, and the
+// Amendment prefers sans for labels on the phone), date titles included, so
+// one list of headers is not split across two families. The register is the
+// case and the tracking. Figures passed in `right` set mono themselves.
 
 type SectionHeaderTone = "default" | "accent" | "blue" | "red" | "amber" | "cyan" | "muted";
 
@@ -53,7 +58,7 @@ export function SectionHeader({ label, right, tone = "default", icon }: SectionH
         display: "flex",
         alignItems: "center",
         gap: 8,
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: "var(--ft-text-xs)",
         fontWeight: 600,
         letterSpacing: "0.08em",
