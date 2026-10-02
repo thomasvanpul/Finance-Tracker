@@ -48,7 +48,7 @@ export function MobileSheet({ open, onOpenChange, title, children, footer, maxWi
           <DrawerHeader style={{ padding: "8px 16px 0", flexShrink: 0 }}>
             <DrawerTitle
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 12,
                 fontWeight: 700,
                 letterSpacing: "0.08em",

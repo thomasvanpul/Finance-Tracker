@@ -99,7 +99,7 @@ export class LazyRouteBoundary extends Component<Props, State> {
       >
         <div
           style={{
-            fontFamily: "var(--font-mono)",
+            fontFamily: "var(--font-sans)",
             fontSize: "var(--ft-text-xs)",
             letterSpacing: "0.16em",
             color: "var(--ft-dim)",

@@ -206,7 +206,7 @@ export function EditLayout({ register, isCustomizing, onCustomize }: {
     alignItems: "center",
     gap: 8,
     color: isCustomizing ? "var(--ft-accent)" : "var(--ft-muted)",
-    fontFamily: "var(--font-mono)",
+    fontFamily: "var(--font-sans)",
     fontSize: 9,
     fontWeight: 600,
     letterSpacing: "0.10em",

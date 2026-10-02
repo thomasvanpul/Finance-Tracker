@@ -10,7 +10,8 @@ export function ErrorState({ message }: ErrorStateProps) {
         textAlign: "center",
         border: "1px solid rgba(248,81,73,0.35)",
         background: "rgba(248,81,73,0.04)",
-        fontFamily: "var(--font-mono)",
+        // The eyebrow and the message are language, not data (DESIGN.md §10).
+        fontFamily: "var(--font-sans)",
       }}
     >
       <div
