@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 // HoverRow — hover-tint wrapper for interactive rows. Hover doesn't fire
 // on touch so this becomes a no-op on phone, but the primitive is used
@@ -12,6 +12,11 @@ interface HoverRowProps {
   onClick?: () => void;
 }
 
+// The keys a native <button> activates on. Exported for the test.
+export function pressKeyActivates(key: string): boolean {
+  return key === "Enter" || key === " ";
+}
+
 export function HoverRow({ children, style, onClick }: HoverRowProps) {
   const [hov, setHov] = useState(false);
   // --ft-accent means "you can press this" (DESIGN.md §11), so only a row
@@ -23,6 +28,15 @@ export function HoverRow({ children, style, onClick }: HoverRowProps) {
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       onClick={onClick}
+      // A pressable row is a button to a keyboard and a screen reader too
+      // (DESIGN.md §14). A row with no onClick claims neither.
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e: KeyboardEvent<HTMLDivElement>) => {
+        if (!pressKeyActivates(e.key)) return;
+        e.preventDefault();
+        onClick();
+      } : undefined}
       style={{
         background: hov ? tint : "transparent",
         transition: "background 0.12s",
