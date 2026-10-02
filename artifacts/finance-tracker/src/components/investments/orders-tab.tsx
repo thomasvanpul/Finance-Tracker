@@ -89,6 +89,7 @@ const ORDER_TYPE_META: Record<
 
 const TH: React.CSSProperties = {
   padding: "6px 10px",
+  fontFamily: "var(--font-mono)",
   fontSize: 10,
   fontWeight: 700,
   color: "var(--ft-dim)",
@@ -99,6 +100,9 @@ const TH: React.CSSProperties = {
   letterSpacing: "0.4px",
   whiteSpace: "nowrap" as const,
 };
+
+// A ticker, a price, a percentage or a quantity typed into a field is data.
+const DATA_INPUT: React.CSSProperties = { fontSize: 12, height: 32, fontFamily: "var(--font-mono)" };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -281,7 +285,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
         <div>
           <div
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               fontWeight: 700,
               color: "var(--ft-amber)",
@@ -335,7 +339,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
         >
           <div
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               fontWeight: 700,
               color: "var(--ft-dim)",
@@ -355,7 +359,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
                   value={form.ticker}
                   onChange={(e) => setField("ticker", e.target.value.toUpperCase())}
                   required
-                  style={{ fontSize: 12, height: 32 }}
+                  style={DATA_INPUT}
                 />
               </div>
               <div className="space-y-1">
@@ -403,7 +407,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
                   value={form.targetPrice}
                   onChange={(e) => setField("targetPrice", e.target.value)}
                   required
-                  style={{ fontSize: 12, height: 32 }}
+                  style={DATA_INPUT}
                 />
               </div>
             </div>
@@ -418,7 +422,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
                     placeholder="e.g. 145.00"
                     value={form.stopLimitPrice}
                     onChange={(e) => setField("stopLimitPrice", e.target.value)}
-                    style={{ fontSize: 12, height: 32 }}
+                    style={DATA_INPUT}
                   />
                 </div>
               </div>
@@ -435,7 +439,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
                     placeholder="e.g. 10"
                     value={form.trailingPercent}
                     onChange={(e) => setField("trailingPercent", e.target.value)}
-                    style={{ fontSize: 12, height: 32 }}
+                    style={DATA_INPUT}
                   />
                 </div>
               </div>
@@ -450,7 +454,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
                   placeholder="e.g. 100"
                   value={form.quantity}
                   onChange={(e) => setField("quantity", e.target.value)}
-                  style={{ fontSize: 12, height: 32 }}
+                  style={DATA_INPUT}
                 />
               </div>
               <div className="space-y-1">
@@ -527,7 +531,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
         >
           <span
             style={{
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 10,
               fontWeight: 700,
               color: "var(--ft-amber)",
@@ -535,7 +539,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
               letterSpacing: "0.08em",
             }}
           >
-            ▼ Active Alerts — {orders.length} total · {triggeredCount} triggered
+            ▼ Active Alerts — <span className="pnum">{orders.length}</span> total · <span className="pnum">{triggeredCount}</span> triggered
           </span>
         </div>
         <div style={{ overflowX: "auto" }}>
@@ -621,7 +625,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
                           color: meta.color,
                           fontSize: 10,
                           fontWeight: 700,
-                          fontFamily: "var(--font-mono)",
+                          fontFamily: "var(--font-sans)",
                           borderRadius: 2,
                         }}
                       >
@@ -677,6 +681,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
                       style={{
                         padding: "7px 10px",
                         textAlign: "right",
+                        fontFamily: "var(--font-mono)",
                         color: "var(--ft-muted)",
                         fontSize: 11,
                         borderRight: "1px solid var(--ft-border)",
@@ -713,7 +718,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
                             color: "var(--ft-blue)",
                             fontSize: 10,
                             fontWeight: 700,
-                            fontFamily: "var(--font-mono)",
+                            fontFamily: "var(--font-sans)",
                             borderRadius: 2,
                           }}
                         >
@@ -726,7 +731,7 @@ export function OrdersTab({ quoteMap }: OrdersTabProps) {
                             background: "rgba(63,185,80,0.08)",
                             color: "var(--ft-green)",
                             fontSize: 10,
-                            fontFamily: "var(--font-mono)",
+                            fontFamily: "var(--font-sans)",
                             borderRadius: 2,
                           }}
                         >
