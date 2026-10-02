@@ -1136,7 +1136,7 @@ function FilterChips({
             }}
           >
             {chip.label}
-            <span aria-hidden="true" style={{ fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>×</span>
+            <span aria-hidden="true" style={{ fontFamily: "var(--font-sans)", color: "var(--ft-dim)" }}>×</span>
           </button>
         ))}
       </div>

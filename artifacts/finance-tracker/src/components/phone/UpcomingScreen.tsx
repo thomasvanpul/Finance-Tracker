@@ -469,7 +469,7 @@ export function UpcomingScreen() {
             }}
           >
             {seriesQuery}
-            <span aria-hidden="true" style={{ fontFamily: "var(--font-mono)", color: "var(--ft-dim)" }}>×</span>
+            <span aria-hidden="true" style={{ fontFamily: "var(--font-sans)", color: "var(--ft-dim)" }}>×</span>
           </button>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--ft-text-xs)", letterSpacing: "0.12em", color: "var(--ft-dim)" }}>
             <span className="pnum">{filteredItems.length}</span>{filteredItems.length === 1 ? " ITEM" : " ITEMS"}

@@ -462,7 +462,7 @@ export function WorthScreen() {
           >
             <span
               style={{
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sans)",
                 fontSize: 11,
                 letterSpacing: "0.14em",
                 color: "var(--ft-dim)",
