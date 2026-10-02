@@ -3,7 +3,7 @@ import { X, Send, BotMessageSquare, Sparkles } from "lucide-react";
 import { useLocation } from "wouter";
 import { Companion } from "@/components/companion/companion";
 import { useCompanionSignals, useSearchingField } from "@/hooks/use-companion-signals";
-import { MonoLabel } from "@/components/primitives";
+import { MonoLabel, Text } from "@/components/primitives";
 import {
   StreamingProgress,
   StreamingReducedCapacity,
@@ -242,6 +242,7 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
       display: "flex",
       flexDirection: "column",
       overflow: "hidden",
+      fontFamily: "var(--font-sans)",
     }}>
       {/* ── Header ── hairline structure, mono type ladder ── */}
       <div style={{
@@ -254,9 +255,9 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
         flexShrink: 0,
       }}>
         <span aria-hidden style={{ color: "var(--ft-accent)", fontFamily: "var(--font-mono)", fontSize: 11, lineHeight: 1 }}>◇</span>
-        <MonoLabel size={10} color="var(--ft-text)" letterSpacing="0.14em">
+        <Text size={10} color="var(--ft-text)" upper letterSpacing="0.14em">
           {"AI Coach"}
-        </MonoLabel>
+        </Text>
         <MonoLabel size={9} color="var(--ft-muted)" letterSpacing="0.1em">
           · {"GROQ"}
         </MonoLabel>
@@ -284,7 +285,10 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
         flexShrink: 0,
       }}>
         <MonoLabel size={8} color="var(--ft-dim)" letterSpacing="0.14em">CONTEXT</MonoLabel>
-        <MonoLabel size={9} color="var(--ft-muted)">{PAGE_LABELS[location] ?? location}</MonoLabel>
+        {/* A page name is language; a bare route path is data (DESIGN.md §10). */}
+        {PAGE_LABELS[location]
+          ? <Text size={9} color="var(--ft-muted)" upper letterSpacing="0.08em">{PAGE_LABELS[location]}</Text>
+          : <MonoLabel size={9} color="var(--ft-muted)">{location}</MonoLabel>}
       </div>
 
       {/* ── Message list ── */}
@@ -311,7 +315,7 @@ function ChatPanel({ open, onClose, style, anchorBottom = 72, anchorRight = 20, 
           placeholder={streaming.current ? "Ask a follow-up (queued while replying)…" : "Ask about your finances…"}
           style={{
             flex: 1, resize: "none",
-            fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.5,
+            fontFamily: "var(--font-sans)", fontSize: 12, lineHeight: 1.5,
             background: "var(--ft-surface)", border: "1px solid var(--ft-border2)",
             color: "var(--ft-text)", padding: "6px 8px", outline: "none", borderRadius: 2,
           }}
@@ -366,7 +370,7 @@ function EmptyState({ location, onPick }: { location: string; onPick: (prompt: s
     <div style={{ padding: "20px 4px 12px", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
         <MonoLabel size={9} color="var(--ft-dim)" letterSpacing="0.14em">READY</MonoLabel>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.5 }}>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--ft-text)", lineHeight: 1.5 }}>
           Ask about your finances. I read your accounts, budgets and goals server-side.
         </span>
       </div>
@@ -380,7 +384,7 @@ function EmptyState({ location, onPick }: { location: string; onPick: (prompt: s
             style={{
               textAlign: "left",
               padding: "8px 10px",
-              fontFamily: "var(--font-mono)",
+              fontFamily: "var(--font-sans)",
               fontSize: 11,
               color: "var(--ft-text)",
               background: "var(--ft-surface)",
@@ -432,7 +436,7 @@ function MessageBubble({ msg }: { msg: Message }) {
 
         {/* Body text (grows token by token). */}
         {msg.text && (
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, lineHeight: 1.65 }}>
+          <div style={{ fontFamily: "var(--font-sans)", fontSize: 12, lineHeight: 1.65 }}>
             {msg.text}
           </div>
         )}
@@ -577,11 +581,11 @@ export function AiAgent({ sidebarW }: { sidebarW?: number }) {
       {aiStyle === "minimal" && !open && (
         <div style={{
           position: "fixed", bottom: 14, right: 14, zIndex: 9990,
-          fontFamily: "var(--font-mono)", fontSize: 9,
+          fontFamily: "var(--font-sans)", fontSize: 9,
           color: "var(--ft-border2)", letterSpacing: "0.06em",
           pointerEvents: "none",
         }}>
-          Press G for AI
+          Press <span style={{ fontFamily: "var(--font-mono)" }}>G</span> for AI
         </div>
       )}
 
