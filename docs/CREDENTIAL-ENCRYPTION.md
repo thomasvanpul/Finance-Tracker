@@ -15,8 +15,11 @@ we have not built yet, and what happens when things go wrong.
 - Auth tag: 16 bytes
 
 The key comes from the `CREDENTIAL_ENCRYPTION_KEY` environment variable, a
-base64 string that must decode to exactly 32 bytes. The `api-server` refuses
-to boot without it. Generate one with:
+base64 string that must decode to exactly 32 bytes. It is read on first use,
+not at boot (`artifacts/api-server/src/lib/crypto.ts`, `key()`): without it the
+`api-server` starts normally and then throws at the first encrypt or decrypt,
+which includes closing bank consents during account deletion
+(`lib/bank-consents.ts`). Generate one with:
 
 ```
 openssl rand -base64 32

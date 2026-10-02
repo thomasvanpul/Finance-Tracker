@@ -1765,7 +1765,8 @@ an admin role would unlock nothing that is currently locked.
 **Corrected 13 Sep 2026.** Drafted from source: `docs/PRIVACY.md`,
 `docs/TERMS.md`, `docs/DATA-INVENTORY.md` (`8407256` 11 Sep, `a68ee72`, `b2b9dbe`).
 Not publishable: **35 `[TO CONFIRM` markers** (PRIVACY 21, TERMS 12,
-DATA-INVENTORY 2) and 10 `[BLOCKED` in PRIVACY. The register and roadmap say "26
+DATA-INVENTORY 2) and 8 `[BLOCKED` statements in PRIVACY (`rg -o` counts 10;
+two are the legend at lines 10 and 12; recounted 3 Oct 2026). The register and roadmap say "26
 questions" (register C12, roadmap N2) — on 11 Sep that was the subset of 33
 markers only Thomas can answer; the marker count has since moved, so recount
 before treating 26 as current. No privacy or terms page in the app yet.
@@ -1785,7 +1786,8 @@ phone (`064def6`); follow-ups `d1b4ce6` (verification rows by exact match, not
 device's IndexedDB cache and outbox), `e5f3ace`. Merged register C2, C3 here.
 Residue, tracked elsewhere: backup retention is unstated on the screen
 (PRIVACY `[TO CONFIRM]`, I2); deletion never reaches the Neon `dev` clone (I10);
-`2fa-attempts-*` survives (G50); iOS WebView wipe unverified (G48).
+iOS WebView wipe unverified (G48). (`2fa-attempts-*` survival, G50, fixed in
+`bbc4c19`.)
 Original text: Every table cascades from `user.id`, so the mechanism exists. Needs a
 user-facing route, a confirmation, and a stated retention window.
 
