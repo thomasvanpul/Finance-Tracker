@@ -985,6 +985,7 @@ export default function Tax() {
               onChange={setSelectedYear}
               options={allYears.map(y => ({ value: y, label: y }))}
               minWidth={90}
+              mono
             />
             <Button onClick={handleExport} size="sm" variant="outline" style={{ borderColor: "var(--ft-border2)", color: "var(--ft-muted)", fontSize: 11, height: 32 }}>
               <Download className="w-3.5 h-3.5 mr-1.5" />JSON
@@ -1348,6 +1349,7 @@ export default function Tax() {
                     onChange={v => setShelterForm(f => ({ ...f, taxYear: v }))}
                     options={allYears.map(y => ({ value: y, label: y }))}
                     minWidth={200}
+                    mono
                   />
                 </div>
                 <div className="space-y-1.5">

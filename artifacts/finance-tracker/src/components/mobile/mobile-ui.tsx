@@ -146,7 +146,7 @@ export function MobileEmptyState(props: MobileEmptyStateProps) {
   const labelEl = (
     <div
       style={{
-        fontFamily: "var(--font-mono)",
+        fontFamily: "var(--font-sans)",
         fontSize: "var(--ft-text-xs)",
         letterSpacing: "0.16em",
         color: "var(--ft-dim)",
@@ -269,7 +269,7 @@ export function PhoneSectionError({
     >
       <div
         style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: "var(--ft-text-xs)",
           letterSpacing: "0.16em",
           color: "var(--ft-dim)",

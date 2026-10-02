@@ -13,9 +13,10 @@ interface FtDropdownProps {
   onChange: (value: string) => void;
   label?: string;         // optional uppercase label shown before the selector
   minWidth?: number;
+  mono?: boolean;         // the option labels are data (years, codes), not names
 }
 
-export function FtDropdown({ options, value, onChange, label, minWidth = 120 }: FtDropdownProps) {
+export function FtDropdown({ options, value, onChange, label, minWidth = 120, mono = false }: FtDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -46,7 +47,7 @@ export function FtDropdown({ options, value, onChange, label, minWidth = 120 }: 
     >
       {label && (
         <span style={{
-          fontFamily: "var(--font-mono)",
+          fontFamily: "var(--font-sans)",
           fontSize: 9,
           letterSpacing: "0.08em",
           color: "var(--ft-dim)",
@@ -68,7 +69,7 @@ export function FtDropdown({ options, value, onChange, label, minWidth = 120 }: 
           background: open ? "var(--ft-raised)" : "var(--ft-surface)",
           border: `1px solid ${open ? "var(--ft-accent)" : "var(--ft-border2)"}`,
           color: "var(--ft-text)",
-          fontFamily: "var(--font-mono)",
+          fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
           fontSize: 12,
           fontWeight: 700,
           padding: "4px 8px",
@@ -80,7 +81,7 @@ export function FtDropdown({ options, value, onChange, label, minWidth = 120 }: 
         }}
       >
         {selected?.prefix && (
-          <span style={{ fontSize: 13, lineHeight: 1 }}>{selected.prefix}</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, lineHeight: 1 }}>{selected.prefix}</span>
         )}
         <span style={{ flex: 1, textAlign: "left" }}>{selected?.label ?? "—"}</span>
         <ChevronDown
@@ -129,7 +130,7 @@ export function FtDropdown({ options, value, onChange, label, minWidth = 120 }: 
                   border: "none",
                   borderLeft: isSelected ? "2px solid var(--ft-accent)" : "2px solid transparent",
                   color: isSelected ? "var(--ft-accent)" : "var(--ft-text)",
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: mono ? "var(--font-mono)" : "var(--font-sans)",
                   fontSize: 12,
                   fontWeight: isSelected ? 700 : 400,
                   cursor: "pointer",
@@ -145,7 +146,7 @@ export function FtDropdown({ options, value, onChange, label, minWidth = 120 }: 
                   if (!isSelected) e.currentTarget.style.background = "transparent";
                 }}
               >
-                {opt.prefix && <span style={{ fontSize: 14, lineHeight: 1 }}>{opt.prefix}</span>}
+                {opt.prefix && <span style={{ fontFamily: "var(--font-mono)", fontSize: 14, lineHeight: 1 }}>{opt.prefix}</span>}
                 <span>{opt.label}</span>
               </button>
             );
