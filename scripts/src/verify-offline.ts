@@ -11,10 +11,22 @@
 // level — same failure shape as no signal. The service worker + IndexedDB
 // persister survive because they're browser-local state, not network.
 //
-// Run:
+// Run it against a PRODUCTION build, never the Vite dev server. The dev
+// server registers no service worker (vite.config.ts: devOptions.enabled
+// false), so nothing precaches the shell and the first offline navigation
+// is ERR_INTERNET_DISCONNECTED however good the data cache is. The harness
+// checks for a controlling service worker before going offline and stops
+// with that reason rather than reporting ten BLANK routes.
+//
 //   1. cd artifacts/api-server && pnpm dev
-//   2. cd artifacts/finance-tracker && PORT=4321 BASE_PATH=/ VITE_API_URL=http://localhost:3001 pnpm dev
-//   3. pnpm --filter @workspace/scripts exec tsx src/verify-offline.ts
+//   2. cd artifacts/finance-tracker && VITE_API_URL= BASE_PATH=/ pnpm build \
+//        && PORT=4322 BASE_PATH=/ pnpm serve
+//      VITE_API_URL is emptied on purpose: .env.local sets it to :3001, and a
+//      build carrying it sends /api straight to the api-server, past the
+//      context.route() interception below. :4322 leaves the dev server on
+//      :4321 alone; the dev API's CORS accepts any localhost port.
+//   3. FRONTEND_URL=http://localhost:4322 \
+//        pnpm --filter @workspace/scripts exec tsx src/verify-offline.ts
 
 import { chromium, type BrowserContext, type Page } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -27,6 +39,70 @@ const OUTPUT_DIR = resolve(__dirname, "..", "screenshots", "offline-verify");
 
 const FRONTEND = process.env.FRONTEND_URL ?? "http://localhost:4321";
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
+
+// The persister writes one idb-keyval entry per query, keyed
+// `${prefix}-${queryHash}` (experimental_createQueryPersister). Mirrors
+// PERSISTER_PREFIX in artifacts/finance-tracker/src/lib/offline-cache.ts.
+// This harness used to read a single "numeris-query-cache-v1" key — the
+// whole-client blob of the PersistQueryClientProvider that offline-cache.ts
+// replaced — so it reported found=false queries=0 however much was cached.
+const PERSISTER_PREFIX = "numeris-query-v1-";
+
+type PersistedSnapshot = { queryCount: number; lines: string[]; firstEntry: string };
+
+// Every persisted query entry, read straight from IndexedDB.
+async function readPersisted(page: Page): Promise<PersistedSnapshot> {
+  return page.evaluate(async (prefix) => {
+    return await new Promise<PersistedSnapshot>((resolve) => {
+      // No named helpers in here: tsx wraps them in __name(), which does not
+      // exist in the page.
+      const req = indexedDB.open("keyval-store");
+      req.onerror = () => resolve({ queryCount: 0, lines: ["open failed"], firstEntry: "" });
+      req.onsuccess = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains("keyval")) { resolve({ queryCount: 0, lines: ["no keyval store"], firstEntry: "" }); return; }
+        const store = db.transaction("keyval", "readonly").objectStore("keyval");
+        const keysReq = store.getAllKeys();
+        const valsReq = store.getAll();
+        valsReq.onerror = () => resolve({ queryCount: 0, lines: ["getAll failed"], firstEntry: "" });
+        valsReq.onsuccess = () => {
+          const pairs = (keysReq.result as IDBValidKey[])
+            .map((k, i) => [String(k), valsReq.result[i]] as const)
+            .filter(([k]) => k.startsWith(prefix));
+          const lines = pairs.map(([, v]) => {
+            try {
+              const p = JSON.parse(String(v)) as { queryKey?: unknown; state?: { status?: string; data?: unknown } };
+              const hasData = p.state?.data !== undefined && p.state?.data !== null;
+              return `${JSON.stringify(p.queryKey)}: status=${p.state?.status} hasData=${hasData}`;
+            } catch (err) {
+              return `unparseable entry: ${String(err)}`;
+            }
+          });
+          resolve({ queryCount: pairs.length, lines, firstEntry: pairs.length ? String(pairs[0][1]).slice(0, 1000) : "" });
+        };
+      };
+    });
+  }, PERSISTER_PREFIX);
+}
+
+// Without a service worker controlling the page nothing serves the shell
+// offline, and every offline route fails before the cache is ever read.
+async function assertServiceWorkerControls(page: Page): Promise<void> {
+  const controlled = await page.evaluate(async () => {
+    if (!("serviceWorker" in navigator)) return false;
+    const ready = navigator.serviceWorker.ready.then(() => true);
+    const timeout = new Promise<boolean>((r) => setTimeout(() => r(false), 10000));
+    if (!(await Promise.race([ready, timeout]))) return false;
+    return navigator.serviceWorker.controller !== null;
+  });
+  if (!controlled) {
+    throw new Error(
+      `no service worker controls ${page.url()} — offline navigation cannot load the shell. ` +
+      "The Vite dev server registers none (devOptions.enabled false); run against " +
+      "`pnpm build && pnpm serve` as described at the top of this file.",
+    );
+  }
+}
 
 // The routes worth verifying. Ordered by user priority: dashboard first
 // because it's the plane-mode use case, then the data-heavy pages, then
@@ -182,69 +258,16 @@ async function main(): Promise<void> {
     const online = await inspect(page);
     await page.screenshot({ path: resolve(OUTPUT_DIR, "00-online-dashboard.png"), fullPage: true });
 
-    // Diagnostic: read IndexedDB directly and report how many query
-    // entries the persister wrote, so we can tell whether the persist
-    // step happened at all vs. cache hydrating but returning empty data.
-    const cacheDiagnostic = await page.evaluate(async () => {
-      return await new Promise<{ found: boolean; size: number; queryCount: number; keys: string[] }>((resolve) => {
-        const req = indexedDB.open("keyval-store");
-        req.onsuccess = () => {
-          const db = req.result;
-          const tx = db.transaction("keyval", "readonly");
-          const store = tx.objectStore("keyval");
-          const getReq = store.get("numeris-query-cache-v1");
-          getReq.onsuccess = () => {
-            const raw = getReq.result;
-            if (!raw) { resolve({ found: false, size: 0, queryCount: 0, keys: [] }); return; }
-            try {
-              const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-              const queries = parsed?.clientState?.queries ?? [];
-              const keys = queries.slice(0, 20).map((q: { queryKey: unknown[]; state?: { data?: unknown } }) => {
-                const dataPreview = q.state?.data == null
-                  ? "null"
-                  : JSON.stringify(q.state.data).slice(0, 100);
-                return `${JSON.stringify(q.queryKey)} → ${dataPreview}`;
-              });
-              resolve({ found: true, size: (typeof raw === "string" ? raw.length : JSON.stringify(raw).length), queryCount: queries.length, keys });
-            } catch (err) {
-              resolve({ found: true, size: -1, queryCount: -1, keys: [String(err)] });
-            }
-          };
-          getReq.onerror = () => resolve({ found: false, size: 0, queryCount: 0, keys: ["get failed"] });
-        };
-        req.onerror = () => resolve({ found: false, size: 0, queryCount: 0, keys: ["open failed"] });
-      });
-    });
-    console.log(`[persister] found=${cacheDiagnostic.found} size=${cacheDiagnostic.size} queries=${cacheDiagnostic.queryCount}`);
-    console.log(`[persister] keys (all ${cacheDiagnostic.keys.length}):`);
-    for (const k of cacheDiagnostic.keys) console.log(`  ${k.slice(0, 120)}`);
-    // Grab the full shape of the first persisted query so we can see
-    // if hydrate() should be able to consume it.
-    const warmFirstQuery = await page.evaluate(async () => {
-      return await new Promise<string>((resolve) => {
-        const req = indexedDB.open("keyval-store");
-        req.onsuccess = () => {
-          const tx = req.result.transaction("keyval", "readonly");
-          const g = tx.objectStore("keyval").get("numeris-query-cache-v1");
-          g.onsuccess = () => {
-            const raw = g.result;
-            if (typeof raw !== "string") { resolve("not-string"); return; }
-            try {
-              const p = JSON.parse(raw);
-              const q0 = p?.clientState?.queries?.[0];
-              if (!q0) { resolve("no-queries"); return; }
-              // Return the status of ALL queries so we can see which
-              // ones are stored as success vs error.
-              const all = p.clientState.queries;
-              const lines = all.map((q: {queryKey: unknown[]; state: {status: string; error?: unknown; data?: unknown}}) =>
-                `${JSON.stringify(q.queryKey)}: status=${q.state.status} hasErr=${q.state.error != null} hasData=${q.state.data !== undefined && q.state.data !== null}`);
-              resolve(lines.join(" | "));
-            } catch (err) { resolve(String(err)); }
-          };
-        };
-      });
-    });
-    console.log(`[persister] first-query WARM shape: ${warmFirstQuery}`);
+    // Diagnostic: how many query entries the persister wrote, so we can
+    // tell whether the persist step happened at all vs. cache hydrating
+    // but returning empty data.
+    const warm = await readPersisted(page);
+    console.log(`[persister] queries=${warm.queryCount}`);
+    for (const line of warm.lines) console.log(`  ${line.slice(0, 120)}`);
+    if (warm.queryCount === 0) {
+      throw new Error("persister wrote no query entries while online — nothing to test offline");
+    }
+    await assertServiceWorkerControls(page);
 
     console.log("── Phase 2: airplane mode → cold reload each route ──");
     await context.setOffline(true);
@@ -282,38 +305,17 @@ async function main(): Promise<void> {
       // Only when the shell loaded: a failed nav is itself the finding, and
       // the report below records it as BLANK rather than dying here.
       if (r.path === "/" && navOk) await assertRoute(page, "/");
-      if (!dumpedRuntime && r.name === "dashboard") {
+      // Only when the shell loaded: an error page has no IndexedDB access.
+      if (!dumpedRuntime && r.name === "dashboard" && navOk) {
         dumpedRuntime = true;
-        const runtime = await page.evaluate(async () => {
-          // Read IndexedDB again from the offline page to prove
-          // IndexedDB survives / is reachable.
-          return await new Promise<{ found: boolean; queryCount: number; navigatorOnLine: boolean; domSample: string }>((resolve) => {
-            const req = indexedDB.open("keyval-store");
-            req.onsuccess = () => {
-              const db = req.result;
-              const tx = db.transaction("keyval", "readonly");
-              const getReq = tx.objectStore("keyval").get("numeris-query-cache-v1");
-              getReq.onsuccess = () => {
-                const raw = getReq.result;
-                let count = 0;
-                try {
-                  const p = typeof raw === "string" ? JSON.parse(raw) : raw;
-                  count = p?.clientState?.queries?.length ?? 0;
-                } catch { /* ignore */ }
-                resolve({
-                  found: !!raw,
-                  queryCount: count,
-                  navigatorOnLine: navigator.onLine,
-                  domSample: document.body.innerText.slice(0, 500),
-                });
-              };
-              getReq.onerror = () => resolve({ found: false, queryCount: 0, navigatorOnLine: navigator.onLine, domSample: "" });
-            };
-            req.onerror = () => resolve({ found: false, queryCount: 0, navigatorOnLine: navigator.onLine, domSample: "" });
-          });
-        });
-        console.log(`[offline-runtime] navigator.onLine=${runtime.navigatorOnLine} idb.found=${runtime.found} idb.queries=${runtime.queryCount}`);
-        console.log(`[offline-runtime] dom-sample: ${runtime.domSample.slice(0, 250).replace(/\n/g, " · ")}`);
+        // Read IndexedDB again from the offline page to prove it survives.
+        const offline = await readPersisted(page);
+        const { onLine, domSample } = await page.evaluate(() => ({
+          onLine: navigator.onLine,
+          domSample: document.body.innerText.slice(0, 500),
+        }));
+        console.log(`[offline-runtime] navigator.onLine=${onLine} idb.queries=${offline.queryCount}`);
+        console.log(`[offline-runtime] dom-sample: ${domSample.slice(0, 250).replace(/\n/g, " · ")}`);
         // Also inspect the live QueryClient — is the cached data reaching
         // components, or does the client itself have empty state?
         const qcState = await page.evaluate(() => {
@@ -336,43 +338,9 @@ async function main(): Promise<void> {
         for (const s of qcState.sample) {
           console.log(`  ${s.key} status=${s.status}/${s.fetchStatus} hasData=${s.hasData} → ${s.dataPreview}`);
         }
-        // Dump the raw JSON from IDB — what's actually stored — so we
-        // can see whether it has queries with `state.data` populated.
-        const rawSample = await page.evaluate(async () => {
-          return await new Promise<string>((resolve) => {
-            const req = indexedDB.open("keyval-store");
-            req.onsuccess = () => {
-              const tx = req.result.transaction("keyval", "readonly");
-              const g = tx.objectStore("keyval").get("numeris-query-cache-v1");
-              g.onsuccess = () => resolve(typeof g.result === "string" ? g.result.slice(0, 800) : "not-string");
-              g.onerror = () => resolve("get-error");
-            };
-            req.onerror = () => resolve("open-error");
-          });
-        });
-        console.log(`[offline-runtime] raw idb head: ${rawSample.slice(0, 800)}`);
-        // Dump the full ONLINE snapshot from IDB (from Phase 1 warm)
-        // so we can compare its structure vs what hydration needs.
-        const warmSnapshotShape = await page.evaluate(async () => {
-          return await new Promise<string>((resolve) => {
-            const req = indexedDB.open("keyval-store");
-            req.onsuccess = () => {
-              const tx = req.result.transaction("keyval", "readonly");
-              const g = tx.objectStore("keyval").get("numeris-query-cache-v1");
-              g.onsuccess = () => {
-                const raw = g.result;
-                if (typeof raw !== "string") { resolve("not-string"); return; }
-                try {
-                  const p = JSON.parse(raw);
-                  const q0 = p?.clientState?.queries?.[0];
-                  if (!q0) { resolve("no-queries"); return; }
-                  resolve(JSON.stringify(q0).slice(0, 1000));
-                } catch (err) { resolve(String(err)); }
-              };
-            };
-          });
-        });
-        console.log(`[offline-runtime] first-query-shape: ${warmSnapshotShape}`);
+        // The raw stored entry, so its shape can be compared with what
+        // hydration needs.
+        console.log(`[offline-runtime] first-entry: ${offline.firstEntry.slice(0, 800)}`);
       }
       const shot = resolve(OUTPUT_DIR, `${r.name}-offline.png`);
       try {
