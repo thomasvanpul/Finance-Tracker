@@ -21,6 +21,7 @@ import {
 } from "./lib/email-transport";
 import { REQUIRE_EMAIL_VERIFICATION } from "./lib/auth-policy";
 import { requestMetricsMiddleware } from "./lib/request-metrics";
+import { requireAiConsent } from "./lib/ai-consent";
 
 // True only when NODE_ENV is explicitly "development". Unset NODE_ENV → false → full production enforcement.
 const IS_DEV = process.env.NODE_ENV === "development";
@@ -278,6 +279,18 @@ export function isAiMeteredPath(path: string): boolean {
   return AI_METERED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
+// Every AI-metered request passes two checks after requireAuth, in this
+// order: the user has turned AI on (lib/ai-consent.ts, BACKLOG § I7 —
+// opt-in, so a refused request never counts against the AI budget), then
+// the per-user aiLimiter. Any other path goes straight through.
+export function aiMeteredGate(req: Request, res: Response, next: NextFunction): void {
+  if (!isAiMeteredPath(req.path)) return next();
+  void requireAiConsent(req, res, (err?: unknown) => {
+    if (err) return next(err);
+    return aiLimiter(req, res, next);
+  });
+}
+
 // Middleware that reads the Better Auth session and puts userId on the request.
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -295,18 +308,15 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 }
 
 // Order matters. apiLimiter first (per-IP throttle across everything),
-// then requireAuth (sets req.userId), THEN aiLimiter gated on /ai/* and /receipt/*
-// paths — that gate has to sit inside the same mount as requireAuth or
-// aiLimiter would run before req.userId is populated. Then finally the
-// router.
+// then requireAuth (sets req.userId), THEN aiMeteredGate (AI consent, then
+// aiLimiter) on /ai/* and /receipt/* paths — that gate has to sit inside
+// the same mount as requireAuth or both checks would run before req.userId
+// is populated. Then finally the router.
 app.use(
   "/api",
   apiLimiter,
   requireAuth,
-  (req, res, next) => {
-    if (isAiMeteredPath(req.path)) return aiLimiter(req, res, next);
-    return next();
-  },
+  aiMeteredGate,
   router,
 );
 

@@ -73,6 +73,17 @@ export async function getPreferences(userId: string): Promise<Record<string, str
   return out;
 }
 
+// One key, or null when the user has never set it. Used by lib/ai-consent.ts,
+// the only server code that reads a preference's meaning.
+export async function getPreference(userId: string, key: string): Promise<string | null> {
+  const rows = await db
+    .select({ value: userPreferencesTable.value })
+    .from(userPreferencesTable)
+    .where(and(eq(userPreferencesTable.userId, userId), eq(userPreferencesTable.key, key)))
+    .limit(1);
+  return rows[0]?.value ?? null;
+}
+
 export interface PatchResult {
   updated: number;
   removed: number;
