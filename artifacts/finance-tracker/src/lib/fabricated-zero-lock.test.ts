@@ -98,7 +98,6 @@ const BASELINE_FILES: ReadonlySet<string> = new Set([
   // explicitly before summing, matching the shape used for missing-price
   // rows. Same pass fixed the plPercent divisor-guard (`: 0` → `: null`).
   "artifacts/finance-tracker/src/components/global-search.tsx",
-  "artifacts/finance-tracker/src/components/mobile/MobileAccounts.tsx",
   "artifacts/finance-tracker/src/components/mobile/MobileAnalytics.tsx",
   // MobileHome.tsx removed 26-Aug — same Correction-3 sweep: portfolio total
   // in computeHoldings, hero net worth / mtd delta / unconvertible / owing

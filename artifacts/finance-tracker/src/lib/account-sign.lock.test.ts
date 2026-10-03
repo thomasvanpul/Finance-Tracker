@@ -305,10 +305,6 @@ const ALLOWLIST: readonly Allowed[] = [
     why: "The API deliberately keeps the two terms APART instead of netting them: spendableCashTotal filters to `type = cash` (an overdraft belongs, as a negative; a loan does not), assetAccountsTotal excludes liabilities and liabilityAccountsTotal returns their positive magnitude. Netting at the source would make a field named Cash fall when a loan is entered and would break the documented response identity netWorth == totalCash + portfolio + owing - totalLiabilities. All three take the type from isLiabilityType/`cash` explicitly, so the rule is applied, just not as a signed sum.",
   },
   {
-    tree: "finance-tracker", file: "components/mobile/MobileAccounts.tsx", rule: "SUM", status: "correct",
-    why: "The same liability-only `owed` magnitude as accounts-summary.tsx, in a component with ZERO importers — it ships to nobody. Kept because deleting it is Thomas's call, not a cleanup, and locked here so the dead copy cannot drift into a live one carrying the defect back.",
-  },
-  {
     tree: "finance-tracker", file: "components/widgets/accounts-summary.tsx", rule: "SUM", status: "correct",
     why: "`owed` sums liabilities only and wants the positive magnitude to print beside a minus glyph. Lock #19 (sign-glyph) requires that a glyph-prefixed formatter argument IS a magnitude, so signing this one would render −−£6,800.00.",
   },
@@ -433,7 +429,7 @@ describe("every list that sums or orders accounts goes through the shared sign r
   });
 
   it("the allowlist has not grown", () => {
-    expect(ALLOWLIST.filter((a) => a.status === "correct")).toHaveLength(5);
+    expect(ALLOWLIST.filter((a) => a.status === "correct")).toHaveLength(4);
     expect(ALLOWLIST.filter((a) => a.status === "deferred-bug")).toHaveLength(0);
     for (const a of ALLOWLIST) expect(a.why.length).toBeGreaterThan(80);
   });
