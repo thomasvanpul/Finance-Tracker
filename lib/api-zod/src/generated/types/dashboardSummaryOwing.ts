@@ -12,5 +12,6 @@ export type DashboardSummaryOwing = {
   totalIOwe: number;
   netBase: number;
   pendingCount: number;
+  iOweCount: number;
   topPending?: DashboardSummaryOwingTopPendingItem[];
 };

@@ -80,6 +80,21 @@ type Debt = typeof debtsTable.$inferSelect;
 
 interface OwingRow { name: string; amountBase: number; direction: "they_owe_me" | "i_owe_them"; date: string }
 
+// Count of rows in the i_owe_them direction only — the number that
+// belongs beside totalIOwe (the mobile CLAIMED strip), as opposed to
+// `owingRows.length`, which spans both directions. Exported for direct
+// unit testing for the same reason assetAccountsTotal is: the handler
+// around it needs a live DB, so without this the direction filter is
+// asserted only by a comment.
+//
+// Until this existed, CLAIMED paired totalIOwe with the combined count,
+// so "CLAIMED · 3 DEBTS" could show a single person row underneath when
+// two of the three pending rows were owed to the user instead of by
+// them (finding c3de6954ba50).
+export function iOweCountFrom(rows: readonly Pick<OwingRow, "direction">[]): number {
+  return rows.filter((r) => r.direction === "i_owe_them").length;
+}
+
 // The spendable-cash basis, as a pure function. Exported for direct unit
 // testing (dashboard.net-liquidity.test.ts) for the same reason
 // computeNetWorth is: the handler around it needs a live DB and Yahoo
@@ -784,6 +799,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const totalOwedToMe = debtsResult.totalOwedToMe + payerExpensesResult.totalOwedToMe;
   const totalIOwe = debtsResult.totalIOwe + participationsResult.totalIOwe;
   const owingRows = [...debtsResult.rows, ...participationsResult.rows, ...payerExpensesResult.rows];
+  const iOweCount = iOweCountFrom(owingRows);
   const today = new Date();
   const topPending = owingRows
     .sort((a, b) => b.amountBase - a.amountBase)
@@ -892,6 +908,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
         totalIOwe: Math.round(totalIOwe * 100) / 100,
         netBase: Math.round((totalOwedToMe - totalIOwe) * 100) / 100,
         pendingCount: owingRows.length,
+        iOweCount,
         topPending,
       },
       monthlyHistory,

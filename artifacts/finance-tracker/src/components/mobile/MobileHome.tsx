@@ -157,7 +157,10 @@ export function MobileHome(_props: MobileHomeProps) {
   const persona = useActivePersona();
 
   const owedByMe = dashboard?.owing.totalIOwe ?? null;
-  const pendingCount = dashboard?.owing.pendingCount ?? null;
+  // Scoped to the i_owe_them direction — the direction owedByMe is
+  // drawn from. owing.pendingCount counts both directions and must not
+  // pair with this total (see dashboard.ts).
+  const pendingCount = dashboard?.owing.iOweCount ?? null;
   // C2-4: top counterparties (up to 3) for the CLAIMED strip. When
   // the API returns them we list names; if the endpoint is old
   // (deployed API one commit behind), we fall back to the count-only

@@ -3377,7 +3377,7 @@ components:
               type: ["number", "null"]
         owing:
           type: object
-          required: [totalOwedToMe, totalIOwe, netBase, pendingCount]
+          required: [totalOwedToMe, totalIOwe, netBase, pendingCount, iOweCount]
           properties:
             totalOwedToMe:
               type: number
@@ -3385,7 +3385,20 @@ components:
               type: number
             netBase:
               type: number
+            # Combined count across BOTH directions (they_owe_me +
+            # i_owe_them). Only a "something is pending" gate — do not
+            # pair it with a single-direction total like totalIOwe, or
+            # the label counts debts the figure beside it does not
+            # include. See iOweCount below for that pairing.
             pendingCount:
+              type: integer
+            # Count of rows in the i_owe_them direction only — the
+            # number that belongs beside totalIOwe (the mobile CLAIMED
+            # strip). Until this existed, CLAIMED paired totalIOwe with
+            # pendingCount (both directions combined), so "CLAIMED ·
+            # 3 DEBTS" could show one person row underneath when two of
+            # the three pending rows were owed to the user instead.
+            iOweCount:
               type: integer
             # C2-4: top pending counterparties (up to 3) so the mobile
             # home CLAIMED strip can name names, not just a count.

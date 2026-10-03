@@ -65,7 +65,10 @@ export function MobileNetWorth({ onBack }: { onBack?: () => void }) {
 
   const holdings = computeHoldings(data);
   const owedByMe = data?.owing.totalIOwe ?? null;
-  const pendingCount = data?.owing.pendingCount ?? null;
+  // Scoped to the i_owe_them direction — the direction owedByMe is
+  // drawn from. owing.pendingCount counts both directions and must not
+  // pair with this total (see dashboard.ts).
+  const pendingCount = data?.owing.iOweCount ?? null;
 
   // Group accounts by type for the per-type sections. Portfolio positions
   // are surfaced only through the block field's `invested` bucket — they

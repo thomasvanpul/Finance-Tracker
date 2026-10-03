@@ -196,6 +196,7 @@ export const GetDashboardResponse = zod.object({
   "totalIOwe": zod.number(),
   "netBase": zod.number(),
   "pendingCount": zod.number(),
+  "iOweCount": zod.number(),
   "topPending": zod.array(zod.object({
   "name": zod.string(),
   "amountBase": zod.number(),
