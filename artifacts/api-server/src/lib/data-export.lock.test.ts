@@ -42,6 +42,9 @@ describe("data export · coverage lock", () => {
   it("no table is both exported and excluded, and no section is listed twice", () => {
     const names = EXPORT_SECTIONS.map(sectionTableName);
     expect(names.filter((n) => n in EXCLUDED_TABLES)).toEqual([]);
+    // An exclusion for a dropped table is a stale reason, not coverage.
+    const tables = new Set(allTableNames());
+    expect(Object.keys(EXCLUDED_TABLES).filter((n) => !tables.has(n))).toEqual([]);
     expect(new Set(names).size).toBe(names.length);
     const keys = EXPORT_SECTIONS.map((s) => s.key);
     expect(new Set(keys).size).toBe(keys.length);
