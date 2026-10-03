@@ -207,7 +207,6 @@ Specifies the same api-server build. Both Railway and Render support nixpacks. T
 | `account` | `auth.ts` | better-auth OAuth accounts |
 | `verification` | `auth.ts` | better-auth email verification tokens |
 | `passkey` | `auth.ts` | WebAuthn passkeys |
-| `totp_credential` | `auth.ts` | Dead: no production code writes to it. The live TOTP secret is in `two_factor` (better-auth's `twoFactor` plugin) |
 | `two_factor` | `auth.ts` | 2FA config per user |
 | `accounts` | `accounts.ts` | User financial accounts (bank accounts, wallets); Wise-linked fields |
 | `transactions` | `transactions.ts` | Income/expense/transfer entries; supports manual, Wise, and CSV sources |

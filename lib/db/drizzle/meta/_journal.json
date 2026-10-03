@@ -183,6 +183,13 @@
       "when": 1790881993935,
       "tag": "0025_net_worth_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1790997062732,
+      "tag": "0026_drop_totp_credential",
+      "breakpoints": true
     }
   ]
 }

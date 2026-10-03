@@ -126,8 +126,6 @@ export const EXPORT_SECTIONS: readonly ExportSection[] = [
 
 // Tables with no section at all, by SQL name.
 export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
-  totp_credential:
-    "dead: no production code path writes to this table — the live TOTP second factor is better-auth's twoFactor plugin, stored in `two_factor` (exported as `twoFactor`). This table was a completeness stub that could only ever export zero rows",
   verification:
     "short-lived one-time tokens (password reset, 2FA challenge, trusted device); every row is a credential and none is content",
   eod_prices:

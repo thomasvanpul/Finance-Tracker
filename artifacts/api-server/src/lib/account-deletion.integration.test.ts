@@ -44,7 +44,6 @@ describe.skipIf(!enabled)("account deletion · nothing survives (real database)"
     await db.insert(s.sessionTable).values({ id: `sess-${stamp}`, token: `tok-${stamp}`, expiresAt: new Date(Date.now() + 60_000), userId: victim, ipAddress: "203.0.113.9", userAgent: "vitest" });
     await db.insert(s.accountTable).values({ id: `acc-${stamp}`, accountId: victim, providerId: "credential", userId: victim, password: "hash" });
     await db.insert(s.passkeyTable).values({ id: `pk-${stamp}`, publicKey: "pk", userId: victim, credentialID: `cred-${stamp}`, counter: 0, deviceType: "singleDevice", backedUp: false });
-    await db.insert(s.totpTable).values({ id: `totp-${stamp}`, userId: victim, secret: "s" });
     await db.insert(s.twoFactorTable).values({ id: `2fa-${stamp}`, secret: "s", backupCodes: "c", userId: victim });
     const [acct] = await db.insert(s.accountsTable).values({ userId: victim, name: "Test current" }).returning({ id: s.accountsTable.id });
     await db.insert(s.transactionsTable).values({ userId: victim, date: "2026-09-05", description: "t", type: "expense", category: "Other", accountId: acct.id, nativeAmount: "1", currency: "GBP", rateAsOf: new Date() });

@@ -68,13 +68,6 @@ export const passkeyTable = pgTable("passkey", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const totpTable = pgTable("totp_credential", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => userTable.id, { onDelete: "cascade" }).unique(),
-  secret: text("secret").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 export const twoFactorTable = pgTable("two_factor", {
   id: text("id").primaryKey(),
   secret: text("secret").notNull(),
