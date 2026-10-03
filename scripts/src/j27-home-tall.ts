@@ -4,7 +4,7 @@
 // full. Layout below 768px is unchanged by height, so this is the same
 // screen, not a different one.
 import { chromium } from 'playwright';
-import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript } from './account-prefs.js';
+import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript, assertRoute } from './account-prefs.js';
 import { acquireCaptureLock } from './capture-lock.js';
 
 const label = process.argv[2] ?? 'after';
@@ -38,6 +38,7 @@ try {
   }));
   await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
+  await assertRoute(page, '/');
   await page.screenshot({ path: `/Users/TvpPro/Developer/Finance-Tracker/.review/shots/j27-${label}-home-tall.png`, fullPage: true });
   await page.unrouteAll({ behavior: 'ignoreErrors' });
   await page.close();

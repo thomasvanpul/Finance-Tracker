@@ -4,7 +4,7 @@
 //
 // Usage: pnpm tsx scripts/src/desktop-rules-sweep.ts <label> [theme ...]
 import { chromium } from 'playwright';
-import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript, assertTheme } from './account-prefs.js';
+import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript, assertTheme, assertRoute } from './account-prefs.js';
 import { acquireCaptureLock } from './capture-lock.js';
 
 const label = process.argv[2] ?? 'before';
@@ -43,6 +43,7 @@ try {
     await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1500);
     await assertTheme(page, theme);
+    await assertRoute(page, '/');
     const steps = await page.evaluate(() => {
       const el = Array.from(document.querySelectorAll<HTMLElement>('*'))
         .filter(e => ['auto', 'scroll'].includes(getComputedStyle(e).overflowY) && e.scrollHeight > e.clientHeight)

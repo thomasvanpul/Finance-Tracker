@@ -24,7 +24,7 @@
 // Usage: tsx scripts/src/insight-shot.ts <scenario>
 
 import { chromium } from 'playwright';
-import { signInSeedUser, openAccountPrefs, type AccountPrefs } from './account-prefs.js';
+import { signInSeedUser, openAccountPrefs, assertRoute, type AccountPrefs } from './account-prefs.js';
 
 const FRONTEND = 'http://localhost:4321';
 const API = 'http://localhost:3001';
@@ -177,6 +177,7 @@ async function slotText(page: import('playwright').Page): Promise<string> {
   for (const [path, name] of [['/', 'home'], ['/spending', 'spending'], ['/net-worth', 'worth']] as const) {
     await page.goto(`${FRONTEND}${path}`, { waitUntil: 'domcontentloaded' });
     await settle(page);
+    if (path === '/') await assertRoute(page, '/');
     if (scenario.dismissOn === path) {
       const before = await slotText(page);
       const btn = page.locator('[aria-label="Dismiss insight"]').first();

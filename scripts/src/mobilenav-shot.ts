@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript, assertTheme } from './account-prefs.js';
+import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript, assertTheme, assertRoute } from './account-prefs.js';
 
 
 const browser = await chromium.launch();
@@ -64,6 +64,7 @@ for (const persona of Object.keys(ROUTES)) {
       await page.waitForTimeout(400);
       const slug = route.replace(/[^a-z0-9]/gi, '_') || 'root';
       await assertTheme(page, theme);
+      if (route === '/') await assertRoute(page, '/');
       await page.screenshot({ path: `/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots/nav_${persona}_${theme}_${slug}.png`, fullPage: false });
       await page.unrouteAll({ behavior: 'ignoreErrors' });
       await page.close();

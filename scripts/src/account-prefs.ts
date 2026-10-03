@@ -284,3 +284,15 @@ export async function assertTheme(page: import("playwright").Page, expected: str
     throw new Error(`theme mismatch: expected ${expected}, page is rendering ${actual}`);
   }
 }
+
+// Assert the page is on the route the filename claims. The route twin of
+// assertTheme: App.tsx follows the account's nr-default-page from "/", so a
+// HOME capture can silently be another screen. openAccountPrefs pins that
+// preference; this catches anything that moves it anyway. Call it after
+// load, before screenshot().
+export async function assertRoute(page: import("playwright").Page, expected: string): Promise<void> {
+  const actual = await page.evaluate(() => location.pathname);
+  if (actual !== expected) {
+    throw new Error(`route mismatch: asked for ${expected}, page is on ${actual}`);
+  }
+}

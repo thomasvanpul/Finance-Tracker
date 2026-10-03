@@ -5,7 +5,7 @@
 //
 // Usage: pnpm tsx scripts/src/phone-rules-sweep.ts <label> [theme ...]
 import { chromium } from 'playwright';
-import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript, assertTheme } from './account-prefs.js';
+import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript, assertTheme, assertRoute } from './account-prefs.js';
 import { acquireCaptureLock } from './capture-lock.js';
 
 const label = process.argv[2] ?? 'before';
@@ -26,13 +26,6 @@ try {
   const cookie = await signInSeedUser(ctx);
   const prefs = await openAccountPrefs(ctx, cookie);
   await prefs.setPersona('budget');
-  // nr-default-page is account-synced (/settings/preferences), so a
-  // localStorage seed alone is overwritten on hydrate. If the seed account
-  // ever picked a persona whose landing is not "/", App.tsx follows it from
-  // "/" and every HOME shot is silently another screen — on 3 Oct 2026 it
-  // was /portfolio and "home" was byte-identical to "worth". restore() puts
-  // the account's own value back.
-  await prefs.setPreference('nr-default-page', '/');
   await ctx.route(`${FRONTEND}/api/**`, async route => {
     const req = route.request();
     const cs = await ctx.cookies();
@@ -59,8 +52,7 @@ try {
       await page.goto(`${FRONTEND}${path}`, { waitUntil: 'networkidle' });
       await page.waitForTimeout(1200);
       await assertTheme(page, theme);
-      const landed = await page.evaluate(() => location.pathname);
-      if (landed !== path) throw new Error(`route mismatch: asked for ${path}, page is on ${landed}`);
+      await assertRoute(page, path);
       // The shell scrolls an inner container, so fullPage stops at the
       // viewport. Step through the tallest scroller one screen at a time.
       const steps = await page.evaluate(() => {

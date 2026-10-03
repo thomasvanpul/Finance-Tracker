@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript, assertTheme } from './account-prefs.js';
+import { FRONTEND, API, signInSeedUser, openAccountPrefs, seedCacheScript, assertTheme, assertRoute } from './account-prefs.js';
 
 
 const browser = await chromium.launch();
@@ -80,6 +80,7 @@ for (const persona of ['market', 'budget'] as const) {
     await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(500);
     await assertTheme(page, theme);
+    await assertRoute(page, '/');
     await page.screenshot({ path: `/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots/empty_home_${persona}_${theme}.png`, fullPage: false });
     await page.unrouteAll({ behavior: 'ignoreErrors' });
     await page.close();
