@@ -30,7 +30,7 @@ import { pagedRows, writeJsonObject, type JsonField, type Write } from "./json-s
 
 const {
   db,
-  userTable, sessionTable, accountTable, passkeyTable, totpTable, twoFactorTable,
+  userTable, sessionTable, accountTable, passkeyTable, twoFactorTable,
   accountsTable, transactionsTable, upcomingTable, investmentsTable, debtsTable,
   sharedExpensesTable, sharedExpenseParticipantsTable, sharedExpenseSettlementsTable,
   nwSnapshotsTable, accountBalanceSnapshotsTable, netWorthSnapshotsTable, appSettingsTable, budgetsTable,
@@ -77,10 +77,6 @@ export const EXPORT_SECTIONS: readonly ExportSection[] = [
     },
   },
   { key: "passkeys", table: passkeyTable, where: (u) => eq(passkeyTable.userId, u) },
-  {
-    key: "authenticatorApps", table: totpTable, where: (u) => eq(totpTable.userId, u),
-    withheld: { secret: CREDENTIAL },
-  },
   {
     key: "twoFactor", table: twoFactorTable, where: (u) => eq(twoFactorTable.userId, u),
     withheld: { secret: CREDENTIAL, backupCodes: CREDENTIAL },
@@ -130,6 +126,8 @@ export const EXPORT_SECTIONS: readonly ExportSection[] = [
 
 // Tables with no section at all, by SQL name.
 export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
+  totp_credential:
+    "dead: no production code path writes to this table — the live TOTP second factor is better-auth's twoFactor plugin, stored in `two_factor` (exported as `twoFactor`). This table was a completeness stub that could only ever export zero rows",
   verification:
     "short-lived one-time tokens (password reset, 2FA challenge, trusted device); every row is a credential and none is content",
   eod_prices:

@@ -22,7 +22,7 @@ describe.skipIf(!enabled)("data export · complete, and carries no credential (r
   const me = `exp-test-me-${stamp}`;
   const other = `exp-test-other-${stamp}`;
   const secret = (what: string) => `SENTINEL-${what}-${stamp}`;
-  const SECRETS = ["session", "access", "refresh", "idtoken", "password", "totp", "2fa", "backup", "cipher", "verification"].map(secret);
+  const SECRETS = ["session", "access", "refresh", "idtoken", "password", "2fa", "backup", "cipher", "verification"].map(secret);
   let metricIds: number[] = [];
   let exported: Record<string, unknown> = {};
 
@@ -45,7 +45,6 @@ describe.skipIf(!enabled)("data export · complete, and carries no credential (r
     ]);
     await db.insert(s.accountTable).values({ id: `acc-${stamp}`, accountId: me, providerId: "credential", userId: me, password: secret("password"), accessToken: secret("access"), refreshToken: secret("refresh"), idToken: secret("idtoken") });
     await db.insert(s.passkeyTable).values({ id: `pk-${stamp}`, name: "Laptop", publicKey: "pk", userId: me, credentialID: `cred-${stamp}`, counter: 0, deviceType: "singleDevice", backedUp: false });
-    await db.insert(s.totpTable).values({ id: `totp-${stamp}`, userId: me, secret: secret("totp") });
     await db.insert(s.twoFactorTable).values({ id: `2fa-${stamp}`, secret: secret("2fa"), backupCodes: secret("backup"), userId: me });
     await db.insert(s.verificationTable).values({ id: `ver-${stamp}`, identifier: `reset-password:${stamp}`, value: me, expiresAt: soon() });
     const [acct] = await db.insert(s.accountsTable).values({ userId: me, name: "Test current" }).returning({ id: s.accountsTable.id });

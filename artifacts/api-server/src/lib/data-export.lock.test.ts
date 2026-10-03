@@ -80,7 +80,6 @@ describe("data export · coverage lock", () => {
         "signInMethods.refreshToken",
         "signInMethods.idToken",
         "signInMethods.password",
-        "authenticatorApps.secret",
         "twoFactor.secret",
         "twoFactor.backupCodes",
         "connections.credentialCiphertext",

@@ -86,7 +86,7 @@ The database is Neon Postgres, AWS `eu-west-2` (London).
 | Password hash | `account.password` — `S/auth.ts:36` | Email and password sign-in (`A/lib/better-auth.ts:53-55`) | Life of the account | Cascade |
 | OAuth access, refresh and ID tokens; provider account id | `account` — `S/auth.ts:27-35` | Google, Apple or GitHub sign-in, each active only when its credentials are configured (`A/lib/better-auth.ts:112-141`). Only the Google pair is declared in `render.yaml:56-59` | Life of the account. **Not encrypted by application code**; no encryption option found in `A/lib/better-auth.ts:17-222` (code-reading) | Cascade |
 | Session token, **IP address, user agent**, expiry | `session` — `S/auth.ts:14-22` | Issued by better-auth, which fills IP and user agent from request headers. No application code reads either column | Sessions expire after 30 days, refreshed daily (`A/lib/better-auth.ts:20-21`). **Expired rows are never deleted** — no cleanup found in the app or in better-auth 1.6.23 | Cascade |
-| Passkeys, TOTP secret, 2FA backup codes | `passkey`, `totp_credential`, `two_factor` — `S/auth.ts:57-82` | Second factor | Life of the account | Cascade |
+| Passkeys, TOTP secret, 2FA backup codes | `passkey`, `two_factor` — `S/auth.ts:57-86` | Second factor. (`totp_credential` at `S/auth.ts:71` is dead — nothing writes to it; excluded from the data export with that reason) | Life of the account | Cascade |
 | Verification tokens (identifier is an email) | `verification` — `S/auth.ts:41-44` | Password reset. The email says the link expires in 1 hour (`A/lib/better-auth.ts:87`) | **No cleanup found** | Explicit delete on account deletion |
 
 ### 2.2 Settings and free text the user types
