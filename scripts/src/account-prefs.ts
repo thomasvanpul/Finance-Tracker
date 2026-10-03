@@ -245,17 +245,40 @@ export async function openAccountPrefs(ctx: BrowserContext, cookie: string): Pro
     await post("/api/dev/reset-onboarding");
   };
 
-  const restore = async (): Promise<void> => {
-    try {
-      for (const r of restores.reverse()) await r();
-      restores.length = 0;
-    } finally {
-      // Release even if a restore PUT throws — a held lock outlives the
-      // process only because someone has to clear it by hand.
-      releaseLock?.();
-      releaseLock = null;
-    }
+  // Shared, so a crash-time restore and the script's own `finally` racing
+  // each other run the restores once.
+  let restoring: Promise<void> | null = null;
+  const restore = (): Promise<void> => {
+    restoring ??= (async () => {
+      try {
+        for (const r of restores.reverse()) await r();
+        restores.length = 0;
+      } finally {
+        // Release even if a restore PUT throws — a held lock outlives the
+        // process only because someone has to clear it by hand.
+        releaseLock?.();
+        releaseLock = null;
+        process.off("uncaughtException", onCrash);
+        process.off("unhandledRejection", onCrash);
+      }
+    })();
+    return restoring;
   };
+
+  // A throw from inside a Playwright route callback is an unhandled rejection
+  // that no try/finally in the script can see: node exits and restore() never
+  // runs. drill-sweep-shot left the seed account pinned to "/" that way on
+  // 3 Oct 2026 (a socket hang-up in its API proxy). The lock already survives
+  // it through capture-lock's exit hook; this does the same for the account,
+  // then exits non-zero so the run still reads as failed.
+  function onCrash(err: unknown): void {
+    console.error(err);
+    restore()
+      .catch((e) => console.error("restore after crash failed:", e))
+      .finally(() => process.exit(1));
+  }
+  process.on("uncaughtException", onCrash);
+  process.on("unhandledRejection", onCrash);
 
   return { setTheme, setPersona, setPreference, resetOnboarding, restore };
 }

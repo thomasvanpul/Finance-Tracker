@@ -75,3 +75,25 @@ test("an account with no landing preference is not written to", async () => {
   await prefs.restore();
   assert.deepEqual(defaultPagePatches(calls), []);
 });
+
+// drill-sweep-shot, 3 Oct 2026: a socket hang-up inside its route proxy was
+// rethrown from the route callback, an unhandled rejection that ended the
+// process before the script's `finally { restore() }` ran, and the seed
+// account was left pinned to "/". The capture lock already survives that (its
+// exit hook); this asserts the account does too.
+test("a crash outside the script's try/finally still restores the account", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const { fileURLToPath } = await import("node:url");
+  const fixture = fileURLToPath(new URL("./account-prefs.crash-fixture.ts", import.meta.url));
+  const child = spawnSync(process.execPath, [...process.execArgv, fixture], {
+    env: { ...process.env, CAPTURE_LOCK_PATH: join(dir, ".capture-lock-crash") },
+    encoding: "utf8",
+    timeout: 20000,
+  });
+  const calls = child.stdout
+    .split("\n")
+    .filter((l) => l.startsWith("{"))
+    .map((l) => JSON.parse(l) as Call);
+  assert.notEqual(child.status, 0, "the crash must still fail the run");
+  assert.deepEqual(defaultPagePatches(calls), ["/", "/portfolio"]);
+});
