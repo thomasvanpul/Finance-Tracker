@@ -150,6 +150,31 @@ export const aiLimiter = rateLimit({
     (req as unknown as { userId?: string }).userId ?? ipKeyGenerator(req.ip ?? "unknown"),
 });
 
+// Separate, smaller budget for the vision endpoints. Measured 2026-10-03
+// (.review/archive, finding 0db2198175d6): a chat turn on gpt-oss-120b costs
+// ~$0.0006-0.0012 worst case (≤4k input @ $0.15/M, ≤1024 output @ $0.60/M).
+// A receipt call on qwen3.8-27b costs more per request — not because the
+// image inflates INPUT tokens much (Groq charges a flat 2048 input tokens
+// per image, comparable to the chat route's own portfolio-context budget of
+// ~2.5k tokens), but because the vision model's OUTPUT tokens are priced at
+// $16/M vs chat's $0.60/M. /ai/receipt-split (itemised line extraction, up
+// to 1024 output tokens) costs up to ~$0.0179/call — roughly 15x a chat
+// turn at the ceiling; /receipt/parse and /ai/receipt-scan (smaller 256-512
+// token outputs) cost roughly ~$0.0035-0.006/call, ~3-5x a chat turn.
+// 10/min leaves room for a person photographing several receipts in a
+// sitting while bounding worst-case spend from a retry loop or bug at
+// roughly a third of what the shared 30/min budget would have allowed.
+export const visionLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "AI rate limit exceeded. Please wait before sending more messages." },
+  skip: () => IS_DEV,
+  keyGenerator: (req: Request) =>
+    (req as unknown as { userId?: string }).userId ?? ipKeyGenerator(req.ip ?? "unknown"),
+});
+
 // General API limiter — guard all other financial endpoints
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
@@ -279,15 +304,27 @@ export function isAiMeteredPath(path: string): boolean {
   return AI_METERED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
+// The three routes that call chainVision (a photograph, not a prompt) —
+// see the cost comment on visionLimiter above. Exact paths, not a prefix:
+// /ai/chat and /ai/batch-categorize are on /ai too but are not vision calls
+// and stay on the cheaper aiLimiter.
+const VISION_METERED_PATHS = ["/receipt/parse", "/ai/receipt-scan", "/ai/receipt-split"] as const;
+
+export function isVisionMeteredPath(path: string): boolean {
+  return (VISION_METERED_PATHS as readonly string[]).includes(path);
+}
+
 // Every AI-metered request passes two checks after requireAuth, in this
 // order: the user has turned AI on (lib/ai-consent.ts, BACKLOG § I7 —
 // opt-in, so a refused request never counts against the AI budget), then
-// the per-user aiLimiter. Any other path goes straight through.
+// the per-user limiter for its cost class — visionLimiter for the three
+// chainVision routes, aiLimiter for everything else under /ai or /receipt.
 export function aiMeteredGate(req: Request, res: Response, next: NextFunction): void {
   if (!isAiMeteredPath(req.path)) return next();
+  const limiter = isVisionMeteredPath(req.path) ? visionLimiter : aiLimiter;
   void requireAiConsent(req, res, (err?: unknown) => {
     if (err) return next(err);
-    return aiLimiter(req, res, next);
+    return limiter(req, res, next);
   });
 }
 
