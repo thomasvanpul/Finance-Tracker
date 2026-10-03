@@ -17,6 +17,9 @@ export const logger = pino({
   //                                logging it invites a habit)
   //   *.credential_ciphertext    — DB column snake_case, same reason
   //   *.token, *.apiKey, *.secret — generic; every future adapter body
+  //   *.email                    — better-auth.ts logs { email: mail.to }
+  //                                on every transactional-mail path (blocked,
+  //                                dev-log, dispatched, delivery failed)
   redact: [
     "req.headers.authorization",
     "req.headers.cookie",
@@ -27,12 +30,14 @@ export const logger = pino({
     "token",
     "apiKey",
     "secret",
+    "email",
     "*.credential",
     "*.credentialCiphertext",
     "*.credential_ciphertext",
     "*.token",
     "*.apiKey",
     "*.secret",
+    "*.email",
   ],
   ...(isProduction
     ? {}
