@@ -146,6 +146,16 @@ function assertModelAllowed(opts: CallOpenAiCompatOpts): void {
   throw new Error(`model refused by policy: ${reason}`);
 }
 
+// gpt-oss is a reasoning model and its reasoning tokens come out of
+// max_tokens. At the provider default effort the chat route's 1024 cap was
+// spent on reasoning alone on 3 of 4 dashboard insight loads (empty stream,
+// finish_reason "length"; finding 327b63a2c792, 2026-10-03). Both Groq
+// ("openai/gpt-oss-*") and Cerebras ("gpt-oss-*") accept reasoning_effort;
+// other models are not sent it.
+function reasoningParams(model: string): { reasoning_effort?: "low" } {
+  return /(^|\/)gpt-oss-/.test(model) ? { reasoning_effort: "low" } : {};
+}
+
 export async function* callOpenAICompatStream(opts: CallOpenAiCompatOpts): AsyncGenerator<OpenAiStreamChunk> {
   assertModelAllowed(opts);
   const url = `${opts.baseUrl}/chat/completions`;
@@ -155,6 +165,7 @@ export async function* callOpenAICompatStream(opts: CallOpenAiCompatOpts): Async
     max_tokens: opts.maxTokens ?? 1024,
     temperature: opts.temperature ?? 0.7,
     stream: true,
+    ...reasoningParams(opts.model),
     ...(opts.jsonMode ? { response_format: { type: "json_object" as const } } : {}),
   };
 
@@ -303,6 +314,7 @@ export async function callOpenAICompat(opts: CallOpenAiCompatOpts): Promise<AiCa
     messages: opts.messages,
     max_tokens: opts.maxTokens ?? 1024,
     temperature: opts.temperature ?? 0.7,
+    ...reasoningParams(opts.model),
     ...(opts.jsonMode ? { response_format: { type: "json_object" as const } } : {}),
   };
 
