@@ -217,11 +217,11 @@ cannot: why each ceiling matters and what the upgrade argument is.
 
 <!-- BEGIN SERVICE-FACTS (generated — edit lib/service-facts.ts, then pnpm gen:service-facts) -->
 
-Generated from `artifacts/api-server/src/lib/service-facts.ts`. Total monthly spend: **£0**.
+Generated from `artifacts/api-server/src/lib/service-facts.ts`. Total monthly spend: **£5.5/mo**.
 
 | Service | Plan | Cost | Next plan | Ceiling that bites first | Checked |
 | --- | --- | --- | --- | --- | --- |
-| Render | Free | £0 | Starter ($7/mo) ≈ £5.5/mo | RAM 512 MB | 2026-09-01 |
+| Render | Starter ($7/mo) | £5.5/mo | Standard ($25/mo) ≈ £19.6/mo | RAM 512 MB | 2026-10-03 |
 | Neon | Free | £0 | Launch ($19/mo) ≈ £15/mo | Storage 500 MB | 2026-09-01 |
 | Vercel | Hobby | £0 | Pro ($20/mo) ≈ £16/mo | Bandwidth 100 GB/month | 2026-09-01 |
 | cron-job.org | Free | £0 | — | Cron jobs 50 jobs | 2026-09-01 |
