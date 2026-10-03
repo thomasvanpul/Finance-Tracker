@@ -118,6 +118,19 @@ describe("projectedTrough — when it stays silent", () => {
     expect(projectedTrough([], ctx(), NOW)).toBeNull();
   });
 
+  it("says nothing on a shallow dip even when an unrelated larger outgoing elsewhere in the window sets a high comfort floor — condition 2b", () => {
+    // Reproduces the live-ledger case: an £88 subscription takes £1,200 to
+    // £1,112. A £620 rent payment lands later in the 60-day window and sets
+    // a £1,240 comfort floor (2 × 620), so condition 2 alone fired on a dip
+    // the rent had nothing to do with.
+    const salary = monthly("Acme Payroll", "income", 3200, 15);
+    const rent = monthly("Riverside Lettings", "expense", -620, 20);
+    const sub = monthly("Streaming Sub", "expense", -88, 5);
+    expect(
+      projectedTrough([...salary, ...rent, ...sub], { baseCurrency: "GBP", cashBalanceBase: 1_200 }, NOW),
+    ).toBeNull();
+  });
+
   it("counts the payments before the low rather than naming the last one", () => {
     // Naming the last outgoing before the trough attributed a £1,111 low to a
     // £3.85 coffee on the real ledger. The body states how many payments land

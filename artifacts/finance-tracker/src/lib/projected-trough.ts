@@ -54,6 +54,9 @@ const MIN_OCCURRENCES = 3;
 // pay it"; two means "you can pay it and absorb one surprise".
 const COMFORT_MULTIPLE = 2;
 
+// A dip smaller than this is noise, whatever comfort line an unrelated bill sets (live ledger: £88 read as a warning).
+const MIN_DIP_ABSOLUTE = 100;
+
 export interface ProjectedEvent {
   date: string;
   /** Signed base amount: income positive, outgoing negative. */
@@ -168,6 +171,11 @@ export function projectedTrough(
 
   // Condition 2.
   if (trough >= COMFORT_MULTIPLE * largestOutgoing) return null;
+
+  // Condition 2b. A trivial move should not borrow a high comfort line
+  // from an outgoing elsewhere in the window that had nothing to do with
+  // producing this trough.
+  if (balance - trough < MIN_DIP_ABSOLUTE) return null;
 
   const currency = context.baseCurrency ?? "GBP";
   const when = formatShortDate(troughDate);
