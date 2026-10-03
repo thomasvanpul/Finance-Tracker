@@ -197,7 +197,7 @@ cap can be re-imposed per phase rather than across the whole tier.
 | I4 | Breach process | TODO | NOW |
 | I5 | Data minimisation review | IN PROGRESS | NOT YET |
 | I6 | Email address cannot be changed | TODO | NOW |
-| I7 | No AI on/off switch | TODO | NOW |
+| I7 | No AI on/off switch | DONE | — |
 | I8 | Digest unsubscribe link is dead | TODO | NOW |
 | I9 | Non-users have no data-rights route | DECIDE | NOW |
 | I10 | Neon dev clone never reached by deletion | DECIDE | NOW |
@@ -1817,8 +1817,9 @@ From the vault register (section C) and roadmap. Re-checked against source on
 13 Sep; none fixed.
 
 - **I6 · Email address cannot be changed at all — TODO · NOW.** [C5, N5]
-- **I7 · No AI on/off switch — TODO · NOW.** [C6, N6]
-  *Default decided, Thomas, 3 Oct 2026: **opt-in** (consent basis). No AI call, including dashboard insights on mount, until the user turns AI on. The switch itself is not built yet.*
+- **I7 · No AI on/off switch — DONE (`9a12b84`, `cf45257`).** [C6, N6]
+  *Default decided, Thomas, 3 Oct 2026: **opt-in** (consent basis). No AI call, including dashboard insights on mount, until the user turns AI on.*
+  Built 3 Oct: the switch is Settings → AI Coach → "Turn on AI", stored as the account-level preference `nr-ai-enabled` (no migration). The server refuses `/ai/*` and `/receipt/*` with 403 `ai_off` until it is exactly `"true"` (`api-server lib/ai-consent.ts`); `apiFetch` holds the same requests back on the device, so with AI off nothing leaves it. `/api/ai/status` is still read: public provider health, no user data, no provider contacted. Every existing account, Thomas's included, starts with AI off after deploy.
 - **I8 · Digest unsubscribe link is `href="#"` — TODO · NOW.** [C7, N7] `digest.ts:78`.
 - **I9 · People who are not users, named in debts, shared expenses and receipts, have no route to access, correction or erasure — DECIDE (product) · NOW.** [C8, N8]
 - **I10 · Neon `dev` branch is a live clone of production that deletion never reaches — DECIDE (Thomas, infra) · NOW.** [C4, N9] Infra, unverifiable from source; `DATA-INVENTORY.md:58-59` lists it, no decision recorded.

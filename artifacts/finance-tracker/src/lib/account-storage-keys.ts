@@ -53,7 +53,7 @@ export const ACCOUNT_LEVEL_KEYS: readonly string[] = [
   // dashboard, analytics, layout choices that are choices, not screen facts
   "ft-dashboard-views", "ft-widgets", "ft-analytics-annotations",
   "nr-default-page", "nr-show-nw-strip", "nr-sidebar-more", "nr-sidebar-config",
-  "nr-hide-from-print", "ft-digest-enabled", "nr-beta-features",
+  "nr-hide-from-print", "ft-digest-enabled", "nr-ai-enabled", "nr-beta-features",
   // display formats — how the user reads a number, the same on every device
   "ft-default-currency", "ft-amount-display", "ft-date-format",
   "nr-date-format", "nr-number-format", "nr-show-cents", "nr-compact-numbers",

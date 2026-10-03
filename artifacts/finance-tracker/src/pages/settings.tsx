@@ -2,6 +2,8 @@ import { useState, useCallback, useMemo, useEffect, useRef, useSyncExternalStore
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQueryParam } from "@/hooks/use-query-param";
 import { apiFetch } from "@/lib/api-fetch";
+import { AI_ENABLED_KEY, AI_ENABLED_CHANGE_EVENT, isAiEnabled } from "@/lib/ai-enabled";
+import { flushAccountStorage } from "@/lib/account-storage";
 import { getAiStyle, setAiStylePref, type AiStyle } from "@/components/ai-agent";
 import { loadCatRules, saveCatRules, type CatRule } from "@/lib/auto-cat";
 import { PERSONAS, loadPersonaIds, applyPersonas, PERSONA_COLORS, PERSONA_GLYPHS, PERSONA_INSIGHT_PREVIEWS, PERSONA_BG, widgetIdsForPersona, type PersonaId } from "@/lib/persona";
@@ -1461,6 +1463,18 @@ const COMPANION_MEANING: Record<CompanionState, string> = {
 
 function AiSettingsPanel() {
   const [selected, setSelected] = useState<AiStyle>(getAiStyle);
+  // BACKLOG § I7 — opt-in. Off until the user turns it on; the server refuses
+  // every AI request while it is off (api-server lib/ai-consent.ts). The flush
+  // sends the change now rather than after the preference debounce, so a chat
+  // sent straight after turning AI on is not refused by a server that has not
+  // heard yet.
+  const [aiOn, setAiOn] = useState<boolean>(isAiEnabled);
+  const setAiEnabled = useCallback((next: boolean) => {
+    setAiOn(next);
+    try { localStorage.setItem(AI_ENABLED_KEY, next ? "true" : "false"); } catch {}
+    void flushAccountStorage();
+    window.dispatchEvent(new CustomEvent(AI_ENABLED_CHANGE_EVENT, { detail: next }));
+  }, []);
 
   const pick = useCallback((s: AiStyle) => {
     setSelected(s);
@@ -1470,6 +1484,16 @@ function AiSettingsPanel() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={PANEL_STYLE}>
+        <PanelHeader>AI</PanelHeader>
+        <SettingsToggleRow
+          title="Turn on AI"
+          sub="Off until you turn it on. While it is off nothing is sent to an AI provider: no chat, no insight panels, no categorising, no receipt scans. What is sent when it is on is listed below."
+          on={aiOn}
+          onChange={setAiEnabled}
+        />
+      </div>
+
       <div style={PANEL_STYLE}>
         <PanelHeader>Assistant Style</PanelHeader>
         <div style={{ padding: "4px 0" }}>

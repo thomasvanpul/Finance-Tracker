@@ -60,6 +60,7 @@ import { useToast } from "@/hooks/use-toast";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { plTone } from "@/lib/portfolio-total";
 import { oneShotInsight } from "@/lib/ai-chat-client";
+import { isAiEnabled, AI_OFF_MESSAGE } from "@/lib/ai-enabled";
 import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboard-customize-context";
 import { entityHref, ledgerHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
 import { Drill } from "@/components/drill";
@@ -929,6 +930,12 @@ function AiInsightsPanel({ register = "float", ..._props }: AiInsightsPanelProps
 
   const fetchInsights = async () => {
     setError(null);
+    // AI is opt-in (BACKLOG § I7): while it is off this panel sends nothing,
+    // not even the status check, and says why in place of the cells.
+    if (!isAiEnabled()) {
+      setError(AI_OFF_MESSAGE);
+      return;
+    }
     try {
       // No skeleton flash on either early return — the error replaces the
       // cells directly.

@@ -24,6 +24,7 @@
 // its own call sites through setBaseUrl + setAuthTokenGetter.
 
 import { loadNativeAuthToken, isNativeShell } from "./native-auth";
+import { isAiEnabled, isAiRequestPath, aiOffResponse } from "./ai-enabled";
 
 const NATIVE_API_URL = import.meta.env.VITE_NATIVE_API_URL as string | undefined;
 
@@ -42,6 +43,9 @@ export function apiUrl(path: string): string {
 // `method`, `body`, `headers`, and returns Response — nothing about
 // the response is transformed here, unlike customFetch which parses.
 export async function apiFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  // AI is opt-in (BACKLOG § I7, lib/ai-enabled.ts): while it is off, an AI
+  // request never leaves the device. The server refuses it as well.
+  if (isAiRequestPath(input) && !isAiEnabled()) return aiOffResponse();
   const url = apiUrl(input);
   const headers = new Headers(init.headers);
   if (isNativeShell()) {
