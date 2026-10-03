@@ -43,7 +43,7 @@ Do not retire an item for touching `lib/market.ts`; FX lives there too.
 
 ## Index
 
-206 items · 148 open · 58 closed. Open by tier: NOW 30 · NEXT 20 · NOT YET 98.
+206 items · 147 open · 59 closed. Open by tier: NOW 29 · NEXT 20 · NOT YET 98.
 Update the counts when a row changes.
 
 **Counts recounted 19 Sep 2026, and the old line was wrong before this session
