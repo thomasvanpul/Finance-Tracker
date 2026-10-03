@@ -163,6 +163,7 @@ export const GetDashboardResponse = zod.object({
   "unconvertibleAccounts": zod.number(),
   "baseCurrency": zod.string(),
   "netLiquidity": zod.number(),
+  "spendableCash": zod.number(),
   "netWorth": zod.number(),
   "totalCash": zod.number(),
   "totalLiabilities": zod.number(),

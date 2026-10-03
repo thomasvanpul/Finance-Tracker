@@ -870,6 +870,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
     GetDashboardResponse.parse({
       baseCurrency,
       netLiquidity: Math.round(netLiquidity * 100) / 100,
+      spendableCash: Math.round(cashOnlyTotal * 100) / 100,
       netWorth: Math.round(netWorth * 100) / 100,
       totalCash: Math.round(totalCash * 100) / 100,
       totalLiabilities: Math.round(totalLiabilities * 100) / 100,

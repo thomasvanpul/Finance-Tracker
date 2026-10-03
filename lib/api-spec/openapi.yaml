@@ -3245,7 +3245,7 @@ components:
 
     DashboardSummary:
       type: object
-      required: [baseCurrency, netLiquidity, netWorth, totalCash, totalLiabilities, unconvertibleAccounts, accountBreakdown, portfolio, thisMonth, owing]
+      required: [baseCurrency, netLiquidity, spendableCash, netWorth, totalCash, totalLiabilities, unconvertibleAccounts, accountBreakdown, portfolio, thisMonth, owing]
       properties:
         # Count of accounts whose FX rate was unavailable at request time.
         # Their balance is NOT included in totalCash/netWorth/netLiquidity
@@ -3257,6 +3257,12 @@ components:
         baseCurrency:
           type: string
         netLiquidity:
+          type: number
+        # Cash-type accounts converted to base, as of now — no upcoming
+        # commitments baked in. netLiquidity is this plus the next 30 days
+        # of expected in/out; the forward projection lives in CASH FLOW ·
+        # 30 DAYS, so the NET WORTH widget shows this one (3 Oct 2026).
+        spendableCash:
           type: number
         netWorth:
           type: number

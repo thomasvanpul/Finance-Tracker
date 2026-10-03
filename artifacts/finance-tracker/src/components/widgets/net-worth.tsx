@@ -479,13 +479,19 @@ export function NetWorthWidget({ isExpanded }: { isExpanded?: boolean }) {
   // The label is what was wrong, not the field: totalCash is a term of the
   // response identity `netWorth == totalCash + portfolio + owing −
   // totalLiabilities`, and spendable cash already has a name in this same
-  // widget (Net Liquidity). "Accounts" rather than "Assets" because
+  // widget (Spendable). "Accounts" rather than "Assets" because
   // Portfolio is a separate cell and separate from this figure.
+  //
+  // Spendable is cash-type accounts NOW, nothing projected. It read
+  // netLiquidity ("After 30d commitments") until 3 Oct 2026, which put a
+  // 30-day forecast in a KPI row that otherwise states what exists today and
+  // duplicated CASH FLOW · 30 DAYS, which shows that projection with its
+  // working (Thomas's call, BACKLOG finding ae2b2c569dfe).
   const kpis = d ? [
     { label: "Net Worth",    raw: d.netWorth,                             value: formatBaseMoney(d.netWorth),               color: "var(--ft-accent)", sub: "Accounts + Portfolio + owed − liabilities", animate: true, href: drillWhen(d.accountBreakdown.length > 0, "/net-worth") },
     { label: "Accounts",     raw: null,                                   value: formatBaseMoney(d.totalCash),              color: "var(--ft-text)",   sub: `${d.accountBreakdown.length} accounts`, animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
     { label: "Portfolio",    raw: null,                                   value: formatBaseMoney(knownPortfolioTotal(d.portfolio)), color: plTone(d.portfolio.totalPlBase), sub: `P&L ${signedPl(d.portfolio.totalPlBase, formatBaseMoney)}`, animate: false, href: drillWhen(d.portfolio.totalValueBase !== 0, "/investments") },
-    { label: "Net Liquidity",raw: null,                                   value: formatBaseMoney(d.netLiquidity),           color: d.netLiquidity >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "After 30d commitments", animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
+    { label: "Spendable",    raw: null,                                   value: formatBaseMoney(d.spendableCash),          color: d.spendableCash >= 0 ? "var(--ft-green)" : "var(--ft-red)", sub: "Cash accounts, now", animate: false, href: drillWhen(d.accountBreakdown.length > 0, "/accounts") },
   ] : [];
 
   const monthStats = d ? [

@@ -15,6 +15,7 @@ export interface DashboardSummary {
   unconvertibleAccounts: number;
   baseCurrency: string;
   netLiquidity: number;
+  spendableCash: number;
   netWorth: number;
   totalCash: number;
   totalLiabilities: number;
