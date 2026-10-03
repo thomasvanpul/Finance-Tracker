@@ -113,6 +113,7 @@ import {
 import { MarketsTab, alertTriggered } from "./investments/markets-tab";
 import { useMarketDataEnabled } from "@/lib/market-visibility";
 import { knownPortfolioTotal, plTone, signedPl } from "@/lib/portfolio-total";
+import { estimatedAnnualDividend } from "@/lib/annual-dividend";
 
 const TH: React.CSSProperties = {
   padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)",
@@ -1785,8 +1786,8 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
   const totalClassValue = classAllocData.reduce((s, d) => s + d.value, 0);
   const plData = pricedInvs.map((inv) => ({ name: inv.ticker, pl: Math.round((inv.plBase ?? 0) * 100) / 100, fill: (inv.plPercent ?? 0) >= 0 ? "var(--ft-green)" : "var(--ft-red)" }));
 
-  const dividendPositions = (investments ?? []).filter((inv) => (quoteMap.get(inv.ticker)?.dividendYield ?? 0) > 0);
-  const totalAnnualDividend = dividendPositions.reduce((s, inv) => { const q = quoteMap.get(inv.ticker); return q?.dividendYield ? s + (q.dividendYield / 100) * q.price * inv.shares : s; }, 0);
+  // null with no quotes at all (offline, market data off): yield is unknown, not £0.
+  const annualDividend = estimatedAnnualDividend(investments ?? [], (t) => quoteMap.get(t));
 
   // ── Portfolio Analytics ──
   const portBeta = (() => {
@@ -1857,9 +1858,14 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     },
     {
       label: "EST. ANNUAL DIV",
-      value: formatBaseMoney(totalAnnualDividend),
-      delta: dividendPositions.length > 0 ? `${dividendPositions.length} paying` : "no yield",
-      deltaPositive: totalAnnualDividend > 0 ? true : null,
+      value: annualDividend ? formatBaseMoney(annualDividend.total) : "—",
+      delta: annualDividend == null
+        ? "no quotes"
+        : [
+            annualDividend.paying > 0 ? `${annualDividend.paying} paying` : "no yield",
+            annualDividend.unquoted > 0 ? `${annualDividend.unquoted} unquoted` : null,
+          ].filter(Boolean).join(" · "),
+      deltaPositive: annualDividend && annualDividend.total > 0 ? true : null,
     },
     {
       label: "LARGEST POSITION",
@@ -2433,8 +2439,8 @@ marketsVisible
                 </div>
                 <div className="px-4 py-3">
                   <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>Est. Annual Dividends</div>
-                  <div className="pnum text-base font-bold font-mono" style={{ color: "var(--ft-green)" }}>{formatBaseMoney(totalAnnualDividend)}</div>
-                  <div className="text-xs mt-1" style={{ color: "var(--ft-dim)" }}>From {dividendPositions.length} position{dividendPositions.length !== 1 ? "s" : ""}</div>
+                  <div className="pnum text-base font-bold font-mono" style={{ color: "var(--ft-green)" }}>{annualDividend ? formatBaseMoney(annualDividend.total) : "—"}</div>
+                  <div className="text-xs mt-1" style={{ color: "var(--ft-dim)" }}>{annualDividend ? <>From {annualDividend.paying} position{annualDividend.paying !== 1 ? "s" : ""}</> : "No quotes"}</div>
                 </div>
               </div>
               {/* Risk metrics row — needs ≥10 days of snapshots */}
