@@ -2734,7 +2734,7 @@ export default function Settings() {
               <PanelHeader>Base Currency</PanelHeader>
               <CurrencyKpiStrip baseCurrency={baseCur} pairCount={Object.keys(fxOverrides).filter(k => fxOverrides[k] !== "").length} />
               <div style={{ padding: "14px 16px", background: "var(--ft-surface)", display: "flex", flexDirection: "column", gap: 10 }}>
-                <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>All amounts will be converted to this currency for display.</p>
+                <p style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)" }}>All amounts will be converted to this currency for display.</p>
                 <VStack gap={4} wide maxWidth={240}>
                   <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Currency</Label>
                   <Select value={currencySettings?.baseCurrency ?? "GBP"} onValueChange={handleCurrencyChange} disabled={updateCurrency.isPending}>
@@ -2747,7 +2747,7 @@ export default function Settings() {
             <div style={PANEL_STYLE}>
               <PanelHeader>Manual FX Rate Overrides</PanelHeader>
               <div style={{ padding: "10px 14px", background: "var(--ft-surface)" }}>
-                <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 12 }}>Override live FX rates for multi-currency transaction conversion. Leave blank to use live rates.</p>
+                <p style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 12 }}>Override live FX rates for multi-currency transaction conversion. Leave blank to use live rates.</p>
                 <div className="ft-scroll-x" style={{ marginBottom: 12 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead>
@@ -2820,7 +2820,7 @@ export default function Settings() {
           <div style={PANEL_STYLE}>
             <PanelHeader>Auto-Categorization Rules</PanelHeader>
             <div style={{ padding: "12px 14px" }}>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 14 }}>When a transaction description contains the keyword, the category is auto-filled.</p>
+              <p style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-muted)", marginBottom: 14 }}>When a transaction description contains the keyword, the category is auto-filled.</p>
               {catRules.length > 0 ? (
                 <div className="ft-scroll-x" style={{ marginBottom: 16 }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -2832,9 +2832,9 @@ export default function Settings() {
                   <tbody>
                     {catRules.map(rule => (
                       <tr key={rule.id} style={{ borderBottom: "1px solid var(--ft-border)" }}>
-                        <td style={{ padding: "7px 10px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-text)", whiteSpace: "nowrap" }}>{rule.contains}</td>
+                        <td style={{ padding: "7px 10px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-text)", whiteSpace: "nowrap" }}>{rule.contains}</td>
                         <td style={{ padding: "7px 4px", color: "var(--ft-dim)", fontSize: 11, textAlign: "center" }}>→</td>
-                        <td style={{ padding: "7px 10px", whiteSpace: "nowrap" }}><span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)", fontFamily: "var(--font-mono)" }}>{rule.category}</span></td>
+                        <td style={{ padding: "7px 10px", whiteSpace: "nowrap" }}><span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 2, background: "var(--ft-raised)", color: "var(--ft-muted)", fontFamily: "var(--font-sans)" }}>{rule.category}</span></td>
                         <td style={{ padding: "4px 10px", textAlign: "right" }}>
                           <button onClick={() => handleDeleteCatRule(rule.id)} style={{ background: "none", border: "none", color: "var(--ft-red)", cursor: "pointer", fontFamily: "var(--font-mono)", fontSize: 12, padding: "2px 4px" }} aria-label={`Delete rule for ${rule.contains}`}>×</button>
                         </td>
@@ -2844,24 +2844,24 @@ export default function Settings() {
                 </table>
                 </div>
               ) : (
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)", marginBottom: 16, fontStyle: "italic" }}>No rules yet. Add one below.</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-dim)", marginBottom: 16, fontStyle: "italic" }}>No rules yet. Add one below.</div>
               )}
               <HStack gap={8} align="end" wrap>
                 <div style={{ flex: 1, minWidth: 140 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>Keyword</div>
-                  <Input placeholder="keyword" value={newKeyword} onChange={e => setNewKeyword(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddCatRule(); } }} style={{ fontFamily: "var(--font-mono)", fontSize: 11 }} />
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>Keyword</div>
+                  <Input placeholder="keyword" value={newKeyword} onChange={e => setNewKeyword(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleAddCatRule(); } }} style={{ fontFamily: "var(--font-sans)", fontSize: 11 }} />
                 </div>
                 <div style={{ flexShrink: 0, minWidth: 180 }}>
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>Category</div>
-                  <select value={newRuleCategory} onChange={e => setNewRuleCategory(e.target.value)} style={{ width: "100%", fontFamily: "var(--font-mono)", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "6px 8px", borderRadius: 2 }}>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-dim)", marginBottom: 4 }}>Category</div>
+                  <select value={newRuleCategory} onChange={e => setNewRuleCategory(e.target.value)} style={{ width: "100%", fontFamily: "var(--font-sans)", fontSize: 11, background: "var(--ft-surface)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "6px 8px", borderRadius: 2 }}>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <button onClick={handleAddCatRule} disabled={!newKeyword.trim()} style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: newKeyword.trim() ? "var(--ft-accent)" : "var(--ft-dim)", background: "transparent", border: `1px solid ${newKeyword.trim() ? "var(--ft-accent)" : "var(--ft-border2)"}`, padding: "7px 16px", cursor: newKeyword.trim() ? "pointer" : "not-allowed", whiteSpace: "nowrap", alignSelf: "flex-end", height: 36 }}>
+                <button onClick={handleAddCatRule} disabled={!newKeyword.trim()} style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: newKeyword.trim() ? "var(--ft-accent)" : "var(--ft-dim)", background: "transparent", border: `1px solid ${newKeyword.trim() ? "var(--ft-accent)" : "var(--ft-border2)"}`, padding: "7px 16px", cursor: newKeyword.trim() ? "pointer" : "not-allowed", whiteSpace: "nowrap", alignSelf: "flex-end", height: 36 }}>
                   + Add
                 </button>
               </HStack>
-              <Text as="div" mono size={9} color="var(--ft-dim)" letterSpacing="0.04em" mt={12}>Rules apply when adding transactions and during CSV import.</Text>
+              <Text as="div" size={9} color="var(--ft-dim)" letterSpacing="0.04em" mt={12}>Rules apply when adding transactions and during CSV import.</Text>
             </div>
           </div>
           <CustomCategoriesPanel />
@@ -2902,7 +2902,7 @@ export default function Settings() {
                 ));
               })()}
             </div>
-            <div style={{ padding: "10px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)" }}>
+            <div style={{ padding: "10px 14px", background: "var(--ft-raised)", fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)" }}>
               Enabled widgets appear on the Dashboard page. Changes save automatically.
             </div>
           </div>
@@ -2913,7 +2913,7 @@ export default function Settings() {
             <div style={PANEL_STYLE}>
               <PanelHeader>Export</PanelHeader>
               <div style={{ padding: "12px 14px" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 10 }}>Export All Data downloads your account from the server as a JSON file, without sign-in credentials. Export with Session Data downloads only this device's local settings.</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 10 }}>Export All Data downloads your account from the server as a JSON file, without sign-in credentials. Export with Session Data downloads only this device's local settings.</div>
                 <HStack gap={8} wrap>
                   <ActionBtn label="Export All Data" onClick={handleExportBackup} />
                   <ActionBtn label="Export with Session Data" variant="muted" onClick={handleExportData} />
@@ -2969,7 +2969,7 @@ export default function Settings() {
                       <td style={{ padding: "7px 12px", width: 120, whiteSpace: "nowrap" }}>
                         <kbd style={{ fontFamily: "var(--font-mono)", fontSize: 10, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-accent)", padding: "2px 6px", letterSpacing: "0.04em" }}>{key}</kbd>
                       </td>
-                      <td style={{ padding: "7px 12px", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-muted)" }}>{action}</td>
+                      <td style={{ padding: "7px 12px", fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--ft-muted)" }}>{action}</td>
                     </tr>
                   ))}
                 </tbody>
