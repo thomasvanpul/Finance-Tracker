@@ -6,6 +6,12 @@ Read-only; no files were changed.
 Sources verified by reading source code. Anything not directly read from code is
 labeled **[inferred]**.
 
+> **Stale as of 2026-10-03.** This is a 2026-08-12 snapshot. `MobileApp` and the
+> `AppScreen` state it describes no longer exist in `src/` (only a comment in
+> `MobileHome.tsx` still names `MobileApp`), so Q2, Q3 and the routing section
+> below describe a model that was replaced. In particular `MobileAccounts.tsx`
+> has no importers and renders nowhere; whether to delete it is BACKLOG G38.
+
 ---
 
 ## System definitions (for reference)
