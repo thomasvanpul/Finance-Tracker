@@ -1817,7 +1817,7 @@ From the vault register (section C) and roadmap. Re-checked against source on
 13 Sep; none fixed.
 
 - **I6 · Email address cannot be changed at all — TODO · NOW.** [C5, N5]
-- **I7 · No AI on/off switch — DONE (`9a12b84`, `cf45257`).** [C6, N6]
+- **I7 · No AI on/off switch — DONE (`9a12b84`, `92ef685`).** [C6, N6]
   *Default decided, Thomas, 3 Oct 2026: **opt-in** (consent basis). No AI call, including dashboard insights on mount, until the user turns AI on.*
   Built 3 Oct: the switch is Settings → AI Coach → "Turn on AI", stored as the account-level preference `nr-ai-enabled` (no migration). The server refuses `/ai/*` and `/receipt/*` with 403 `ai_off` until it is exactly `"true"` (`api-server lib/ai-consent.ts`); `apiFetch` holds the same requests back on the device, so with AI off nothing leaves it. `/api/ai/status` is still read: public provider health, no user data, no provider contacted. Every existing account, Thomas's included, starts with AI off after deploy.
 - **I8 · Digest unsubscribe link is `href="#"` — TODO · NOW.** [C7, N7] `digest.ts:78`.
