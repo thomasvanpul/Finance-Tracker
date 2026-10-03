@@ -145,11 +145,11 @@ const deepSpace: DarkPalette = {
 };
 
 const mario: DarkPalette = {
-  base: "#5C94FC", surface: "#3A70DC", raised: "#2850C0",
-  border: "#1A38A0", border2: "#102890",
-  text: "#FCFCFC", muted: "#D4E4FF", dim: "#C0D4FF",
+  base: "#0C2A78", surface: "#143386", raised: "#1D3F9A",
+  border: "#6080D8", border2: "#7A96E0",
+  text: "#FCFCFC", muted: "#D4E4FF", dim: "#A9C0F2",
   accent: "#F8C800",
-  amber: "#D07010", orange: "#CF4F07", green: "#3ABB3A", red: "#CC2000", blue: "#1830A0", cyan: "#90C8FC",
+  amber: "#F5A623", orange: "#FF8A4C", green: "#5BD65B", red: "#FF8070", blue: "#9DB8FF", cyan: "#90DCFC",
 };
 
 const gilded: DarkPalette = {

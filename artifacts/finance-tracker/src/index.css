@@ -836,32 +836,28 @@ input[type="checkbox"]:checked {
   --ft-cyan:    #00DDEE;
 }
 
-/* Mario is the one theme the 2026-09-06 recessive-blue pass could not fix,
-   and the reason is arithmetic rather than taste. Its surface #3A70DC has a
-   relative luminance of 0.177, which sits almost exactly at the point where
-   neither direction has headroom: pure white on it reaches 4.63:1 and pure
-   black 4.53:1. Those are the two extremes — every other colour in the gamut
-   scores lower. So --ft-blue here can only clear WCAG AA by being white or
-   black, and neither is blue.
-   Nine of mario's pairs fail, blue among them; the token is not the defect,
-   the saturated mid-blue surface is. Fixing it means restyling the theme, not
-   editing a hex, so blue is left at #1830A0 and the whole theme is flagged. */
+/* Mario was the one theme the 2026-09-06 recessive-blue pass could not fix:
+   its old surface #3A70DC sat at luminance 0.177, where neither white nor
+   black clears AA by more than a hair, so twelve pairs failed. This palette
+   keeps the sky-blue identity but moves base/surface/raised to night-sky
+   navy so text, the coin-yellow accent and the ramp all clear AA
+   (theme-contrast.ts: 0 failures). Decided by Thomas, TODO date. */
 [data-theme="mario"] {
-  --ft-base:    #5C94FC;
-  --ft-surface: #3A70DC;
-  --ft-raised:  #2850C0;
-  --ft-border:  #1A38A0;
-  --ft-border2: #102890;
+  --ft-base:    #0C2A78;
+  --ft-surface: #143386;
+  --ft-raised:  #1D3F9A;
+  --ft-border:  #6080D8;
+  --ft-border2: #7A96E0;
   --ft-text:    #FCFCFC;
   --ft-muted:   #D4E4FF;
-  --ft-dim:     #C0D4FF;
+  --ft-dim:     #A9C0F2;
   --ft-accent:  #F8C800;
-  --ft-amber:   #D07010;
-  --ft-orange:  #CF4F07;
-  --ft-green:   #3ABB3A;
-  --ft-red:     #CC2000;
-  --ft-blue:    #1830A0;
-  --ft-cyan:    #90C8FC;
+  --ft-amber:   #F5A623;
+  --ft-orange:  #FF8A4C;
+  --ft-green:   #5BD65B;
+  --ft-red:     #FF8070;
+  --ft-blue:    #9DB8FF;
+  --ft-cyan:    #90DCFC;
 }
 
 [data-theme="gilded"] {
