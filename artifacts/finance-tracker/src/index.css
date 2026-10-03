@@ -612,7 +612,14 @@ input[type="checkbox"]:checked {
   --ft-green:   #006644;
   --ft-red:     #CC0000;
   --ft-blue:    #3971C6;
-  --ft-cyan:    #0052CC;
+  /* Was #0052CC, identical to --ft-accent above — a categorical colour
+     (INVESTED in CompositionChart) read as the press colour, violating
+     DESIGN.md §11. Reused from the id ramp below (--ft-id-4): already
+     AA-vetted for this surface (4.85:1 on base), and a true cyan, at
+     least dE 38 from accent, --ft-blue and --ft-green (PROPERTY). The
+     teal --ft-id-8 was tried first and sits dE 18 from --ft-green.
+     Locked by categorical-not-accent.lock.test.ts. */
+  --ft-cyan:    #0E7490;
   /* Identity ramp darkened for light-surface contrast. Each slot
      clears WCAG AA for normal text on #FFFFFF and stays visually
      distinct from every other slot. A member is 'the blue one' on
@@ -686,7 +693,11 @@ input[type="checkbox"]:checked {
   --ft-green:   #155C34;
   --ft-red:     #932530;
   --ft-blue:    #20456E;
-  --ft-cyan:    #0E5766;
+  /* Was #0E5766, identical to --ft-accent above (DESIGN.md §11). The
+     accent here is itself a teal, so every true cyan crowds it; this is
+     --ft-id-10, the ramp slot farthest from accent, --ft-blue and
+     --ft-green (dE 47 / 26 / 82; 7.46:1 on base). */
+  --ft-cyan:    #1A4292;
   --ft-id-1:    #164478;
   --ft-id-2:    #155C34;
   --ft-id-3:    #8F4A00;
