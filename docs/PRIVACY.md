@@ -254,9 +254,10 @@ except:
 - anything already sent to the services in sections 5 and 6;
 - tokens you gave Numeris for Wise, Kraken or Alpaca. They are destroyed here
   but not revoked at the provider — revoke them in each service. Your bank
-  consent is closed before anything is deleted, and Numeris tries to remove its
-  Google, Apple or GitHub sign-in access; if that fails, the next screen tells
-  you where to remove it yourself;
+  consent is closed before anything is deleted. Numeris keeps no token for a
+  Google, Apple or GitHub sign-in linked since 1 October 2026, so it usually
+  cannot remove that access either; the next screen tells you where to remove
+  it yourself;
 - the copy on your device (section 10).
 
 `[BLOCKED: a copy of the production database, carrying real data, is kept as a

@@ -70,8 +70,10 @@ available to every signed-in user with no opt-in.]`
   credentials; the Privacy Policy, section 8, lists what is left out and why.
 - Deleting your account does not revoke a token you gave Numeris for Wise,
   Kraken or Alpaca; revoke those in each service's own settings. A bank
-  connection is closed before deletion, and Numeris tries to remove its Google,
-  Apple or GitHub sign-in access but cannot guarantee it.
+  connection is closed before deletion. Numeris keeps no token for a Google,
+  Apple or GitHub sign-in linked since 1 October 2026, so it usually cannot
+  remove that access either — you remove it yourself in the provider's
+  settings.
 
 `[TO CONFIRM: minimum age. The app does not check anyone's age today.]`
 
