@@ -244,7 +244,7 @@ export function EditLayout({ register, isCustomizing, onCustomize }: {
  * `column` drops the support line and sets the three findings as a list,
  * which is what an arrangement placing them ABOVE the page's subject needs.
  */
-export function Insights({ lines, register, trailing }: {
+export function Insights({ lines, register, trailing, testId }: {
   lines: string[];
   register: "dense" | "column";
   /** Controls that belong to the run rather than to any one cell — the
@@ -252,6 +252,11 @@ export function Insights({ lines, register, trailing }: {
    *  a header row, because a header row would put a second rule across a
    *  block whose whole idea is that it has none. */
   trailing?: ReactNode;
+  /** Marks the live AI panel's grid for capture scripts. Unset by the four
+   *  prototype callers (proto/top-region.tsx) — topRegion is null in every
+   *  real session, so only the one caller that passes this (AiInsightsPanel's
+   *  dense branch, dashboard.tsx) is ever mounted where a selector matters. */
+  testId?: string;
 }) {
   if (lines.length === 0) return null;
   if (register === "column") {
@@ -272,7 +277,7 @@ export function Insights({ lines, register, trailing }: {
     );
   }
   return (
-    <div style={{
+    <div data-testid={testId} style={{
       display: "grid",
       gridTemplateColumns: `repeat(${lines.length}, minmax(0, 1fr))${trailing === undefined ? "" : " auto"}`,
       borderTop: RULE,

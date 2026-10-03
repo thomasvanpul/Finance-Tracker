@@ -131,7 +131,15 @@ async function shot(batch: string, width: number, label: string): Promise<void> 
     await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle" });
     await assertRoute(page, "/");
     await page.evaluate(() => document.documentElement.removeAttribute("data-theme"));
-    const card = page.locator(".ft-dashboard-insights:visible").locator("xpath=..").first();
+    // [data-testid="ai-insights-panel"] is the real AI card (dashboard.tsx
+    // AiInsightsPanel, dense register). ".ft-dashboard-insights" is NOT a
+    // usable selector for it: that class only appears in AiInsightsPanel's
+    // unused register="float" branch, which no live call site ever renders
+    // (the only caller always passes register="dense") — in the real DOM
+    // the class exists solely on the rule-based AiInsightsStrip, so a
+    // ".ft-dashboard-insights" selector always captured that strip instead,
+    // no matter which element .first()/.last() picked.
+    const card = page.locator('[data-testid="ai-insights-panel"]').first();
     await card.waitFor({ state: "visible", timeout: 15000 });
     await page.waitForTimeout(900);
 
@@ -140,7 +148,7 @@ async function shot(batch: string, width: number, label: string): Promise<void> 
     // Report the measured box so an overflow is a number, not an impression.
     const box = await card.boundingBox();
     const clipped = await page.evaluate(() => {
-      const grid = Array.from(document.querySelectorAll(".ft-dashboard-insights")).find((g) => (g as HTMLElement).offsetParent !== null)!;
+      const grid = document.querySelector('[data-testid="ai-insights-panel"]')!;
       const rows = Array.from(grid.children);
       return rows.map((r) => ({ h: Math.round(r.getBoundingClientRect().height), overflow: r.scrollHeight > r.clientHeight + 1 }));
     });

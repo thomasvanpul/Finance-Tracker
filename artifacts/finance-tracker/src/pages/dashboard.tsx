@@ -1038,7 +1038,7 @@ function AiInsightsPanel({ register = "float", ..._props }: AiInsightsPanelProps
       // row in the same frame: the reason where the findings would be, the
       // same controls beside it.
       return (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", borderTop: RULE, borderBottom: RULE }}>
+        <div data-testid="ai-insights-panel" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", borderTop: RULE, borderBottom: RULE }}>
           <div style={{ padding: "7px 12px" }}>
             <Text as="div" size={11} color="var(--ft-red)" lineHeight={1.35}>{error}</Text>
           </div>
@@ -1046,7 +1046,7 @@ function AiInsightsPanel({ register = "float", ..._props }: AiInsightsPanelProps
         </div>
       );
     }
-    return <Insights lines={insights ?? []} register="dense" trailing={controls} />;
+    return <Insights lines={insights ?? []} register="dense" trailing={controls} testId="ai-insights-panel" />;
   }
 
   return (
