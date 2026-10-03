@@ -149,10 +149,11 @@ processing agreement]`.
 
 ### 5.3 Your choice
 
-`[BLOCKED: there is no way to turn the AI features off. The dashboard sends
-your summary when it opens, without you asking. A policy relying on consent or
-objection for AI cannot be written until a switch exists and the dashboard
-respects it.]`
+AI features are off by default. Nothing described in this section runs, and
+nothing is sent to Groq or Cerebras, until you turn AI on in Settings → AI
+Coach. Turning it off again — or never turning it on — stops any further AI
+processing of your data; that is how you withhold or withdraw consent for
+this section.
 
 What AI features produce can be wrong. They are not financial advice.
 
@@ -265,9 +266,11 @@ development database that account deletion does not reach. It must be removed
 or anonymised before this policy can promise deletion.]`
 
 **Restrict or object.** Removing a connection stops it syncing; the accounts
-it imported stay until you delete them.
-`[BLOCKED: there is no way to object to the AI features (section 5.3). The
-weekly digest email offers an Unsubscribe link that does nothing.]`
+it imported stay until you delete them. The AI features (section 5.3) are
+off by default and run only after you turn them on in Settings → AI Coach;
+turning that switch off is how you object to them.
+`[BLOCKED: the weekly digest email offers an Unsubscribe link that does
+nothing.]`
 
 **Complain.** You can complain to the Information Commissioner's Office in the
 UK, or to the data protection authority where you live in the EU.
@@ -284,10 +287,10 @@ Nothing is sent to you. If you have a Numeris account and a user enters your
 email address, a matching debt with their description and notes is created in
 your account.
 
-`[BLOCKED: there is no way for someone who is not a user to find out whether
-they are recorded, or to have it corrected or removed. Write the route —
-even if it is "write to the operator, who will search by name and email" —
-before publishing, and confirm the operator can actually do that search.]`
+If you are not a Numeris user and believe someone has recorded you, email
+`[TO CONFIRM: support address]` with your name and, if you know it, the
+user's email address. The operator will search by name and email and
+remove or correct your record by hand.
 
 ## 10. On your device
 
