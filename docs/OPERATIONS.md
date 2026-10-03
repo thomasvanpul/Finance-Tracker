@@ -132,6 +132,52 @@ episode was 8m54s and the longest 1h34m, meaning the instance was
 genuinely unreachable for real spans of time. Loosening Healthchecks'
 grace period would hide genuine downtime, not a false positive.
 
+### 2026-10-03: resolved by Render Starter; cron-job.org stays, for a different reason
+
+Thomas moved numeris-api to **Render Starter ($7/mo, no idle sleep) on
+2026-09-22**. That closes the cold-start problem above at the platform level,
+so cron-job.org's state no longer decides whether the API is awake.
+
+Evidence that the sleep is gone, measured 2026-10-03:
+
+- **keep-alive.yml's own run logs** (`gh run view <id> --log`, the
+  `HTTP 200 · total Xs` line, 65 scheduled runs 2026-09-21 16:01Z to
+  2026-10-02 23:30Z). Each run is a random sample of whether the instance
+  was warm. The 5 runs up to 2026-09-22 06:46Z took 22.6–42.8 s (cold
+  boots); all 60 runs from 2026-09-22 12:04Z took 0.19–1.00 s (p90 0.71 s).
+- **Healthchecks.io's own emails.** DOWN/UP flaps from 13 Sep to the last
+  UP at 2026-09-22 07:59Z (September's monthly report: 134 downtimes,
+  15 days 8 h in total), then no DOWN email from that morning through
+  2026-10-03.
+
+That second point also says cron-job.org is landing now. `/api/healthz`
+is the only thing that pings Healthchecks (`routes/health.ts`), and with
+the GitHub workflow firing only every ~250 min, 11 days with no DOWN
+means something has hit healthz at least once per 10 minutes. This is
+inferred from the dead-man's switch staying quiet. Nobody has seen it on
+the cron-job.org dashboard.
+
+**Do not retire cron-job.org along with the keep-alive layer.** An earlier
+recommendation (vault, Numeris-Decisions § 7) was "disable the workflow
+and the cron job, keep Healthchecks.io". Those two halves contradict each
+other. With the cron job gone, nothing hits `/api/healthz`, Healthchecks
+hears nothing, and it alerts DOWN within 10 minutes and stays DOWN. The
+cron job's job has changed: it no longer keeps the instance warm. It is
+now the external probe that proves the API is reachable (DNS, TLS,
+routing, process), and Healthchecks is the alarm on that probe. It could
+be slowed to every 5 minutes (Healthchecks' period) with no loss. That is
+optional and not required.
+
+The Healthchecks.io grace time needs no retune: zero false alarms since
+the upgrade. The 21 Sep argument against loosening it still stands.
+
+The `schedule:` trigger was removed from keep-alive.yml on 2026-10-03,
+leaving `workflow_dispatch` as a manual probe.
+
+`render.yaml:5` still says `plan: free`. If the service is ever synced
+from that Blueprint, the line no longer matches what is paid for, and
+it is Thomas's call which way to reconcile it.
+
 ## Upgrade signal — when to move Render to Starter ($7/mo)
 
 **The two thresholds, decided in advance so the upgrade decision is
