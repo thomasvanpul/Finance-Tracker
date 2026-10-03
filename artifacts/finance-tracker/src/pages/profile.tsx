@@ -1517,7 +1517,8 @@ export default function Profile() {
               Everything you own is removed at once and cannot be recovered: accounts, transactions, upcoming items,
               debts, budgets, goals, investments, connections and their stored credentials, balance history, sessions on
               every device, passkeys and two-factor settings. Records other people keep about money shared with you stay
-              in their accounts, with the link to you removed.
+              in their accounts, with the link to you removed — except any settlement you recorded there, which is
+              deleted along with everything above.
             </Text>
             <Text as="p" size={10} color="var(--ft-muted)" lineHeight={1.6}>
               {deleteProviders && deleteProviders.length > 0
