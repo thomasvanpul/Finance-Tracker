@@ -42,6 +42,16 @@
 # near every 10 minutes. It keeps nothing warm. The fix is cron-job.org
 # (or Render Starter) as stated above, not this file.
 #
+# ── SCHEDULE REMOVED 2026-10-03: nothing left for it to do ──────────────
+# numeris-api moved to Render Starter ($7/mo, no idle sleep) on 2026-09-22,
+# so there is no spin-down to defeat. The run logs agree: of the 65
+# scheduled runs since the re-enable, the five before 2026-09-22 06:46Z
+# took 22.6-42.8 s (cold boots) and all 60 after took 0.19-1.00 s. Kept as
+# workflow_dispatch only, as the record of this failure and a manual probe.
+# cron-job.org is NOT retired with it: /api/healthz is what pings
+# Healthchecks.io (routes/health.ts), so the external 1-minute hit is what
+# feeds the dead-man's switch. See docs/OPERATIONS.md.
+#
 # ── Cost ──────────────────────────────────────────────────────────────────
 # thomasvanpul/Finance-Tracker is a public repo, so Actions minutes are
 # free/unlimited regardless of run count. The cost that DOES apply is
@@ -57,11 +67,9 @@
 # Its grace/period tuning was not touched here — no stored login for
 # that dashboard either.
 
-name: keep-alive-render (experimental secondary — re-enabled 2026-09-21, MEASURE before trusting)
+name: keep-alive-render (manual only — schedule removed 2026-10-03, Render Starter has no sleep)
 
 on:
-  schedule:
-    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 concurrency:
