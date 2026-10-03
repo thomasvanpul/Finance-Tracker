@@ -2353,8 +2353,11 @@ export function Layout({ children }: LayoutProps) {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span className="ft-live-dot" />
-              <span style={{ color: "var(--ft-green)" }}>CONNECTED</span>
+              {/* The only offline signal on desktop — the banner above is mobile-only. */}
+              {isOnline && <span className="ft-live-dot" />}
+              <span style={{ color: isOnline ? "var(--ft-green)" : "var(--ft-red)" }}>
+                {isOnline ? "CONNECTED" : "OFFLINE"}
+              </span>
             </span>
             <span style={{ color: "var(--ft-border2)" }}>│</span>
             <span>RENDER · TLS 1.3</span>
