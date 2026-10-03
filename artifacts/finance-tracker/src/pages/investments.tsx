@@ -114,6 +114,7 @@ import { MarketsTab, alertTriggered } from "./investments/markets-tab";
 import { useMarketDataEnabled } from "@/lib/market-visibility";
 import { knownPortfolioTotal, plTone, signedPl } from "@/lib/portfolio-total";
 import { estimatedAnnualDividend } from "@/lib/annual-dividend";
+import { assetClassCount } from "@/lib/asset-class-count";
 
 const TH: React.CSSProperties = {
   padding: "6px 12px", fontSize: 10, fontWeight: 600, color: "var(--ft-dim)",
@@ -1803,7 +1804,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
         return !best || pct > best.pct ? { ticker: inv.ticker, pct } : best;
       }, null) : null;
 
-  const numAssetClasses = classAllocData.length;
+  // Over every position, priced or not: a class is the user's assignment, not
+  // a quote. null with no positions — no verdict on nothing.
+  const numAssetClasses = assetClassCount(investments ?? [], (id) => classMap[id]);
 
   // ── KPI bar data ──
   const kpiCells: KpiCell[] = summary ? [
@@ -1852,9 +1855,9 @@ export default function Investments({ defaultTab }: { defaultTab?: TabId } = {})
     },
     {
       label: "ASSET CLASSES",
-      value: String(numAssetClasses),
-      delta: numAssetClasses <= 1 ? "UNDER-DIVERSIFIED" : "DIVERSIFIED",
-      deltaPositive: numAssetClasses > 1,
+      value: numAssetClasses != null ? String(numAssetClasses) : "—",
+      delta: numAssetClasses == null ? undefined : numAssetClasses <= 1 ? "UNDER-DIVERSIFIED" : "DIVERSIFIED",
+      deltaPositive: numAssetClasses == null ? null : numAssetClasses > 1,
     },
     {
       label: "EST. ANNUAL DIV",
@@ -2434,8 +2437,8 @@ marketsVisible
                 </div>
                 <div className="px-4 py-3 border-r" style={{ borderColor: "var(--ft-border)" }}>
                   <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>Asset Classes</div>
-                  <div className="text-base font-bold font-mono" style={{ color: numAssetClasses <= 1 ? "var(--ft-amber)" : "var(--ft-green)" }}>{numAssetClasses}</div>
-                  <div className="text-xs mt-1" style={{ color: numAssetClasses <= 1 ? "var(--ft-amber)" : "var(--ft-dim)" }}>{numAssetClasses <= 1 ? "Consider diversifying" : "Good spread"}</div>
+                  <div className="text-base font-bold font-mono" style={{ color: numAssetClasses == null ? "var(--ft-dim)" : numAssetClasses <= 1 ? "var(--ft-amber)" : "var(--ft-green)" }}>{numAssetClasses ?? "—"}</div>
+                  <div className="text-xs mt-1" style={{ color: numAssetClasses != null && numAssetClasses <= 1 ? "var(--ft-amber)" : "var(--ft-dim)" }}>{numAssetClasses == null ? "No positions" : numAssetClasses <= 1 ? "Consider diversifying" : "Good spread"}</div>
                 </div>
                 <div className="px-4 py-3">
                   <div className="text-xs mb-1" style={{ color: "var(--ft-dim)" }}>Est. Annual Dividends</div>
