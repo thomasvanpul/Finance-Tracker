@@ -43,7 +43,7 @@ Do not retire an item for touching `lib/market.ts`; FX lives there too.
 
 ## Index
 
-206 items · 149 open · 57 closed. Open by tier: NOW 28 · NEXT 20 · NOT YET 101.
+206 items · 148 open · 58 closed. Open by tier: NOW 30 · NEXT 20 · NOT YET 98.
 Update the counts when a row changes.
 
 **Counts recounted 19 Sep 2026, and the old line was wrong before this session
@@ -173,7 +173,7 @@ cap can be re-imposed per phase rather than across the whole tier.
 | G46 | Credential key boot refusal claimed, not real | TODO | NOT YET |
 | G47 | Receipt scan AI budget economics | DECIDE | NOT YET |
 | G48 | Offline wipe unverified in iOS WebView | TODO | NEXT |
-| G49 | Unsendable queued writes discarded at sign-out | DECIDE | NOT YET |
+| G49 | Unsendable queued writes discarded at sign-out | DONE | — |
 | G50 | 2fa-attempts row survives deletion | DONE | — |
 | G51 | Settings "all local state" copy | DONE | — |
 | G52 | Export built in memory per request | DONE | — |
@@ -194,19 +194,19 @@ cap can be re-imposed per phase rather than across the whole tier.
 | I1 | No admin role that can read user data | DECIDE | NOT YET |
 | I2 | Privacy policy and terms | IN PROGRESS | NOW |
 | I3 | Account deletion that actually deletes | DONE | — |
-| I4 | Breach process | TODO | NOT YET |
+| I4 | Breach process | TODO | NOW |
 | I5 | Data minimisation review | IN PROGRESS | NOT YET |
 | I6 | Email address cannot be changed | TODO | NOW |
 | I7 | No AI on/off switch | TODO | NOW |
 | I8 | Digest unsubscribe link is dead | TODO | NOW |
 | I9 | Non-users have no data-rights route | DECIDE | NOW |
 | I10 | Neon dev clone never reached by deletion | DECIDE | NOW |
-| I11 | Vercel Hobby: no DPA, proxies /api | DECIDE | NOW |
+| I11 | Vercel Hobby: no DPA, proxies /api | TODO | NOW |
 | I12 | Google Fonts from Google's CDN | TODO | NOT YET |
 | I13 | Cerebras controller position | TODO | NOT YET |
 | I14 | Export covers the whole account | DONE | — |
 | I15 | Settings states what the AI is sent | DONE | — |
-| I16 | Consent captured at sign-up | TODO | NOT YET |
+| I16 | Consent captured at sign-up | TODO | NOW |
 | J1 | Market data vendor decision | DECIDE | NOT YET |
 | J2 | Alpaca licensing, revisit Mar 2027 | PARKED | NOT YET |
 | J3 | Index levels refused server-side | DONE | — |
@@ -440,6 +440,7 @@ amount, not just `pendingCount`); FX moves; Wise connectivity status for the
 - **C4 · `liability` account type, balance positive, type negates — DONE (`4d0aa9a`, with `2697c1b`, `9941b6d`).** Register A6.
 - **C5 · Subscriptions became a recurrence rule generating upcoming rows — DONE (`04c84e5`).** Register A3.
 - **C6 · `netLiquidity` narrowed to cash; one "today" across 11 sites; drift floor of 7 days — DONE (`95c1b68`, `34860fe`, `c5c42c2`).** Register A5.
+  *Confirmed, Thomas, 3 Oct 2026: `MIN_DRIFT_DAYS` stays 7 (no edit; the month-start withholding it caused was fixed in `f1daa83`).*
 - **C7 · Account-sign sweep, 23 sites, lock with allowlist — DONE (`bcba259`).** Register A8.
 
 ---
@@ -1593,6 +1594,7 @@ of that check.
 - **G36 · Markets TLDR and quick-add scan error states never seen rendered — TODO, needs a browser · NOT YET.** [G11] Code exists at `markets-tab.tsx:558-609,1488` and `quick-add-transaction.tsx:90-171,353`.
 - **G37 · `components/proto/` prints unsigned figures — TODO · NOT YET.** [G12] Not shipped (screenshot harness only); sites found were not exactly five.
 - **G38 · `kpi-bar.tsx` and `MobileAccounts.tsx` ship to nobody — DECIDE (delete?) · NOT YET.** [G13] Overlaps D6.
+  *Call, Thomas, 3 Oct 2026: delete `MobileAccounts.tsx` — done in `0e27056` with its two lock entries. `kpi-bar.tsx` was not part of the call and is still open.*
 - **G39 · `compact-tiles` "emergency fund" and "total cash" sum every asset type — DECIDE (semantics) · NOT YET.** [G14]
 - **G40 · Balance sheet "owed" side merges loans and overdrafts in its label — TODO · NOT YET.** [G15] A comment at `accounts.tsx:3015-3020` says the merge was deliberate; the label is the defect.
 - **G41 · ETF cards labelled "S&P 500", "NASDAQ 100", "Dow Jones" — index trademarks — DECIDE · NOW.** [G16] Re-tiered 19 Sep 2026: with prices gone these strings are the surviving market surface a tester still reads.
@@ -1603,7 +1605,8 @@ of that check.
 - **G46 · `docs/CREDENTIAL-ENCRYPTION.md` claims a boot refusal that does not happen — TODO · NOT YET.** [G21] Same false claim in the comment at `lib/crypto.ts:7`: the key is read on first use, so the server boots without `CREDENTIAL_ENCRYPTION_KEY`.
 - **G47 · Receipt photo spends the same 30/min AI budget as a one-line chat message — DECIDE · NOT YET.** [G23] Kept deliberately in `cc64e4d`; economics unmeasured.
 - **G48 · Offline wipe verified in Chromium only, not the iOS WebView — TODO · NOT YET.** [G24] `7ed1426` says Chromium; no iOS evidence in the repo.
-- **G49 · Queued offline writes unsendable at sign-out are discarded — DECIDE · NOT YET.** [G25] Already disclosed at `docs/PRIVACY.md:295-297`; the decision is whether to tell the user in the moment.
+- **G49 · Queued offline writes unsendable at sign-out are discarded — DONE in `aba8282`.** [G25] Already disclosed at `docs/PRIVACY.md:295-297`; the decision was whether to tell the user in the moment.
+  *Call, Thomas, 3 Oct 2026: keep the discard, with a clear warning. Both sign-out paths now count what is still queued after the flush and confirm before discarding; cancelling leaves the session untouched.*
 - **G50 · `2fa-attempts-*` counter row survives account deletion — DONE in `bbc4c19`.** [G26] Reached through the user's own challenge row, exact identifier; integration-tested on Neon dev.
 - **G51 · Settings copy "Includes all local state stored by this app" is loosely worded — DONE.** [G27] The sentence now says what each button downloads: the server account less credentials, or this device's local settings only (2026-10-02).
 - **G52 · The export file is built in memory per request (busiest user 18,019 request-metric rows) — DONE in `eb7ff92`** (streams a section and a page at a time); this line was left stale. [G28]
@@ -1791,10 +1794,12 @@ iOS WebView wipe unverified (G48). (`2fa-attempts-*` survival, G50, fixed in
 Original text: Every table cascades from `user.id`, so the mechanism exists. Needs a
 user-facing route, a confirmation, and a stated retention window.
 
-### I4 · Breach process — TODO · NOT YET
+### I4 · Breach process — TODO · NOW
 *Re-verified 13 Sep 2026: nothing in `docs/`; DATA-INVENTORY and PRIVACY both
 say there is none. The roadmap does not name it, so it defaults to NOT YET —
 which conflicts with this section being signup prerequisites. Needs a call.*
+*Tier call, Thomas, 3 Oct 2026: NOW, roadmap Phase 4. The 72-hour duty applies from
+the first data subject who is not Thomas, which is the tester round.*
 UK GDPR requires notifying the ICO within 72 hours of becoming aware of a
 qualifying breach. Write down who does what before it is needed.
 
@@ -1813,18 +1818,22 @@ From the vault register (section C) and roadmap. Re-checked against source on
 
 - **I6 · Email address cannot be changed at all — TODO · NOW.** [C5, N5]
 - **I7 · No AI on/off switch — TODO · NOW.** [C6, N6]
+  *Default decided, Thomas, 3 Oct 2026: **opt-in** (consent basis). No AI call, including dashboard insights on mount, until the user turns AI on. The switch itself is not built yet.*
 - **I8 · Digest unsubscribe link is `href="#"` — TODO · NOW.** [C7, N7] `digest.ts:78`.
 - **I9 · People who are not users, named in debts, shared expenses and receipts, have no route to access, correction or erasure — DECIDE (product) · NOW.** [C8, N8]
 - **I10 · Neon `dev` branch is a live clone of production that deletion never reaches — DECIDE (Thomas, infra) · NOW.** [C4, N9] Infra, unverifiable from source; `DATA-INVENTORY.md:58-59` lists it, no decision recorded.
-- **I11 · Vercel Hobby has no DPA and is non-commercial, yet proxies every `/api` request — DECIDE (cost) · NOW.** [C9, N10] The rewrite is in `artifacts/finance-tracker/vercel.json`; the plan tier is stated only in PRIVACY:164.
+- **I11 · Vercel Hobby has no DPA and is non-commercial, yet proxies every `/api` request — TODO (cutover) · NOW.** [C9, N10] The rewrite is in `artifacts/finance-tracker/vercel.json`; the plan tier is stated only in PRIVACY:164.
+  *Call, Thomas, 3 Oct 2026: a free Render static site with an `/api/*` rewrite; no paid plan. Declared as `numeris-web` in `render.yaml` (`df6a78f`). Left: create the service, point numeris.page DNS at it, then delete `vercel.json` and update PRIVACY:164.*
 - **I12 · Google Fonts loaded from Google's CDN (LG München I, 3 O 17493/20) — TODO · NOT YET.** [C10] Also cached by the service worker (`vite.config.ts:54`). The roadmap puts it "just below the line".
 - **I13 · Cerebras treats a personal-capacity customer as an independent controller — TODO · NOT YET.** [C11] Just below the line, as I12.
 - **I14 · Export covers the whole account, less credentials — DONE (`e5f3ace`, `788463c`).** [C1] 25 of 26 tables, 10 credential fields withheld with reasons.
 - **I15 · Settings states what the AI is actually sent — DONE (`a68ee72`).** [A12]
-- **I16 · Consent captured at sign-up, documents linked — TODO · NOT YET.**
+- **I16 · Consent captured at sign-up, documents linked — TODO · NOW.**
   `PLAN-Q3.md:124`. Nothing in `auth-gate.tsx` links terms or privacy, and no
   consent column exists. Not named in the roadmap, so NOT YET by default — but it
   is the step that makes I2 bind anyone. Needs a call.
+  *Tier call, Thomas, 3 Oct 2026: NOW, roadmap Phase 4. A tester who never agreed
+  to the terms is not bound by them.*
 
 ---
 
