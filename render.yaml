@@ -87,3 +87,25 @@ services:
         sync: false
       - key: POLYGON_API_KEY
         sync: false
+
+  # The SPA, replacing Vercel Hobby (BACKLOG I11, Thomas's call 3 Oct 11:00:
+  # Render static site with an /api rewrite, free, no paid plan). Hobby has no
+  # DPA and is non-commercial; Render's DPA covers every tier. Same-origin
+  # /api keeps the auth cookies first-party, which is why the SPA does not
+  # call numeris-api directly (Safari ITP and the iOS WebView would drop them).
+  # Mirrors artifacts/finance-tracker/vercel.json. Not live until the service
+  # is created in Render and numeris.page's DNS points at it; until then
+  # Vercel keeps serving. Delete vercel.json only after the cutover.
+  - type: web
+    name: numeris-web
+    runtime: static
+    rootDir: .
+    buildCommand: npx --yes pnpm@11.19.0 install --frozen-lockfile && npx --yes pnpm@11.19.0 --filter @workspace/finance-tracker run build
+    staticPublishPath: artifacts/finance-tracker/public
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://numeris-api.onrender.com/api/*
+      - type: rewrite
+        source: /*
+        destination: /index.html
