@@ -264,7 +264,7 @@ cap can be re-imposed per phase rather than across the whole tier.
 | N2 | No press feedback on any phone row (`HoverRow` is hover-only) | TODO | NOW |
 | N3 | No phone settings screen; `MobileSettings.tsx` was built and never wired | TODO | NOW |
 | N4 | Eight phone routes render a desktop-only dead end | DECIDE | NOW |
-| N5 | Phone HOME has no error or loading state | TODO | NOW |
+| N5 | Phone HOME has no error or loading state | DONE | — |
 | N6 | Sub-44px tap targets on WORTH and UPCOMING | TODO | NEXT |
 | N7 | Phone paints the desktop shell first on every load | TODO | NEXT |
 | N8 | The phone's shape: four tabs, one persona slot, three docs disagreeing | DECIDE | NEXT |
@@ -2200,7 +2200,17 @@ corrections in N1 to N7 need no design input and can go first.
 - **N4 · Eight phone routes are dead ends — DECIDE · NOW.**
   `components/phone/PhoneShell.tsx:72-80`. A route that renders "desktop only"
   is a route that should not be reachable from the phone directory.
-- **N5 · Phone HOME has no error or loading state — TODO · NOW.**
+- **N5 · Phone HOME has no error or loading state — DONE (3 Oct 2026).**
+  `components/mobile/MobileHome.tsx` coalesced every list query to `[]`, so a
+  failed request read as a real empty ledger: "Nothing upcoming.", "0 ACCOUNTS"
+  while the dashboard loaded, a cashflow drawn from £0. Now a skeleton while the
+  dashboard is pending, a screen-scope `PhoneSectionError` with retry when it
+  failed, and section errors for COMING (subscriptions or upcoming) and the
+  cashflow (transactions); no insight is computed over a failed ledger. Test
+  `mobile-home-states.test.tsx` (6 of 7 fail on the old file). Seen rendered at
+  390px against dev with each request forced to 500. Not covered: a refetch
+  that fails while a persisted cache still holds data shows the cached figures
+  with no stale mark (see the tester-readiness report, 3 Oct).
 - **N14 · The docs describe a phone that does not exist — TODO · NOW.**
   `CLAUDE.md` says five tabs (HOME, WORTH, SPENDING, UPCOMING, DIRECTORY).
   `docs/MOBILE-CONCEPT.md` says four with different names (HOME, MONTH, MOVE,

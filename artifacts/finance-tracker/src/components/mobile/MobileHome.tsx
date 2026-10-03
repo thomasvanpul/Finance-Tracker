@@ -10,7 +10,8 @@ import {
   useListSubscriptions,
   useListUpcoming,
 } from "@workspace/api-client-react";
-import { MobileEmptyState } from "./mobile-ui";
+import { MobileEmptyState, PhoneSectionError } from "./mobile-ui";
+import { PhoneScreenSkeleton } from "@/components/phone/PhoneScreenSkeleton";
 import { HomeSectionHeader } from "./home-section-header";
 import { HomeHero, type HeroCell } from "./home-hero";
 import { PHONE_GROUP_GAP, PHONE_GUTTER, PHONE_IN_GROUP } from "@/components/phone/rhythm";
@@ -99,19 +100,34 @@ export function MobileHome(_props: MobileHomeProps) {
   const dateFrom = `${monthStr}-01`;
   const dateTo = now.toISOString().slice(0, 10);
 
-  const { data: dashboard, isLoading: dashboardLoading } = useGetDashboard();
-  const { data: txns = [] } = useListTransactions({ dateFrom, dateTo });
+  // N5: every query's failure is kept, not coalesced to []. An empty list
+  // stood in for a failed one read as a fact — "Nothing upcoming.", a
+  // cashflow drawn from £0, "0 ACCOUNTS" — indistinguishable from a real
+  // empty ledger (CLAUDE.md: never show a number the API did not supply).
+  const {
+    data: dashboard,
+    isLoading: dashboardLoading,
+    isError: dashboardError,
+    refetch: refetchDashboard,
+  } = useGetDashboard();
+  const txnsQuery = useListTransactions({ dateFrom, dateTo });
+  const txnsError = txnsQuery.isError;
+  const txns = txnsQuery.data ?? [];
   // The month window above is what the screen shows. A recurring series
   // cannot be seen inside one month, so the projected trough reads the full
   // ledger instead — same query key the other screens use, so TanStack
   // serves it from cache rather than fetching it twice.
   const { data: allTxns } = useListTransactions();
-  const { data: subs = [] } = useListSubscriptions();
+  const subsQuery = useListSubscriptions();
+  const subs = subsQuery.data ?? [];
   // C2-3: pull upcoming income items so COMING can show salary +
   // any other explicit income entries alongside the recurring bills.
   // upcomingTable already carries `type: income | expense` — no
   // schema change needed. Filter to pending + next 30d + income.
-  const { data: upcomingItems = [] } = useListUpcoming();
+  const upcomingQuery = useListUpcoming();
+  const upcomingItems = upcomingQuery.data ?? [];
+  const comingError = subsQuery.isError || upcomingQuery.isError;
+  const comingLoading = subsQuery.isLoading || upcomingQuery.isLoading;
 
   // ── Derived from real data ──
   // Three states preserved: loading (dashboardLoading), unknown (null) and
@@ -175,14 +191,16 @@ export function MobileHome(_props: MobileHomeProps) {
     // totalCash is holdings.cash, derived from the dashboard's own account
     // breakdown — the projected trough starts from a level the API supplied,
     // never from a zero stood in for a missing one.
-    () => selectInsight(txns, {
+    // A failed ledger has no insight: selectInsight over [] would speak
+    // about a month it never saw.
+    () => txnsError ? null : selectInsight(txns, {
       baseCurrency: dashboard?.baseCurrency ?? null,
       upcomingItems,
       topPending,
       cashBalanceBase: dashboard == null ? null : totalCash,
       historyTxs: allTxns ?? undefined,
     }, dismissedInsights),
-    [txns, allTxns, dashboard, upcomingItems, topPending, totalCash, dismissedInsights],
+    [txnsError, txns, allTxns, dashboard, upcomingItems, topPending, totalCash, dismissedInsights],
   );
   const handleDismissInsight = useCallback((id: string) => {
     dismissInsight(id);
@@ -226,6 +244,23 @@ export function MobileHome(_props: MobileHomeProps) {
     .toLocaleDateString("en-GB", { month: "long" })
     .toUpperCase();
   const todayIndex = now.getDate() - 1;
+
+  // ── Pending and failed: the dashboard carries the hero, the account count
+  // and the cash level the cashflow starts from, so without it the screen
+  // has nothing true to say. Skeleton while pending, a stated error with a
+  // retry (a GET, so idempotent) when it failed.
+  if (dashboard == null && dashboardLoading) {
+    return <PhoneScreenSkeleton shape="header-hero-list" />;
+  }
+  if (dashboard == null && dashboardError) {
+    return (
+      <PhoneSectionError
+        label="COULDN'T LOAD"
+        title="Could not load your home screen."
+        onRetry={() => { void refetchDashboard(); }}
+      />
+    );
+  }
 
   // ── Empty state: no accounts connected ───────────────────────────────────
   // Only fires once the dashboard has actually loaded so we don't flash it
@@ -460,7 +495,20 @@ export function MobileHome(_props: MobileHomeProps) {
         {homeSectionOrder(persona).map((section) =>
           section === "cashflow" ? (
             /* Cashflow section — only when there is anything to plot */
-            txns.length > 0 && (
+            txnsError ? (
+              <div key="cashflow">
+                <HomeSectionHeader
+                  label={`${monthName} · LIQUID`}
+                  link="CASHFLOW ›"
+                  href="/cashflow"
+                />
+                <PhoneSectionError
+                  label="COULDN'T LOAD"
+                  title="Could not load this month's transactions."
+                  onRetry={() => { void txnsQuery.refetch(); }}
+                />
+              </div>
+            ) : txns.length > 0 && (
               <div key="cashflow">
                 <HomeSectionHeader
                   label={`${monthName} · LIQUID`}
@@ -500,7 +548,22 @@ export function MobileHome(_props: MobileHomeProps) {
           href="/upcoming"
         />
         <div style={{ padding: `0 ${PHONE_GUTTER}px` }}>
-          <UpcomingList bills={upcomingBills} incoming={upcomingIncome} />
+          {comingError ? (
+            <PhoneSectionError
+              label="COULDN'T LOAD"
+              title="Could not load what is coming."
+              onRetry={() => {
+                if (subsQuery.isError) void subsQuery.refetch();
+                if (upcomingQuery.isError) void upcomingQuery.refetch();
+              }}
+            />
+          ) : comingLoading ? (
+            <div aria-busy="true" style={{ padding: "12px 0", fontSize: 13, color: "var(--ft-dim)" }}>
+              …
+            </div>
+          ) : (
+            <UpcomingList bills={upcomingBills} incoming={upcomingIncome} />
+          )}
           <Link
             href="/split"
             style={{
