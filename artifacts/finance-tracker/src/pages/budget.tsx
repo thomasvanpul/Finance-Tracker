@@ -31,6 +31,7 @@ import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/compon
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
 import { withBaseMagnitudes } from "@/lib/tx-magnitude";
+import { derivedFigureState } from "@/lib/derived-figure-state";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -1162,10 +1163,14 @@ export default function Budget() {
 
   // ── Hooks ───────────────────────────────────────────────────────────────────
 
-  const { data: expenseTxsSigned } = useListTransactions({
+  const { data: expenseTxsSigned, isFetching: expenseTxsFetching } = useListTransactions({
     type: "expense",
     dateFrom,
   });
+  // Every spend figure on this screen is summed from these rows. With no
+  // rows at all (offline, a month with no expenses restores nothing — empty
+  // arrays are never persisted) the sum would read as a real £0.
+  const spendState = derivedFigureState({ data: expenseTxsSigned, isFetching: expenseTxsFetching });
 
   const { data: lastMonthTxsSigned } = useListTransactions({
     type: "expense",
@@ -1473,7 +1478,7 @@ export default function Budget() {
   // Loading / Error guards
   // ─────────────────────────────────────────────────────────────────────────────
 
-  if (budgetsLoading) {
+  if (budgetsLoading || (spendState === "loading" && budgets.length > 0)) {
     return (
       <VStack gap={0}>
         {/* KPI bar skeleton */}
@@ -1700,6 +1705,14 @@ export default function Budget() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  // Limits without spend would draw every row at £0 spent, 0%, NO SPEND —
+  // figures derived from a query that never answered.
+  if (spendState === "unavailable") {
+    return (
+      <ErrorState message={`Could not load spending for ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}. Check your connection and try again.`} />
     );
   }
 
