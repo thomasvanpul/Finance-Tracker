@@ -1446,14 +1446,16 @@ export function Layout({ children }: LayoutProps) {
   const userEmail = session?.user?.email ?? "";
 
   const handleSignOut = async () => {
+    // Send queued offline writes while the session is still valid; the
+    // wipe below discards whatever could not be sent, so ask first when
+    // anything is left. Nothing has been cleared yet if the user stays.
+    const { flushOutboxBeforeSignOut, confirmSignOutWithUnsentWrites, wipeOfflineCopy } = await import("@/lib/offline-wipe");
+    await flushOutboxBeforeSignOut();
+    if (!(await confirmSignOutWithUnsentWrites())) return;
     // Push any account-level preference still queued, then drop the
     // account-level keys so the next person here starts clean.
     const { clearAccountStorage } = await import("@/lib/account-storage");
     await clearAccountStorage();
-    // Send queued offline writes while the session is still valid; the
-    // wipe below discards whatever could not be sent.
-    const { flushOutboxBeforeSignOut, wipeOfflineCopy } = await import("@/lib/offline-wipe");
-    await flushOutboxBeforeSignOut();
     try {
       await authClient.signOut();
       // Clear the native bearer token if we have one. No-op on web.

@@ -52,6 +52,24 @@ export async function flushOutboxBeforeSignOut(): Promise<void> {
   await replayOutbox(() => undefined, () => undefined).catch(() => undefined);
 }
 
+// What the user is told when sign-out finds writes it could not send. The
+// discard itself is the decided behaviour (BACKLOG G49, 3 Oct 2026); this
+// only makes it visible in the moment rather than in PRIVACY.md alone.
+export function unsentWritesWarning(count: number): string {
+  const what = count === 1 ? "1 change has" : `${count} changes have`;
+  return `${what} not been sent yet and will be lost if you sign out now. Sign out anyway?`;
+}
+
+// Called after flushOutboxBeforeSignOut, before anything is cleared. True
+// means go ahead; false means the user chose to stay signed in.
+export async function confirmSignOutWithUnsentWrites(
+  ask: (message: string) => boolean = (m) => window.confirm(m),
+): Promise<boolean> {
+  const { outboxDb } = await import("./outbox-db");
+  const count = await outboxDb.outbox.count().catch(() => 0);
+  return count === 0 || ask(unsentWritesWarning(count));
+}
+
 export async function wipeOfflineCopy(queryClient: QueryClient): Promise<void> {
   await queryClient.cancelQueries().catch(() => undefined);
   queryClient.clear();

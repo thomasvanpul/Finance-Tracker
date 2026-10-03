@@ -695,12 +695,14 @@ export default function Profile() {
   }
 
   async function handleSignOut() {
+    // Same order as components/layout.tsx: send queued writes, ask before
+    // discarding any left over, sign out, then remove this device's copy
+    // even if the sign-out call failed.
+    const { flushOutboxBeforeSignOut, confirmSignOutWithUnsentWrites, wipeOfflineCopy } = await import("@/lib/offline-wipe");
+    await flushOutboxBeforeSignOut();
+    if (!(await confirmSignOutWithUnsentWrites())) return;
     const { clearAccountStorage } = await import("@/lib/account-storage");
     await clearAccountStorage();
-    // Same order as components/layout.tsx: send queued writes, sign out,
-    // then remove this device's copy even if the sign-out call failed.
-    const { flushOutboxBeforeSignOut, wipeOfflineCopy } = await import("@/lib/offline-wipe");
-    await flushOutboxBeforeSignOut();
     try {
       await authClient.signOut();
       // Clear the native bearer token — no-op on web.

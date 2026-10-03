@@ -26,7 +26,7 @@ vi.mock("idb-keyval", () => ({
 
 const outbox = vi.hoisted(() => ({ rows: [] as unknown[], replayed: 0 }));
 vi.mock("./outbox-db", () => ({
-  outboxDb: { outbox: { clear: async () => { outbox.rows = []; } } },
+  outboxDb: { outbox: { clear: async () => { outbox.rows = []; }, count: async () => outbox.rows.length } },
   replayOutbox: async () => { outbox.replayed++; },
 }));
 
@@ -61,7 +61,7 @@ vi.stubGlobal("sessionStorage", browserLikeStorage());
 vi.stubGlobal("navigator", { onLine: true });
 
 const { createOfflineQueryClient } = await import("./offline-cache");
-const { wipeOfflineCopy, flushOutboxBeforeSignOut, AI_SESSION_CACHE_KEYS } = await import("./offline-wipe");
+const { wipeOfflineCopy, flushOutboxBeforeSignOut, confirmSignOutWithUnsentWrites, unsentWritesWarning, AI_SESSION_CACHE_KEYS } = await import("./offline-wipe");
 
 const tick = () => new Promise((r) => setTimeout(r, 5));
 
@@ -163,6 +163,19 @@ describe("offline copy · wiped on sign-out and account deletion", () => {
     await flushOutboxBeforeSignOut();
     expect(outbox.replayed).toBe(1);
     vi.stubGlobal("navigator", { onLine: true });
+  });
+
+  it("sign-out asks before discarding writes it could not send, and only then", async () => {
+    const asked: string[] = [];
+    const ask = (answer: boolean) => (m: string) => { asked.push(m); return answer; };
+    expect(await confirmSignOutWithUnsentWrites(ask(false))).toBe(true);
+    expect(asked).toEqual([]);
+    outbox.rows = [{}, {}];
+    expect(await confirmSignOutWithUnsentWrites(ask(false))).toBe(false);
+    expect(await confirmSignOutWithUnsentWrites(ask(true))).toBe(true);
+    expect(asked).toEqual([unsentWritesWarning(2), unsentWritesWarning(2)]);
+    expect(unsentWritesWarning(2)).toMatch(/^2 changes have not been sent yet and will be lost/);
+    expect(unsentWritesWarning(1)).toMatch(/^1 change has not been sent yet/);
   });
 
   it("every AI sessionStorage cache key still exists in the source", () => {

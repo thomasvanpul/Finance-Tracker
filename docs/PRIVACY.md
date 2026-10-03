@@ -297,8 +297,9 @@ waiting to be sent.
 Signing out and deleting your account both remove that copy from the device:
 the stored data, the changes waiting to be sent, and the AI commentary kept for
 the current visit. When you sign out, changes waiting to be sent are sent first
-if you are online; if you are offline, or sending fails, they are discarded
-rather than left for whoever signs in next. Deleting your account discards
+if you are online; if you are offline, or sending fails, the app tells you
+how many would be lost and asks before signing out. If you go ahead they are
+discarded rather than left for whoever signs in next. Deleting your account discards
 them, because there is no account left to send them to.
 
 Signing out also removes your settings from the device once they have been
