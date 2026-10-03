@@ -33,6 +33,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { signInSeedUser, openAccountPrefs, assertRoute } from "./account-prefs.js";
+import { fabricatedZeros, zeroFigures } from "./fabricated-zeros.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = resolve(__dirname, "..", "screenshots", "offline-verify");
@@ -161,8 +162,11 @@ async function interceptApiRequests(context: BrowserContext): Promise<void> {
 }
 
 // Warm each route: navigate, wait for network idle, wait a beat for
-// TanStack Query to write through the persister (throttle 1s).
-async function warmCache(page: Page): Promise<void> {
+// TanStack Query to write through the persister (throttle 1s). Returns each
+// route's online innerText by name — the record of what the API supplied,
+// which the offline FABRICATED ZEROS check diffs against.
+async function warmCache(page: Page): Promise<Map<string, string>> {
+  const onlineText = new Map<string, string>();
   for (const r of ROUTES) {
     const url = new URL(r.path, FRONTEND).toString();
     console.log(`[warm] ${r.path}`);
@@ -175,7 +179,9 @@ async function warmCache(page: Page): Promise<void> {
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: 10000 });
     }
     await page.waitForTimeout(2000); // persister throttleTime is 1s
+    onlineText.set(r.name, await page.evaluate(() => document.body.innerText));
   }
+  return onlineText;
 }
 
 // Signals we look for on the OFFLINE reload:
@@ -183,26 +189,22 @@ async function warmCache(page: Page): Promise<void> {
 //   • hasNumber: at least one number rendered in the page (proves data got
 //     through from cache), matches £, $, €, or a bare 3+ digit number
 //   • hasNoConnection: the "NO CONNECTION" banner rendered
-//   • hasZeroSummary: presence of "£0" as a headline (regression: dashboard
-//     was showing zeros when API failed)
+//   • fabricatedZeros (computed by the caller against the online render,
+//     fabricated-zeros.ts): £0 figures the API never supplied
 //   • title / current URL: proves the page loaded at all
 async function inspect(page: Page): Promise<{
   url: string; title: string;
   hasSpinner: boolean; hasNumber: boolean;
-  hasNoConnection: boolean; hasZeroHeadline: boolean;
+  hasNoConnection: boolean;
   bodyText: string;
 }> {
   const url = page.url();
   const title = await page.title();
-  const bodyText = await page.evaluate(() => document.body.innerText.slice(0, 4000));
+  const bodyText = await page.evaluate(() => document.body.innerText);
   const hasSpinner = /LOADING|LOADING…|Loading\.\.\./.test(bodyText);
   const hasNumber = /£[\d,]+|\$[\d,]+|€[\d,]+|\bRM\s?[\d,]+|\b\d{3,}\b/.test(bodyText);
   const hasNoConnection = /NO CONNECTION/i.test(bodyText);
-  // Zero headline: a "£0" or "£0.00" as one of the first ~200 chars of a
-  // KPI. This is the defect we're guarding against — a user on a plane
-  // reading their net worth as zero.
-  const hasZeroHeadline = /£0(?:\.\d{2})?\b/.test(bodyText.slice(0, 500));
-  return { url, title, hasSpinner, hasNumber, hasNoConnection, hasZeroHeadline, bodyText };
+  return { url, title, hasSpinner, hasNumber, hasNoConnection, bodyText };
 }
 
 async function main(): Promise<void> {
@@ -249,7 +251,7 @@ async function main(): Promise<void> {
     console.log("[reset] wiped keyval-store");
 
     console.log("── Phase 1: warming cache (online) ──");
-    await warmCache(page);
+    const onlineText = await warmCache(page);
 
     // Snapshot online state on the dashboard for the report header.
     await page.goto(FRONTEND, { waitUntil: "networkidle", timeout: 20000 });
@@ -280,7 +282,7 @@ async function main(): Promise<void> {
     const report: Array<{
       route: string; name: string;
       hasSpinner: boolean; hasNumber: boolean;
-      hasNoConnection: boolean; hasZeroHeadline: boolean;
+      hasNoConnection: boolean; fabricatedZeros: string[];
       verdict: string;
     }> = [];
 
@@ -348,12 +350,20 @@ async function main(): Promise<void> {
       } catch { /* page may have died */ }
       const info = await inspect(page).catch(() => ({
         url: "", title: "", hasSpinner: false, hasNumber: false,
-        hasNoConnection: false, hasZeroHeadline: false, bodyText: "",
+        hasNoConnection: false, bodyText: "",
       }));
+      // A zero is fabricated only if the same route did not show it online.
+      // With no online render to compare, every zero is unverified, not fine.
+      const onlineRender = onlineText.get(r.name);
+      const fabricated = onlineRender === undefined
+        ? zeroFigures(info.bodyText)
+        : fabricatedZeros(onlineRender, info.bodyText);
       const verdict = info.bodyText.length === 0
         ? "BLANK (shell failed)"
-        : info.hasZeroHeadline
-        ? "FABRICATED ZEROS (defect)"
+        : fabricated.length > 0
+        ? onlineRender === undefined
+          ? "UNVERIFIED ZEROS (no online render)"
+          : "FABRICATED ZEROS (defect)"
         : info.hasNumber
         ? "cached data rendered"
         : info.hasSpinner
@@ -362,7 +372,7 @@ async function main(): Promise<void> {
       report.push({
         route: r.path, name: r.name,
         hasSpinner: info.hasSpinner, hasNumber: info.hasNumber,
-        hasNoConnection: info.hasNoConnection, hasZeroHeadline: info.hasZeroHeadline,
+        hasNoConnection: info.hasNoConnection, fabricatedZeros: fabricated,
         verdict,
       });
     }
@@ -377,8 +387,9 @@ async function main(): Promise<void> {
     console.log(`Online dashboard hasNumber=${online.hasNumber} title="${online.title}"`);
     for (const r of report) {
       console.log(
-        `  ${r.name.padEnd(18)}  spin=${r.hasSpinner ? "Y" : "-"}  num=${r.hasNumber ? "Y" : "-"}  banner=${r.hasNoConnection ? "Y" : "-"}  £0=${r.hasZeroHeadline ? "Y" : "-"}  → ${r.verdict}`,
+        `  ${r.name.padEnd(18)}  spin=${r.hasSpinner ? "Y" : "-"}  num=${r.hasNumber ? "Y" : "-"}  banner=${r.hasNoConnection ? "Y" : "-"}  £0=${r.fabricatedZeros.length || "-"}  → ${r.verdict}`,
       );
+      for (const z of r.fabricatedZeros) console.log(`      fabricated: ${z}`);
     }
   } finally {
     await prefs.restore();
