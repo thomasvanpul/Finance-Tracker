@@ -21,31 +21,29 @@
 //   OBSERVE_SCROLL=1 scroll the main container between t=3s and t=8s
 //   OBSERVE_MOUSE=1  sweep a synthetic pointer past it at t=10s
 import { chromium, type BrowserContext } from "playwright";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
+import { signInSeedUser, openAccountPrefs, assertRoute } from "./account-prefs.js";
 
 const FRONTEND = process.env.SCREENSHOT_FRONTEND ?? "http://localhost:4321";
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
 const SECONDS = Number(process.env.OBSERVE_SECONDS ?? "60");
 const ROUTE = process.env.OBSERVE_ROUTE ?? "/";
 
-async function signIn(context: BrowserContext): Promise<void> {
-  const res = await context.request.post(`${API_BASE}/api/auth/sign-in/email`, {
-    headers: { "Content-Type": "application/json", Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) throw new Error(`sign-in failed: ${res.status()} ${await res.text()}`);
-  const cookies = await context.cookies();
-  await context.clearCookies();
-  await context.addCookies(cookies.map((c) => ({
-    ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const,
-  })));
-}
-
 async function main(): Promise<void> {
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  await signIn(context);
+  const cookie = await signInSeedUser(context);
+  // Takes the capture lock and pins nr-default-page to "/", so OBSERVE_ROUTE=/
+  // watches the dashboard; restore() puts the landing page back.
+  const prefs = await openAccountPrefs(context, cookie);
+  try {
+    await observe(context);
+  } finally {
+    await prefs.restore();
+    await browser.close();
+  }
+}
 
+async function observe(context: BrowserContext): Promise<void> {
   await context.route(`${FRONTEND}/api/**`, async (route) => {
     const request = route.request();
     const targetUrl = request.url().replace(FRONTEND, API_BASE);
@@ -92,12 +90,12 @@ async function main(): Promise<void> {
 
   await page.goto(new URL(ROUTE, FRONTEND).toString(), { waitUntil: "networkidle", timeout: 30000 });
   await page.waitForTimeout(1500);
+  if (new URL(ROUTE, FRONTEND).pathname === "/") await assertRoute(page, "/");
 
   const present = await page.locator('[aria-label^="Assistant · "]').count();
   console.log(`[observe] companion elements found: ${present}`);
   if (present === 0) {
     console.log("[observe] companion did not render — cannot observe.");
-    await browser.close();
     return;
   }
 
@@ -259,7 +257,6 @@ async function main(): Promise<void> {
 
   console.log(JSON.stringify(result, null, 2));
   if (errs.length) console.log("[observe] page errors:", errs.slice(0, 5));
-  await browser.close();
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

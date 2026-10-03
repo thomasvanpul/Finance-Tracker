@@ -5,22 +5,22 @@
 // captures the sheet open, and asserts the round trip a user actually makes:
 // tap a row -> the id is in the URL -> hardware back closes the sheet.
 import { chromium } from 'playwright';
-import { SEED_EMAIL, SEED_PASSWORD } from './seed-credentials.js';
-import { acquireCaptureLock } from './capture-lock.js';
-
-// One capture at a time. This script PUTs the seed account's theme, which is
-// an account-level column shared with every other capture script — two runs at
-// once overwrite each other and one photographs the other's state. Refuses to
-// start while another capture holds the lock; released on exit, including an
-// uncaught throw or Ctrl-C. See capture-lock.ts.
-acquireCaptureLock();
-
+import { signInSeedUser, openAccountPrefs, assertRoute } from './account-prefs.js';
 
 const FRONTEND = 'http://localhost:4321';
 const API = 'http://localhost:3001';
 const OUT = '/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots';
 
 const browser = await chromium.launch();
+// One capture at a time. This script sets the seed account's theme, which is
+// an account-level column shared with every other capture script — two runs at
+// once overwrite each other and one photographs the other's state.
+// openAccountPrefs takes the capture lock (see capture-lock.ts), pins
+// nr-default-page to "/" so the HOME shot is HOME, and restore() puts the
+// theme and the landing page back. Its own context, so it outlives the
+// per-theme contexts below.
+const prefsCtx = await browser.newContext();
+const prefs = await openAccountPrefs(prefsCtx, await signInSeedUser(prefsCtx));
 
 async function proxy(ctx: import('playwright').BrowserContext) {
   await ctx.route(`${FRONTEND}/api/**`, async route => {
@@ -44,17 +44,6 @@ async function proxy(ctx: import('playwright').BrowserContext) {
   });
 }
 
-async function login(ctx: import('playwright').BrowserContext) {
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { 'Content-Type': 'application/json', 'Origin': FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) { console.error('sign-in failed', res.status(), await res.text()); process.exit(1); }
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map(c => ({ ...c, name: c.name.replace(/^__Secure-/, ''), secure: false, sameSite: 'Lax' as const })));
-}
-
 const sheet = () => ({
   url: location.pathname + location.search,
   dialogs: document.querySelectorAll('[role="dialog"]').length,
@@ -68,78 +57,76 @@ function check(label: string, ok: boolean, detail: unknown) {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${label}  ${JSON.stringify(detail)}`);
 }
 
-for (const theme of ['void', 'arctic'] as const) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  await login(ctx);
-  await proxy(ctx);
-  // The theme lives on the SERVER, not in localStorage. Several existing
-  // shot scripts still set `ft-theme` and silently capture the default
-  // theme twice; passkey-shots.ts is the one that has it right. PUT it.
-  {
-    const cs = await ctx.cookies();
-    const r = await ctx.request.put(`${API}/api/settings/theme`, {
-      headers: { 'Content-Type': 'application/json', Origin: FRONTEND, cookie: cs.map(c => `${c.name}=${c.value}`).join('; ') },
-      data: { theme },
-    });
-    if (!r.ok()) { console.error('theme PUT failed', theme, r.status(), await r.text()); process.exit(1); }
+try {
+  for (const theme of ['void', 'arctic'] as const) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    await signInSeedUser(ctx);
+    await proxy(ctx);
+    // The theme lives on the SERVER, not in localStorage. Several existing
+    // shot scripts still set `ft-theme` and silently capture the default
+    // theme twice; passkey-shots.ts is the one that has it right. PUT it.
+    await prefs.setTheme(theme);
+    const page = await ctx.newPage();
+    await page.addInitScript(`try {
+      window.localStorage.setItem("ft-onboarding-complete", "1");
+      window.localStorage.setItem("nr-onboarding-complete", "1");
+    } catch (e) {}`);
+
+    // resting
+    await page.goto(`${FRONTEND}/worth`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2200);
+    const applied = await page.evaluate(() => ({
+      attr: document.documentElement.getAttribute('data-theme') ?? document.documentElement.className,
+      bg: getComputedStyle(document.body).backgroundColor,
+    }));
+    // `void` is the default and stamps no attribute, so identity alone can't
+    // prove it applied — the two themes producing the same background is the
+    // failure this guards (an earlier run of this script captured `arctic`
+    // as a second copy of `void` and said nothing).
+    bgByTheme.set(theme, applied.bg);
+    check(`${theme} theme applied`, theme === 'void' ? applied.attr === '' : applied.attr === theme, applied);
+    await page.screenshot({ path: `${OUT}/phone-${theme}-worth-rest.png` });
+
+    // tap the first account row — the interaction state the resting shot cannot see
+    const before = page.url();
+    await page.getByText('Monzo Current', { exact: false }).first().click();
+    await page.waitForTimeout(900);
+    const opened = await page.evaluate(sheet);
+    check(`${theme} tap opens sheet`, opened.dialogs === 1, opened);
+    check(`${theme} tap writes the id to the URL`, /[?&]account=\d+/.test(opened.url), opened.url);
+    await page.screenshot({ path: `${OUT}/phone-${theme}-worth-account-open.png` });
+
+    // hardware back must close it — the thing a local boolean could never do
+    await page.goBack();
+    await page.waitForTimeout(900);
+    const closed = await page.evaluate(sheet);
+    check(`${theme} back closes the sheet`, closed.dialogs === 0, closed);
+    check(`${theme} back restores the URL`, closed.url === new URL(before).pathname, closed.url);
+
+    // inbound drill — the defect this change exists to fix
+    await page.goto(`${FRONTEND}/accounts?account=132`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2200);
+    const inbound = await page.evaluate(sheet);
+    check(`${theme} inbound /accounts?account= opens the sheet`, inbound.dialogs === 1, inbound);
+    await page.screenshot({ path: `${OUT}/phone-${theme}-inbound-drill.png` });
+
+    // a link to something that is gone says so, rather than opening empty
+    await page.goto(`${FRONTEND}/accounts?account=99999`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+    const missing = await page.evaluate(sheet);
+    check(`${theme} unknown id is stated, not blank`, /isn't on your balance sheet/.test(missing.text ?? ''), missing);
+    await page.screenshot({ path: `${OUT}/phone-${theme}-unknown-id.png` });
+
+    // HOME, where WHAT CHANGED lives
+    await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
+    await assertRoute(page, '/');
+    await page.waitForTimeout(2200);
+    await page.screenshot({ path: `${OUT}/phone-${theme}-home.png` });
+
+    await ctx.close();
   }
-  const page = await ctx.newPage();
-  await page.addInitScript(`try {
-    window.localStorage.setItem("ft-onboarding-complete", "1");
-    window.localStorage.setItem("nr-onboarding-complete", "1");
-  } catch (e) {}`);
-
-  // resting
-  await page.goto(`${FRONTEND}/worth`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2200);
-  const applied = await page.evaluate(() => ({
-    attr: document.documentElement.getAttribute('data-theme') ?? document.documentElement.className,
-    bg: getComputedStyle(document.body).backgroundColor,
-  }));
-  // `void` is the default and stamps no attribute, so identity alone can't
-  // prove it applied — the two themes producing the same background is the
-  // failure this guards (an earlier run of this script captured `arctic`
-  // as a second copy of `void` and said nothing).
-  bgByTheme.set(theme, applied.bg);
-  check(`${theme} theme applied`, theme === 'void' ? applied.attr === '' : applied.attr === theme, applied);
-  await page.screenshot({ path: `${OUT}/phone-${theme}-worth-rest.png` });
-
-  // tap the first account row — the interaction state the resting shot cannot see
-  const before = page.url();
-  await page.getByText('Monzo Current', { exact: false }).first().click();
-  await page.waitForTimeout(900);
-  const opened = await page.evaluate(sheet);
-  check(`${theme} tap opens sheet`, opened.dialogs === 1, opened);
-  check(`${theme} tap writes the id to the URL`, /[?&]account=\d+/.test(opened.url), opened.url);
-  await page.screenshot({ path: `${OUT}/phone-${theme}-worth-account-open.png` });
-
-  // hardware back must close it — the thing a local boolean could never do
-  await page.goBack();
-  await page.waitForTimeout(900);
-  const closed = await page.evaluate(sheet);
-  check(`${theme} back closes the sheet`, closed.dialogs === 0, closed);
-  check(`${theme} back restores the URL`, closed.url === new URL(before).pathname, closed.url);
-
-  // inbound drill — the defect this change exists to fix
-  await page.goto(`${FRONTEND}/accounts?account=132`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2200);
-  const inbound = await page.evaluate(sheet);
-  check(`${theme} inbound /accounts?account= opens the sheet`, inbound.dialogs === 1, inbound);
-  await page.screenshot({ path: `${OUT}/phone-${theme}-inbound-drill.png` });
-
-  // a link to something that is gone says so, rather than opening empty
-  await page.goto(`${FRONTEND}/accounts?account=99999`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2000);
-  const missing = await page.evaluate(sheet);
-  check(`${theme} unknown id is stated, not blank`, /isn't on your balance sheet/.test(missing.text ?? ''), missing);
-  await page.screenshot({ path: `${OUT}/phone-${theme}-unknown-id.png` });
-
-  // HOME, where WHAT CHANGED lives
-  await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2200);
-  await page.screenshot({ path: `${OUT}/phone-${theme}-home.png` });
-
-  await ctx.close();
+} finally {
+  await prefs.restore();
 }
 
 await browser.close();

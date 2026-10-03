@@ -8,8 +8,7 @@ import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
-import { acquireCaptureLock } from "./capture-lock.js";
+import { signInSeedUser, openAccountPrefs } from "./account-prefs.js";
 
 const FRONTEND = "http://localhost:4321";
 const API = "http://localhost:3001";
@@ -33,7 +32,6 @@ const STREAMS: (string | null)[] = [
   null,
 ];
 
-const release = acquireCaptureLock();
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
 try {
@@ -69,14 +67,13 @@ try {
       await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body });
     });
 
-    const signIn = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-      headers: { "Content-Type": "application/json", Origin: FRONTEND },
-      data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-    });
-    if (!signIn.ok()) throw new Error(`sign-in failed: ${signIn.status()} ${await signIn.text()}`);
-    const cookies = await ctx.cookies();
-    await ctx.clearCookies();
-    await ctx.addCookies(cookies.map((c) => ({ ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const })));
+    const cookie = await signInSeedUser(ctx);
+    // Holds the capture lock until restore(). The client refuses every
+    // /api/ai/* request while AI is off (BACKLOG § I7), so the stubbed chat
+    // route would never be asked; turn it on server-side and restore after.
+    const prefs = await openAccountPrefs(ctx, cookie);
+    try {
+    await prefs.setPreference("nr-ai-enabled", "true");
 
     // An un-onboarded seed account renders the questionnaire on every route.
     // PUT persona re-stamps onboarded_at; the persona itself is kept.
@@ -131,8 +128,10 @@ try {
     await fam("legend (QUEUED)", text("QUEUED"));
     await fam("queued prompt", text("a queued follow-up"));
     await page.screenshot({ path: join(OUT, "coach-streaming.png"), fullPage: true });
+    } finally {
+      await prefs.restore();
+    }
     await ctx.close();
 } finally {
   await browser.close();
-  release();
 }

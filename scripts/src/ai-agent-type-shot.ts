@@ -7,14 +7,12 @@ import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
-import { acquireCaptureLock } from "./capture-lock.js";
+import { signInSeedUser, openAccountPrefs, assertRoute } from "./account-prefs.js";
 
 const FRONTEND = "http://localhost:4321";
 const API = "http://localhost:3001";
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "../../.review/shots/ai-agent-type");
 
-const release = acquireCaptureLock();
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
 try {
@@ -43,64 +41,61 @@ try {
       }
     });
 
-    const signIn = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-      headers: { "Content-Type": "application/json", Origin: FRONTEND },
-      data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-    });
-    if (!signIn.ok()) throw new Error(`sign-in failed: ${signIn.status()} ${await signIn.text()}`);
-    const cookies = await ctx.cookies();
-    await ctx.clearCookies();
-    await ctx.addCookies(cookies.map((c) => ({ ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const })));
+    const cookie = await signInSeedUser(ctx);
+    const prefs = await openAccountPrefs(ctx, cookie);
+    try {
+      // An un-onboarded seed account renders the questionnaire on every route.
+      // PUT persona re-stamps onboarded_at; the persona itself is kept.
+      const personaRes = await ctx.request.get(`${FRONTEND}/api/settings/persona`);
+      const persona = (await personaRes.json()) as { persona: string | null; onboarded: boolean };
+      if (!persona.onboarded) {
+        const put = await ctx.request.put(`${FRONTEND}/api/settings/persona`, {
+          headers: { "Content-Type": "application/json" },
+          data: { persona: persona.persona ?? "full" },
+        });
+        console.log(`seed account was not onboarded; re-stamped persona ${persona.persona ?? "full"}: ${put.status()}`);
+      }
 
-    // An un-onboarded seed account renders the questionnaire on every route.
-    // PUT persona re-stamps onboarded_at; the persona itself is kept.
-    const personaRes = await ctx.request.get(`${FRONTEND}/api/settings/persona`);
-    const persona = (await personaRes.json()) as { persona: string | null; onboarded: boolean };
-    if (!persona.onboarded) {
-      const put = await ctx.request.put(`${FRONTEND}/api/settings/persona`, {
-        headers: { "Content-Type": "application/json" },
-        data: { persona: persona.persona ?? "full" },
-      });
-      console.log(`seed account was not onboarded; re-stamped persona ${persona.persona ?? "full"}: ${put.status()}`);
+      const page = await ctx.newPage();
+      await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle" });
+      await assertRoute(page, "/");
+      if (await page.getByText("Let's shape the app around", { exact: false }).count()) {
+        throw new Error("landed on the onboarding questionnaire; refusing to capture it");
+      }
+      await page.locator("body").click({ position: { x: 5, y: 5 } });
+      await page.keyboard.press("g");
+      await page.getByLabel("Close AI Coach").waitFor({ timeout: 15_000 });
+      const family = (el: Element) => getComputedStyle(el).fontFamily.split(",")[0].replace(/"/g, "");
+      const fam = async (label: string, loc: ReturnType<typeof page.locator>) =>
+        console.log(`${label} -> ${(await loc.count()) ? await loc.first().evaluate(family) : "absent"}`);
+      const text = (t: string) => page.getByText(t, { exact: true });
+
+      await fam("title (AI Coach)", text("AI Coach").last());
+      await fam("legend (CONTEXT)", text("CONTEXT"));
+      await fam("page name (context strip)", text("CONTEXT").locator("xpath=following-sibling::*[1]"));
+      await fam("legend (READY)", text("READY"));
+      await fam("legend (TRY)", text("TRY"));
+      await fam("empty-state sentence", page.getByText("Ask about your finances. I read", { exact: false }));
+      await fam("starter prompt", text("TRY").locator("xpath=following-sibling::button[1]"));
+      await fam("composer", page.locator("textarea").last());
+      await page.screenshot({ path: join(OUT, "panel.png") });
+
+      // A route with a page name: the name is language. Close, navigate, reopen.
+      await page.getByLabel("Close AI Coach").click();
+      await page.goto(`${FRONTEND}/budget`, { waitUntil: "networkidle" });
+      await page.locator("body").click({ position: { x: 5, y: 5 } });
+      await page.keyboard.press("g");
+      await page.getByLabel("Close AI Coach").waitFor({ timeout: 15_000 });
+      await fam("page name on /budget (context strip)", text("CONTEXT").locator("xpath=following-sibling::*[1]"));
+      // Let the 0.12s open animation finish so the capture is not mid-fade.
+      await page.waitForTimeout(500);
+      const panel = page.getByLabel("Close AI Coach").locator("xpath=ancestor::div[contains(@style,'flex-direction: column')][1]");
+      console.log(`panel opacity -> ${await panel.evaluate((el) => getComputedStyle(el).opacity)}, background -> ${await panel.evaluate((el) => getComputedStyle(el).backgroundColor)}`);
+      await page.screenshot({ path: join(OUT, "panel-budget.png") });
+    } finally {
+      await prefs.restore();
     }
-
-    const page = await ctx.newPage();
-    await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle" });
-    if (await page.getByText("Let's shape the app around", { exact: false }).count()) {
-      throw new Error("landed on the onboarding questionnaire; refusing to capture it");
-    }
-    await page.locator("body").click({ position: { x: 5, y: 5 } });
-    await page.keyboard.press("g");
-    await page.getByLabel("Close AI Coach").waitFor({ timeout: 15_000 });
-    const family = (el: Element) => getComputedStyle(el).fontFamily.split(",")[0].replace(/"/g, "");
-    const fam = async (label: string, loc: ReturnType<typeof page.locator>) =>
-      console.log(`${label} -> ${(await loc.count()) ? await loc.first().evaluate(family) : "absent"}`);
-    const text = (t: string) => page.getByText(t, { exact: true });
-
-    await fam("title (AI Coach)", text("AI Coach").last());
-    await fam("legend (CONTEXT)", text("CONTEXT"));
-    await fam("page name (context strip)", text("CONTEXT").locator("xpath=following-sibling::*[1]"));
-    await fam("legend (READY)", text("READY"));
-    await fam("legend (TRY)", text("TRY"));
-    await fam("empty-state sentence", page.getByText("Ask about your finances. I read", { exact: false }));
-    await fam("starter prompt", text("TRY").locator("xpath=following-sibling::button[1]"));
-    await fam("composer", page.locator("textarea").last());
-    await page.screenshot({ path: join(OUT, "panel.png") });
-
-    // A route with a page name: the name is language. Close, navigate, reopen.
-    await page.getByLabel("Close AI Coach").click();
-    await page.goto(`${FRONTEND}/budget`, { waitUntil: "networkidle" });
-    await page.locator("body").click({ position: { x: 5, y: 5 } });
-    await page.keyboard.press("g");
-    await page.getByLabel("Close AI Coach").waitFor({ timeout: 15_000 });
-    await fam("page name on /budget (context strip)", text("CONTEXT").locator("xpath=following-sibling::*[1]"));
-    // Let the 0.12s open animation finish so the capture is not mid-fade.
-    await page.waitForTimeout(500);
-    const panel = page.getByLabel("Close AI Coach").locator("xpath=ancestor::div[contains(@style,'flex-direction: column')][1]");
-    console.log(`panel opacity -> ${await panel.evaluate((el) => getComputedStyle(el).opacity)}, background -> ${await panel.evaluate((el) => getComputedStyle(el).backgroundColor)}`);
-    await page.screenshot({ path: join(OUT, "panel-budget.png") });
     await ctx.close();
 } finally {
   await browser.close();
-  release();
 }

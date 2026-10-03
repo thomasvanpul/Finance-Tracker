@@ -6,14 +6,12 @@ import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
-import { acquireCaptureLock } from "./capture-lock.js";
+import { signInSeedUser, openAccountPrefs, assertRoute } from "./account-prefs.js";
 
 const FRONTEND = "http://localhost:4321";
 const API = "http://localhost:3001";
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "../../.review/shots/mario-decision");
 
-const release = acquireCaptureLock();
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
 try {
@@ -42,49 +40,46 @@ try {
       }
     });
 
-    const signIn = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-      headers: { "Content-Type": "application/json", Origin: FRONTEND },
-      data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-    });
-    if (!signIn.ok()) throw new Error(`sign-in failed: ${signIn.status()} ${await signIn.text()}`);
-    const cookies = await ctx.cookies();
-    await ctx.clearCookies();
-    await ctx.addCookies(cookies.map((c) => ({ ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const })));
-
-    // An un-onboarded seed account renders the questionnaire on every route.
-    // PUT persona re-stamps onboarded_at; the persona itself is kept.
-    const personaRes = await ctx.request.get(`${FRONTEND}/api/settings/persona`);
-    const persona = (await personaRes.json()) as { persona: string | null; onboarded: boolean };
-    if (!persona.onboarded) {
-      const put = await ctx.request.put(`${FRONTEND}/api/settings/persona`, {
-        headers: { "Content-Type": "application/json" },
-        data: { persona: persona.persona ?? "full" },
-      });
-      console.log(`seed account was not onboarded; re-stamped persona ${persona.persona ?? "full"}: ${put.status()}`);
-    }
-
-    const CANDIDATE = `[data-theme="mario"] {
-      --ft-base: #0C2A78; --ft-surface: #143386; --ft-raised: #1D3F9A;
-      --ft-border: #6080D8; --ft-border2: #7A96E0;
-      --ft-text: #FCFCFC; --ft-muted: #D4E4FF; --ft-dim: #A9C0F2; --ft-accent: #F8C800;
-      --ft-amber: #F5A623; --ft-orange: #FF8A4C; --ft-green: #5BD65B; --ft-red: #FF8070;
-      --ft-blue: #9DB8FF; --ft-cyan: #90DCFC; }`;
-    const page = await ctx.newPage();
-    for (const route of ["", "accounts"]) {
-      await page.goto(`${FRONTEND}/${route}`, { waitUntil: "networkidle" });
-      if (await page.getByText("Let's shape the app around", { exact: false }).count()) {
-        throw new Error("landed on the onboarding questionnaire; refusing to capture it");
+    const cookie = await signInSeedUser(ctx);
+    const prefs = await openAccountPrefs(ctx, cookie);
+    try {
+      // An un-onboarded seed account renders the questionnaire on every route.
+      // PUT persona re-stamps onboarded_at; the persona itself is kept.
+      const personaRes = await ctx.request.get(`${FRONTEND}/api/settings/persona`);
+      const persona = (await personaRes.json()) as { persona: string | null; onboarded: boolean };
+      if (!persona.onboarded) {
+        const put = await ctx.request.put(`${FRONTEND}/api/settings/persona`, {
+          headers: { "Content-Type": "application/json" },
+          data: { persona: persona.persona ?? "full" },
+        });
+        console.log(`seed account was not onboarded; re-stamped persona ${persona.persona ?? "full"}: ${put.status()}`);
       }
-      await page.evaluate(() => { document.documentElement.dataset.theme = "mario"; });
-      await page.waitForTimeout(400);
-      await page.screenshot({ path: join(OUT, `${route || "dashboard"}-current.png`) });
-      await page.addStyleTag({ content: CANDIDATE });
-      await page.waitForTimeout(400);
-      await page.screenshot({ path: join(OUT, `${route || "dashboard"}-candidate.png`) });
-      console.log(`${route || "dashboard"}: shot`);
+
+      const CANDIDATE = `[data-theme="mario"] {
+        --ft-base: #0C2A78; --ft-surface: #143386; --ft-raised: #1D3F9A;
+        --ft-border: #6080D8; --ft-border2: #7A96E0;
+        --ft-text: #FCFCFC; --ft-muted: #D4E4FF; --ft-dim: #A9C0F2; --ft-accent: #F8C800;
+        --ft-amber: #F5A623; --ft-orange: #FF8A4C; --ft-green: #5BD65B; --ft-red: #FF8070;
+        --ft-blue: #9DB8FF; --ft-cyan: #90DCFC; }`;
+      const page = await ctx.newPage();
+      for (const route of ["", "accounts"]) {
+        await page.goto(`${FRONTEND}/${route}`, { waitUntil: "networkidle" });
+        if (route === "") await assertRoute(page, "/");
+        if (await page.getByText("Let's shape the app around", { exact: false }).count()) {
+          throw new Error("landed on the onboarding questionnaire; refusing to capture it");
+        }
+        await page.evaluate(() => { document.documentElement.dataset.theme = "mario"; });
+        await page.waitForTimeout(400);
+        await page.screenshot({ path: join(OUT, `${route || "dashboard"}-current.png`) });
+        await page.addStyleTag({ content: CANDIDATE });
+        await page.waitForTimeout(400);
+        await page.screenshot({ path: join(OUT, `${route || "dashboard"}-candidate.png`) });
+        console.log(`${route || "dashboard"}: shot`);
+      }
+    } finally {
+      await prefs.restore();
     }
     await ctx.close();
 } finally {
   await browser.close();
-  release();
 }

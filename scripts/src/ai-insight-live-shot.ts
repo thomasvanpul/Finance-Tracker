@@ -8,14 +8,12 @@ import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
-import { acquireCaptureLock } from "./capture-lock.js";
+import { signInSeedUser, openAccountPrefs, assertRoute } from "./account-prefs.js";
 
 const FRONTEND = "http://localhost:4321";
 const API = "http://localhost:3001";
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "../../.review/shots/ai-insight-live");
 
-const release = acquireCaptureLock();
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
 try {
@@ -44,53 +42,54 @@ try {
       }
     });
 
-    const signIn = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-      headers: { "Content-Type": "application/json", Origin: FRONTEND },
-      data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-    });
-    if (!signIn.ok()) throw new Error(`sign-in failed: ${signIn.status()} ${await signIn.text()}`);
-    const cookies = await ctx.cookies();
-    await ctx.clearCookies();
-    await ctx.addCookies(cookies.map((c) => ({ ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const })));
+    const cookie = await signInSeedUser(ctx);
+    const prefs = await openAccountPrefs(ctx, cookie);
+    try {
+      // AI is opt-in (BACKLOG § I7): without this the page shows "AI is off
+      // for this account." instead of the AI output this script captures.
+      await prefs.setPreference("nr-ai-enabled", "true");
 
-    // An un-onboarded seed account renders the questionnaire on every route.
-    // PUT persona re-stamps onboarded_at; the persona itself is kept.
-    const personaRes = await ctx.request.get(`${FRONTEND}/api/settings/persona`);
-    const persona = (await personaRes.json()) as { persona: string | null; onboarded: boolean };
-    if (!persona.onboarded) {
-      const put = await ctx.request.put(`${FRONTEND}/api/settings/persona`, {
-        headers: { "Content-Type": "application/json" },
-        data: { persona: persona.persona ?? "full" },
-      });
-      console.log(`seed account was not onboarded; re-stamped persona ${persona.persona ?? "full"}: ${put.status()}`);
-    }
-
-    const RUNS = Number(process.env.RUNS ?? 3);
-    for (let i = 1; i <= RUNS; i++) {
-      const page = await ctx.newPage();
-      const chat = page.waitForResponse((r) => r.url().endsWith("/api/ai/chat"), { timeout: 60_000 }).catch(() => null);
-      await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle" });
-      if (await page.getByText("Let's shape the app around", { exact: false }).count()) {
-        throw new Error("landed on the onboarding questionnaire; refusing to capture it");
+      // An un-onboarded seed account renders the questionnaire on every route.
+      // PUT persona re-stamps onboarded_at; the persona itself is kept.
+      const personaRes = await ctx.request.get(`${FRONTEND}/api/settings/persona`);
+      const persona = (await personaRes.json()) as { persona: string | null; onboarded: boolean };
+      if (!persona.onboarded) {
+        const put = await ctx.request.put(`${FRONTEND}/api/settings/persona`, {
+          headers: { "Content-Type": "application/json" },
+          data: { persona: persona.persona ?? "full" },
+        });
+        console.log(`seed account was not onboarded; re-stamped persona ${persona.persona ?? "full"}: ${put.status()}`);
       }
-      const res = await chat;
-      if (res) await res.finished().catch(() => null);
-      await page.waitForTimeout(1500);
-      const refresh = page.getByRole("button", { name: "Refresh AI insights" }).first();
-      const region = (await refresh.count())
-        ? await refresh.evaluate((el) => {
-            let n: HTMLElement | null = el as HTMLElement;
-            for (let k = 0; k < 4 && n?.parentElement; k++) n = n.parentElement;
-            return n?.innerText ?? "";
-          })
-        : "(no insight card on the page)";
-      console.log(`--- run ${i}: /api/ai/chat ${res ? res.status() : "not requested"}`);
-      console.log(region.replace(/\n+/g, " | ").slice(0, 900));
-      await page.screenshot({ path: join(OUT, `run-${i}.png`), clip: { x: 0, y: 0, width: 1440, height: 420 } });
-      await page.close();
+
+      const RUNS = Number(process.env.RUNS ?? 3);
+      for (let i = 1; i <= RUNS; i++) {
+        const page = await ctx.newPage();
+        const chat = page.waitForResponse((r) => r.url().endsWith("/api/ai/chat"), { timeout: 60_000 }).catch(() => null);
+        await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle" });
+        await assertRoute(page, "/");
+        if (await page.getByText("Let's shape the app around", { exact: false }).count()) {
+          throw new Error("landed on the onboarding questionnaire; refusing to capture it");
+        }
+        const res = await chat;
+        if (res) await res.finished().catch(() => null);
+        await page.waitForTimeout(1500);
+        const refresh = page.getByRole("button", { name: "Refresh AI insights" }).first();
+        const region = (await refresh.count())
+          ? await refresh.evaluate((el) => {
+              let n: HTMLElement | null = el as HTMLElement;
+              for (let k = 0; k < 4 && n?.parentElement; k++) n = n.parentElement;
+              return n?.innerText ?? "";
+            })
+          : "(no insight card on the page)";
+        console.log(`--- run ${i}: /api/ai/chat ${res ? res.status() : "not requested"}`);
+        console.log(region.replace(/\n+/g, " | ").slice(0, 900));
+        await page.screenshot({ path: join(OUT, `run-${i}.png`), clip: { x: 0, y: 0, width: 1440, height: 420 } });
+        await page.close();
+      }
+    } finally {
+      await prefs.restore();
     }
     await ctx.close();
 } finally {
   await browser.close();
-  release();
 }

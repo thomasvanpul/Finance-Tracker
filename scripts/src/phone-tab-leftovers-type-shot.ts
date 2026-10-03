@@ -11,8 +11,7 @@ import { chromium, type Browser, type BrowserContext, type Locator } from "playw
 import { mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
-import { acquireCaptureLock } from "./capture-lock.js";
+import { signInSeedUser, openAccountPrefs, assertRoute, type AccountPrefs } from "./account-prefs.js";
 
 const FRONTEND = "http://localhost:4321";
 const API = "http://localhost:3001";
@@ -62,14 +61,7 @@ async function signedInContext(
       if (!(e instanceof Error) || !/disposed|closed/i.test(e.message)) throw e;
     }
   });
-  const signIn = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { "Content-Type": "application/json", Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!signIn.ok()) throw new Error(`sign-in failed: ${signIn.status()} ${await signIn.text()}`);
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map((c) => ({ ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const })));
+  await signInSeedUser(ctx);
   return ctx;
 }
 
@@ -84,10 +76,15 @@ async function refuseOnboarding(page: import("playwright").Page) {
 }
 
 
-const release = acquireCaptureLock();
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
+let prefs: AccountPrefs | null = null;
 try {
+  // One prefs session for the run, in a context of its own so it outlives the
+  // capture contexts: it takes the capture lock and pins nr-default-page to "/"
+  // so HOME is HOME. restore() in the finally puts the account back.
+  const prefsCtx = await browser.newContext();
+  prefs = await openAccountPrefs(prefsCtx, await signInSeedUser(prefsCtx));
   const ctx = await signedInContext(
     browser,
     { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
@@ -98,6 +95,7 @@ try {
 
   // App.tsx's DefaultPageRedirector redirects the first load once per session.
   await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle" });
+  await assertRoute(page, "/");
   await refuseOnboarding(page);
 
   // ── SPENDING ─────────────────────────────────────────────────────
@@ -131,6 +129,9 @@ try {
   console.log(`final url ${page.url()}`);
   await ctx.close();
 } finally {
-  await browser.close();
-  release();
+  try {
+    await prefs?.restore();
+  } finally {
+    await browser.close();
+  }
 }

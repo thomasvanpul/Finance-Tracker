@@ -8,22 +8,22 @@
 // three. This asserts the two surfaces agree on the row labels and figures,
 // which is the whole claim of "one rendering, two densities".
 import { chromium } from 'playwright';
-import { SEED_EMAIL, SEED_PASSWORD } from './seed-credentials.js';
-import { acquireCaptureLock } from './capture-lock.js';
-
-// One capture at a time. This script PUTs the seed account's theme, which is
-// an account-level column shared with every other capture script — two runs at
-// once overwrite each other and one photographs the other's state. Refuses to
-// start while another capture holds the lock; released on exit, including an
-// uncaught throw or Ctrl-C. See capture-lock.ts.
-acquireCaptureLock();
-
+import { signInSeedUser, openAccountPrefs, assertRoute } from './account-prefs.js';
 
 const FRONTEND = 'http://localhost:4321';
 const API = 'http://localhost:3001';
 const OUT = '/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots';
 
 const browser = await chromium.launch();
+// One capture at a time. This script sets the seed account's theme, which is
+// an account-level column shared with every other capture script — two runs at
+// once overwrite each other and one photographs the other's state.
+// openAccountPrefs takes the capture lock (see capture-lock.ts), pins
+// nr-default-page to "/" so the HOME and dashboard loads are really "/", and
+// restore() puts the theme and the landing page back. Its own context, so it
+// outlives the per-shot contexts below.
+const prefsCtx = await browser.newContext();
+const prefs = await openAccountPrefs(prefsCtx, await signInSeedUser(prefsCtx));
 
 async function proxy(ctx: import('playwright').BrowserContext) {
   await ctx.route(`${FRONTEND}/api/**`, async route => {
@@ -45,17 +45,6 @@ async function proxy(ctx: import('playwright').BrowserContext) {
       if (!(e instanceof Error) || !/disposed|closed/i.test(e.message)) throw e;
     }
   });
-}
-
-async function login(ctx: import('playwright').BrowserContext) {
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { 'Content-Type': 'application/json', 'Origin': FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) { console.error('sign-in failed', res.status(), await res.text()); process.exit(1); }
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map(c => ({ ...c, name: c.name.replace(/^__Secure-/, ''), secure: false, sameSite: 'Lax' as const })));
 }
 
 let failures = 0;
@@ -81,75 +70,78 @@ const marks = () => {
   };
 };
 
-const bg = new Map<string, string>();
+try {
+  const bg = new Map<string, string>();
 
-// ── Phone: WORTH, both themes ────────────────────────────────────────────
-let phoneMarks: ReturnType<typeof marks> | null = null;
-for (const theme of ['void', 'arctic'] as const) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  await login(ctx);
-  // The theme is server-side. Setting localStorage["ft-theme"] captures the
-  // default theme twice and the two shots come out pixel-identical.
-  const r = await ctx.request.put(`${API}/api/settings/theme`, {
-    headers: { 'Content-Type': 'application/json', Origin: FRONTEND }, data: { theme },
-  });
-  if (!r.ok()) { console.error('theme PUT failed', theme, r.status()); process.exit(1); }
-  await proxy(ctx);
-  const page = await ctx.newPage();
-  await page.addInitScript(`try{window.localStorage.setItem("ft-onboarding-complete","1");window.localStorage.setItem("nr-onboarding-complete","1")}catch(e){}`);
-  await page.goto(`${FRONTEND}/net-worth`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2600);
+  // ── Phone: WORTH, both themes ────────────────────────────────────────────
+  let phoneMarks: ReturnType<typeof marks> | null = null;
+  for (const theme of ['void', 'arctic'] as const) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    await signInSeedUser(ctx);
+    // The theme is server-side. Setting localStorage["ft-theme"] captures the
+    // default theme twice and the two shots come out pixel-identical.
+    await prefs.setTheme(theme);
+    await proxy(ctx);
+    const page = await ctx.newPage();
+    await page.addInitScript(`try{window.localStorage.setItem("ft-onboarding-complete","1");window.localStorage.setItem("nr-onboarding-complete","1")}catch(e){}`);
+    await page.goto(`${FRONTEND}/net-worth`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2600);
 
-  const applied = await page.evaluate(() => ({
-    attr: document.documentElement.getAttribute('data-theme') ?? '',
-    bg: getComputedStyle(document.body).backgroundColor,
-  }));
-  check(`${theme} applied`, theme === 'void' ? applied.attr === '' : applied.attr === theme, applied);
-  bg.set(theme, applied.bg);
+    const applied = await page.evaluate(() => ({
+      attr: document.documentElement.getAttribute('data-theme') ?? '',
+      bg: getComputedStyle(document.body).backgroundColor,
+    }));
+    check(`${theme} applied`, theme === 'void' ? applied.attr === '' : applied.attr === theme, applied);
+    bg.set(theme, applied.bg);
 
-  const m = await page.evaluate(marks);
-  check(`${theme} WORTH carries WHAT CHANGED`, m.found, { found: m.found });
-  check(`${theme} it drills`, m.hrefs.length > 0, { hrefs: m.hrefs.length });
-  if (theme === 'void') phoneMarks = m;
-  await page.screenshot({ path: `${OUT}/phone-${theme}-worth-attribution.png` });
+    const m = await page.evaluate(marks);
+    check(`${theme} WORTH carries WHAT CHANGED`, m.found, { found: m.found });
+    check(`${theme} it drills`, m.hrefs.length > 0, { hrefs: m.hrefs.length });
+    if (theme === 'void') phoneMarks = m;
+    await page.screenshot({ path: `${OUT}/phone-${theme}-worth-attribution.png` });
 
-  // It must be gone from HOME — one finding, one place.
-  await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2200);
-  const home = await page.evaluate(() => document.body.innerText);
-  check(`${theme} HOME no longer states it`, !/WHAT CHANGED/.test(home), { has: /WHAT CHANGED/.test(home) });
-  await ctx.close();
-}
-check('the two themes render different grounds', bg.get('void') !== bg.get('arctic'), Object.fromEntries(bg));
-
-// ── Desktop: the one-liner, workings disclosed ───────────────────────────
-{
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
-  await login(ctx);
-  await ctx.request.put(`${API}/api/settings/theme`, { headers: { 'Content-Type': 'application/json', Origin: FRONTEND }, data: { theme: 'void' } });
-  await proxy(ctx);
-  const page = await ctx.newPage();
-  await page.addInitScript(`try{window.localStorage.setItem("ft-onboarding-complete","1");window.localStorage.setItem("nr-onboarding-complete","1")}catch(e){}`);
-  await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2600);
-  const toggle = page.locator('text=Workings').first();
-  const hasToggle = await toggle.count() > 0;
-  check('desktop still offers the workings disclosure', hasToggle, { hasToggle });
-  if (hasToggle) { await toggle.click(); await page.waitForTimeout(700); }
-  const d = await page.evaluate(marks);
-  await page.screenshot({ path: `${OUT}/desktop-attribution-workings.png`, clip: { x: 0, y: 0, width: 1440, height: 460 } });
-
-  // The convergence claim, asserted rather than asserted-about: both
-  // densities render the same drill targets and the same figures.
-  if (phoneMarks != null) {
-    const p = new Set(phoneMarks.hrefs), q = new Set(d.hrefs);
-    const missing = [...q].filter(h => !p.has(h));
-    check('phone drills to everything desktop drills to', missing.length === 0, { missing });
-    const pf = new Set(phoneMarks.figures), qf = new Set(d.figures);
-    const lost = [...qf].filter(f => !pf.has(f));
-    check('phone states every figure desktop states', lost.length === 0, { lost });
+    // It must be gone from HOME — one finding, one place.
+    await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
+    await assertRoute(page, '/');
+    await page.waitForTimeout(2200);
+    const home = await page.evaluate(() => document.body.innerText);
+    check(`${theme} HOME no longer states it`, !/WHAT CHANGED/.test(home), { has: /WHAT CHANGED/.test(home) });
+    await ctx.close();
   }
-  await ctx.close();
+  check('the two themes render different grounds', bg.get('void') !== bg.get('arctic'), Object.fromEntries(bg));
+
+  // ── Desktop: the one-liner, workings disclosed ───────────────────────────
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+    await signInSeedUser(ctx);
+    await prefs.setTheme('void');
+    await proxy(ctx);
+    const page = await ctx.newPage();
+    await page.addInitScript(`try{window.localStorage.setItem("ft-onboarding-complete","1");window.localStorage.setItem("nr-onboarding-complete","1")}catch(e){}`);
+    await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
+    await assertRoute(page, '/');
+    await page.waitForTimeout(2600);
+    const toggle = page.locator('text=Workings').first();
+    const hasToggle = await toggle.count() > 0;
+    check('desktop still offers the workings disclosure', hasToggle, { hasToggle });
+    if (hasToggle) { await toggle.click(); await page.waitForTimeout(700); }
+    const d = await page.evaluate(marks);
+    await page.screenshot({ path: `${OUT}/desktop-attribution-workings.png`, clip: { x: 0, y: 0, width: 1440, height: 460 } });
+
+    // The convergence claim, asserted rather than asserted-about: both
+    // densities render the same drill targets and the same figures.
+    if (phoneMarks != null) {
+      const p = new Set(phoneMarks.hrefs), q = new Set(d.hrefs);
+      const missing = [...q].filter(h => !p.has(h));
+      check('phone drills to everything desktop drills to', missing.length === 0, { missing });
+      const pf = new Set(phoneMarks.figures), qf = new Set(d.figures);
+      const lost = [...qf].filter(f => !pf.has(f));
+      check('phone states every figure desktop states', lost.length === 0, { lost });
+    }
+    await ctx.close();
+  }
+} finally {
+  await prefs.restore();
 }
 
 await browser.close();

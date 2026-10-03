@@ -10,7 +10,7 @@
 // Usage: tsx scripts/src/attribution-shot.ts <label>
 
 import { chromium } from 'playwright';
-import { SEED_EMAIL, SEED_PASSWORD } from './seed-credentials.js';
+import { signInSeedUser, openAccountPrefs, assertRoute } from './account-prefs.js';
 
 const FRONTEND = 'http://localhost:4321';
 const API = 'http://localhost:3001';
@@ -18,6 +18,11 @@ const OUT = '/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots';
 const LABEL = process.argv[2] ?? 'plain';
 
 const browser = await chromium.launch();
+// openAccountPrefs takes the capture lock and pins nr-default-page to "/", so
+// both loads of "/" below are the dashboard / HOME; restore() puts the
+// landing page back. Its own context, so it outlives the per-shot contexts.
+const prefsCtx = await browser.newContext();
+const prefs = await openAccountPrefs(prefsCtx, await signInSeedUser(prefsCtx));
 
 async function proxy(ctx: import('playwright').BrowserContext) {
   await ctx.route(`${FRONTEND}/api/**`, async route => {
@@ -42,14 +47,7 @@ async function proxy(ctx: import('playwright').BrowserContext) {
 
 async function makePage(width: number, height: number) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2 });
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { 'Content-Type': 'application/json', Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) { console.error('sign-in failed', res.status(), await res.text()); process.exit(1); }
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map(c => ({ ...c, name: c.name.replace(/^__Secure-/, ''), secure: false, sameSite: 'Lax' as const })));
+  await signInSeedUser(ctx);
   await proxy(ctx);
   const page = await ctx.newPage();
   await page.addInitScript(`try {
@@ -85,24 +83,30 @@ async function bandText(page: import('playwright').Page): Promise<string> {
   });
 }
 
-{
-  const { ctx, page } = await makePage(1440, 900);
-  await page.goto(`${FRONTEND}/`, { waitUntil: 'domcontentloaded' });
-  await settle(page);
-  console.log(`desktop /  → ${await bandText(page)}`);
-  await page.screenshot({ path: `${OUT}/attribution_${LABEL}_desktop_dashboard.png`, fullPage: false });
-  await page.unrouteAll({ behavior: 'ignoreErrors' });
-  await ctx.close();
-}
+try {
+  {
+    const { ctx, page } = await makePage(1440, 900);
+    await page.goto(`${FRONTEND}/`, { waitUntil: 'domcontentloaded' });
+    await settle(page);
+    await assertRoute(page, '/');
+    console.log(`desktop /  → ${await bandText(page)}`);
+    await page.screenshot({ path: `${OUT}/attribution_${LABEL}_desktop_dashboard.png`, fullPage: false });
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await ctx.close();
+  }
 
-{
-  const { ctx, page } = await makePage(390, 844);
-  await page.goto(`${FRONTEND}/`, { waitUntil: 'domcontentloaded' });
-  await settle(page);
-  console.log(`phone /    → ${await bandText(page)}`);
-  await page.screenshot({ path: `${OUT}/attribution_${LABEL}_phone_home.png`, fullPage: false });
-  await page.unrouteAll({ behavior: 'ignoreErrors' });
-  await ctx.close();
+  {
+    const { ctx, page } = await makePage(390, 844);
+    await page.goto(`${FRONTEND}/`, { waitUntil: 'domcontentloaded' });
+    await settle(page);
+    await assertRoute(page, '/');
+    console.log(`phone /    → ${await bandText(page)}`);
+    await page.screenshot({ path: `${OUT}/attribution_${LABEL}_phone_home.png`, fullPage: false });
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await ctx.close();
+  }
+} finally {
+  await prefs.restore();
 }
 
 await browser.close();

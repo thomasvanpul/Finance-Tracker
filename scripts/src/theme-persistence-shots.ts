@@ -20,64 +20,16 @@
 // Run:
 //   pnpm --filter @workspace/scripts exec tsx src/theme-persistence-shots.ts
 
-import { chromium, type Browser, type BrowserContext } from "playwright";
-// BrowserContext used for signIn / putThemeToServer signatures below.
+import { chromium, type Browser } from "playwright";
 import { mkdir } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
-import { acquireCaptureLock } from "./capture-lock.js";
-
-// One capture at a time. This script PUTs the seed account's theme, which is
-// an account-level column shared with every other capture script — two runs at
-// once overwrite each other and one photographs the other's state. Refuses to
-// start while another capture holds the lock; released on exit, including an
-// uncaught throw or Ctrl-C. See capture-lock.ts.
-acquireCaptureLock();
-
+import { signInSeedUser, openAccountPrefs, assertRoute } from "./account-prefs.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(__dirname, "../screenshots");
 const FRONTEND = "http://localhost:4321";
-const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
 const VIEWPORT = { width: 1440, height: 900 } as const;
-
-async function signIn(context: BrowserContext): Promise<void> {
-  const res = await context.request.post(`${API_BASE}/api/auth/sign-in/email`, {
-    headers: { "Content-Type": "application/json", "Origin": FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) {
-    throw new Error(`sign-in failed: ${res.status()} ${await res.text()}`);
-  }
-  // Same __Secure- rewrite as the main screenshot harness — Vite's proxy
-  // strips the prefix, and the http://localhost origin cannot store a
-  // Secure cookie anyway.
-  const cookies = await context.cookies();
-  await context.clearCookies();
-  await context.addCookies(cookies.map((c) => ({
-    ...c,
-    name: c.name.replace(/^__Secure-/, ""),
-    secure: false,
-    sameSite: "Lax" as const,
-  })));
-}
-
-async function putThemeToServer(context: BrowserContext, theme: string): Promise<void> {
-  // Direct hit against API_BASE with Origin whitelisted, same
-  // shape as signIn(). Cookies from context are already correctly
-  // named for the api (signIn stripped __Secure- so the browser
-  // could store them; the api's dev config accepts either form).
-  const cookies = await context.cookies();
-  const cookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
-  const res = await context.request.put(`${API_BASE}/api/settings/theme`, {
-    headers: { "Content-Type": "application/json", "Origin": FRONTEND, cookie: cookieHeader },
-    data: { theme },
-  });
-  if (!res.ok()) {
-    throw new Error(`PUT /settings/theme failed: ${res.status()} ${await res.text()}`);
-  }
-}
 
 async function shotSignedOut(browser: Browser): Promise<string> {
   const context = await browser.newContext({ viewport: VIEWPORT, storageState: undefined });
@@ -100,23 +52,35 @@ async function shotSignedOut(browser: Browser): Promise<string> {
 
 async function shotSignedInAfterThemeChange(browser: Browser): Promise<string> {
   const context = await browser.newContext({ viewport: VIEWPORT, storageState: undefined });
-  await signIn(context);
-  await putThemeToServer(context, "arctic");
-  // Deliberately NO proxyApi interceptor — the browser talks to Vite
-  // on :4321, which forwards /api/* to :3001 with the __Secure- cookie
-  // prefix re-added. proxyApi is the harness's workaround for cases
-  // where the Vite proxy's origin-rewrite trips dev CORS; this
-  // capture doesn't need it, and installing it made the client's own
-  // fetch see a mangled cookie header (Vite direct: 200 session; via
-  // proxyApi: session hydrate quietly returned null).
-  const page = await context.newPage();
-  await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle", timeout: 20000 });
-  // Wait past initial paint → session resolve → server theme fetch.
-  await page.waitForTimeout(1500);
-  const themeAttr = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
-  console.log(`[theme-persist] rendered data-theme: ${themeAttr}`);
+  // One capture at a time. This script sets the seed account's theme, which is
+  // an account-level column shared with every other capture script — two runs
+  // at once overwrite each other and one photographs the other's state.
+  // openAccountPrefs takes the capture lock (see capture-lock.ts), pins
+  // nr-default-page to "/" so the dashboard load is the dashboard, and
+  // restore() puts the theme and the landing page back.
+  const cookie = await signInSeedUser(context);
+  const prefs = await openAccountPrefs(context, cookie);
   const out = resolve(OUT_DIR, "theme-persist-02-signed-in-arctic.png");
-  await page.screenshot({ path: out, fullPage: false });
+  try {
+    await prefs.setTheme("arctic");
+    // Deliberately NO proxyApi interceptor — the browser talks to Vite
+    // on :4321, which forwards /api/* to :3001 with the __Secure- cookie
+    // prefix re-added. proxyApi is the harness's workaround for cases
+    // where the Vite proxy's origin-rewrite trips dev CORS; this
+    // capture doesn't need it, and installing it made the client's own
+    // fetch see a mangled cookie header (Vite direct: 200 session; via
+    // proxyApi: session hydrate quietly returned null).
+    const page = await context.newPage();
+    await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle", timeout: 20000 });
+    // Wait past initial paint → session resolve → server theme fetch.
+    await page.waitForTimeout(1500);
+    await assertRoute(page, "/");
+    const themeAttr = await page.evaluate(() => document.documentElement.getAttribute("data-theme"));
+    console.log(`[theme-persist] rendered data-theme: ${themeAttr}`);
+    await page.screenshot({ path: out, fullPage: false });
+  } finally {
+    await prefs.restore();
+  }
   await context.close();
   return out;
 }

@@ -23,12 +23,7 @@
 // Usage:
 //   tsx scripts/src/allocation-shot.ts <suffix>
 import { chromium } from 'playwright';
-import { SEED_EMAIL, SEED_PASSWORD } from './seed-credentials.js';
-import { acquireCaptureLock } from './capture-lock.js';
-
-// One capture at a time: this PUTs the seed account's theme, an account-level
-// column shared with every other capture script.
-acquireCaptureLock();
+import { signInSeedUser, openAccountPrefs, assertRoute } from './account-prefs.js';
 
 const FRONTEND = 'http://localhost:4321';
 const API = 'http://localhost:3001';
@@ -36,6 +31,13 @@ const OUT = '/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots';
 const SUFFIX = process.argv[2] ?? 'state';
 
 const browser = await chromium.launch();
+// One capture at a time: this sets the seed account's theme, an account-level
+// column shared with every other capture script. openAccountPrefs takes the
+// capture lock, pins nr-default-page to "/" so the dashboard shot is the
+// dashboard, and restore() puts the theme and the landing page back. It runs
+// in a context of its own so it outlives the per-shot contexts below.
+const prefsCtx = await browser.newContext();
+const prefs = await openAccountPrefs(prefsCtx, await signInSeedUser(prefsCtx));
 
 async function proxy(ctx: import('playwright').BrowserContext) {
   await ctx.route(`${FRONTEND}/api/**`, async route => {
@@ -57,24 +59,6 @@ async function proxy(ctx: import('playwright').BrowserContext) {
       if (!(e instanceof Error) || !/disposed|closed/i.test(e.message)) throw e;
     }
   });
-}
-
-async function login(ctx: import('playwright').BrowserContext) {
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { 'Content-Type': 'application/json', 'Origin': FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) { console.error('sign-in failed', res.status(), await res.text()); process.exit(1); }
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map(c => ({ ...c, name: c.name.replace(/^__Secure-/, ''), secure: false, sameSite: 'Lax' as const })));
-}
-
-async function setTheme(ctx: import('playwright').BrowserContext, theme: string) {
-  const r = await ctx.request.put(`${API}/api/settings/theme`, {
-    headers: { 'Content-Type': 'application/json', Origin: FRONTEND }, data: { theme },
-  });
-  if (!r.ok()) { console.error('theme PUT failed', theme, r.status()); process.exit(1); }
 }
 
 // What the band actually says, read out of the DOM. A figure that renders
@@ -106,116 +90,121 @@ function check(label: string, ok: boolean, detail: unknown) {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${label.padEnd(46)} ${JSON.stringify(detail)}`);
 }
 
-// Which state is live, straight from the API, so every shot below is
-// labelled with the state it actually shows AND every check below expects
-// the right thing. The disclosure exists only where there is a figure to
-// decompose; asserting it unconditionally reported the blocker state — the
-// state this task exists to build — as two failures.
-let hasFigure = false;
-{
-  const ctx = await browser.newContext();
-  await login(ctx);
-  const r = await ctx.request.get(`${API}/api/allocation`, { headers: { Origin: FRONTEND } });
-  const a = await r.json() as { status: string; dailyAllowance: number | null; driftDays: number; minDriftDays: number; blockers: string[] };
-  hasFigure = a.dailyAllowance != null;
-  console.log(`\nLIVE STATE  status=${a.status} allowance=${a.dailyAllowance} driftDays=${a.driftDays}/${a.minDriftDays} blockers=${JSON.stringify(a.blockers)}\n`);
-  await ctx.close();
-}
-
-// ── Phone: SPENDING ─────────────────────────────────────────────────────────
-for (const theme of ['void', 'arctic'] as const) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
-  await login(ctx);
-  await setTheme(ctx, theme);
-  await proxy(ctx);
-  const page = await ctx.newPage();
-  await page.addInitScript(`try{window.localStorage.setItem("ft-onboarding-complete","1");window.localStorage.setItem("nr-onboarding-complete","1")}catch(e){}`);
-  await page.goto(`${FRONTEND}/spending`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2600);
-
-  const m = await page.evaluate(bandMarks, 'SAFE TO SPEND');
-  check(`phone ${theme} band present`, m.found, m.text.slice(0, 150));
-  check(`phone ${theme} nothing clipped`, m.clipped.length === 0, m.clipped);
-  await page.screenshot({ path: `${OUT}/alloc-phone-${theme}-${SUFFIX}.png`, fullPage: false });
-  await ctx.close();
-}
-
-// ── Desktop: the dashboard band, closed then with workings open ─────────────
-for (const theme of ['void', 'arctic'] as const) {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
-  await login(ctx);
-  await setTheme(ctx, theme);
-  await proxy(ctx);
-  const page = await ctx.newPage();
-  await page.addInitScript(`try{window.localStorage.setItem("ft-onboarding-complete","1");window.localStorage.setItem("nr-onboarding-complete","1")}catch(e){}`);
-  await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(2800);
-
-  const m = await page.evaluate(bandMarks, 'SAFE TO SPEND');
-  check(`desktop ${theme} band present`, m.found, m.text.slice(0, 180));
-  check(`desktop ${theme} nothing clipped`, m.clipped.length === 0, m.clipped);
-  await page.screenshot({ path: `${OUT}/alloc-desktop-${theme}-${SUFFIX}-closed.png`, clip: { x: 0, y: 0, width: 1440, height: 260 } });
-
-  // The band's own Workings, not WHAT CHANGED's. Both say "Workings", so the
-  // one inside the SAFE TO SPEND row is selected by its row, not by its text
-  // — picking the first match on the page opens the wrong band.
-  // Two scopes, deliberately. `.last()` is the innermost div whose text
-  // starts with the key — the header row, which is where Workings lives and
-  // where the OTHER band's Workings must not be reachable from. `.first()`
-  // is the outermost — the whole band, which is where the legs appear once
-  // the disclosure is open. Using the header for both found zero leg drills
-  // and skipped the check in silence.
-  const row = page.locator('div', { hasText: /^SAFE TO SPEND/ }).last();
-  const band = page.locator('div', { hasText: /^SAFE TO SPEND/ }).first();
-  const workings = row.getByText('Workings', { exact: true }).first();
-  const workingsCount = await workings.count();
-  const hasWorkings = workingsCount > 0;
-  // Offered exactly when there is a figure, and NOT offered otherwise: in
-  // the waiting state the legs that were computed are inputs to a number
-  // that does not exist, and putting them under a toggle invites the reader
-  // to do the subtraction and arrive at the partial figure the engine
-  // withheld on purpose.
-  check(`desktop ${theme} workings offered iff figure`, hasWorkings === hasFigure, { workingsCount, hasFigure });
-
-  if (hasWorkings) {
-    // Hover first, and photograph it: the drill affordance is meant to be
-    // visible at rest AND to take the accent on hover (§14).
-    await workings.hover();
-    await page.waitForTimeout(200);
-    await page.screenshot({ path: `${OUT}/alloc-desktop-${theme}-${SUFFIX}-hover.png`, clip: { x: 0, y: 0, width: 1440, height: 260 } });
-
-    await workings.click();
-    await page.waitForTimeout(500);
-    const open = await page.evaluate(bandMarks, 'SAFE TO SPEND');
-    check(`desktop ${theme} workings nothing clipped`, open.clipped.length === 0, open.clipped);
-    console.log(`      OPEN ${theme}: ${open.text.slice(0, 400)}`);
-    await page.screenshot({ path: `${OUT}/alloc-desktop-${theme}-${SUFFIX}-open.png`, clip: { x: 0, y: 0, width: 1440, height: 460 } });
-
-    // A leg drill, hovered. This is the check §14 says only a screenshot
-    // can make: the underline is painted by the PARENT's computed value and
-    // an inline-block child swallows it.
-    // Scoped to the band. Picking the last drill on the PAGE selected one
-    // in a widget below the fold and reported "none" for a mark that was
-    // never being looked at.
-    const leg = band.locator('a.ft-drill, a:has(.ft-drill)').filter({ hasText: /£/ }).first();
-    const legCount = await leg.count();
-    // Not a silent skip. "No leg drill found" and "the leg drill draws
-    // nothing" are the same finding to a reader of this report, and the
-    // first version of this check reported neither because it returned early.
-    check(`desktop ${theme} leg drill present`, legCount > 0, { legCount });
-    if (legCount > 0) {
-      await leg.hover();
-      await page.waitForTimeout(200);
-      const deco = await leg.evaluate((el) => {
-        const child = el.querySelector('*') ?? el;
-        const cs = getComputedStyle(child as Element);
-        return { line: cs.textDecorationLine, colour: cs.textDecorationColor };
-      });
-      check(`desktop ${theme} leg drill underlined on hover`, deco.line.includes('underline'), deco);
-      await page.screenshot({ path: `${OUT}/alloc-desktop-${theme}-${SUFFIX}-drill-hover.png`, clip: { x: 0, y: 0, width: 1440, height: 460 } });
-    }
+try {
+  // Which state is live, straight from the API, so every shot below is
+  // labelled with the state it actually shows AND every check below expects
+  // the right thing. The disclosure exists only where there is a figure to
+  // decompose; asserting it unconditionally reported the blocker state — the
+  // state this task exists to build — as two failures.
+  let hasFigure = false;
+  {
+    const ctx = await browser.newContext();
+    await signInSeedUser(ctx);
+    const r = await ctx.request.get(`${API}/api/allocation`, { headers: { Origin: FRONTEND } });
+    const a = await r.json() as { status: string; dailyAllowance: number | null; driftDays: number; minDriftDays: number; blockers: string[] };
+    hasFigure = a.dailyAllowance != null;
+    console.log(`\nLIVE STATE  status=${a.status} allowance=${a.dailyAllowance} driftDays=${a.driftDays}/${a.minDriftDays} blockers=${JSON.stringify(a.blockers)}\n`);
+    await ctx.close();
   }
-  await ctx.close();
+
+  // ── Phone: SPENDING ─────────────────────────────────────────────────────────
+  for (const theme of ['void', 'arctic'] as const) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+    await signInSeedUser(ctx);
+    await prefs.setTheme(theme);
+    await proxy(ctx);
+    const page = await ctx.newPage();
+    await page.addInitScript(`try{window.localStorage.setItem("ft-onboarding-complete","1");window.localStorage.setItem("nr-onboarding-complete","1")}catch(e){}`);
+    await page.goto(`${FRONTEND}/spending`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2600);
+
+    const m = await page.evaluate(bandMarks, 'SAFE TO SPEND');
+    check(`phone ${theme} band present`, m.found, m.text.slice(0, 150));
+    check(`phone ${theme} nothing clipped`, m.clipped.length === 0, m.clipped);
+    await page.screenshot({ path: `${OUT}/alloc-phone-${theme}-${SUFFIX}.png`, fullPage: false });
+    await ctx.close();
+  }
+
+  // ── Desktop: the dashboard band, closed then with workings open ─────────────
+  for (const theme of ['void', 'arctic'] as const) {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
+    await signInSeedUser(ctx);
+    await prefs.setTheme(theme);
+    await proxy(ctx);
+    const page = await ctx.newPage();
+    await page.addInitScript(`try{window.localStorage.setItem("ft-onboarding-complete","1");window.localStorage.setItem("nr-onboarding-complete","1")}catch(e){}`);
+    await page.goto(`${FRONTEND}/`, { waitUntil: 'networkidle' });
+    await assertRoute(page, '/');
+    await page.waitForTimeout(2800);
+
+    const m = await page.evaluate(bandMarks, 'SAFE TO SPEND');
+    check(`desktop ${theme} band present`, m.found, m.text.slice(0, 180));
+    check(`desktop ${theme} nothing clipped`, m.clipped.length === 0, m.clipped);
+    await page.screenshot({ path: `${OUT}/alloc-desktop-${theme}-${SUFFIX}-closed.png`, clip: { x: 0, y: 0, width: 1440, height: 260 } });
+
+    // The band's own Workings, not WHAT CHANGED's. Both say "Workings", so the
+    // one inside the SAFE TO SPEND row is selected by its row, not by its text
+    // — picking the first match on the page opens the wrong band.
+    // Two scopes, deliberately. `.last()` is the innermost div whose text
+    // starts with the key — the header row, which is where Workings lives and
+    // where the OTHER band's Workings must not be reachable from. `.first()`
+    // is the outermost — the whole band, which is where the legs appear once
+    // the disclosure is open. Using the header for both found zero leg drills
+    // and skipped the check in silence.
+    const row = page.locator('div', { hasText: /^SAFE TO SPEND/ }).last();
+    const band = page.locator('div', { hasText: /^SAFE TO SPEND/ }).first();
+    const workings = row.getByText('Workings', { exact: true }).first();
+    const workingsCount = await workings.count();
+    const hasWorkings = workingsCount > 0;
+    // Offered exactly when there is a figure, and NOT offered otherwise: in
+    // the waiting state the legs that were computed are inputs to a number
+    // that does not exist, and putting them under a toggle invites the reader
+    // to do the subtraction and arrive at the partial figure the engine
+    // withheld on purpose.
+    check(`desktop ${theme} workings offered iff figure`, hasWorkings === hasFigure, { workingsCount, hasFigure });
+
+    if (hasWorkings) {
+      // Hover first, and photograph it: the drill affordance is meant to be
+      // visible at rest AND to take the accent on hover (§14).
+      await workings.hover();
+      await page.waitForTimeout(200);
+      await page.screenshot({ path: `${OUT}/alloc-desktop-${theme}-${SUFFIX}-hover.png`, clip: { x: 0, y: 0, width: 1440, height: 260 } });
+
+      await workings.click();
+      await page.waitForTimeout(500);
+      const open = await page.evaluate(bandMarks, 'SAFE TO SPEND');
+      check(`desktop ${theme} workings nothing clipped`, open.clipped.length === 0, open.clipped);
+      console.log(`      OPEN ${theme}: ${open.text.slice(0, 400)}`);
+      await page.screenshot({ path: `${OUT}/alloc-desktop-${theme}-${SUFFIX}-open.png`, clip: { x: 0, y: 0, width: 1440, height: 460 } });
+
+      // A leg drill, hovered. This is the check §14 says only a screenshot
+      // can make: the underline is painted by the PARENT's computed value and
+      // an inline-block child swallows it.
+      // Scoped to the band. Picking the last drill on the PAGE selected one
+      // in a widget below the fold and reported "none" for a mark that was
+      // never being looked at.
+      const leg = band.locator('a.ft-drill, a:has(.ft-drill)').filter({ hasText: /£/ }).first();
+      const legCount = await leg.count();
+      // Not a silent skip. "No leg drill found" and "the leg drill draws
+      // nothing" are the same finding to a reader of this report, and the
+      // first version of this check reported neither because it returned early.
+      check(`desktop ${theme} leg drill present`, legCount > 0, { legCount });
+      if (legCount > 0) {
+        await leg.hover();
+        await page.waitForTimeout(200);
+        const deco = await leg.evaluate((el) => {
+          const child = el.querySelector('*') ?? el;
+          const cs = getComputedStyle(child as Element);
+          return { line: cs.textDecorationLine, colour: cs.textDecorationColor };
+        });
+        check(`desktop ${theme} leg drill underlined on hover`, deco.line.includes('underline'), deco);
+        await page.screenshot({ path: `${OUT}/alloc-desktop-${theme}-${SUFFIX}-drill-hover.png`, clip: { x: 0, y: 0, width: 1440, height: 460 } });
+      }
+    }
+    await ctx.close();
+  }
+} finally {
+  await prefs.restore();
 }
 
 await browser.close();

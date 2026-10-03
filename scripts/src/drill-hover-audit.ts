@@ -13,14 +13,12 @@
 // Needs the api-server on :3001 and Vite on :4321.
 //   pnpm --filter @workspace/scripts exec tsx ./src/drill-hover-audit.ts
 import { chromium, type BrowserContext } from 'playwright';
-import { SEED_EMAIL, SEED_PASSWORD } from './seed-credentials.js';
-import { acquireCaptureLock } from './capture-lock.js';
+import { signInSeedUser, openAccountPrefs, assertRoute, type AccountPrefs } from './account-prefs.js';
 
 const FRONTEND = 'http://localhost:4321';
 const API = 'http://localhost:3001';
 const ROUTES = process.env.ROUTES ? process.env.ROUTES.split(',') : ['/', '/net-worth', '/accounts', '/transactions', '/budget', '/recurring', '/subscriptions', '/reports', '/calendar', '/briefing'];
 
-const release = acquireCaptureLock();
 const browser = await chromium.launch();
 
 async function proxy(ctx: BrowserContext) {
@@ -45,22 +43,17 @@ async function proxy(ctx: BrowserContext) {
   });
 }
 
-async function login(ctx: BrowserContext) {
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { 'Content-Type': 'application/json', Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) throw new Error(`sign-in failed ${res.status()}`);
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map(c => ({ ...c, name: c.name.replace(/^__Secure-/, ''), secure: false, sameSite: 'Lax' as const })));
-}
-
 let total = 0;
 let failing = 0;
+let prefs: AccountPrefs | null = null;
 try {
+  // Takes the capture lock and pins nr-default-page to "/", so "/" below is the
+  // dashboard; restore() in the finally puts the landing page back. Its own
+  // context, so it outlives the audit context.
+  const prefsCtx = await browser.newContext();
+  prefs = await openAccountPrefs(prefsCtx, await signInSeedUser(prefsCtx));
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  await login(ctx);
+  await signInSeedUser(ctx);
   await proxy(ctx);
   const page = await ctx.newPage();
   await page.addInitScript(`try {
@@ -74,6 +67,7 @@ try {
     try { await page.waitForSelector('.ft-drill', { timeout: 20000 }); } catch { /* route may have none */ }
     try { await page.waitForFunction(() => document.querySelectorAll('.ft-skeleton, [data-skeleton]').length === 0, { timeout: 15000 }); } catch { /* measured anyway */ }
     await page.waitForTimeout(4000);
+    if (path === '/') await assertRoute(page, '/');
     const drills = page.locator('.ft-drill');
     const n = await drills.count();
     let routeFails = 0;
@@ -113,8 +107,11 @@ try {
   await page.unrouteAll({ behavior: 'ignoreErrors' });
   await ctx.close();
 } finally {
-  await browser.close();
-  release();
+  try {
+    await prefs?.restore();
+  } finally {
+    await browser.close();
+  }
 }
 console.log(`TOTAL hovered=${total} failing=${failing}`);
 process.exitCode = failing ? 1 : 0;

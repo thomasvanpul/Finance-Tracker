@@ -4,16 +4,15 @@
 // and 1920 so the report can point at specific overflow / spread
 // behaviour. Not a matrix; four shots total.
 
-import { chromium, type BrowserContext } from "playwright";
+import { chromium } from "playwright";
 import { mkdir } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
+import { signInSeedUser, openAccountPrefs, assertRoute, type AccountPrefs } from "./account-prefs.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(__dirname, "../screenshots");
 const FRONTEND = "http://localhost:4321";
-const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
 
 // Narrow set for post-CQ verification. The 1024 and 1280 shots
 // showed no visible change from CQ (content above the 900 threshold);
@@ -21,33 +20,23 @@ const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
 const WIDTHS = [820, 1920] as const;
 const HEIGHT = 900;
 
-async function signIn(context: BrowserContext): Promise<void> {
-  const res = await context.request.post(`${API_BASE}/api/auth/sign-in/email`, {
-    headers: { "Content-Type": "application/json", "Origin": FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) throw new Error(`sign-in failed: ${res.status()} ${await res.text()}`);
-  const cookies = await context.cookies();
-  await context.clearCookies();
-  await context.addCookies(cookies.map((c) => ({
-    ...c,
-    name: c.name.replace(/^__Secure-/, ""),
-    secure: false,
-    sameSite: "Lax" as const,
-  })));
-}
-
 async function main(): Promise<void> {
   await mkdir(OUT_DIR, { recursive: true });
   const browser = await chromium.launch();
+  let prefs: AccountPrefs | null = null;
   try {
+    // Takes the capture lock and pins nr-default-page to "/", so every shot
+    // below is the dashboard; restore() in the finally puts the landing page
+    // back. Its own context, so it outlives the per-width contexts.
+    const prefsCtx = await browser.newContext();
+    prefs = await openAccountPrefs(prefsCtx, await signInSeedUser(prefsCtx));
     for (const width of WIDTHS) {
       const context = await browser.newContext({
         viewport: { width, height: HEIGHT },
         deviceScaleFactor: 1,
         storageState: undefined,
       });
-      await signIn(context);
+      await signInSeedUser(context);
       const page = await context.newPage();
       // Seed the onboarding-complete flag so the dashboard renders
       // rather than the onboarding gate.
@@ -59,13 +48,18 @@ async function main(): Promise<void> {
       });
       await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle", timeout: 25000 });
       await page.waitForTimeout(1200);
+      await assertRoute(page, "/");
       const out = resolve(OUT_DIR, `responsive-dashboard-${width}.png`);
       await page.screenshot({ path: out, fullPage: false });
       console.log(`[responsive] ${width}px → ${out}`);
       await context.close();
     }
   } finally {
-    await browser.close();
+    try {
+      await prefs?.restore();
+    } finally {
+      await browser.close();
+    }
   }
 }
 

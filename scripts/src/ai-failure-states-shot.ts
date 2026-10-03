@@ -20,10 +20,7 @@
 // Needs the api-server on :3001 and Vite on :4321.
 
 import { chromium } from "playwright";
-import { acquireCaptureLock } from "./capture-lock.js";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
-
-acquireCaptureLock();
+import { signInSeedUser, openAccountPrefs, assertRoute } from "./account-prefs.js";
 
 const FRONTEND = "http://localhost:4321";
 const API = "http://localhost:3001";
@@ -85,66 +82,64 @@ async function proxy(ctx: import("playwright").BrowserContext, mode: Mode): Prom
   });
 }
 
-async function login(ctx: import("playwright").BrowserContext): Promise<void> {
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { "Content-Type": "application/json", Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) { console.error("sign-in failed", res.status(), await res.text()); process.exit(1); }
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map((c) => ({ ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const })));
-}
-
 async function shot(mode: Mode, path: string, label: string): Promise<void> {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
-  await login(ctx);
-  await proxy(ctx, mode);
-  const page = await ctx.newPage();
-  await page.addInitScript(`try {
-    window.localStorage.setItem("ft-onboarding-complete", "1");
-    window.localStorage.setItem("nr-onboarding-complete", "1");
-  } catch (e) {}`);
-
-  // Not networkidle: the app holds a live market stream open, so the network
-  // never goes idle. The message wait below is the real readiness signal.
-  await page.goto(`${FRONTEND}${path}`, { waitUntil: "domcontentloaded" });
-  // visible=true: a page can carry a hidden second copy (the phone layout),
-  // and .first() on that one never becomes visible.
-  const message = page
-    .getByText(/AI (insights are unavailable|service is temporarily unavailable|assistant is not configured)/)
-    .locator("visible=true")
-    .first();
-  let found = true;
+  const cookie = await signInSeedUser(ctx);
+  // AI is opt-in (BACKLOG § I7): with nr-ai-enabled absent every panel would
+  // say "AI is off" and never reach the failure this script photographs.
+  const prefs = await openAccountPrefs(ctx, cookie);
   try {
-    await message.waitFor({ state: "visible", timeout: 15000 });
-  } catch {
-    found = false;
-  }
-  await page.waitForTimeout(500);
+    await prefs.setPreference("nr-ai-enabled", "true");
+    await proxy(ctx, mode);
+    const page = await ctx.newPage();
+    await page.addInitScript(`try {
+      window.localStorage.setItem("ft-onboarding-complete", "1");
+      window.localStorage.setItem("nr-onboarding-complete", "1");
+    } catch (e) {}`);
 
-  const out = `${OUT_DIR}/ai-failure_${mode}_${label}.png`;
-  // Always keep the page in context too: the crop shows the message, the
-  // viewport shows where it sits and whether its controls came with it.
-  await page.screenshot({ path: `${OUT_DIR}/ai-failure_${mode}_${label}_viewport.png` });
-  if (found) {
-    // The message's panel: nearest ancestor at least 300px wide, so the
-    // capture shows the surface the message sits in, not the bare line.
-    const handle = await message.evaluateHandle((el) => {
-      let n: HTMLElement | null = el as HTMLElement;
-      while (n && n.getBoundingClientRect().width < 300) n = n.parentElement;
-      return n?.parentElement ?? el;
-    });
-    await handle.asElement()!.screenshot({ path: out });
-    console.log(mode, label, "FOUND:", JSON.stringify(await message.textContent()));
-  } else {
-    await page.screenshot({ path: out });
-    console.log(mode, label, "NOT FOUND — full viewport saved");
+    // Not networkidle: the app holds a live market stream open, so the network
+    // never goes idle. The message wait below is the real readiness signal.
+    await page.goto(`${FRONTEND}${path}`, { waitUntil: "domcontentloaded" });
+    // visible=true: a page can carry a hidden second copy (the phone layout),
+    // and .first() on that one never becomes visible.
+    const message = page
+      .getByText(/AI (insights are unavailable|service is temporarily unavailable|assistant is not configured)/)
+      .locator("visible=true")
+      .first();
+    let found = true;
+    try {
+      await message.waitFor({ state: "visible", timeout: 15000 });
+    } catch {
+      found = false;
+    }
+    await page.waitForTimeout(500);
+    if (path === "/") await assertRoute(page, "/");
+
+    const out = `${OUT_DIR}/ai-failure_${mode}_${label}.png`;
+    // Always keep the page in context too: the crop shows the message, the
+    // viewport shows where it sits and whether its controls came with it.
+    await page.screenshot({ path: `${OUT_DIR}/ai-failure_${mode}_${label}_viewport.png` });
+    if (found) {
+      // The message's panel: nearest ancestor at least 300px wide, so the
+      // capture shows the surface the message sits in, not the bare line.
+      const handle = await message.evaluateHandle((el) => {
+        let n: HTMLElement | null = el as HTMLElement;
+        while (n && n.getBoundingClientRect().width < 300) n = n.parentElement;
+        return n?.parentElement ?? el;
+      });
+      await handle.asElement()!.screenshot({ path: out });
+      console.log(mode, label, "FOUND:", JSON.stringify(await message.textContent()));
+    } else {
+      await page.screenshot({ path: out });
+      console.log(mode, label, "NOT FOUND — full viewport saved");
+    }
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+    await page.close();
+    console.log("saved", out);
+  } finally {
+    await prefs.restore();
   }
-  await page.unrouteAll({ behavior: "ignoreErrors" });
-  await page.close();
   await ctx.close();
-  console.log("saved", out);
 }
 
 for (const mode of ["real", "exhausted"] as const) {

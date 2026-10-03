@@ -16,9 +16,8 @@ import { chromium, type Browser, type BrowserContext, type Page } from "playwrig
 import { mkdir } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
 import { assertRoutesKnown } from "./app-routes.js";
-import { acquireCaptureLock, type ReleaseLock } from "./capture-lock.js";
+import { signInSeedUser, openAccountPrefs } from "./account-prefs.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -103,28 +102,10 @@ function parseArgs(argv: string[]): Args {
 // and better-auth reads a valid session.
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
 
-// Returns the raw Cookie header the api-server expects (the __Secure-
-// names, before the rewrite below), so direct API calls from this script
-// can authenticate without going through Vite.
-async function signIn(context: BrowserContext): Promise<string> {
-  const res = await context.request.post(`${API_BASE}/api/auth/sign-in/email`, {
-    headers: { "Content-Type": "application/json", "Origin": FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) {
-    throw new Error(`sign-in failed: ${res.status()} ${await res.text()}`);
-  }
-  const cookies = await context.cookies();
-  const apiCookieHeader = cookies.map((c) => `${c.name}=${c.value}`).join("; ");
-  await context.clearCookies();
-  await context.addCookies(cookies.map((c) => ({
-    ...c,
-    name: c.name.replace(/^__Secure-/, ""),
-    secure: false,
-    sameSite: "Lax" as const,
-  })));
-  return apiCookieHeader;
-}
+// signInSeedUser (account-prefs.ts) does exactly that, and returns the raw
+// Cookie header the api-server expects (the __Secure- names, before the
+// rewrite), so direct API calls from this script can authenticate without
+// going through Vite.
 
 // ── Per-run account preferences ──────────────────────────────────────────────
 // --persona <id> and --tab-slot <id|null> set the seed user's server-side
@@ -144,14 +125,17 @@ type AccountPrefs = { restore: Restore; setTheme: (theme: string) => Promise<voi
 
 async function applyAccountPrefs(context: BrowserContext, cookie: string, args: Args): Promise<AccountPrefs> {
   const headers = { "Content-Type": "application/json", "Origin": FRONTEND, Cookie: cookie };
-  const restores: Restore[] = [];
 
   // persona, tab_slot and theme are one shared row on one shared seed account.
-  // Held from before the first read (a read-modify-restore is not safe to
-  // start while another capture is mid-write) until restore(). A second
-  // capture started now refuses with the holder named rather than quietly
-  // interleaving its writes with these. See capture-lock.ts.
-  let releaseLock: ReleaseLock | null = acquireCaptureLock();
+  // openAccountPrefs takes the capture lock before its first read (a
+  // read-modify-restore is not safe to start while another capture is
+  // mid-write) and holds it until restore(); a second capture started now
+  // refuses with the holder named. It also pins nr-default-page to "/", so a
+  // capture of "/" is HOME rather than whatever landing page the account was
+  // left on. See capture-lock.ts and account-prefs.ts.
+  const prefs = await openAccountPrefs(context, cookie);
+  // tab_slot has no setter in account-prefs.ts; restored here, before prefs.
+  const restores: Restore[] = [];
 
   async function put(path: string, body: unknown): Promise<void> {
     const r = await context.request.put(`${API_BASE}${path}`, { headers, data: body });
@@ -163,36 +147,38 @@ async function applyAccountPrefs(context: BrowserContext, cookie: string, args: 
     return (await r.json()) as T;
   }
 
-  if (args.persona !== undefined) {
-    const before = await get<{ persona: string }>("/api/settings/persona");
-    await put("/api/settings/persona", { persona: args.persona });
-    console.log(`[screenshot] persona ${before.persona} → ${args.persona} (restored after run)`);
-    restores.push(() => put("/api/settings/persona", { persona: before.persona }));
-  }
-  if (args.tabSlot !== undefined) {
-    const before = await get<{ tabSlot: string | null }>("/api/settings/tab-slot");
-    await put("/api/settings/tab-slot", { tabSlot: args.tabSlot });
-    console.log(`[screenshot] tab-slot ${before.tabSlot} → ${args.tabSlot} (restored after run)`);
-    restores.push(() => put("/api/settings/tab-slot", { tabSlot: before.tabSlot }));
-  }
-  const themeBefore = await get<{ theme: string }>("/api/settings/theme");
-  let themeNow = themeBefore.theme;
-  restores.push(() => put("/api/settings/theme", { theme: themeBefore.theme }));
-  const setTheme = async (theme: string): Promise<void> => {
-    if (theme === themeNow) return;
-    await put("/api/settings/theme", { theme });
-    console.log(`[screenshot] theme ${themeNow} → ${theme} (restored after run)`);
-    themeNow = theme;
-  };
-
   const restore = async () => {
     try {
       for (const r of restores.reverse()) await r();
     } finally {
-      releaseLock?.();
-      releaseLock = null;
+      await prefs.restore();
     }
   };
+
+  try {
+    if (args.persona !== undefined) {
+      const before = await get<{ persona: string }>("/api/settings/persona");
+      await prefs.setPersona(args.persona);
+      console.log(`[screenshot] persona ${before.persona} → ${args.persona} (restored after run)`);
+    }
+    if (args.tabSlot !== undefined) {
+      const before = await get<{ tabSlot: string | null }>("/api/settings/tab-slot");
+      await put("/api/settings/tab-slot", { tabSlot: args.tabSlot });
+      console.log(`[screenshot] tab-slot ${before.tabSlot} → ${args.tabSlot} (restored after run)`);
+      restores.push(() => put("/api/settings/tab-slot", { tabSlot: before.tabSlot }));
+    }
+  } catch (err) {
+    await restore();
+    throw err;
+  }
+  let themeNow = (await get<{ theme: string }>("/api/settings/theme")).theme;
+  const setTheme = async (theme: string): Promise<void> => {
+    if (theme === themeNow) return;
+    await prefs.setTheme(theme);
+    console.log(`[screenshot] theme ${themeNow} → ${theme} (restored after run)`);
+    themeNow = theme;
+  };
+
   return { restore, setTheme };
 }
 
@@ -650,7 +636,7 @@ async function main(): Promise<void> {
   });
 
   await interceptApiRequests(context);
-  const apiCookie = await signIn(context);
+  const apiCookie = await signInSeedUser(context);
   const { restore, setTheme } = await applyAccountPrefs(context, apiCookie, args);
 
   try {

@@ -21,7 +21,7 @@
 // other shape falls through and renders whole as prose.
 
 import { chromium } from "playwright";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
+import { signInSeedUser, openAccountPrefs, assertRoute } from "./account-prefs.js";
 
 const FRONTEND = "http://localhost:4321";
 const API = "http://localhost:3001";
@@ -110,50 +110,48 @@ async function proxy(ctx: import("playwright").BrowserContext, batch: string): P
   });
 }
 
-async function login(ctx: import("playwright").BrowserContext): Promise<void> {
-  const res = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { "Content-Type": "application/json", Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!res.ok()) { console.error("sign-in failed", res.status(), await res.text()); process.exit(1); }
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map((c) => ({ ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const })));
-}
-
 async function shot(batch: string, width: number, label: string): Promise<void> {
   const ctx = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 2 });
-  await login(ctx);
-  await proxy(ctx, batch);
-  const page = await ctx.newPage();
-  await page.addInitScript(`try {
-    window.localStorage.setItem("ft-theme", "void");
-    window.localStorage.setItem("ft-onboarding-complete", "1");
-    window.localStorage.setItem("nr-onboarding-complete", "1");
-    window.sessionStorage.removeItem("ft-dashboard-ai-insights");
-    window.sessionStorage.removeItem("ft-dashboard-ai-insights-dismissed");
-  } catch (e) {}`);
+  const cookie = await signInSeedUser(ctx);
+  // AI is opt-in (BACKLOG § I7): with nr-ai-enabled absent the dashboard
+  // never requests /api/ai/chat and the card says "AI is off" instead.
+  const prefs = await openAccountPrefs(ctx, cookie);
+  try {
+    await prefs.setPreference("nr-ai-enabled", "true");
+    await proxy(ctx, batch);
+    const page = await ctx.newPage();
+    await page.addInitScript(`try {
+      window.localStorage.setItem("ft-theme", "void");
+      window.localStorage.setItem("ft-onboarding-complete", "1");
+      window.localStorage.setItem("nr-onboarding-complete", "1");
+      window.sessionStorage.removeItem("ft-dashboard-ai-insights");
+      window.sessionStorage.removeItem("ft-dashboard-ai-insights-dismissed");
+    } catch (e) {}`);
 
-  await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle" });
-  await page.evaluate(() => document.documentElement.removeAttribute("data-theme"));
-  const card = page.locator(".ft-dashboard-insights:visible").locator("xpath=..").first();
-  await card.waitFor({ state: "visible", timeout: 15000 });
-  await page.waitForTimeout(900);
+    await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle" });
+    await assertRoute(page, "/");
+    await page.evaluate(() => document.documentElement.removeAttribute("data-theme"));
+    const card = page.locator(".ft-dashboard-insights:visible").locator("xpath=..").first();
+    await card.waitFor({ state: "visible", timeout: 15000 });
+    await page.waitForTimeout(900);
 
-  const out = `/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots/ai-insight_${batch}_${label}.png`;
-  await card.screenshot({ path: out });
-  // Report the measured box so an overflow is a number, not an impression.
-  const box = await card.boundingBox();
-  const clipped = await page.evaluate(() => {
-    const grid = Array.from(document.querySelectorAll(".ft-dashboard-insights")).find((g) => (g as HTMLElement).offsetParent !== null)!;
-    const rows = Array.from(grid.children);
-    return rows.map((r) => ({ h: Math.round(r.getBoundingClientRect().height), overflow: r.scrollHeight > r.clientHeight + 1 }));
-  });
-  console.log(batch, label, `card ${Math.round(box!.width)}x${Math.round(box!.height)}`, JSON.stringify(clipped));
-  await page.unrouteAll({ behavior: "ignoreErrors" });
-  await page.close();
+    const out = `/Users/TvpPro/Developer/Finance-Tracker/scripts/screenshots/ai-insight_${batch}_${label}.png`;
+    await card.screenshot({ path: out });
+    // Report the measured box so an overflow is a number, not an impression.
+    const box = await card.boundingBox();
+    const clipped = await page.evaluate(() => {
+      const grid = Array.from(document.querySelectorAll(".ft-dashboard-insights")).find((g) => (g as HTMLElement).offsetParent !== null)!;
+      const rows = Array.from(grid.children);
+      return rows.map((r) => ({ h: Math.round(r.getBoundingClientRect().height), overflow: r.scrollHeight > r.clientHeight + 1 }));
+    });
+    console.log(batch, label, `card ${Math.round(box!.width)}x${Math.round(box!.height)}`, JSON.stringify(clipped));
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+    await page.close();
+    console.log("saved", out);
+  } finally {
+    await prefs.restore();
+  }
   await ctx.close();
-  console.log("saved", out);
 }
 
 for (const batch of Object.keys(BATCHES)) {

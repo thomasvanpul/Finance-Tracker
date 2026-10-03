@@ -18,8 +18,7 @@ import { chromium, type Browser, type BrowserContext, type Locator, type Page } 
 import { mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { SEED_EMAIL, SEED_PASSWORD } from "./seed-credentials.js";
-import { acquireCaptureLock } from "./capture-lock.js";
+import { signInSeedUser, openAccountPrefs, assertRoute, type AccountPrefs } from "./account-prefs.js";
 
 const FRONTEND = "http://localhost:4321";
 const API = "http://localhost:3001";
@@ -58,14 +57,7 @@ async function signedInContext(browser: Browser, viewport: { width: number; heig
       if (!(e instanceof Error) || !/disposed|closed/i.test(e.message)) throw e;
     }
   });
-  const signIn = await ctx.request.post(`${API}/api/auth/sign-in/email`, {
-    headers: { "Content-Type": "application/json", Origin: FRONTEND },
-    data: { email: SEED_EMAIL, password: SEED_PASSWORD },
-  });
-  if (!signIn.ok()) throw new Error(`sign-in failed: ${signIn.status()} ${await signIn.text()}`);
-  const cookies = await ctx.cookies();
-  await ctx.clearCookies();
-  await ctx.addCookies(cookies.map((c) => ({ ...c, name: c.name.replace(/^__Secure-/, ""), secure: false, sameSite: "Lax" as const })));
+  await signInSeedUser(ctx);
   return ctx;
 }
 
@@ -82,10 +74,15 @@ async function refuseOnboarding(page: Page) {
 const DESKTOP = { width: 1440, height: 900 };
 const PHONE = { width: 390, height: 844 };
 
-const release = acquireCaptureLock();
 mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
+let prefs: AccountPrefs | null = null;
 try {
+  // One prefs session for the run, in a context of its own so it outlives the
+  // capture contexts: it takes the capture lock and pins nr-default-page to "/"
+  // so HOME is HOME. restore() in the finally puts the account back.
+  const prefsCtx = await browser.newContext();
+  prefs = await openAccountPrefs(prefsCtx, await signInSeedUser(prefsCtx));
   const ctx = await signedInContext(browser, DESKTOP, { failTransactions: false });
   const page = await ctx.newPage();
   const exact = (t: string | RegExp) => page.getByText(t, { exact: typeof t === "string" });
@@ -126,7 +123,9 @@ try {
   // App.tsx's DefaultPageRedirector sends "/" to the persona's default page
   // once per session; the second load of "/" stays on the dashboard.
   await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle" });
+  await assertRoute(page, "/");
   await page.goto(`${FRONTEND}/`, { waitUntil: "networkidle" });
+  await assertRoute(page, "/");
   await page.waitForTimeout(1500);
   console.log(`dashboard url ${page.url()}`);
   const edit = page.getByRole("button", { name: "Edit layout", exact: true });
@@ -173,6 +172,9 @@ try {
   await phone.screenshot({ path: join(OUT, "mobile-sheet.png") });
   await phoneCtx.close();
 } finally {
-  await browser.close();
-  release();
+  try {
+    await prefs?.restore();
+  } finally {
+    await browser.close();
+  }
 }
