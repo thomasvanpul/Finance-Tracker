@@ -212,9 +212,8 @@ export async function openAccountPrefs(ctx: BrowserContext, cookie: string): Pro
     }
   };
 
-  // Fetched lazily, on first setPreference() call, so a script that only
-  // ever touches theme/persona (most of them) does not pay for a GET it
-  // never needed.
+  // Read once at open, below, for the landing-page pin; the null check in
+  // setPreference() only matters if that read is ever moved.
   let preferencesBefore: Record<string, string> | null = null;
   const preferencesTouched = new Set<string>();
 
@@ -229,6 +228,18 @@ export async function openAccountPrefs(ctx: BrowserContext, cookie: string): Pro
       restores.push(() => patch("/api/settings/preferences", { preferences: { [key]: before } }));
     }
   };
+
+  // nr-default-page is account-synced and App.tsx follows it from "/", so an
+  // account left on anything else turns every HOME capture into another
+  // screen without a word — on 3 Oct 2026 it was /portfolio, left by a
+  // market-persona pick (applyPersonas writes it, the sync engine pushes it,
+  // and the persona restore does not touch it). Pinned here so every script
+  // that opens a prefs session photographs HOME at "/"; restore() puts the
+  // account's own value back. A script that wants the persona's landing sets
+  // it itself with setPreference.
+  preferencesBefore = (await get<{ preferences: Record<string, string> }>("/api/settings/preferences")).preferences;
+  const landing = preferencesBefore["nr-default-page"];
+  if (landing && landing !== "/") await setPreference("nr-default-page", "/");
 
   const resetOnboarding = async (): Promise<void> => {
     await post("/api/dev/reset-onboarding");
