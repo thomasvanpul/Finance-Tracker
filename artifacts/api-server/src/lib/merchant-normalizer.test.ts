@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeMerchant } from "./merchant-normalizer";
+import { ingestDescription, normalizeMerchant } from "./merchant-normalizer";
 
 // A merchant is the billing entity, not the brand that owns it.
 //
@@ -85,5 +85,21 @@ describe("normalizeMerchant — platform channels stay apart", () => {
 
   it("leaves unmatched descriptors alone apart from reference suffixes", () => {
     expect(normalizeMerchant("BOULANGERIE PAUL")).toEqual("BOULANGERIE PAUL");
+  });
+});
+
+describe("ingestDescription — the bank's string is kept beside the display name", () => {
+  it("returns the normalised name and the raw string untouched", () => {
+    expect(ingestDescription("APPLE PAY TESCO STORES 3412")).toEqual({
+      description: "Tesco",
+      rawDescription: "APPLE PAY TESCO STORES 3412",
+    });
+  });
+
+  it("keeps the raw string even when normalising changes nothing", () => {
+    expect(ingestDescription("BOULANGERIE PAUL")).toEqual({
+      description: "BOULANGERIE PAUL",
+      rawDescription: "BOULANGERIE PAUL",
+    });
   });
 });

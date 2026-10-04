@@ -26,6 +26,13 @@ export const transactionsTable = pgTable("transactions", {
   userId: text("user_id").references(() => userTable.id, { onDelete: "cascade" }),
   date: date("date", { mode: "string" }).notNull(),
   description: text("description").notNull(),
+  // The bank's own string, exactly as the ingest path received it.
+  // `description` is the display value derived from it by
+  // normalizeMerchant (api-server lib/merchant-normalizer.ts). Kept so a
+  // better normaliser can be re-applied to old rows, a wrong rule can be
+  // corrected, and the user can be shown what their bank actually said.
+  // Null on every row written before 0027, whose raw string is gone.
+  rawDescription: text("raw_description"),
   type: text("type").notNull(), // income | expense | transfer
   category: text("category").notNull(),
   accountId: integer("account_id").notNull(),

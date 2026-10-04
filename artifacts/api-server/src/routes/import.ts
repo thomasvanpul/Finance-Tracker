@@ -11,7 +11,7 @@ import { parseHsbcCsv } from "../lib/csv-import/hsbc";
 import { parseWiseCsv } from "../lib/csv-import/wise";
 import { parseChaseCsv } from "../lib/csv-import/chase";
 import { logger } from "../lib/logger";
-import { normalizeMerchant } from "../lib/merchant-normalizer";
+import { ingestDescription } from "../lib/merchant-normalizer";
 import { stripBom } from "../lib/csv-import/utils";
 
 const router: IRouter = Router();
@@ -105,7 +105,7 @@ router.post("/import/csv", upload.single("file"), async (req, res): Promise<void
     await db.insert(transactionsTable).values({
       userId,
       date: row.date,
-      description: normalizeMerchant(row.description),
+      ...ingestDescription(row.description),
       type: row.amount > 0 ? "income" : "expense",
       category: row.category ?? "Other",
       accountId,

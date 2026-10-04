@@ -147,9 +147,9 @@ function fixtureRaw(overrides: Partial<ChatContextRaw> = {}): ChatContextRaw {
       { id: 2, userId: "u1", category: "Transport", monthlyLimit: "300.00", createdAt: new Date(), updatedAt: new Date() },
     ],
     monthTxs: [
-      { id: 1, userId: "u1", date: today, description: SENTINELS.merchant, type: "expense", category: "Groceries", accountId: 1, nativeAmount: "610.00", currency: "GBP", source: "manual", externalId: null, nativeToBaseRate: null, rateAsOf: null, transferGroupId: null, transferDirection: null, createdAt: new Date(), updatedAt: new Date() },
-      { id: 2, userId: "u1", date: today, description: SENTINELS.merchant2, type: "expense", category: "Groceries", accountId: 1, nativeAmount: "45.20", currency: "GBP", source: "manual", externalId: null, nativeToBaseRate: null, rateAsOf: null, transferGroupId: null, transferDirection: null, createdAt: new Date(), updatedAt: new Date() },
-      { id: 3, userId: "u1", date: today, description: SENTINELS.merchant, type: "income",  category: "Salary",    accountId: 1, nativeAmount: "4850.00", currency: "GBP", source: "manual", externalId: null, nativeToBaseRate: null, rateAsOf: null, transferGroupId: null, transferDirection: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: 1, userId: "u1", date: today, description: SENTINELS.merchant, rawDescription: SENTINELS.merchant, type: "expense", category: "Groceries", accountId: 1, nativeAmount: "610.00", currency: "GBP", source: "manual", externalId: null, nativeToBaseRate: null, rateAsOf: null, transferGroupId: null, transferDirection: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, userId: "u1", date: today, description: SENTINELS.merchant2, rawDescription: SENTINELS.merchant2, type: "expense", category: "Groceries", accountId: 1, nativeAmount: "45.20", currency: "GBP", source: "manual", externalId: null, nativeToBaseRate: null, rateAsOf: null, transferGroupId: null, transferDirection: null, createdAt: new Date(), updatedAt: new Date() },
+      { id: 3, userId: "u1", date: today, description: SENTINELS.merchant, rawDescription: SENTINELS.merchant, type: "income",  category: "Salary",    accountId: 1, nativeAmount: "4850.00", currency: "GBP", source: "manual", externalId: null, nativeToBaseRate: null, rateAsOf: null, transferGroupId: null, transferDirection: null, createdAt: new Date(), updatedAt: new Date() },
     ],
     upcoming: [
       { id: 1, userId: "u1", dueDate: today, description: SENTINELS.merchant, category: "Bills", type: "expense", frequency: "one-time", status: "pending", nativeAmount: "340.00", currency: "GBP", accountId: null, subscriptionId: null, createdAt: new Date(), updatedAt: new Date() },
@@ -322,7 +322,7 @@ describe("assembleChatContext · L1 null propagation", () => {
     const raw = fixtureRaw();
     // Add one MYR expense — MYR unconvertible in the mock, so expenses null.
     raw.monthTxs.push({
-      id: 999, userId: "u1", date: raw.monthTxs[0].date, description: "sanitised", type: "expense",
+      id: 999, userId: "u1", date: raw.monthTxs[0].date, description: "sanitised", rawDescription: null, type: "expense",
       category: "Groceries", accountId: 3, nativeAmount: "300.00", currency: "MYR", source: "manual",
       externalId: null, nativeToBaseRate: null, rateAsOf: null, transferGroupId: null, transferDirection: null, createdAt: new Date(), updatedAt: new Date(),
     });

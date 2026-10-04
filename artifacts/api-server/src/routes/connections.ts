@@ -17,6 +17,7 @@ import { logger } from "../lib/logger";
 import { runConnectionSync } from "../lib/connection-sync";
 import { revokeBankConsents, ConsentRevokeError } from "../lib/bank-consents";
 import { computeExternalId, assignOrdinals } from "../lib/file-dedup";
+import { ingestDescription } from "../lib/merchant-normalizer";
 
 const router: IRouter = Router();
 
@@ -340,7 +341,7 @@ router.post("/connections/:id/import", async (req, res): Promise<void> => {
         .values({
           userId,
           date: row.date,
-          description: row.description,
+          ...ingestDescription(row.description),
           type: row.type,
           category: row.category,
           accountId,

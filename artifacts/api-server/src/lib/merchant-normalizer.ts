@@ -286,3 +286,12 @@ function matchRules(raw: string): string {
     .replace(/\s{2,}/g, " ")
     .trim();
 }
+
+// What every bank-sourced ingest path writes: the display name, and the
+// bank's own string beside it in transactions.raw_description, so a later
+// normaliser can be re-applied and a wrong rule can be corrected. Manual
+// entry does not go through this: what a person typed is not a bank
+// descriptor, and rewriting it would override them.
+export function ingestDescription(raw: string): { description: string; rawDescription: string } {
+  return { description: normalizeMerchant(raw), rawDescription: raw };
+}

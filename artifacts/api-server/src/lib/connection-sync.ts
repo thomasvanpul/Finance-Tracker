@@ -7,6 +7,7 @@ import { db, accountsTable, transactionsTable, connectionsTable, type Connection
 import { getAdapter } from "../adapters";
 import { decryptCredential } from "./crypto";
 import { logger } from "./logger";
+import { ingestDescription } from "./merchant-normalizer";
 
 // 90-day rolling window — matches what /wise/sync did before this
 // refactor. Change deliberately, not accidentally.
@@ -99,7 +100,7 @@ export async function runConnectionSync(connection: Connection): Promise<SyncSum
         await db.insert(transactionsTable).values({
           userId: connection.userId,
           date: tx.date.slice(0, 10),
-          description: tx.description,
+          ...ingestDescription(tx.description),
           type,
           category: "Other",
           accountId: row.id,
