@@ -445,8 +445,12 @@ width is user-set and persisted, so nothing may assume a fixed value.
 
 ## 13. Checklist before shipping a screen
 
-- Every group is inside a 1px square frame (§1) with at most one
-  `PanelHeader` (§2), title only, no glyph.
+- Every widget is inside a 1px square frame (§1) with at most one
+  `PanelHeader` (§2), title only, no glyph. Page structure — a section
+  label over a run of rows — is not framed (§1, §6). Below 768px, where a
+  scrolling page has no widgets in this sense, every group opens with one
+  `SectionHeader` rule instead (Mobile Amendment: inline sections use no
+  radius and no frame).
 - Gaps are 16 between groups and 6 within (§3). Nothing else.
 - No coloured edge anywhere (§4). No `gap: 1` over border (§5).
 - Anything that will leave the page has `.ft-float` and a dismiss (§6).
