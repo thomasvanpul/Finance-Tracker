@@ -309,10 +309,20 @@ authorization and accept (`callOpenAICompat` and `callOpenAICompatStream` in `A/
 
 ### 4.3 Whether the user chose it
 
-- **There is no opt-in.** AI is available to every signed-in user whenever a
-  provider key is configured on the server (`ai.ts:79-81,145-148`).
-- **Four pages send the context without being asked**, each only when nothing
-  is cached for the session:
+- **AI is opt-in, off by default** (BACKLOG § I7, 2026-10-03; `9a12b84`,
+  `92ef685`). The switch is the account-level preference `nr-ai-enabled`,
+  turned on in Settings → AI Coach (`F/pages/settings.tsx:1474`). Two checks
+  hold it:
+  - the server refuses every request under `/api/ai/*` and `/api/receipt/*`
+    with a 403 until the preference is exactly `"true"`, and with a 503 if it
+    cannot be read — before the rate limiter and before any provider call
+    (`A/lib/ai-consent.ts:30-49`, `aiMeteredGate` in `A/app.ts:322-329`);
+  - the client does not send those requests at all while the switch is off
+    (`F/lib/api-fetch.ts:48`, `F/lib/ai-enabled.ts`). `/api/ai/status` is the
+    one exception on both sides: it carries no user data.
+- **Once AI is on, four pages send the context without being asked**, each
+  only when nothing is cached for the session (while it is off, the same
+  calls stop at the client check above):
   - the dashboard, 500 ms after loading (`F/pages/dashboard.tsx:942`);
   - budget and goals, after 300 ms (`F/pages/budget.tsx:503`, `F/pages/goals.tsx:907`);
   - investments, after 400 ms (`F/pages/investments.tsx:885`).
@@ -380,7 +390,7 @@ variables, and still declares an unused `GEMINI_API_KEY` (`render.yaml:71`).
 | **Access and portability** | `GET /api/export/backup`: a JSON file of 8 tables — accounts, transactions, investments, upcoming, debts, budgets, goals, subscriptions. `GET /api/export/tax-year/:year`: transactions as CSV. Reachable from Settings → Export & Backup and from the delete flow, on desktop and phone | The export omits the user's profile (name, email), sessions with IP and user agent, linked sign-in providers, passkeys and 2FA, connections, both snapshot tables, recurring patterns, dismissed subscriptions, app settings, `user_preferences` (family members, tax, pension, mortgages, notes), all shared-expense data, and request metrics | `A/routes/export.ts:13-122`, `F/pages/settings.tsx:2522`, `F/pages/profile.tsx:631` |
 | **Erasure** | §1 | §1 "does not touch" | §1 |
 | **Rectification** | Name and avatar (`F/pages/profile.tsx:510,524`), password (`:687`), and every finance record through its PATCH or PUT route | **Email cannot be changed** — no `changeEmail` anywhere. Snapshots, recurring patterns, request metrics and session data have no write route. A record another user holds about you cannot be corrected by you | `rg changeEmail` over both apps: no match |
-| **Restriction and objection** | Removing a connection stops bank sync (`A/routes/connections.ts:122-145`); accounts it imported stay | **No switch for AI** (§4.3). The weekly-digest "enable" toggle is stored only in the browser and no scheduler exists; the digest email says "you enabled weekly digest" and its Unsubscribe link is `href="#"`. The "Privacy" tab blurs figures on screen and restricts no processing | `F/pages/settings.tsx:1761-1767`, `A/routes/digest.ts:78`, `F/pages/profile.tsx:445-457` |
+| **Restriction and objection** | Removing a connection stops bank sync (`A/routes/connections.ts:122-145`); accounts it imported stay | AI is off until the user turns it on, and can be turned off again, in Settings → AI Coach (§4.3). The weekly-digest "enable" toggle is stored only in the browser and no scheduler exists; the digest email says "you enabled weekly digest" and its Unsubscribe link is `href="#"`. The "Privacy" tab blurs figures on screen and restricts no processing | `F/pages/settings.tsx:1474`, `A/lib/ai-consent.ts`, `F/pages/settings.tsx:1761-1767`, `A/routes/digest.ts:78`, `F/pages/profile.tsx:445-457` |
 | **People who are not users** | Nothing is ever sent to them | No route for a non-user to see, correct or remove what a user recorded about them; every route except health, sign-in and provider status requires sign-in | `A/app.ts:170-239`; §2.4 |
 | **Consent and notice at signup** | — | Signup sends email, password and name only. No terms or privacy link, no acceptance control, no stored acceptance time or version, no cookie or consent banner | `F/components/auth-gate.tsx:450`; `S/auth.ts:3-12`, `S/app-settings.ts:18-55` |
 | **Age** | — | No age check anywhere | `rg` for date of birth and minimum-age patterns across the SPA: no match |
