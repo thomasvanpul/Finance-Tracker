@@ -270,7 +270,10 @@ except:
 
 `[BLOCKED: a copy of the production database, carrying real data, is kept as a
 development database that account deletion does not reach. It must be removed
-or anonymised before this policy can promise deletion.]`
+or anonymised before this policy can promise deletion. Fix prepared 4 Oct 2026,
+not yet run: a replacement development database with no real data, steps in
+scripts/dev-db/reset-dev-schema-only.md. Thomas runs it, including the final
+step that deletes the old copy; this marker stays until he has.]`
 
 **Restrict or object.** Removing a connection stops it syncing; the accounts
 it imported stay until you delete them. The AI features (section 5.3) are
