@@ -7,10 +7,9 @@ interface Rule {
 }
 
 const RULES: Rule[] = [
-  // ── Digital Wallets (must precede general brand rules) ────────────────────
-  { pattern: /apple\s?pay/i,            name: "Apple Pay" },
-  { pattern: /google\s?pay/i,           name: "Google Pay" },
-  { pattern: /samsung\s?pay/i,          name: "Samsung Pay" },
+  // ── Credit products (a lender, so it is the billing entity) ───────────────
+  // Wallet rails (Apple Pay, Google Pay, Samsung Pay) are not rules: they
+  // are stripped before matching, see WALLET_RAILS below.
   { pattern: /paypal\s?credit/i,        name: "PayPal Credit" },
 
   // ── Platform billing channels (must precede the brand rules below) ────────
@@ -256,7 +255,28 @@ const RULES: Rule[] = [
  * Normalize a raw transaction description to a clean merchant name.
  * Returns the original description if no rule matches.
  */
+// A wallet is a payment rail, not a merchant. `APPLE PAY TESCO` was once
+// collapsed to "Apple Pay", which put groceries, fuel and coffee in one key
+// whose amounts can never pass the detector's ±20% gate, and lost Tesco.
+// Decision (vault Efforts/Numeris-Decisions.md § 12, the recommended option):
+// strip the rail, keep the merchant. A descriptor that is only the rail keeps
+// the rail's name, since there is nothing else to call it.
+const WALLET_RAILS: Rule[] = [
+  { pattern: /apple\s?pay/i,   name: "Apple Pay" },
+  { pattern: /google\s?pay/i,  name: "Google Pay" },
+  { pattern: /samsung\s?pay/i, name: "Samsung Pay" },
+];
+
 export function normalizeMerchant(raw: string): string {
+  for (const rail of WALLET_RAILS) {
+    if (!rail.pattern.test(raw)) continue;
+    const rest = raw.replace(rail.pattern, " ").replace(/^[\s*:\-]+|[\s*:\-]+$/g, "");
+    return rest === "" ? rail.name : matchRules(rest);
+  }
+  return matchRules(raw);
+}
+
+function matchRules(raw: string): string {
   for (const rule of RULES) {
     if (rule.pattern.test(raw)) return rule.name;
   }

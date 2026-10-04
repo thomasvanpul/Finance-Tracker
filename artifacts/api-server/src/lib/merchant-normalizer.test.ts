@@ -67,9 +67,20 @@ describe("normalizeMerchant — platform channels stay apart", () => {
     expect(normalizeMerchant("GOOGLE LLC")).toEqual("Google");
   });
 
-  it("does not regress the wallet rules, which must still win", () => {
-    expect(normalizeMerchant("APPLE PAY TESCO")).toEqual("Apple Pay");
-    expect(normalizeMerchant("GOOGLE PAY SHELL")).toEqual("Google Pay");
+  // A wallet is a payment rail, not a merchant. Collapsing every wallet
+  // charge to "Apple Pay" put groceries, fuel and coffee in one key that
+  // can never pass the ±20% gate. Decision: strip the rail, keep the
+  // merchant (vault Efforts/Numeris-Decisions.md § 12, recommended option).
+  it("strips the wallet rail and keeps the merchant behind it", () => {
+    expect(normalizeMerchant("APPLE PAY TESCO")).toEqual("Tesco");
+    expect(normalizeMerchant("GOOGLE PAY SHELL")).toEqual("Shell");
+    expect(normalizeMerchant("SAMSUNG PAY BOULANGERIE PAUL")).toEqual("BOULANGERIE PAUL");
+    expect(normalizeMerchant("BOULANGERIE PAUL APPLE PAY")).toEqual("BOULANGERIE PAUL");
+  });
+
+  it("keeps the rail name when no merchant follows it", () => {
+    expect(normalizeMerchant("APPLE PAY")).toEqual("Apple Pay");
+    expect(normalizeMerchant("GOOGLE PAY *")).toEqual("Google Pay");
   });
 
   it("leaves unmatched descriptors alone apart from reference suffixes", () => {
