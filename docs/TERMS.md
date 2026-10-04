@@ -10,13 +10,13 @@
 
 ## 1. Who you are dealing with
 
-Numeris is run by one person, not a company: `[TO CONFIRM: full legal name]`,
-`[TO CONFIRM: postal address]`. You can reach them at
-`[TO CONFIRM: support address on numeris.page]`.
+Numeris is run by one person, not a company: Thomas Kelin Florentius Margaretha
+Maria van Pul. Postal address: `[TO CONFIRM: lawyer — is a geographic address
+required for a free app?]`. You can reach them at `privacy@numeris.page`.
 
 Numeris is on the web at numeris.page (and, until the domain move completes,
 at financetracker.work) and is intended for the App Store
-and Google Play. It is built for people in the UK and the European Union.
+and Google Play. It is built for people in the UK.
 
 There is nothing to pay for. The app contains no payments, subscriptions or
 purchases.
@@ -94,8 +94,10 @@ wrote.
 
 - Try to reach another person's account or data.
 - Interfere with the service, or with other people's use of it.
-
-`[TO CONFIRM: any further acceptable-use rules.]`
+- Use Numeris for anything unlawful.
+- Scrape Numeris, or send it requests from an automated tool.
+- Record more about another person than keeping track of the money needs
+  (section 6).
 
 ## 8. Availability and change
 
@@ -103,11 +105,12 @@ Numeris is free and runs on small hosting plans. It may be slow, unavailable, or
 change without warning. The app keeps a copy of your recent data on your device
 so that it still opens when the service does not.
 
-`[TO CONFIRM: how much notice users get if Numeris is shut down, and how they
-will be told.]`
+If Numeris is shut down, every user is emailed at least 30 days before, with a
+reminder to download a backup from Settings → Export & Backup.
 
-`[TO CONFIRM: how and how far in advance users are told about a change to these
-terms.]`
+If a change to these terms takes away from your rights or adds someone new who
+receives your data, every user is emailed at least 30 days before it takes
+effect. Any other change takes effect when it is published.
 
 ## 9. Responsibility
 
@@ -119,9 +122,9 @@ person.]`
 
 `[TO CONFIRM: governing law and courts.]`
 
-`[TO CONFIRM: whether these terms sit alongside Apple's standard licence
-agreement for App Store apps or replace it, and the equivalent for Google
-Play.]`
+If you get Numeris from the App Store, Apple's standard licence agreement for
+App Store apps applies, with these terms on top of it. Google Play has no
+standard licence of its own, so there these terms apply alone.
 
 ---
 
@@ -131,7 +134,8 @@ Paths are relative to the repo root. `DATA-INVENTORY` is `docs/DATA-INVENTORY.md
 
 | Section | Statement | Source |
 | --- | --- | --- |
-| 1 | Run by an individual; App Store and Google Play; UK and EU users | The task that commissioned this draft (`.review/archive/2026-09-11T*-what-this-app-actually-does*.task.md`); Apple enrolment as Individual |
+| 1 | Run by an individual; App Store and Google Play | The task that commissioned this draft (`.review/archive/2026-09-11T*-what-this-app-actually-does*.task.md`); Apple enrolment as Individual |
+| 1 | Name, contact address, UK users | Thomas, 4 October 2026 (`docs/I2-answer-sheet.md` Q1, Q2, Q4). The address does not receive mail until Cloudflare Email Routing is set up |
 | 1 | Nothing to pay for | DATA-INVENTORY §5, "Searched and not found": no payment processor |
 | 2 | Cannot hold, move, convert or pay money | `CLAUDE.md` hard constraints; no payment integration in DATA-INVENTORY §5 |
 | 2 | Connected services are read from, not instructed | `artifacts/api-server/src/adapters/{wise,kraken,alpaca,enable-banking}.ts` — balance, statement and account reads only |
@@ -145,5 +149,8 @@ Paths are relative to the repo root. `DATA-INVENTORY` is `docs/DATA-INVENTORY.md
 | 5 | No age check | DATA-INVENTORY §6 |
 | 6 | Names and emails of others; mirror debt; names sent with receipt | DATA-INVENTORY §2.4, §4.2 |
 | 7 | Access to other accounts is blocked; interference is rate-limited | `artifacts/api-server/src/app.ts:107-173,230-239` |
+| 7 | Unlawful use, scraping, recording more than needed | `docs/I2-answer-sheet.md` F5, Q11 |
 | 8 | Small hosting plans | `CLAUDE.md` deploy section: Render free tier, Neon free tier |
 | 8 | Copy on device | DATA-INVENTORY §3.4 |
+| 8 | 30 days' notice of a shutdown or a change | `docs/I2-answer-sheet.md` F2, F6, Q10 |
+| 9 | Apple's licence plus these terms; these terms alone on Google Play | `docs/I2-answer-sheet.md` F9, Q11 |

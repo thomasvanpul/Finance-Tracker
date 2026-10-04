@@ -21,7 +21,10 @@ Path prefixes: `S/` = `lib/db/src/schema/`, `A/` = `artifacts/api-server/src/`,
 ## 0. Who is responsible
 
 The operator is an individual, not a company (Apple Developer enrolment is as an
-Individual). Name, postal address and contact address: `[TO CONFIRM]`.
+Individual). Name: Thomas Kelin Florentius Margaretha Maria van Pul. Contact
+address: `privacy@numeris.page`, which does not receive mail until Cloudflare
+Email Routing is set up. Postal address: `[TO CONFIRM: lawyer — is a geographic
+address required for a free app?]`.
 
 ---
 
