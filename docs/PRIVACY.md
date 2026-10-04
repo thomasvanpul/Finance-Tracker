@@ -21,16 +21,19 @@
 Numeris is run by one person, not a company. That person decides what happens to
 your data and is responsible for it.
 
-- Name: `[TO CONFIRM: full legal name]`
-- Postal address: `[TO CONFIRM]`
-- Contact for anything in this policy: `[TO CONFIRM: address on
-  numeris.page]`
+- Name: Thomas Kelin Florentius Margaretha Maria van Pul
+- Postal address: `[TO CONFIRM: lawyer — is a geographic address required for
+  a free app?]`
+- Contact for anything in this policy: `privacy@numeris.page`
+  `[TO CONFIRM: that this address receives mail. It needs Cloudflare Email
+  Routing, which Thomas sets up.]`
+- Data protection fee: `[TO CONFIRM: ICO self-assessment, Thomas, this week]`
 - `[TO CONFIRM: whether a UK or EU representative is needed, which depends on
   where the operator is established.]`
 
 Numeris is on the web at numeris.page (and, until the domain move completes,
 at financetracker.work) and is intended for the App Store
-and Google Play. It is built for people in the UK and the European Union.
+and Google Play. It is built for people in the UK.
 
 ## 2. The short version
 
@@ -106,7 +109,7 @@ for review, not a conclusion.]`
 | Diagnosing failures | Server logs | Legitimate interests |
 | The AI features | Section 5 | `[TO CONFIRM: contract or consent. Consent cannot be the basis today: there is no way to give or refuse it (section 5.3).]` |
 | Password reset and the weekly digest emails | Email address, name; digest totals | Contract |
-| Recording people you owe or share costs with | Section 9 | `[TO CONFIRM: the basis for a user entering someone else's name and email, and who is responsible for it.]` |
+| Recording people you owe or share costs with | Section 9 | Legitimate interests: a user's interest in keeping track of who owes what. Numeris is responsible for what it stores about those people. `[TO CONFIRM: lawyer — this basis, and that Numeris is the one responsible.]` |
 
 ## 5. The AI features
 
@@ -138,7 +141,9 @@ A request goes to the first of these that answers:
    a customer using the service in a personal capacity it acts as an
    independent controller, not a processor, and its data processing agreement
    does not apply. The operator is an individual. This line cannot name a
-   safeguard until that is resolved.]`
+   safeguard until that is resolved. Decided 4 October 2026: Cerebras comes
+   out of the AI chain (BACKLOG I13). It is still in the code, so this entry
+   stays until that is built.]`
 
 If neither answers, the feature shows an error. The request is not sent
 anywhere else.
@@ -191,9 +196,10 @@ terms and policy.
 | **Google Fonts** | Your IP address and browser details, each time the app loads its fonts |
 | **Etherscan, Blockstream** | A crypto wallet address you add in settings, with your IP address |
 
-`[TO CONFIRM: Google Fonts. A German court held in 2022 that sending a visitor's
-IP address to Google Fonts without consent was unlawful. Serving the fonts from
-Numeris's own server would remove this row.]`
+`[BLOCKED: Google Fonts. A German court held in 2022 that sending a visitor's
+IP address to Google Fonts without consent was unlawful. Decided 4 October
+2026: the fonts will be served from Numeris's own server (BACKLOG I12). The app
+still loads them from Google, so this row stays until that is built.]`
 
 Nothing is sold. Nothing is shared with anyone not named in this section.
 
@@ -208,14 +214,15 @@ Nothing is sold. Nothing is shared with anyone not named in this section.
 | Database backups | `[TO CONFIRM: Neon's Free plan keeps a 6-hour restore window. Confirm the plan and the window.]` |
 | A copy on your device | Until you sign out or delete your account, and at most 30 days — section 10 |
 
-`[TO CONFIRM: whether to set a retention limit for inactive accounts. None
-exists.]`
+Numeris is in a test round with a small number of invited people. During it,
+an account nobody uses is not deleted automatically. A limit will be set before
+sign-up opens to the public.
 
 ## 8. Your rights, and what the app can and cannot do for you yet
 
 You have the right to see, correct, take away and delete your data, to restrict
 or object to how it is used, and to complain. Write to
-`[TO CONFIRM: contact address]` for anything the app cannot do itself.
+`privacy@numeris.page` for anything the app cannot do itself.
 `[TO CONFIRM: that requests will be answered within one month.]`
 
 **See and take away your data.** Settings → Export & Backup downloads one file
@@ -288,7 +295,7 @@ email address, a matching debt with their description and notes is created in
 your account.
 
 If you are not a Numeris user and believe someone has recorded you, email
-`[TO CONFIRM: support address]` with your name and, if you know it, the
+`privacy@numeris.page` with your name and, if you know it, the
 user's email address. The operator will search by name and email and
 remove or correct your record by hand.
 
@@ -341,7 +348,9 @@ The law requires one before the policy can describe it.]`
 
 ## 13. Changes to this policy
 
-`[TO CONFIRM: how, and how far in advance, users will be told.]`
+If a change takes away from your rights or adds someone new who receives your
+data, every user is emailed at least 30 days before it takes effect. Any other
+change takes effect when it is published, and the date below changes with it.
 
 This version: `[TO CONFIRM: date of publication]`.
 
@@ -351,14 +360,15 @@ This version: `[TO CONFIRM: date of publication]`.
 
 | Section | Source in `docs/DATA-INVENTORY.md` |
 | --- | --- |
-| 1 | §0; the commissioning task (individual operator, stores, UK and EU) |
+| 1 | §0; the commissioning task (individual operator, stores). Name, contact address and UK only: Thomas, 4 October 2026 (`docs/I2-answer-sheet.md` Q1, Q2, Q4) |
 | 2 | §2, §4, §5 "Searched and not found", §1, §6 |
 | 3 | §2.1–§2.7, §3.1, §3.3 |
-| 4 | Purposes from §2 "Why" columns; bases are proposals, not sourced |
+| 4 | Purposes from §2 "Why" columns; bases are proposals, not sourced. The basis for recording other people: `docs/I2-answer-sheet.md` Q6, not yet confirmed by a lawyer |
 | 5 | §4.2, §4.3, §4.1 provider table |
 | 6 | §5, and §4.1 for the AI providers |
-| 7 | §7, §1 (restore window), §3.4 |
+| 7 | §7, §1 (restore window), §3.4. Inactive accounts: `docs/I2-answer-sheet.md` Q9 |
 | 8 | §6, §1 |
 | 9 | §2.4, §4.2, §6 |
 | 10 | §3.4 |
 | 11 | §2.6, §6 security lists, §2.1, §3.4 |
+| 13 | `docs/I2-answer-sheet.md` Q10 |

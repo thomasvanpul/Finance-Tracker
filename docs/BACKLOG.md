@@ -1780,6 +1780,18 @@ minimum age, governing law) and the pages are served.
 Needs: what is collected, lawful basis under UK GDPR, retention period, who it
 is shared with (Neon, Render, Vercel, Yahoo, Alpaca, and any open-banking
 provider), and the subject access and deletion routes.
+*4 Oct 2026: Thomas answered the 11 questions in `docs/I2-answer-sheet.md` and
+the answers are applied to the three drafts — legal name, `privacy@numeris.page`
+(not receiving mail until he sets up Cloudflare Email Routing), UK only, no home
+address, legitimate interests for people recorded by a user, no inactive-account
+limit in the tester round, 30 days' notice of a change or shutdown, three more
+acceptable-use rules, Apple's licence plus these terms. Open after that, by
+`rg -o` less the legend lines: PRIVACY 16 `[TO CONFIRM` and 7 `[BLOCKED` (Google
+Fonts moved from the first to the second, since the decision is made and only
+the build is left), TERMS 5, DATA-INVENTORY 2. Still not publishable. Markers
+the sheet shows as settled by an earlier source (minimum age, governing law,
+the AI basis, the one-month reply, the transfer mechanism, the lead authority)
+were outside that task and are not applied yet.*
 
 ### I3 · Account deletion that actually deletes — DONE (was TODO; shipped 5 Sep 2026)
 **Corrected 13 Sep 2026 — stale for eight days.** `POST /account/delete`
