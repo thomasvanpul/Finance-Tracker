@@ -316,6 +316,59 @@ Generated from `artifacts/api-server/src/lib/service-facts.ts`. Total monthly sp
   that proxy /api. Unlikely bottleneck at current traffic; noted
   for completeness.
 
+### numeris.page cutover from Vercel to Render (BACKLOG I11)
+
+State measured 4 Oct 2026, 15:49 UTC:
+
+- `numeris-web` **already exists** on Render and is serving:
+  `https://numeris-web.onrender.com/` returns the SPA (last-modified 00:56 UTC
+  4 Oct, same bundle `assets/index-jt8xy7la.js` as www.numeris.page), and its
+  `/api/*` rewrite reaches numeris-api (`/api/auth/get-session` → 200 JSON).
+- DNS is still Vercel: apex `numeris.page` A `76.76.21.21`, `www` CNAME
+  `cname.vercel-dns.com`, nameservers Cloudflare (jason/cloe).
+- Vercel 308s the apex to `www`, but the API's `callbackBase` (so the OAuth
+  redirect_uri and the passkey rpID) is the **apex** `https://numeris.page`.
+  Make the apex primary on Render; that aligns the served host with the auth host.
+- `ALLOWED_ORIGINS` already accepts both `https://numeris.page` and
+  `https://www.numeris.page` (CORS preflight 204 for each). No env change.
+
+**`x-render-origin-server` does not prove the cutover.** It is set by
+numeris-api, so it appears on every `/api` response whether Vercel or Render
+proxied it. It shows up on financetracker.work today, and that host is
+Vercel. Use the Vercel and Render edge headers instead:
+
+```bash
+curl -sS -D- -o /dev/null https://numeris.page/api/auth/get-session | grep -iE '^HTTP|^server|x-vercel-id|rndr-id|x-render-origin'
+```
+
+Cut over when: there is no `x-vercel-id`, no `server: Vercel`, and both `rndr-id` and
+`x-render-origin-server` are present. Run it for `https://numeris.page/` and
+`https://www.numeris.page/` too.
+
+Steps (Thomas — account access):
+
+1. Render dashboard → `numeris-web` → Settings → Custom Domains → add
+   `numeris.page`. Render adds `www.numeris.page` and redirects it to the apex.
+   Render then shows the DNS targets; use those if they differ from step 2.
+2. Cloudflare → numeris.page → DNS. Replace the apex A `76.76.21.21` with a
+   CNAME `@` → `numeris-web.onrender.com` (Cloudflare flattens it), and the
+   `www` CNAME `cname.vercel-dns.com` with `www` → `numeris-web.onrender.com`.
+   Set both to **DNS only** (grey cloud) so Render can verify and issue the
+   certificate.
+3. Back in Render, press Verify on both domains and wait for the certificate.
+4. Run the check above. Then sign in once with a password, once with Google
+   and once with a passkey on `https://numeris.page`.
+
+Rollback: restore the two Cloudflare records (A `76.76.21.21`, CNAME
+`cname.vercel-dns.com`). Vercel keeps serving as long as its project is not
+deleted, so leave it in place for a week after the check passes.
+
+After the check passes (a session can do this): delete
+`artifacts/finance-tracker/vercel.json`, remove the Vercel row from
+`docs/PRIVACY.md` § 6 and widen the Render row to "Serves the web app and
+passes every request from it to the server; runs the server …". Also rename
+the section header above to Render and close BACKLOG I11.
+
 ## request_metrics — retention and Neon budget
 
 Row width, worst case: 4 (id) + 8 (ts) + ~40 (route) + 4 (method)
