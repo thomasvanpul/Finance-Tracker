@@ -1842,7 +1842,8 @@ From the vault register (section C) and roadmap. Re-checked against source on
   *Call, Thomas, 3 Oct 2026: a free Render static site with an `/api/*` rewrite; no paid plan. Declared as `numeris-web` in `render.yaml` (`df6a78f`). Left: create the service, point numeris.page DNS at it, then delete `vercel.json` and update PRIVACY:164.*
 - **I12 · Google Fonts loaded from Google's CDN (LG München I, 3 O 17493/20) — TODO · NOT YET.** [C10] Also cached by the service worker (`vite.config.ts:54`). The roadmap puts it "just below the line".
 - **I13 · Cerebras treats a personal-capacity customer as an independent controller — TODO · NOT YET.** [C11] Just below the line, as I12.
-- **I14 · Export covers the whole account, less credentials — DONE (`e5f3ace`, `788463c`).** [C1] 25 of 26 tables, 10 credential fields withheld with reasons.
+- **I14 · Export covers the whole account, less credentials — DONE (`e5f3ace`, `788463c`).** [C1]
+  *Re-measured 4 Oct 2026 (`data-export.ts`, `data-export.lock.test.ts`): the schema now has 28 tables, not 26 — two added since this was last counted (`eod_prices`, `provider_health`), both excluded as non-user data, not credentials. Current coverage: 25 of 28 exported, 3 excluded with reasons; 9 credential-shaped items withheld (8 fields across `sessions`/`signInMethods`/`twoFactor`/`connections`, plus the excluded `verification` table). The lock test enforces this against the live schema (`allTableNames().length`), so a future table add fails the gate rather than going unnoticed again.*
 - **I15 · Settings states what the AI is actually sent — DONE (`a68ee72`).** [A12]
 - **I16 · Consent captured at sign-up, documents linked — TODO · NOW.**
   `PLAN-Q3.md:124`. Nothing in `auth-gate.tsx` links terms or privacy, and no
