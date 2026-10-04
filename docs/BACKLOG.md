@@ -210,7 +210,7 @@ cap can be re-imposed per phase rather than across the whole tier.
 | J1 | Market data vendor decision | DECIDE | NOT YET |
 | J2 | Alpaca licensing, revisit Mar 2027 | PARKED | NOT YET |
 | J3 | Index levels refused server-side | DONE | — |
-| J28 | `fxRatesFromYahoo` is not behind `ENABLE_MARKET_DATA` | TODO | NOW |
+| J28 | `fxRatesFromYahoo` is not behind `ENABLE_MARKET_DATA` | DONE | — |
 | J29 | Background EOD valuation job and snapshot tables | TODO | NOT YET |
 | J4 | Attribution: market, currency, money added | TODO | NEXT |
 | J5 | Dividends as dated income into D1 | TODO | NEXT |
@@ -262,7 +262,7 @@ cap can be re-imposed per phase rather than across the whole tier.
 | M12 | `docs/DATA-INVENTORY.md` is stale on the deletion LIKE bug | TODO | NOT YET |
 | N1 | Phone UPCOMING's Add CTA is wired to a no-op, and no add path exists on phone | TODO | NOW |
 | N2 | No press feedback on any phone row (`HoverRow` is hover-only) | TODO | NOW |
-| N3 | No phone settings screen; `MobileSettings.tsx` was built and never wired | TODO | NOW |
+| N3 | No phone settings screen; `MobileSettings.tsx` was built and never wired | DECIDED: rewrite; needs design | NOW |
 | N4 | Eight phone routes render a desktop-only dead end | DECIDE | NOW |
 | N5 | Phone HOME has no error or loading state | DONE | — |
 | N6 | Sub-44px tap targets on WORTH and UPCOMING | TODO | NEXT |
@@ -1913,10 +1913,15 @@ what they *should* hold is a regulated activity and is ruled out.
   writing. Decision is Thomas's; see the roadmap's decision 4.
 - **J2 · Alpaca commercial licensing — revisit ~Mar 2027 — PARKED · NOT YET.** [H5]
 - **J3 · Index levels refused server-side, by shape and provider type — DONE (`45d284b`).** [A9]
-- **J28 · `fxRatesFromYahoo` is not behind `ENABLE_MARKET_DATA` — PARTLY DONE (`bb8edf6`).**
+- **J28 · `fxRatesFromYahoo` is not behind `ENABLE_MARKET_DATA` — DONE (`bb8edf6`, `4f7a6bb`).**
   Done 2 Oct: with the flag off the Yahoo lane is skipped and every rate is the
-  ECB fixing via Frankfurter. Still open: the `fx_rates` table and "ECB" in the
-  `fx` provenance mark.
+  ECB fixing via Frankfurter. Done 4 Oct (`4f7a6bb`): each ECB fixing is stored
+  in `fx_rates` (migration 0028, no `user_id`, excluded from the export with
+  its reason), `getFxRates` reports `provider` and `fixingDate`, and the
+  reconciliation panel's `fx` mark carries "ECB <date>" when the rate is the
+  ECB fixing. Applied to dev only; production gets 0028 on the next deploy.
+  Not seen rendered: the seed account's reconciliation is `insufficient`, so
+  the panel row with the mark does not draw on dev.
   `api-server/src/routes/market.ts:103-130` still scrapes Yahoo for FX on a
   cache miss (in-process, 5-minute TTL) while the product says markets are off
   and Yahoo is out (scraping, `Atlas/Settled.md`). Found 19 Sep by the code
@@ -2233,6 +2238,11 @@ corrections in N1 to N7 need no design input and can go first.
   desktop `pages/settings.tsx` in a wrapper. First deliverable is a measured
   diff of what the desktop page does that the mobile one does not, so
   revive-versus-rewrite is decided on evidence.
+  **Diff done 4 Oct: `docs/N3-SETTINGS-DIFF.md`. Decided: rewrite.** Of
+  MobileSettings' 18 capabilities 6 do anything, and 2 of the 9 it shares with
+  desktop use the same data path; it shows "GBP" whatever the API says and
+  "All accounts synced" unconditionally. Desktop has 36. Which of them belong
+  on a phone is the design question left open (bank: Decisions).
 - **N4 · Eight phone routes are dead ends — DECIDE · NOW.**
   `components/phone/PhoneShell.tsx:72-80`. A route that renders "desktop only"
   is a route that should not be reachable from the phone directory.
