@@ -6,6 +6,7 @@ import type { Transaction } from "@workspace/db";
 import { txToBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { trailingWindow } from "../lib/date-ranges";
+import { configuredEmailFrom } from "../lib/email-sender";
 
 const router = Router();
 
@@ -153,7 +154,7 @@ router.post("/send", async (req: Request, res: Response): Promise<void> => {
     });
 
     await resend.emails.send({
-      from: "Numeris <digest@numeris.app>",
+      from: configuredEmailFrom(),
       to: userEmail,
       subject: `Weekly Digest — ${new Date().toLocaleDateString("en-GB", {
         day: "numeric",

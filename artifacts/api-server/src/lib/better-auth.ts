@@ -12,6 +12,7 @@ import {
   REQUIRE_EMAIL_VERIFICATION,
   EMAIL_VERIFICATION_EXPIRES_IN_SECONDS,
 } from "./auth-policy";
+import { configuredEmailFrom } from "./email-sender";
 
 // A blank env var is UNSET, not a value. Render and Vercel both make it easy
 // to create a key with an empty string, and `??` alone would have handed that
@@ -47,15 +48,15 @@ function hostnameOf(origin: string, fallback: string): string {
   }
 }
 
-// EMAIL_FROM is the real knob (see the comment at its use below) and Resend
-// rejects an unverified sender only at send time, never at boot — so an
-// unset EMAIL_FROM fails silently until the first password-reset or
-// verification email is attempted. Logging it here at module load (i.e.
-// server boot) makes the gap visible in deploy logs instead of only in a
-// user's undelivered inbox.
+// EMAIL_FROM is the real knob (see email-sender.ts) and Resend rejects an
+// unverified sender only at send time, never at boot — so an unset
+// EMAIL_FROM fails silently until the first password-reset or verification
+// email is attempted. Logging it here at module load (i.e. server boot)
+// makes the gap visible in deploy logs instead of only in a user's
+// undelivered inbox.
 if (!env("EMAIL_FROM")) {
   logger.warn(
-    { fallback: `noreply@${hostnameOf(API_ORIGIN, "localhost")}` },
+    { fallback: configuredEmailFrom() },
     "EMAIL_FROM is not set; falling back to a derived sender address that Resend will reject unless that domain is verified there",
   );
 }
@@ -114,13 +115,7 @@ async function sendTransactionalEmail(mail: {
     const { Resend } = await import("resend");
     const resend = new Resend(process.env.RESEND_API_KEY);
     const result = await resend.emails.send({
-      // EMAIL_FROM is the real knob and must name a domain VERIFIED with
-      // Resend — an unverified sender is rejected at send time, not at
-      // boot. The fallback derives from API_ORIGIN rather than naming a
-      // host literally, so it follows a rename instead of outliving one;
-      // it is still only a fallback, and a deployment that relies on it
-      // will fail at Resend until that domain is verified there.
-      from: env("EMAIL_FROM") ?? `noreply@${hostnameOf(API_ORIGIN, "localhost")}`,
+      from: configuredEmailFrom(),
       to: mail.to,
       subject: mail.subject,
       html: mail.html,
