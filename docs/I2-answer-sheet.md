@@ -34,7 +34,7 @@ already answered by a source, or are build work rather than questions.
 | --- | --- | --- |
 | AI on/off (old BLOCKED, PRIVACY §5.3 and §8) | **Settled and removed.** Opt-in, off by default, switch in Settings → AI Coach | I7, `9a12b84`, `92ef685`; text fixed in `865df33` |
 | PRIVACY:107, the AI basis "contract or consent" | **Settled: consent.** The marker text is now stale, because it still says consent "cannot be the basis today" | Thomas 3 Oct (BACKLOG I7); `api-server/src/lib/ai-consent.ts:21` |
-| TERMS:60, "whether the AI features stay on by default" | **Settled: off by default.** TERMS still says "available to every signed-in user with no opt-in", which is stale, and its source row at TERMS:140 is stale too | as above |
+| TERMS:60, "whether the AI features stay on by default" | **Settled and fixed.** TERMS:60 now says the features are off by default until AI is turned on in Settings → AI Coach, and its source row (TERMS:150) cites `ai-consent.ts` | as above; text fixed in `db769bd` |
 | PRIVACY:291, I9 non-user route | **Process settled** (an email address, handled by hand). **The address is still open**: see Q2 | Settled.md 4 Oct 00:25; BACKLOG I9 |
 | PRIVACY:264, BLOCKED dev DB copy (I10) | **Decided** (seed-only data) but **not done**. The marker stays until Thomas runs the Neon reset | `.review/archive/2026-10-04T0035-push-and-deploy-for-testers.report.md` §3 |
 | PRIVACY:166, BLOCKED Vercel Hobby (I11) | **Decided** 3 Oct: a free Render static site. **Not cut over.** The push confirmed that Vercel still serves numeris.page and `vercel.json` still proxies `/api` | BACKLOG I11; `render.yaml:100`; `artifacts/finance-tracker/vercel.json:6-9` |
