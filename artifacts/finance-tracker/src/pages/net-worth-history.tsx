@@ -1245,7 +1245,7 @@ export default function NetWorthHistory() {
                   </div>
                 </div>
                 {latestEntry.totalAssets > 0 && (
-                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 8 }}>
+                  <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 8 }}>
                     Leverage ratio: <Text as="span" color="var(--ft-text)">
                       {latestEntry.totalLiabilities > 0
                         ? `${((latestEntry.totalLiabilities / latestEntry.totalAssets) * 100).toFixed(1)}% of assets are financed`
@@ -1406,7 +1406,7 @@ export default function NetWorthHistory() {
                     <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: pct >= 100 ? "var(--ft-green)" : "var(--ft-accent)", transition: "width 0.25s ease" }} />
                   </div>
                   {cagr !== null && cagrYears !== null && (
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>
+                    <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 6 }}>
                       At your historical CAGR of {cagr.toFixed(1)}% → target in <span style={{ color: "var(--ft-text)" }}>{cagrYears.toFixed(1)} yrs</span> ({arrivalYear(cagr)})
                     </div>
                   )}
@@ -1449,7 +1449,7 @@ export default function NetWorthHistory() {
             );
           })()}
           {targetNw === 0 && (
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-dim)", padding: "12px 16px", textAlign: "center" }}>
+            <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", padding: "12px 16px", textAlign: "center" }}>
               Enter a target net worth to see projections and time-to-reach scenarios.
             </div>
           )}
@@ -1465,7 +1465,7 @@ export default function NetWorthHistory() {
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 0", borderBottom: "1px solid var(--ft-border)" }}>
                 <span aria-hidden="true" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: m.color ?? "var(--ft-accent)", flexShrink: 0 }}>■</span>
                 <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", minWidth: 60, flexShrink: 0, whiteSpace: "nowrap" }}>{shortDate(m.date)}</div>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--ft-text)", flex: 1, whiteSpace: "nowrap", minWidth: 0 }}>{m.label}</div>
+                <div style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-text)", flex: 1, whiteSpace: "nowrap", minWidth: 0 }}>{m.label}</div>
                 <button
                   onClick={() => {
                     const updated = milestones.filter((_, j) => j !== i);
@@ -1549,7 +1549,7 @@ export default function NetWorthHistory() {
                         </span>
                       )}
                       {rowNote(e) && (
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap", maxWidth: 140 }}>
+                        <span style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", whiteSpace: "nowrap", maxWidth: 140 }}>
                           {rowNote(e)}
                         </span>
                       )}
