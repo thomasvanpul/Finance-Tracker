@@ -185,7 +185,7 @@ export function RingView({ holdings, baseCurrency }: { holdings: Holdings; baseC
               transform="rotate(-90 100 100)"
             />
           ))}
-          <text x={100} y={100} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-mono)" fontSize={11} fill="var(--ft-dim)" letterSpacing="0.12em">HOLDINGS</text>
+          <text x={100} y={100} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-mono)" fontSize={11} fill="var(--ft-dim)" letterSpacing="0.12em">ASSETS</text>
           <text className="pnum" x={100} y={116} textAnchor="middle" dominantBaseline="central" fontFamily="var(--font-mono)" fontSize={11} fontWeight={700} fill="var(--ft-text)">{symbol}{totalLabel}</text>
         </svg>
       </div>

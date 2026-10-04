@@ -53,8 +53,8 @@ describe("WORTH composition chart type", () => {
     expect(styleBefore(composition, copy)).not.toContain("--font-mono");
   });
 
-  it("keeps the HOLDINGS legend and the total in mono", () => {
-    expect(composition).toMatch(/fontFamily="var\(--font-mono\)"[^>]*>HOLDINGS</);
+  it("keeps the ASSETS legend and the total in mono", () => {
+    expect(composition).toMatch(/fontFamily="var\(--font-mono\)"[^>]*>ASSETS</);
     expect(composition).toMatch(/fontFamily="var\(--font-mono\)"[^>]*>\{symbol\}\{totalLabel\}</);
   });
 });
