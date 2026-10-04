@@ -301,8 +301,8 @@ Three hooks now run on every Claude Code session on this machine. Full detail in
 **This repo's gate:** `pnpm -r test && pnpm run typecheck` in `.claude/gate`.
 
 It runs the full suite in every workspace package that defines a `test`
-script (currently `artifacts/api-server` and `artifacts/finance-tracker`),
-then the workspace typecheck. There is no `git diff -- '*test*'` guard, so
+script (currently `artifacts/api-server`, `artifacts/finance-tracker`, and
+`scripts`), then the workspace typecheck. There is no `git diff -- '*test*'` guard, so
 adding or changing a test does not by itself fail the gate — `9a4ead1`
 replaced the earlier guarded typecheck-only gate and this section was left
 stale until 2026-09-03.
