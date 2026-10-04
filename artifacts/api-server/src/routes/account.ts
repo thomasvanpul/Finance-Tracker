@@ -61,15 +61,16 @@ router.post("/account/delete", async (req, res): Promise<void> => {
     const code = typeof body?.code === "string" ? body.code.trim() : "";
     if (!code) {
       const issued = await issueDeleteCode(userId, sessionUser.email);
+      // why fixed: HTTP status codes, declared in openapi.yaml for this route.
       if (issued === "no-transport") {
         res.status(503).json({ error: "This server cannot send the confirmation email, so the account was not deleted. Contact support." });
         return;
       }
-      res.status(202).json({ status: "code_sent" });
+      res.status(202).json({ status: "code_sent" }); // why fixed: HTTP status, see openapi.yaml
       return;
     }
     if (!(await consumeDeleteCode(userId, code))) {
-      res.status(400).json({ error: "That code is wrong or has expired. Request a new one." });
+      res.status(400).json({ error: "That code is wrong or has expired. Request a new one." }); // why fixed: HTTP status
       return;
     }
   }

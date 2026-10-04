@@ -160,6 +160,7 @@ async function fxRatesFromFrankfurter(missing: string[]): Promise<{ rates: Recor
       if (typeof rate === "number" && rate > 0) out[ccy] = rate;
     }
     // The ECB fixing day the rates are FOR, as Frankfurter states it.
+    // why fixed: the regex is the ISO date shape (YYYY-MM-DD), not a setting.
     const date = typeof body.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : null;
     return { rates: out, date };
   });

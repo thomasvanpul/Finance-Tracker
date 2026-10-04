@@ -110,6 +110,7 @@ export function ecbFixingInstant(
   report: Pick<ReconciliationReport, "fxProvider" | "fxFixingDate">,
 ): string | null {
   if (report.fxProvider !== "ecb" || !report.fxFixingDate) return null;
+  // why fixed: the regex is the ISO date shape (YYYY-MM-DD), not a setting.
   if (!/^\d{4}-\d{2}-\d{2}$/.test(report.fxFixingDate)) return null;
   return `${report.fxFixingDate}T12:00:00Z`;
 }

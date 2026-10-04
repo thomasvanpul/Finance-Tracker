@@ -32,6 +32,7 @@ export const fxRatesTable = pgTable(
     quote: text("quote").notNull(),
     // Units of `quote` per one `base`. Scale 8 matches
     // transactions.native_to_base_rate.
+    // why fixed: column precision is schema, changed only by a migration.
     rate: numeric("rate", { precision: 18, scale: 8 }).notNull(),
     // "ecb" for the ECB reference fixing (served by Frankfurter).
     provider: text("provider").notNull(),

@@ -23,8 +23,12 @@ import { db, verificationTable } from "@workspace/db";
 import { sendTransactionalEmail } from "./better-auth";
 import { isEmailDeliverable } from "./email-transport";
 
+// why fixed: security parameters of the deletion step-up, not deployment
+// settings; a shorter or longer code must ship as a reviewed change, and the
+// SPA's input (profile.tsx DELETE_CODE_DIGITS) has to change with it.
 const CODE_TTL_MINUTES = 15;
 const CODE_DIGITS = 6;
+const MS_PER_MINUTE = 60_000;
 
 function identifierFor(userId: string): string {
   return `account-delete:${userId}`;
@@ -37,6 +41,7 @@ function hashCode(code: string): string {
 /** Mails a fresh code, replacing any earlier one. */
 export async function issueDeleteCode(userId: string, email: string): Promise<"sent" | "no-transport"> {
   if (!isEmailDeliverable()) return "no-transport";
+  // why fixed: base 10 — the code is decimal digits.
   const code = String(randomInt(0, 10 ** CODE_DIGITS)).padStart(CODE_DIGITS, "0");
   const identifier = identifierFor(userId);
   await db.delete(verificationTable).where(eq(verificationTable.identifier, identifier));
@@ -44,7 +49,7 @@ export async function issueDeleteCode(userId: string, email: string): Promise<"s
     id: randomUUID(),
     identifier,
     value: hashCode(code),
-    expiresAt: new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000),
+    expiresAt: new Date(Date.now() + CODE_TTL_MINUTES * MS_PER_MINUTE),
   });
   await sendTransactionalEmail({
     label: "Account Deletion",

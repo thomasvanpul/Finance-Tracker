@@ -21,6 +21,10 @@ import { loadPersonaIds, PERSONAS, PERSONA_COLORS, PERSONA_GLYPHS } from "@/lib/
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { SignInMethodsPanel } from "@/components/sign-in-methods-panel";
 
+// why fixed: the length of the account-deletion code the API mails
+// (api-server lib/delete-code.ts CODE_DIGITS); the two change together.
+const DELETE_CODE_DIGITS = 6;
+
 const PANEL: React.CSSProperties = {
   background: "var(--ft-surface)",
   border: "1px solid var(--ft-border)",
@@ -628,7 +632,7 @@ export default function Profile() {
   const deleteEmailMatches = deleteEmail.trim().toLowerCase() === accountEmail.toLowerCase() && accountEmail !== "";
   const deleteSecondFactorOk = deleteHasPassword
     ? deletePassword.length > 0
-    : !deleteCodeSent || /^\d{6}$/.test(deleteCode.trim());
+    : !deleteCodeSent || new RegExp(`^\\d{${DELETE_CODE_DIGITS}}$`).test(deleteCode.trim());
   const deleteReady = deleteEmailMatches && deleteHasPassword !== null && deleteSecondFactorOk;
   const deleteWillSendCode = deleteHasPassword === false && !deleteCodeSent;
   useEffect(() => {
@@ -1577,12 +1581,13 @@ export default function Profile() {
               </VStack>
             )}
             {deleteHasPassword === false && deleteCodeSent && (
+              // why fixed: gap 4 matches the password field's VStack above it.
               <VStack gap={4}>
                 <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Enter the six-digit code sent to {accountEmail}</Label>
                 <Input
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={6}
+                  maxLength={DELETE_CODE_DIGITS}
                   value={deleteCode}
                   onChange={e => setDeleteCode(e.target.value.replace(/\D/g, ""))}
                 />
