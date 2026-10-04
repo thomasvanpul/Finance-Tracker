@@ -122,17 +122,18 @@ every table the code declares is present, every table is empty and the journal
 is empty, and it refuses production in any mode. Write `--expect=empty` with
 the `=`; anything it does not recognise stops it rather than passing.
 
-### 6. Update the host guards
+### 6. Update the host guard
 
-Six files hardcode the dev host, not the two the task named:
-`scripts/src/seed-dev-user.ts`, `seed-testers.ts`, `backfill-tx-rates.ts`,
-`verify-fx-drift.ts`, `verify-tx-rate-lock.ts`, and
-`artifacts/api-server/src/ledger-shape.ts`.
+`DEV_DB_HOST` and `PROD_DB_HOST` are declared once, in `lib/db/src/hosts.ts`,
+and imported from `@workspace/db/hosts` by every script that guards a branch
+(`scripts/src/seed-dev-user.ts`, `seed-testers.ts`, `backfill-tx-rates.ts`,
+`verify-fx-drift.ts`, `verify-tx-rate-lock.ts`, `dev-db-schema-only.ts`) and
+by `artifacts/api-server/src/ledger-shape.ts`. A host rotation is one edit.
 
 ```bash
 NEW=ep-your-new-host-id
-rg -l "ep-withered-night-abucoq17" scripts/src artifacts/api-server/src | xargs sed -i '' "s/ep-withered-night-abucoq17/$NEW/g"
-rg -c "ep-withered-night-abucoq17" scripts/src artifacts/api-server/src
+sed -i '' "s/ep-withered-night-abucoq17/$NEW/" lib/db/src/hosts.ts
+rg -c "ep-withered-night-abucoq17" lib/db/src/hosts.ts
 ```
 
 The last command must print nothing.
@@ -169,14 +170,14 @@ file belong to accounts that no longer exist.
 pnpm -r test && pnpm run typecheck
 ```
 
-Commit the six edited files on their own.
+Commit the edited `lib/db/src/hosts.ts` on its own.
 
 ### Undo, at any point up to here
 
 ```bash
 cp lib/db/.env.old-dev.backup lib/db/.env
 cp artifacts/api-server/.env.old-dev.backup artifacts/api-server/.env
-rg -l "$NEW" scripts/src artifacts/api-server/src | xargs sed -i '' "s/$NEW/ep-withered-night-abucoq17/g"
+sed -i '' "s/$NEW/ep-withered-night-abucoq17/" lib/db/src/hosts.ts
 ```
 
 Then delete the `dev-clean` branch in the console. Nothing on `dev` or
@@ -190,7 +191,7 @@ Do it only after step 8 passed and the app works against the new branch.
 First confirm nothing local still points at it — this must print nothing:
 
 ```bash
-rg -c "ep-withered-night-abucoq17" lib/db/.env artifacts/api-server/.env scripts/src artifacts/api-server/src
+rg -c "ep-withered-night-abucoq17" lib/db/.env artifacts/api-server/.env lib/db/src/hosts.ts
 ```
 
 Console: Branches → `dev` (`br-cold-term-abp7fwtk`) → Delete. Or:

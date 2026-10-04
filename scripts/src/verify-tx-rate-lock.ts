@@ -20,10 +20,8 @@
 // probe insert. Nothing gets committed.
 
 import { db, transactionsTable, userTable, accountsTable } from "@workspace/db";
+import { DEV_DB_HOST, PROD_DB_HOST } from "@workspace/db/hosts";
 import { eq, sql } from "drizzle-orm";
-
-const DEV_DB_HOST = "ep-withered-night-abucoq17";
-const PROD_DB_HOST = "ep-dark-hall-ab7g28of";
 
 function parseArgs(): { branch: "dev" | "prod" } {
   const args = process.argv.slice(2);

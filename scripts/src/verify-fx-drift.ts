@@ -24,9 +24,7 @@
 
 import { and, eq, sql } from "drizzle-orm";
 import { db, transactionsTable } from "@workspace/db";
-
-const DEV_DB_HOST = "ep-withered-night-abucoq17";
-const PROD_DB_HOST = "ep-dark-hall-ab7g28of";
+import { DEV_DB_HOST, PROD_DB_HOST } from "@workspace/db/hosts";
 
 function parseArgs(): { branch: "dev" | "prod" } {
   const args = process.argv.slice(2);

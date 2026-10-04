@@ -31,11 +31,9 @@
 // host, so a mismatch refuses to run rather than reading the wrong DB.
 
 import { pool } from "@workspace/db";
+import { DEV_DB_HOST, PROD_DB_HOST } from "@workspace/db/hosts";
 import { normalizeMerchant } from "./lib/merchant-normalizer";
 import { detectRecurringPatterns } from "./lib/recurring-detector-server";
-
-const DEV_DB_HOST = "ep-withered-night-abucoq17";
-const PROD_DB_HOST = "ep-dark-hall-ab7g28of";
 
 function parseArgs(): { branch: "dev" | "prod" } {
   const flag = process.argv.slice(2).find((a) => a.startsWith("--branch="));

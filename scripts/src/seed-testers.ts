@@ -51,12 +51,9 @@ import { join } from "node:path";
 import { hashPassword } from "better-auth/crypto";
 import { and, eq } from "drizzle-orm";
 import { db, userTable, appSettingsTable, accountTable } from "@workspace/db";
+import { DEV_DB_HOST, PROD_DB_HOST } from "@workspace/db/hosts";
 
 import { seedDemoData } from "./seed-demo-data.js";
-
-// ── Branch guard (same hosts as backfill-tx-rates.ts) ───────────────────────
-const DEV_DB_HOST = "ep-withered-night-abucoq17";
-const PROD_DB_HOST = "ep-dark-hall-ab7g28of";
 
 const DEFAULT_TESTER_COUNT = 6;
 

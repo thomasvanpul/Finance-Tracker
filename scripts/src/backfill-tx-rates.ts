@@ -37,6 +37,7 @@
 
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db, transactionsTable, appSettingsTable, userTable } from "@workspace/db";
+import { DEV_DB_HOST, PROD_DB_HOST } from "@workspace/db/hosts";
 
 // Frankfurter's live currency list. Any (from, to) pair where BOTH
 // endpoints are in this set is fillable; a row with a currency
@@ -52,11 +53,6 @@ const FRANKFURTER_CURRENCIES = new Set([
   "THB", "TRY", "USD", "ZAR",
 ]);
 
-// ── Branch guard ────────────────────────────────────────────────────
-const DEV_DB_HOST = "ep-withered-night-abucoq17";
-// Prod host from lib/db/.env.production.backup. Kept as a positive
-// assertion so a misconfigured .env doesn't silently touch prod.
-const PROD_DB_HOST = "ep-dark-hall-ab7g28of";
 
 function parseArgs(): { branch: "dev" | "prod"; apply: boolean } {
   const args = process.argv.slice(2);

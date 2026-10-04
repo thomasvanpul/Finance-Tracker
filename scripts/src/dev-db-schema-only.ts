@@ -1,15 +1,17 @@
 // Pure helpers for scripts/dev-db/reset-dev-schema-only.md (BACKLOG § I10).
 //
-// No database import here — @workspace/db throws at import without
-// DATABASE_URL, and these are what dev-db-schema-only.test.ts locks. The CLI
+// No *live* database import here — @workspace/db's main entry throws at
+// import without DATABASE_URL, and these are what dev-db-schema-only.test.ts
+// locks. @workspace/db/hosts is a side-effect-free subpath (just the two
+// branch hostnames), so importing it does not need DATABASE_URL set. The CLI
 // that touches a database is dev-db-check.ts.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readMigrationFiles } from "drizzle-orm/migrator";
+import { PROD_DB_HOST } from "@workspace/db/hosts";
 
-// Same host the other branch guards name (seed-testers.ts, ledger-shape.ts).
-export const PROD_DB_HOST = "ep-dark-hall-ab7g28of";
+export { PROD_DB_HOST };
 
 // Every account the seed scripts create: seed-credentials.ts SEED_EMAIL and
 // seed-testers.ts TESTER_EMAIL_RE. Any other address is a real person's.

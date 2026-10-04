@@ -13,12 +13,12 @@
 
 import { eq } from "drizzle-orm";
 import { db, userTable } from "@workspace/db";
+import { DEV_DB_HOST } from "@workspace/db/hosts";
 
 import { SEED_EMAIL, SEED_PASSWORD, SEED_NAME } from "./seed-credentials.js";
 import { seedDemoData } from "./seed-demo-data.js";
 
 // ── Dev-branch guard ────────────────────────────────────────────────────────
-const DEV_DB_HOST = "ep-withered-night-abucoq17";
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:3001";
 
 function assertDevBranch(): void {
