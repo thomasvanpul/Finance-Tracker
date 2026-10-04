@@ -44,6 +44,7 @@ import type {
   DebtSettle,
   DebtSummary,
   DebtUpdate,
+  DeleteUserAccountCodeSent,
   DeleteUserAccountInput,
   DeleteUserAccountResult,
   DismissSubscriptionBody,
@@ -4908,12 +4909,12 @@ export const getDeleteUserAccountUrl = () => {
 }
 
 /**
- * Irreversible. Removes the user row; every user-owned table cascades from it (accounts, transactions, upcoming, investments, debts, budgets, goals, subscriptions, connections and their encrypted credentials, snapshots, recurring patterns, shared expenses, sessions, passkeys, 2FA). Verification tokens are deleted by email; request metrics keep their timing rows with the user id removed. Rows in other users' data that named this user keep their text and lose the link. Third-party tokens (Wise, Alpaca, Kraken, OAuth grants) are destroyed here, not revoked at the provider. Confirmation is the account email, typed exactly, plus the current password for any account that has one — a valid session proves a device once signed in, not that this request is the owner acting now.
+ * Irreversible. Removes the user row; every user-owned table cascades from it (accounts, transactions, upcoming, investments, debts, budgets, goals, subscriptions, connections and their encrypted credentials, snapshots, recurring patterns, shared expenses, sessions, passkeys, 2FA). Verification tokens are deleted by email; request metrics keep their timing rows with the user id removed. Rows in other users' data that named this user keep their text and lose the link. Third-party tokens (Wise, Alpaca, Kraken, OAuth grants) are destroyed here, not revoked at the provider. Confirmation is the account email, typed exactly, plus the current password for any account that has one — a valid session proves a device once signed in, not that this request is the owner acting now. An account with no password (passkey-only, OAuth-only) proves control of its email instead: a request without `code` mails a single-use six-digit code and answers 202 with nothing deleted; the request carrying it back deletes.
  * @summary Delete the signed-in user's account and everything they own
  */
-export const deleteUserAccount = async (deleteUserAccountInput: DeleteUserAccountInput, options?: RequestInit): Promise<DeleteUserAccountResult> => {
+export const deleteUserAccount = async (deleteUserAccountInput: DeleteUserAccountInput, options?: RequestInit): Promise<DeleteUserAccountResult | DeleteUserAccountCodeSent> => {
 
-  return customFetch<DeleteUserAccountResult>(getDeleteUserAccountUrl(),
+  return customFetch<DeleteUserAccountResult | DeleteUserAccountCodeSent>(getDeleteUserAccountUrl(),
   {
     ...options,
     method: 'POST',

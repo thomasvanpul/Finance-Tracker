@@ -80,10 +80,13 @@ const localhostOrigins = DEV_PORTS.flatMap(
 // The refusals that DO reach the user live in app.ts; this function's job is
 // delivery and an honest log line, in that order — the "dispatched" line is
 // written only after Resend has accepted the send, never before.
-async function sendTransactionalEmail(mail: {
+// Exported for lib/delete-code.ts, which mails a code rather than a link:
+// exactly one of `url` and `code` is set, and the dev log shows whichever.
+export async function sendTransactionalEmail(mail: {
   label: string;
   to: string;
-  url: string;
+  url?: string;
+  code?: string;
   subject: string;
   html: string;
 }): Promise<void> {
@@ -103,8 +106,8 @@ async function sendTransactionalEmail(mail: {
   // everywhere else.
   if (transport.kind === "dev-log") {
     logger.warn(
-      { email: mail.to, link: mail.url },
-      `[${mail.label}] DEV-ONLY: no email sent. Open the link above to continue.`,
+      mail.code ? { email: mail.to, code: mail.code } : { email: mail.to, link: mail.url },
+      `[${mail.label}] DEV-ONLY: no email sent. ${mail.code ? "Enter the code above" : "Open the link above"} to continue.`,
     );
     return;
   }

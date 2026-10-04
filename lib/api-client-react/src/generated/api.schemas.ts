@@ -1634,6 +1634,19 @@ export interface DeleteUserAccountInput {
   email: string;
   /** Current password, required when the account has one (not passkey-only or OAuth-only). Re-checked server-side against the stored hash before deletion proceeds. */
   password?: string;
+  /** The six-digit code emailed for an account with no password. Single use: any attempt, right or wrong, spends it. */
+  code?: string;
+}
+
+export type DeleteUserAccountCodeSentStatus = typeof DeleteUserAccountCodeSentStatus[keyof typeof DeleteUserAccountCodeSentStatus];
+
+
+export const DeleteUserAccountCodeSentStatus = {
+  code_sent: 'code_sent',
+} as const;
+
+export interface DeleteUserAccountCodeSent {
+  status: DeleteUserAccountCodeSentStatus;
 }
 
 export type DeleteUserAccountResultOauthGrantsRevokedItem = typeof DeleteUserAccountResultOauthGrantsRevokedItem[keyof typeof DeleteUserAccountResultOauthGrantsRevokedItem];

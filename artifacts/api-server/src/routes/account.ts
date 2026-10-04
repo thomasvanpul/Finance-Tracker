@@ -5,6 +5,7 @@ import { verifyPassword } from "better-auth/crypto";
 import { deleteUserAccount } from "../lib/account-deletion";
 import { revokeBankConsents, ConsentRevokeError } from "../lib/bank-consents";
 import { revokeOAuthGrants } from "../lib/oauth-grants";
+import { consumeDeleteCode, issueDeleteCode } from "../lib/delete-code";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -16,11 +17,14 @@ const router: IRouter = Router();
 // The real bar is the password re-check below: a valid session is proof a
 // device once signed in, not proof this request is the owner acting now.
 //
-// Passkey-only and OAuth-only users have no password to re-check — for
-// them the typed email remains the only bar, unchanged from before this
-// fix. better-auth's twoFactor plugin requires a password account to
-// enable 2FA (see lib/better-auth.ts), so a 2FA-enabled user always has
-// one and always hits the re-check.
+// Passkey-only and OAuth-only users have no password to re-check. They
+// prove control of the account's email instead: the first request mails a
+// single-use code (202, nothing deleted) and the second carries it back
+// (lib/delete-code.ts). With no way to deliver mail the request is refused
+// rather than falling back to the typed email alone. better-auth's
+// twoFactor plugin requires a password account to enable 2FA (see
+// lib/better-auth.ts), so a 2FA-enabled user always has one and always
+// hits the password re-check.
 //
 // What this cannot do is make a third party forget a credential the user
 // pasted in (Wise, Alpaca, Kraken tokens). The row holding our encrypted
@@ -34,7 +38,7 @@ const router: IRouter = Router();
 router.post("/account/delete", async (req, res): Promise<void> => {
   const userId = (req as any).userId as string;
   const sessionUser = (req as any).user as { email?: string } | undefined;
-  const body = req.body as { email?: unknown; password?: unknown } | undefined;
+  const body = req.body as { email?: unknown; password?: unknown; code?: unknown } | undefined;
   const typed = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   if (!typed || !sessionUser?.email || typed !== sessionUser.email.toLowerCase()) {
     res.status(400).json({ error: "Type the account email exactly to confirm deletion" });
@@ -51,6 +55,21 @@ router.post("/account/delete", async (req, res): Promise<void> => {
       && (await verifyPassword({ hash: credential.password, password: typedPassword }));
     if (!passwordOk) {
       res.status(400).json({ error: "Enter your current password to confirm deletion" });
+      return;
+    }
+  } else {
+    const code = typeof body?.code === "string" ? body.code.trim() : "";
+    if (!code) {
+      const issued = await issueDeleteCode(userId, sessionUser.email);
+      if (issued === "no-transport") {
+        res.status(503).json({ error: "This server cannot send the confirmation email, so the account was not deleted. Contact support." });
+        return;
+      }
+      res.status(202).json({ status: "code_sent" });
+      return;
+    }
+    if (!(await consumeDeleteCode(userId, code))) {
+      res.status(400).json({ error: "That code is wrong or has expired. Request a new one." });
       return;
     }
   }

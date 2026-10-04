@@ -1339,7 +1339,11 @@ paths:
         destroyed here, not revoked at the provider. Confirmation is the
         account email, typed exactly, plus the current password for any
         account that has one — a valid session proves a device once signed
-        in, not that this request is the owner acting now.
+        in, not that this request is the owner acting now. An account with
+        no password (passkey-only, OAuth-only) proves control of its email
+        instead: a request without `code` mails a single-use six-digit code
+        and answers 202 with nothing deleted; the request carrying it back
+        deletes.
       requestBody:
         required: true
         content:
@@ -1353,8 +1357,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DeleteUserAccountResult"
+        "202":
+          description: No password on the account; a confirmation code was emailed and nothing was deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteUserAccountCodeSent"
         "400":
-          description: The typed email does not match the account, or the password is missing/wrong for an account that has one
+          description: The typed email does not match the account, the password is missing/wrong for an account that has one, or the emailed code is wrong or expired
+        "503":
+          description: The account has no password and this server cannot email a code, so nothing was deleted
 
   # ── SETTINGS (currency) ────────────────────────────────────────────────────
   /settings/currency:
@@ -3130,6 +3142,19 @@ components:
             Current password, required when the account has one (not
             passkey-only or OAuth-only). Re-checked server-side against the
             stored hash before deletion proceeds.
+        code:
+          type: string
+          description: >-
+            The six-digit code emailed for an account with no password.
+            Single use: any attempt, right or wrong, spends it.
+
+    DeleteUserAccountCodeSent:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [code_sent]
 
     DeleteUserAccountResult:
       type: object

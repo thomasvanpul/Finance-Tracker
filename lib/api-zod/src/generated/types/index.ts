@@ -91,6 +91,8 @@ export * from './debtSummary';
 export * from './debtUpdate';
 export * from './debtUpdateCurrency';
 export * from './debtUpdateDirection';
+export * from './deleteUserAccountCodeSent';
+export * from './deleteUserAccountCodeSentStatus';
 export * from './deleteUserAccountInput';
 export * from './deleteUserAccountResult';
 export * from './deleteUserAccountResultOauthGrants';

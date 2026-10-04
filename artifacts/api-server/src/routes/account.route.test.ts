@@ -3,7 +3,8 @@
 // owner acting now — see the comment at the top of account.ts for the
 // fuller reasoning. This locks the gate itself: a credential account
 // without the right password never reaches deleteUserAccount, and an
-// account with no password (passkey-only, OAuth-only) is unaffected.
+// account with no password (passkey-only, OAuth-only) must prove control
+// of its email with a single-use code before anything is deleted.
 
 import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import type { Server } from "node:http";
@@ -49,6 +50,16 @@ vi.mock("../lib/oauth-grants", () => ({
   revokeOAuthGrants: (userId: string) => revokeOAuthGrantsMock(userId),
 }));
 
+// Emailed step-up code for accounts with no password. "123456" is the
+// code the mock accepts; issuing records the call.
+const GOOD_CODE = "123456";
+const issueDeleteCodeMock = vi.fn(async (_userId: string, _email: string) => "sent" as "sent" | "no-transport");
+const consumeDeleteCodeMock = vi.fn(async (_userId: string, code: string) => code === GOOD_CODE);
+vi.mock("../lib/delete-code", () => ({
+  issueDeleteCode: (userId: string, email: string) => issueDeleteCodeMock(userId, email),
+  consumeDeleteCode: (userId: string, code: string) => consumeDeleteCodeMock(userId, code),
+}));
+
 let server: Server;
 let baseUrl = "";
 
@@ -77,6 +88,8 @@ beforeEach(() => {
   deleteUserAccountMock.mockClear();
   revokeBankConsentsMock.mockClear();
   revokeOAuthGrantsMock.mockClear();
+  issueDeleteCodeMock.mockClear();
+  consumeDeleteCodeMock.mockClear();
 });
 
 async function deleteAccount(body: unknown) {
@@ -116,10 +129,43 @@ describe("POST /account/delete", () => {
     expect(deleteUserAccountMock).toHaveBeenCalledWith("user-a");
   });
 
-  it("falls back to email-only for an account with no password credential", async () => {
+  it("emails a code instead of deleting when the account has no password", async () => {
     credentialRows = [];
     const res = await deleteAccount({ email: "owner@example.com" });
+    expect(res.status).toBe(202);
+    expect(((await res.json()) as { status: string }).status).toBe("code_sent");
+    expect(issueDeleteCodeMock).toHaveBeenCalledWith("user-a", "owner@example.com");
+    expect(deleteUserAccountMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses, deleting nothing, when no code can be delivered", async () => {
+    credentialRows = [];
+    issueDeleteCodeMock.mockImplementationOnce(async () => "no-transport");
+    const res = await deleteAccount({ email: "owner@example.com" });
+    expect(res.status).toBe(503);
+    expect(deleteUserAccountMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a wrong code for an account with no password", async () => {
+    credentialRows = [];
+    const res = await deleteAccount({ email: "owner@example.com", code: "000000" });
+    expect(res.status).toBe(400);
+    expect(deleteUserAccountMock).not.toHaveBeenCalled();
+  });
+
+  it("does not issue or check a code before the email matches", async () => {
+    credentialRows = [];
+    const res = await deleteAccount({ email: "someone-else@example.com", code: GOOD_CODE });
+    expect(res.status).toBe(400);
+    expect(issueDeleteCodeMock).not.toHaveBeenCalled();
+    expect(consumeDeleteCodeMock).not.toHaveBeenCalled();
+  });
+
+  it("deletes an account with no password once the emailed code checks out", async () => {
+    credentialRows = [];
+    const res = await deleteAccount({ email: "owner@example.com", code: GOOD_CODE });
     expect(res.status).toBe(200);
+    expect(consumeDeleteCodeMock).toHaveBeenCalledWith("user-a", GOOD_CODE);
     expect(deleteUserAccountMock).toHaveBeenCalledWith("user-a");
   });
 
@@ -133,7 +179,7 @@ describe("POST /account/delete", () => {
       order.push("delete");
       return { deletedRows: 3, tables: { user: 1 } };
     });
-    const res = await deleteAccount({ email: "owner@example.com" });
+    const res = await deleteAccount({ email: "owner@example.com", code: GOOD_CODE });
     expect(res.status).toBe(200);
     expect(revokeBankConsentsMock).toHaveBeenCalledWith("user-a");
     expect(order).toEqual(["revoke", "delete"]);
@@ -149,7 +195,7 @@ describe("POST /account/delete", () => {
       order.push("delete");
       return { deletedRows: 3, tables: { user: 1 } };
     });
-    const res = await deleteAccount({ email: "owner@example.com" });
+    const res = await deleteAccount({ email: "owner@example.com", code: GOOD_CODE });
     expect(res.status).toBe(200);
     expect(order).toEqual(["grants", "delete"]);
     expect(((await res.json()) as { oauthGrants: unknown }).oauthGrants).toEqual({ revoked: ["github"], remaining: ["google"] });
@@ -157,7 +203,7 @@ describe("POST /account/delete", () => {
 
   it("still deletes when no sign-in grant could be revoked", async () => {
     revokeOAuthGrantsMock.mockImplementationOnce(async () => ({ revoked: [], remaining: ["google", "github"] }));
-    const res = await deleteAccount({ email: "owner@example.com" });
+    const res = await deleteAccount({ email: "owner@example.com", code: GOOD_CODE });
     expect(res.status).toBe(200);
     expect(deleteUserAccountMock).toHaveBeenCalledWith("user-a");
   });
@@ -167,7 +213,7 @@ describe("POST /account/delete", () => {
     revokeBankConsentsMock.mockImplementationOnce(async () => {
       throw new ConsentRevokeError(1, new Error("Enable Banking 500"));
     });
-    const res = await deleteAccount({ email: "owner@example.com" });
+    const res = await deleteAccount({ email: "owner@example.com", code: GOOD_CODE });
     expect(res.status).toBe(502);
     expect(deleteUserAccountMock).not.toHaveBeenCalled();
   });

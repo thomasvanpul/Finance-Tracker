@@ -1468,12 +1468,13 @@ export const DownloadBackupResponse = zod.object({
 
 
 /**
- * Irreversible. Removes the user row; every user-owned table cascades from it (accounts, transactions, upcoming, investments, debts, budgets, goals, subscriptions, connections and their encrypted credentials, snapshots, recurring patterns, shared expenses, sessions, passkeys, 2FA). Verification tokens are deleted by email; request metrics keep their timing rows with the user id removed. Rows in other users' data that named this user keep their text and lose the link. Third-party tokens (Wise, Alpaca, Kraken, OAuth grants) are destroyed here, not revoked at the provider. Confirmation is the account email, typed exactly, plus the current password for any account that has one — a valid session proves a device once signed in, not that this request is the owner acting now.
+ * Irreversible. Removes the user row; every user-owned table cascades from it (accounts, transactions, upcoming, investments, debts, budgets, goals, subscriptions, connections and their encrypted credentials, snapshots, recurring patterns, shared expenses, sessions, passkeys, 2FA). Verification tokens are deleted by email; request metrics keep their timing rows with the user id removed. Rows in other users' data that named this user keep their text and lose the link. Third-party tokens (Wise, Alpaca, Kraken, OAuth grants) are destroyed here, not revoked at the provider. Confirmation is the account email, typed exactly, plus the current password for any account that has one — a valid session proves a device once signed in, not that this request is the owner acting now. An account with no password (passkey-only, OAuth-only) proves control of its email instead: a request without `code` mails a single-use six-digit code and answers 202 with nothing deleted; the request carrying it back deletes.
  * @summary Delete the signed-in user's account and everything they own
  */
 export const DeleteUserAccountBody = zod.object({
   "email": zod.string().describe('The account email, typed by the user as confirmation'),
-  "password": zod.string().optional().describe('Current password, required when the account has one (not passkey-only or OAuth-only). Re-checked server-side against the stored hash before deletion proceeds.')
+  "password": zod.string().optional().describe('Current password, required when the account has one (not passkey-only or OAuth-only). Re-checked server-side against the stored hash before deletion proceeds.'),
+  "code": zod.string().optional().describe('The six-digit code emailed for an account with no password. Single use: any attempt, right or wrong, spends it.')
 })
 
 export const DeleteUserAccountResponse = zod.object({

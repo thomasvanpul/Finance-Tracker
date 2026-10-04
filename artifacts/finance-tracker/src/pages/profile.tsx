@@ -427,9 +427,12 @@ export default function Profile() {
   // Whether the account has a password to re-check. null = still loading;
   // treated as "yes" until resolved so the button can't fire on a stale
   // "no password needed" read. Passkey-only / OAuth-only accounts resolve
-  // to false and keep the typed-email-only bar, same as before this field
-  // existed.
+  // to false and confirm with a code the server emails instead
+  // (api-server lib/delete-code.ts): the first press sends it, the second
+  // carries it back.
   const [deleteHasPassword, setDeleteHasPassword] = useState<boolean | null>(null);
+  const [deleteCodeSent, setDeleteCodeSent] = useState(false);
+  const [deleteCode, setDeleteCode] = useState("");
   const deleteAccount = useDeleteUserAccount();
   const [activeTab, setActiveTab] = useState<"account" | "security" | "privacy">("account");
 
@@ -623,8 +626,11 @@ export default function Profile() {
   // stored on this device goes with it.
   const accountEmail = session?.user?.email ?? "";
   const deleteEmailMatches = deleteEmail.trim().toLowerCase() === accountEmail.toLowerCase() && accountEmail !== "";
-  const deletePasswordOk = deleteHasPassword === false || deletePassword.length > 0;
-  const deleteReady = deleteEmailMatches && deleteHasPassword !== null && deletePasswordOk;
+  const deleteSecondFactorOk = deleteHasPassword
+    ? deletePassword.length > 0
+    : !deleteCodeSent || /^\d{6}$/.test(deleteCode.trim());
+  const deleteReady = deleteEmailMatches && deleteHasPassword !== null && deleteSecondFactorOk;
+  const deleteWillSendCode = deleteHasPassword === false && !deleteCodeSent;
   useEffect(() => {
     if (!confirmDelete) return;
     let cancelled = false;
@@ -669,8 +675,15 @@ export default function Profile() {
         data: {
           email: deleteEmail.trim(),
           ...(deleteHasPassword ? { password: deletePassword } : {}),
+          ...(deleteHasPassword === false && deleteCodeSent ? { code: deleteCode.trim() } : {}),
         },
       });
+      if ("status" in result) {
+        setDeleteCodeSent(true);
+        setDeleteCode("");
+        toast({ title: "Code sent", description: `Check ${accountEmail} for a six-digit code. It expires in 15 minutes.` });
+        return;
+      }
       const { discardAccountStorage } = await import("@/lib/account-storage");
       discardAccountStorage();
       for (const key of Object.keys(localStorage)) {
@@ -690,6 +703,9 @@ export default function Profile() {
       navigate("/");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : undefined;
+      // A wrong or expired code is spent server-side; the next press asks
+      // for a fresh one.
+      if (deleteCodeSent) { setDeleteCodeSent(false); setDeleteCode(""); }
       toast({ title: "Could not delete account", description: message, variant: "destructive" });
     }
   }
@@ -1560,9 +1576,21 @@ export default function Profile() {
                 />
               </VStack>
             )}
+            {deleteHasPassword === false && deleteCodeSent && (
+              <VStack gap={4}>
+                <Label className="text-xs" style={{ color: "var(--ft-muted)" }}>Enter the six-digit code sent to {accountEmail}</Label>
+                <Input
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={deleteCode}
+                  onChange={e => setDeleteCode(e.target.value.replace(/\D/g, ""))}
+                />
+              </VStack>
+            )}
             <HStack gap={8} wrap>
               <button
-                onClick={() => { setConfirmDelete(false); setDeletePassword(""); }}
+                onClick={() => { setConfirmDelete(false); setDeletePassword(""); setDeleteCodeSent(false); setDeleteCode(""); }}
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: 10,
@@ -1591,7 +1619,9 @@ export default function Profile() {
                   flex: "1 1 auto",
                 }}
               >
-                {deleteAccount.isPending ? "Deleting…" : "Delete my account"}
+                {deleteAccount.isPending
+                  ? (deleteWillSendCode ? "Sending…" : "Deleting…")
+                  : (deleteWillSendCode ? "Email me a code" : "Delete my account")}
               </button>
             </HStack>
           </VStack>
