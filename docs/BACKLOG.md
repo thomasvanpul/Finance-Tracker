@@ -250,7 +250,7 @@ cap can be re-imposed per phase rather than across the whole tier.
 | L7 | Restate what Numeris is, in product copy, without market data | DECIDE | NEXT |
 | M1 | Apple 5.1.1(ix): a finance app should be submitted by a legal entity, not an individual | DECIDE | NOW |
 | M2 | Apple 4.8: Sign in with Apple is required beside Google Sign-In | TODO | NOW |
-| M3 | Apple 5.1.2(i): explicit permission before personal data reaches a third-party AI | TODO | NOW |
+| M3 | Apple 5.1.2(i): explicit permission before personal data reaches a third-party AI | DECIDE | NOW |
 | M4 | No camera usage-description string, while three screens use `capture="environment"` | TODO | NOT YET |
 | M5 | No privacy manifest (`PrivacyInfo.xcprivacy`) anywhere in the iOS project | TODO | NOT YET |
 | M6 | No public web URL for privacy, terms, support or account deletion | TODO | NOT YET |
@@ -2119,15 +2119,22 @@ only today, which keeps it clear of Apple 3.1.3 and of PIS licensing.
   only `["google","github"]` because `APPLE_CLIENT_ID` and
   `APPLE_CLIENT_SECRET` are unset. There is also no `.entitlements` file
   anywhere in the iOS project. Roughly a day, mostly portal work.
-- **M3 · Apple 5.1.2(i): explicit permission before a third-party AI sees personal data — TODO · NOW.**
+- **M3 · Apple 5.1.2(i): explicit permission before a third-party AI sees personal data — DECIDE (Thomas) · NOW.**
   Apple's text, verbatim: "You must clearly disclose where personal data will be
   shared with third parties, including with third-party AI, and obtain explicit
-  permission before doing so." `docs/DATA-INVENTORY.md:305-312` records that
-  there is no opt-in and that four pages send the financial position to Groq or
-  Cerebras on a timer (`pages/dashboard.tsx:942`, `budget.tsx:503`,
-  `goals.tsx:907`, `investments.tsx:885`). Same work as N6 in the roadmap and
-  the same `[BLOCKED]` markers at `docs/PRIVACY.md:152` and `:265`; doing it
-  once clears a store rule and a GDPR obligation together.
+  permission before doing so." This cited `docs/DATA-INVENTORY.md:305-312` for
+  "there is no opt-in" — stale since I7 (`9a12b84`, `92ef685`, DONE 3 Oct 2026)
+  built the switch. `docs/DATA-INVENTORY.md:312-327` (§4.3) now records AI as
+  opt-in, off by default, refused with a 403 server-side and never sent
+  client-side while off, with Settings → AI Coach disclosing what each of the
+  four pages sends (`pages/dashboard.tsx:942`, `budget.tsx:503`,
+  `goals.tsx:907`, `investments.tsx:885`) and to which provider, next to the
+  toggle. `docs/PRIVACY.md:152` and `:265` no longer carry a consent-related
+  `[BLOCKED]` marker — both now cover unrelated items (Cerebras SCCs, the dev
+  database clone). Whether the toggle plus that disclosure satisfies "explicit
+  permission... before doing so" — the four pages still fire on mount with no
+  per-send prompt once AI is on — is a review call: close this against the
+  text above, or say what is still missing.
 - **M4 · No camera usage-description string — TODO · NOT YET.**
   `artifacts/finance-tracker/ios/App/App/Info.plist` is 70 lines and contains
   zero `UsageDescription` keys, while `components/quick-add-transaction.tsx:320`
