@@ -76,7 +76,9 @@ further use.
   remove that access either — you remove it yourself in the provider's
   settings.
 
-`[TO CONFIRM: minimum age. The app does not check anyone's age today.]`
+You must be 18 or over to use Numeris.
+`[BLOCKED: sign-up does not check age. Enforcement is build work — BACKLOG
+I16, consent captured at sign-up.]`
 
 ## 6. Other people
 
@@ -121,7 +123,9 @@ where you live.
 `[TO CONFIRM: limitation-of-liability wording, reviewed by a qualified
 person.]`
 
-`[TO CONFIRM: governing law and courts.]`
+These terms are governed by the law of England and Wales. If you live
+elsewhere in the UK or in the EU, you keep the protections of where you
+live (section 9).
 
 If you get Numeris from the App Store, Apple's standard licence agreement for
 App Store apps applies, with these terms on top of it. Google Play has no
@@ -148,11 +152,12 @@ Paths are relative to the repo root. `DATA-INVENTORY` is `docs/DATA-INVENTORY.md
 | 5 | Delete by typing email; immediate; no undo | `artifacts/api-server/src/routes/account.ts:16-34`, DATA-INVENTORY §1 |
 | 5 | Backup incomplete | DATA-INVENTORY §6 |
 | 5 | Tokens and grants not revoked | DATA-INVENTORY §1 |
-| 5 | No age check | DATA-INVENTORY §6 |
+| 5 | Minimum age 18; no age check at sign-up | `docs/I2-answer-sheet.md` F1, accepted 24 Sep (vault `Efforts/Master-Plan/receipt.json` id `a-bdac0f`); DATA-INVENTORY §6 |
 | 6 | Names and emails of others; mirror debt; names sent with receipt | DATA-INVENTORY §2.4, §4.2 |
 | 7 | Access to other accounts is blocked; interference is rate-limited | `artifacts/api-server/src/app.ts:107-173,230-239` |
 | 7 | Unlawful use, scraping, recording more than needed | `docs/I2-answer-sheet.md` F5, Q11 |
 | 8 | Small hosting plans | `CLAUDE.md` deploy section: Render free tier, Neon free tier |
 | 8 | Copy on device | DATA-INVENTORY §3.4 |
 | 8 | 30 days' notice of a shutdown or a change | `docs/I2-answer-sheet.md` F2, F6, Q10 |
+| 9 | Governed by the law of England and Wales | `docs/I2-answer-sheet.md` F8, accepted 24 Sep (vault `Efforts/Master-Plan/receipt.json` id `a-bdac0f`) |
 | 9 | Apple's licence plus these terms; these terms alone on Google Play | `docs/I2-answer-sheet.md` F9, Q11 |

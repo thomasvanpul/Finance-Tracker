@@ -98,16 +98,13 @@ are stored.
 
 ## 4. Why, and on what legal basis
 
-`[TO CONFIRM: every basis in this table. The reading below is a starting point
-for review, not a conclusion.]`
-
-| What for | Data | Basis (proposed) |
+| What for | Data | Basis |
 | --- | --- | --- |
 | Providing the service you signed up for | Everything in section 3 about you and your money | Contract |
 | Keeping accounts secure: sessions, rate limits, passkeys, two-factor | Sign-in data, IP address | Contract; legitimate interests |
 | Measuring whether the service is fast enough | Request records, kept 30 days | Legitimate interests |
 | Diagnosing failures | Server logs | Legitimate interests |
-| The AI features | Section 5 | `[TO CONFIRM: contract or consent. Consent cannot be the basis today: there is no way to give or refuse it (section 5.3).]` |
+| The AI features | Section 5 | Consent (section 5.3) |
 | Password reset and the weekly digest emails | Email address, name; digest totals | Contract |
 | Recording people you owe or share costs with | Section 9 | Legitimate interests: a user's interest in keeping track of who owes what. Numeris is responsible for what it stores about those people. `[TO CONFIRM: lawyer — this basis, and that Numeris is the one responsible.]` |
 
@@ -148,9 +145,8 @@ A request goes to the first of these that answers:
 If neither answers, the feature shows an error. The request is not sent
 anywhere else.
 
-Transfers to the US rely on `[TO CONFIRM: the mechanism for each provider —
-Groq offers EU Standard Contractual Clauses and the UK Addendum in its
-processing agreement]`.
+Transfers to the US rely on Groq's Standard Contractual Clauses and the UK
+International Data Transfer Addendum, part of its data processing agreement.
 
 ### 5.3 Your choice
 
@@ -222,8 +218,9 @@ sign-up opens to the public.
 
 You have the right to see, correct, take away and delete your data, to restrict
 or object to how it is used, and to complain. Write to
-`privacy@numeris.page` for anything the app cannot do itself.
-`[TO CONFIRM: that requests will be answered within one month.]`
+`privacy@numeris.page` for anything the app cannot do itself. Requests are
+answered within one month of receipt, extendable by two months if the
+request is complex.
 
 **See and take away your data.** Settings → Export & Backup downloads one file
 of everything your account holds: your name, email and picture; your sessions
@@ -282,9 +279,8 @@ turning that switch off is how you object to them.
 `[BLOCKED: the weekly digest email offers an Unsubscribe link that does
 nothing.]`
 
-**Complain.** You can complain to the Information Commissioner's Office in the
-UK, or to the data protection authority where you live in the EU.
-`[TO CONFIRM: the operator's lead authority.]`
+**Complain.** You can complain to the Information Commissioner's Office
+(ICO), the UK's data protection authority.
 
 ## 9. If someone has recorded you in Numeris
 
@@ -347,7 +343,9 @@ The law requires one before the policy can describe it.]`
 
 ## 12. Age
 
-`[TO CONFIRM: minimum age. The app does not check anyone's age today.]`
+You must be 18 or over to use Numeris.
+`[BLOCKED: sign-up does not check age. Enforcement is build work — BACKLOG
+I16, consent captured at sign-up.]`
 
 ## 13. Changes to this policy
 
@@ -366,12 +364,13 @@ This version: `[TO CONFIRM: date of publication]`.
 | 1 | §0; the commissioning task (individual operator, stores). Name, contact address and UK only: Thomas, 4 October 2026 (`docs/I2-answer-sheet.md` Q1, Q2, Q4) |
 | 2 | §2, §4, §5 "Searched and not found", §1, §6 |
 | 3 | §2.1–§2.7, §3.1, §3.3 |
-| 4 | Purposes from §2 "Why" columns; bases are proposals, not sourced. The basis for recording other people: `docs/I2-answer-sheet.md` Q6, not yet confirmed by a lawyer |
+| 4 | Purposes from §2 "Why" columns. Bases: `docs/I2-answer-sheet.md` B1, B2, accepted 24 Sep (vault `Efforts/Master-Plan/receipt.json` id `a-bdac0f`; `Efforts/Numeris-Decisions.md` brief 9). The basis for recording other people: `docs/I2-answer-sheet.md` Q6/B3, not yet confirmed by a lawyer |
 | 5 | §4.2, §4.3, §4.1 provider table |
-| 6 | §5, and §4.1 for the AI providers |
+| 6 | §5, and §4.1 for the AI providers. Transfer mechanism: `docs/I2-answer-sheet.md` C3 |
 | 7 | §7, §1 (restore window), §3.4. Inactive accounts: `docs/I2-answer-sheet.md` Q9 |
-| 8 | §6, §1 |
+| 8 | §6, §1. One-month response and lead authority: `docs/I2-answer-sheet.md` E1, A5 |
 | 9 | §2.4, §4.2, §6 |
 | 10 | §3.4 |
 | 11 | §2.6, §6 security lists, §2.1, §3.4 |
+| 12 | `docs/I2-answer-sheet.md` F1, accepted 24 Sep (vault `Efforts/Master-Plan/receipt.json` id `a-bdac0f`) |
 | 13 | `docs/I2-answer-sheet.md` Q10 |

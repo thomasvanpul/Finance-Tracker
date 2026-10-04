@@ -1792,6 +1792,19 @@ the build is left), TERMS 5, DATA-INVENTORY 2. Still not publishable. Markers
 the sheet shows as settled by an earlier source (minimum age, governing law,
 the AI basis, the one-month reply, the transfer mechanism, the lead authority)
 were outside that task and are not applied yet.*
+*4 Oct 2026 (follow-up, backlog-id `b7cea8ec9074`): those eight markers applied
+— the basis table (accepted, except the people-recorded row, which keeps its
+lawyer marker), the AI basis (consent), the transfer mechanism (Groq's SCCs
+and UK Addendum), the one-month reply (stated as fact), the lead authority
+(the ICO, dropping the EU clause now the tester round is UK only), and
+minimum age (18, in both PRIVACY and TERMS). TERMS's AI-default marker was
+already fixed in `db769bd`. Minimum age moved from `[TO CONFIRM]` to
+`[BLOCKED]` in both files: 18 is the policy, but sign-up checks no age
+(I16). Open after that, by `rg -o` less the legend lines: PRIVACY 10
+`[TO CONFIRM` and 8 `[BLOCKED`, TERMS 2 `[TO CONFIRM` and 1 `[BLOCKED`,
+DATA-INVENTORY unchanged at 2. Still not publishable — the lawyer items
+(postal address, EU representative, legitimate interests for people
+recorded, limitation of liability) and the BLOCKED build items remain.*
 
 ### I3 · Account deletion that actually deletes — DONE (was TODO; shipped 5 Sep 2026)
 **Corrected 13 Sep 2026 — stale for eight days.** `POST /account/delete`
