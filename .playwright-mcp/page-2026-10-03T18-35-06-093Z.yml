@@ -1,0 +1,641 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e48]:
+      - complementary [ref=e49]:
+        - generic "Drag to resize" [ref=e51]
+        - generic [ref=e53]:
+          - img "Numeris" [ref=e54]
+          - generic [ref=e57]:
+            - generic [ref=e58]:
+              - generic [ref=e59]: "N"
+              - generic [ref=e60]: U
+              - generic [ref=e61]: M
+              - generic [ref=e62]: E
+              - generic [ref=e63]: R
+              - generic [ref=e64]: I
+              - generic [ref=e65]: S
+            - generic [ref=e66]: PERSONAL OS
+        - link "◈ BDG·02 Budget Commander" [ref=e67] [cursor=pointer]:
+          - /url: /settings?panel=terminal-profile
+          - generic "Change terminal profile" [ref=e68]:
+            - generic [ref=e69]: ◈
+            - generic [ref=e70]:
+              - generic [ref=e71]: BDG·02
+              - generic [ref=e73]: Budget Commander
+        - navigation [ref=e74]:
+          - generic [ref=e75]:
+            - generic [ref=e76]: PINNED
+            - generic [ref=e77]:
+              - link [ref=e78] [cursor=pointer]:
+                - /url: /
+                - button "Dashboard" [ref=e79]
+              - link [ref=e85] [cursor=pointer]:
+                - /url: /transactions
+                - button "Transactions" [ref=e86]
+              - link [ref=e92] [cursor=pointer]:
+                - /url: /budget
+                - button "Budget" [ref=e93]
+          - generic [ref=e100]:
+            - generic "Collapse CORE" [ref=e101] [cursor=pointer]: CORE
+            - link [ref=e106] [cursor=pointer]:
+              - /url: /accounts
+              - button "Accounts" [ref=e107]
+          - generic [ref=e112]:
+            - generic "Collapse PLAN" [ref=e113] [cursor=pointer]: PLAN
+            - link [ref=e118] [cursor=pointer]:
+              - /url: /goals
+              - button "Goals" [ref=e119]
+          - generic [ref=e126]:
+            - generic "Collapse INSIGHTS" [ref=e127] [cursor=pointer]: INSIGHTS
+            - generic [ref=e131]:
+              - link [ref=e132] [cursor=pointer]:
+                - /url: /analytics
+                - button "Analytics" [ref=e133]
+              - link [ref=e139] [cursor=pointer]:
+                - /url: /ai-coach
+                - button "AI Coach" [ref=e140]
+          - button "MORE" [ref=e146] [cursor=pointer]
+        - button "Configure sidebar" [ref=e151] [cursor=pointer]:
+          - generic [ref=e155]: CONFIGURE NAV
+        - generic [ref=e156]:
+          - link [ref=e158] [cursor=pointer]:
+            - /url: /settings
+            - button "Settings" [ref=e159]
+          - generic "View profile" [ref=e165] [cursor=pointer]:
+            - generic [ref=e166]: S
+            - generic [ref=e169]:
+              - generic [ref=e170]: Seed User
+              - generic [ref=e171]: seed@numeris.local
+          - link "NET WORTH £215,447.22" [ref=e173] [cursor=pointer]:
+            - /url: /net-worth
+            - generic [ref=e174]: NET WORTH
+            - generic [ref=e175]: £215,447.22
+          - button "Collapse sidebar" [ref=e176] [cursor=pointer]:
+            - generic [ref=e180]: ⌘[
+      - generic [ref=e181]:
+        - banner [ref=e182]:
+          - generic [ref=e183]:
+            - generic [ref=e184]: NUMERIS
+            - generic [ref=e185]: ›
+            - generic [ref=e186]: DASHBOARD
+          - generic [ref=e188]:
+            - generic [ref=e189]: 19:35:05
+            - button "Alerts" [ref=e191] [cursor=pointer]
+            - button "SEARCH ⌘K" [ref=e195] [cursor=pointer]:
+              - generic [ref=e199]: SEARCH
+              - generic [ref=e200]: ⌘K
+            - button "Hide numbers" [ref=e201] [cursor=pointer]
+            - button "REPORT" [ref=e205] [cursor=pointer]
+            - button "SIGN OUT" [ref=e206] [cursor=pointer]
+        - main [ref=e207]:
+          - generic [ref=e209]:
+            - generic [ref=e210]:
+              - generic [ref=e211]:
+                - generic [ref=e212]:
+                  - generic [ref=e213]: COMMAND CENTER
+                  - generic [ref=e217]:
+                    - generic [ref=e218]: MONTHLY SPEND
+                    - generic [ref=e219]: —
+                  - generic [ref=e222]:
+                    - generic [ref=e223]: SAVINGS RATE
+                    - generic [ref=e224]: —
+                  - generic [ref=e227]:
+                    - generic [ref=e228]: MoM SPEND
+                    - generic [ref=e229]: "-100.0%"
+                    - generic [ref=e231]: MTD vs BY 3 SEPT
+                  - generic [ref=e233]:
+                    - generic [ref=e234]: CASH
+                    - generic [ref=e235]: £11,377.34
+                - button "Edit layout" [ref=e238] [cursor=pointer]
+              - generic [ref=e245]:
+                - generic [ref=e246]: WHAT CHANGED
+                - generic [ref=e247]: None of this was you spending
+                - generic [ref=e248]:
+                  - text: — the rate revalued your balances
+                  - link "+£636.87" [ref=e250] [cursor=pointer]:
+                    - /url: /net-worth
+                - button "Workings" [ref=e252] [cursor=pointer]
+                - generic [ref=e253]: since 1 Oct
+              - generic [ref=e256]:
+                - generic [ref=e257]: SAFE TO SPEND
+                - generic [ref=e258]: £257.19 /DAY
+                - button "Workings" [ref=e259] [cursor=pointer]
+                - generic [ref=e260]: 30-DAY WINDOW TO 2026-11-02
+              - generic [ref=e261]:
+                - generic [ref=e262]: AI is off for this account. Turn it on in Settings → AI Coach.
+                - generic [ref=e265]:
+                  - button "Refresh AI insights" [ref=e266] [cursor=pointer]
+                  - button "Dismiss AI insights" [ref=e272] [cursor=pointer]
+            - generic [ref=e276]:
+              - generic [ref=e277]:
+                - generic [ref=e278]:
+                  - button "Spending Breakdown → Transactions October 2026 −£0.00 No expenses for October 2026" [ref=e279]:
+                    - generic [ref=e282]:
+                      - generic [ref=e283]:
+                        - generic [ref=e284]: Spending Breakdown
+                        - link "→ Transactions" [ref=e287] [cursor=pointer]:
+                          - /url: /transactions
+                      - generic [ref=e288]:
+                        - generic [ref=e289]:
+                          - button "Previous month" [ref=e290] [cursor=pointer]
+                          - generic [ref=e293]: October 2026
+                          - button "Next month" [disabled] [ref=e294]
+                          - link "−£0.00" [ref=e298] [cursor=pointer]:
+                            - /url: /transactions?type=expense&from=2026-10-01&to=2026-10-31
+                        - generic [ref=e299]: No expenses for October 2026
+                  - button "Budget Tracker October 2026 28d left + Add 0% Total Budget Health £0.00 / £1,690.00 rem £1,690.00 Groceries OK × 0% £0.00 / £300.00 rem £300.00 Coffee OK × 0% £0.00 / £40.00 rem £40.00 Eating Out OK × 0% £0.00 / £150.00 rem £150.00 Transport OK × 0% £0.00 / £80.00 rem £80.00 Utilities OK × 0% £0.00 / £100.00 rem £100.00 Rent / Mortgage OK × 0% £0.00 / £900.00 rem £900.00 Shopping OK × 0% £0.00 / £120.00 rem £120.00" [ref=e300]:
+                    - generic [ref=e303]:
+                      - generic [ref=e304]: Budget Tracker
+                      - generic [ref=e308]:
+                        - generic [ref=e309]:
+                          - generic [ref=e310]:
+                            - generic [ref=e311]: October 2026
+                            - generic [ref=e312]: 28d left
+                          - button "+ Add" [ref=e313] [cursor=pointer]
+                        - generic [ref=e314]:
+                          - generic [ref=e315]: 0%
+                          - generic [ref=e321]:
+                            - generic [ref=e322]: Total Budget Health
+                            - generic [ref=e323]:
+                              - generic [ref=e324]: £0.00
+                              - generic [ref=e325]:
+                                - text: /
+                                - generic [ref=e326]: £1,690.00
+                            - generic [ref=e328]:
+                              - text: rem
+                              - generic [ref=e329]: £1,690.00
+                        - generic [ref=e330]:
+                          - generic [ref=e331]:
+                            - generic [ref=e332]:
+                              - generic [ref=e333]: Groceries
+                              - generic [ref=e336]:
+                                - generic [ref=e337]: OK
+                                - button "×" [ref=e338] [cursor=pointer]
+                            - generic [ref=e339]: 0%
+                            - generic [ref=e342]:
+                              - generic [ref=e343]: £0.00
+                              - generic "Click to edit" [ref=e345] [cursor=pointer]: / £300.00
+                            - generic [ref=e347]:
+                              - text: rem
+                              - generic [ref=e348]: £300.00
+                          - generic [ref=e349]:
+                            - generic [ref=e350]:
+                              - generic [ref=e351]: Coffee
+                              - generic [ref=e354]:
+                                - generic [ref=e355]: OK
+                                - button "×" [ref=e356] [cursor=pointer]
+                            - generic [ref=e357]: 0%
+                            - generic [ref=e360]:
+                              - generic [ref=e361]: £0.00
+                              - generic "Click to edit" [ref=e363] [cursor=pointer]: / £40.00
+                            - generic [ref=e365]:
+                              - text: rem
+                              - generic [ref=e366]: £40.00
+                          - generic [ref=e367]:
+                            - generic [ref=e368]:
+                              - generic [ref=e369]: Eating Out
+                              - generic [ref=e372]:
+                                - generic [ref=e373]: OK
+                                - button "×" [ref=e374] [cursor=pointer]
+                            - generic [ref=e375]: 0%
+                            - generic [ref=e378]:
+                              - generic [ref=e379]: £0.00
+                              - generic "Click to edit" [ref=e381] [cursor=pointer]: / £150.00
+                            - generic [ref=e383]:
+                              - text: rem
+                              - generic [ref=e384]: £150.00
+                          - generic [ref=e385]:
+                            - generic [ref=e386]:
+                              - generic [ref=e387]: Transport
+                              - generic [ref=e390]:
+                                - generic [ref=e391]: OK
+                                - button "×" [ref=e392] [cursor=pointer]
+                            - generic [ref=e393]: 0%
+                            - generic [ref=e396]:
+                              - generic [ref=e397]: £0.00
+                              - generic "Click to edit" [ref=e399] [cursor=pointer]: / £80.00
+                            - generic [ref=e401]:
+                              - text: rem
+                              - generic [ref=e402]: £80.00
+                          - generic [ref=e403]:
+                            - generic [ref=e404]:
+                              - generic [ref=e405]: Utilities
+                              - generic [ref=e408]:
+                                - generic [ref=e409]: OK
+                                - button "×" [ref=e410] [cursor=pointer]
+                            - generic [ref=e411]: 0%
+                            - generic [ref=e414]:
+                              - generic [ref=e415]: £0.00
+                              - generic "Click to edit" [ref=e417] [cursor=pointer]: / £100.00
+                            - generic [ref=e419]:
+                              - text: rem
+                              - generic [ref=e420]: £100.00
+                          - generic [ref=e421]:
+                            - generic [ref=e422]:
+                              - generic [ref=e423]: Rent / Mortgage
+                              - generic [ref=e426]:
+                                - generic [ref=e427]: OK
+                                - button "×" [ref=e428] [cursor=pointer]
+                            - generic [ref=e429]: 0%
+                            - generic [ref=e432]:
+                              - generic [ref=e433]: £0.00
+                              - generic "Click to edit" [ref=e435] [cursor=pointer]: / £900.00
+                            - generic [ref=e437]:
+                              - text: rem
+                              - generic [ref=e438]: £900.00
+                          - generic [ref=e439]:
+                            - generic [ref=e440]:
+                              - generic [ref=e441]: Shopping
+                              - generic [ref=e444]:
+                                - generic [ref=e445]: OK
+                                - button "×" [ref=e446] [cursor=pointer]
+                            - generic [ref=e447]: 0%
+                            - generic [ref=e450]:
+                              - generic [ref=e451]: £0.00
+                              - generic "Click to edit" [ref=e453] [cursor=pointer]: / £120.00
+                            - generic [ref=e455]:
+                              - text: rem
+                              - generic [ref=e456]: £120.00
+                  - button "Recent Transactions → All ALL I E T − 05/09/2026 SQ *THE COFFEE HOUSE LONDON GB Coffee −£3.85 − 03/09/2026 TESCO STORES 3456 Groceries −£22.40 − 01/09/2026 UBER *TRIP HELP.UBER.COM Transport −£14.20 − 31/08/2026 SQ *THE COFFEE HOUSE LONDON GB Coffee −£3.85 − 28/08/2026 PRET A MANGER 4118 Eating Out −£8.75 − 24/08/2026 TESCO STORES 3456 Groceries −£35.10 − 23/08/2026 TFL TRAVEL CH Transport −£19.75 − 20/08/2026 SQ *THE COFFEE HOUSE LONDON GB Coffee −£3.85 − 18/08/2026 OCTOPUS ENERGY DD Utilities −£63.90 − 18/08/2026 APPLE.COM/BILL Electronics −£179.00 − 17/08/2026 STARBUCKS KLCC MYR Coffee −£3.43 − 16/08/2026 WAITROSE 401 KENSINGTON Groceries −£51.20 − 13/08/2026 BACS RENT LANDLORD REF 4471 Rent / Mortgage −£890.00 − 12/08/2026 JAYA GROCER MIDVALLEY Groceries −£15.26 + 10/08/2026 IMPERIAL COLLEGE UROP STIPEND Salary +£1,250.00" [ref=e457]:
+                    - generic [ref=e460]:
+                      - generic [ref=e461]:
+                        - generic [ref=e462]: Recent Transactions
+                        - link "→ All" [ref=e465] [cursor=pointer]:
+                          - /url: /transactions
+                      - generic [ref=e466]:
+                        - generic [ref=e467]:
+                          - textbox "Search..." [ref=e469]
+                          - generic [ref=e470]:
+                            - button "ALL" [ref=e471] [cursor=pointer]
+                            - button "I" [ref=e472] [cursor=pointer]
+                            - button "E" [ref=e473] [cursor=pointer]
+                            - button "T" [ref=e474] [cursor=pointer]
+                        - generic [ref=e475]:
+                          - generic [ref=e476]:
+                            - generic [ref=e477]: −
+                            - generic [ref=e478]: 05/09/2026
+                            - link "SQ *THE COFFEE HOUSE LONDON GB" [ref=e479] [cursor=pointer]:
+                              - /url: /transactions?q=SQ+*THE+COFFEE+HOUSE+LONDON+GB
+                            - link "Coffee" [ref=e481] [cursor=pointer]:
+                              - /url: /transactions?category=Coffee
+                            - generic [ref=e482]: −£3.85
+                          - generic [ref=e483]:
+                            - generic [ref=e484]: −
+                            - generic [ref=e485]: 03/09/2026
+                            - link "TESCO STORES 3456" [ref=e486] [cursor=pointer]:
+                              - /url: /transactions?q=TESCO+STORES+3456
+                            - link "Groceries" [ref=e488] [cursor=pointer]:
+                              - /url: /transactions?category=Groceries
+                            - generic [ref=e489]: −£22.40
+                          - generic [ref=e490]:
+                            - generic [ref=e491]: −
+                            - generic [ref=e492]: 01/09/2026
+                            - link "UBER *TRIP HELP.UBER.COM" [ref=e493] [cursor=pointer]:
+                              - /url: /transactions?q=UBER+*TRIP+HELP.UBER.COM
+                            - link "Transport" [ref=e495] [cursor=pointer]:
+                              - /url: /transactions?category=Transport
+                            - generic [ref=e496]: −£14.20
+                          - generic [ref=e497]:
+                            - generic [ref=e498]: −
+                            - generic [ref=e499]: 31/08/2026
+                            - link "SQ *THE COFFEE HOUSE LONDON GB" [ref=e500] [cursor=pointer]:
+                              - /url: /transactions?q=SQ+*THE+COFFEE+HOUSE+LONDON+GB
+                            - link "Coffee" [ref=e502] [cursor=pointer]:
+                              - /url: /transactions?category=Coffee
+                            - generic [ref=e503]: −£3.85
+                          - generic [ref=e504]:
+                            - generic [ref=e505]: −
+                            - generic [ref=e506]: 28/08/2026
+                            - link "PRET A MANGER 4118" [ref=e507] [cursor=pointer]:
+                              - /url: /transactions?q=PRET+A+MANGER+4118
+                            - link "Eating Out" [ref=e509] [cursor=pointer]:
+                              - /url: /transactions?category=Eating+Out
+                            - generic [ref=e510]: −£8.75
+                          - generic [ref=e511]:
+                            - generic [ref=e512]: −
+                            - generic [ref=e513]: 24/08/2026
+                            - link "TESCO STORES 3456" [ref=e514] [cursor=pointer]:
+                              - /url: /transactions?q=TESCO+STORES+3456
+                            - link "Groceries" [ref=e516] [cursor=pointer]:
+                              - /url: /transactions?category=Groceries
+                            - generic [ref=e517]: −£35.10
+                          - generic [ref=e518]:
+                            - generic [ref=e519]: −
+                            - generic [ref=e520]: 23/08/2026
+                            - link "TFL TRAVEL CH" [ref=e521] [cursor=pointer]:
+                              - /url: /transactions?q=TFL+TRAVEL+CH
+                            - link "Transport" [ref=e523] [cursor=pointer]:
+                              - /url: /transactions?category=Transport
+                            - generic [ref=e524]: −£19.75
+                          - generic [ref=e525]:
+                            - generic [ref=e526]: −
+                            - generic [ref=e527]: 20/08/2026
+                            - link "SQ *THE COFFEE HOUSE LONDON GB" [ref=e528] [cursor=pointer]:
+                              - /url: /transactions?q=SQ+*THE+COFFEE+HOUSE+LONDON+GB
+                            - link "Coffee" [ref=e530] [cursor=pointer]:
+                              - /url: /transactions?category=Coffee
+                            - generic [ref=e531]: −£3.85
+                          - generic [ref=e532]:
+                            - generic [ref=e533]: −
+                            - generic [ref=e534]: 18/08/2026
+                            - link "OCTOPUS ENERGY DD" [ref=e535] [cursor=pointer]:
+                              - /url: /transactions?q=OCTOPUS+ENERGY+DD
+                            - link "Utilities" [ref=e537] [cursor=pointer]:
+                              - /url: /transactions?category=Utilities
+                            - generic [ref=e538]: −£63.90
+                          - generic [ref=e539]:
+                            - generic [ref=e540]: −
+                            - generic [ref=e541]: 18/08/2026
+                            - link "APPLE.COM/BILL" [ref=e542] [cursor=pointer]:
+                              - /url: /transactions?q=APPLE.COM%2FBILL
+                            - link "Electronics" [ref=e544] [cursor=pointer]:
+                              - /url: /transactions?category=Electronics
+                            - generic [ref=e545]: −£179.00
+                          - generic [ref=e546]:
+                            - generic [ref=e547]: −
+                            - generic [ref=e548]: 17/08/2026
+                            - link "STARBUCKS KLCC MYR" [ref=e549] [cursor=pointer]:
+                              - /url: /transactions?q=STARBUCKS+KLCC+MYR
+                            - link "Coffee" [ref=e551] [cursor=pointer]:
+                              - /url: /transactions?category=Coffee
+                            - generic [ref=e552]: −£3.43
+                          - generic [ref=e553]:
+                            - generic [ref=e554]: −
+                            - generic [ref=e555]: 16/08/2026
+                            - link "WAITROSE 401 KENSINGTON" [ref=e556] [cursor=pointer]:
+                              - /url: /transactions?q=WAITROSE+401+KENSINGTON
+                            - link "Groceries" [ref=e558] [cursor=pointer]:
+                              - /url: /transactions?category=Groceries
+                            - generic [ref=e559]: −£51.20
+                          - generic [ref=e560]:
+                            - generic [ref=e561]: −
+                            - generic [ref=e562]: 13/08/2026
+                            - link "BACS RENT LANDLORD REF 4471" [ref=e563] [cursor=pointer]:
+                              - /url: /transactions?q=BACS+RENT+LANDLORD+REF+4471
+                            - link "Rent / Mortgage" [ref=e565] [cursor=pointer]:
+                              - /url: /transactions?category=Rent+%2F+Mortgage
+                            - generic [ref=e566]: −£890.00
+                          - generic [ref=e567]:
+                            - generic [ref=e568]: −
+                            - generic [ref=e569]: 12/08/2026
+                            - link "JAYA GROCER MIDVALLEY" [ref=e570] [cursor=pointer]:
+                              - /url: /transactions?q=JAYA+GROCER+MIDVALLEY
+                            - link "Groceries" [ref=e572] [cursor=pointer]:
+                              - /url: /transactions?category=Groceries
+                            - generic [ref=e573]: −£15.26
+                          - generic [ref=e574]:
+                            - generic [ref=e575]: +
+                            - generic [ref=e576]: 10/08/2026
+                            - link "IMPERIAL COLLEGE UROP STIPEND" [ref=e577] [cursor=pointer]:
+                              - /url: /transactions?q=IMPERIAL+COLLEGE+UROP+STIPEND
+                            - link "Salary" [ref=e579] [cursor=pointer]:
+                              - /url: /transactions?category=Salary
+                            - generic [ref=e580]: +£1,250.00
+                - generic [ref=e581]:
+                  - button "Accounts → Manage Account Ccy Balance GBP ▼ Flat, Kuala Lumpur MYR RM 850,000.00 £157,643.87 Aviva SIPP GBP — £27,500.00 Vanguard ISA GBP — £14,200.00 Barclays Savings GBP — £8,100.00 Monzo Current GBP — £2,450.30 Wise EUR EUR €540.75 £459.82 Maybank MYR MYR RM 1,980.00 £367.22 Season ticket loan GBP — -£6,800.00 Accounts, net of debt · 8 accounts £203,921.21 They Owe Me £146.14 I Owe £48.00 Net Position +£98.14" [ref=e582]:
+                    - generic [ref=e585]:
+                      - generic [ref=e586]:
+                        - generic [ref=e587]: Accounts
+                        - link "→ Manage" [ref=e590] [cursor=pointer]:
+                          - /url: /accounts
+                      - generic [ref=e592]:
+                        - table [ref=e593]:
+                          - rowgroup [ref=e594]:
+                            - row [ref=e595]:
+                              - columnheader "Account" [ref=e596] [cursor=pointer]
+                              - columnheader "Ccy" [ref=e597]
+                              - columnheader "Balance" [ref=e598] [cursor=pointer]
+                              - columnheader "GBP ▼" [ref=e599] [cursor=pointer]
+                          - rowgroup [ref=e600]:
+                            - row [ref=e601]:
+                              - cell [ref=e602]:
+                                - link "Flat, Kuala Lumpur" [ref=e604] [cursor=pointer]:
+                                  - /url: /accounts?account=138
+                              - cell [ref=e607]:
+                                - img "MYR" [ref=e609]
+                              - cell "RM 850,000.00" [ref=e612]
+                              - cell "£157,643.87" [ref=e614]
+                            - row [ref=e616]:
+                              - cell [ref=e617]:
+                                - link "Aviva SIPP" [ref=e619] [cursor=pointer]:
+                                  - /url: /accounts?account=137
+                              - cell [ref=e622]:
+                                - img "GBP" [ref=e624]
+                              - cell "—" [ref=e627]
+                              - cell "£27,500.00" [ref=e629]
+                            - row [ref=e631]:
+                              - cell [ref=e632]:
+                                - link "Vanguard ISA" [ref=e634] [cursor=pointer]:
+                                  - /url: /accounts?account=136
+                              - cell [ref=e637]:
+                                - img "GBP" [ref=e639]
+                              - cell "—" [ref=e642]
+                              - cell "£14,200.00" [ref=e644]
+                            - row [ref=e646]:
+                              - cell [ref=e647]:
+                                - link "Barclays Savings" [ref=e649] [cursor=pointer]:
+                                  - /url: /accounts?account=133
+                              - cell [ref=e652]:
+                                - img "GBP" [ref=e654]
+                              - cell "—" [ref=e657]
+                              - cell "£8,100.00" [ref=e659]
+                            - row [ref=e661]:
+                              - cell [ref=e662]:
+                                - link "Monzo Current" [ref=e664] [cursor=pointer]:
+                                  - /url: /accounts?account=132
+                              - cell [ref=e667]:
+                                - img "GBP" [ref=e669]
+                              - cell "—" [ref=e672]
+                              - cell "£2,450.30" [ref=e674]
+                            - row [ref=e676]:
+                              - cell [ref=e677]:
+                                - link "Wise EUR" [ref=e679] [cursor=pointer]:
+                                  - /url: /accounts?account=134
+                              - cell [ref=e682]:
+                                - img "EUR" [ref=e684]
+                              - cell "€540.75" [ref=e687]
+                              - cell "£459.82" [ref=e689]
+                            - row [ref=e691]:
+                              - cell [ref=e692]:
+                                - link "Maybank MYR" [ref=e694] [cursor=pointer]:
+                                  - /url: /accounts?account=135
+                              - cell [ref=e697]:
+                                - img "MYR" [ref=e699]
+                              - cell "RM 1,980.00" [ref=e702]
+                              - cell "£367.22" [ref=e704]
+                            - row [ref=e706]:
+                              - cell [ref=e707]:
+                                - link "Season ticket loan" [ref=e709] [cursor=pointer]:
+                                  - /url: /accounts?account=139
+                              - cell [ref=e712]:
+                                - img "GBP" [ref=e714]
+                              - cell "—" [ref=e717]
+                              - cell "-£6,800.00" [ref=e719]
+                            - row [ref=e721]:
+                              - cell "Accounts, net of debt · 8 accounts" [ref=e722]
+                              - cell [ref=e723]:
+                                - link "£203,921.21" [ref=e724] [cursor=pointer]:
+                                  - /url: /accounts
+                        - generic [ref=e726]:
+                          - link "They Owe Me £146.14" [ref=e727] [cursor=pointer]:
+                            - /url: /owing
+                            - generic [ref=e728]:
+                              - generic [ref=e729]: They Owe Me
+                              - generic [ref=e730]: £146.14
+                          - link "I Owe £48.00" [ref=e731] [cursor=pointer]:
+                            - /url: /owing
+                            - generic [ref=e732]:
+                              - generic [ref=e733]: I Owe
+                              - generic [ref=e734]: £48.00
+                          - generic [ref=e735]:
+                            - generic [ref=e736]: Net Position
+                            - generic [ref=e737]: +£98.14
+                  - button "Net Worth Net Worth £215,447.22 Accounts + Portfolio + owed − liabilities Accounts £210,721.21 8 accounts Portfolio £11,427.87 P&L — Net Liquidity £11,336.22 After 30d commitments Income +£0.00 Expenses -£0.00 Savings Rate — Owed, net £98.14 Liabilities -£6,800.00 Share of accounts, net of debt MYR 77% RM 851,980.00 £158,011.09 GBP 22% £45,450.30 EUR <1% €540.75 £459.82 Net Worth History ▲ £402.31 today 7D 1M 3M ALL" [ref=e738]:
+                    - generic [ref=e741]:
+                      - generic [ref=e742]: Net Worth
+                      - generic [ref=e745]:
+                        - generic [ref=e746]:
+                          - link "Net Worth £215,447.22 Accounts + Portfolio + owed − liabilities" [ref=e747] [cursor=pointer]:
+                            - /url: /net-worth
+                            - generic [ref=e748]:
+                              - generic [ref=e749]: Net Worth
+                              - generic [ref=e750]: £215,447.22
+                              - generic [ref=e751]: Accounts + Portfolio + owed − liabilities
+                          - link "Accounts £210,721.21 8 accounts" [ref=e752] [cursor=pointer]:
+                            - /url: /accounts
+                            - generic [ref=e753]:
+                              - generic [ref=e754]: Accounts
+                              - generic [ref=e755]: £210,721.21
+                              - generic [ref=e756]: 8 accounts
+                          - link "Portfolio £11,427.87 P&L —" [ref=e757] [cursor=pointer]:
+                            - /url: /investments
+                            - generic [ref=e758]:
+                              - generic [ref=e759]: Portfolio
+                              - generic [ref=e760]: £11,427.87
+                              - generic [ref=e761]: P&L —
+                          - link "Net Liquidity £11,336.22 After 30d commitments" [ref=e762] [cursor=pointer]:
+                            - /url: /accounts
+                            - generic [ref=e763]:
+                              - generic [ref=e764]: Net Liquidity
+                              - generic [ref=e765]: £11,336.22
+                              - generic [ref=e766]: After 30d commitments
+                        - generic [ref=e767]:
+                          - generic [ref=e768]:
+                            - generic [ref=e769]: Income
+                            - generic [ref=e770]: +£0.00
+                          - generic [ref=e771]:
+                            - generic [ref=e772]: Expenses
+                            - generic [ref=e773]: "-£0.00"
+                          - generic [ref=e774]:
+                            - generic [ref=e775]: Savings Rate
+                            - generic [ref=e776]: —
+                        - generic [ref=e777]:
+                          - link "Owed, net £98.14" [ref=e778] [cursor=pointer]:
+                            - /url: /owing
+                            - generic [ref=e779]:
+                              - generic [ref=e780]: Owed, net
+                              - generic [ref=e781]: £98.14
+                          - link "Liabilities -£6,800.00" [ref=e782] [cursor=pointer]:
+                            - /url: /accounts
+                            - generic [ref=e783]:
+                              - generic [ref=e784]: Liabilities
+                              - generic [ref=e785]: "-£6,800.00"
+                        - generic [ref=e786]:
+                          - generic [ref=e787]: Share of accounts, net of debt
+                          - generic [ref=e788]:
+                            - link "MYR 77% RM 851,980.00 £158,011.09" [ref=e789] [cursor=pointer]:
+                              - /url: /accounts
+                              - generic [ref=e790]:
+                                - img "MYR" [ref=e792]
+                                - generic [ref=e795]: 77%
+                              - generic [ref=e796]: RM 851,980.00
+                              - generic [ref=e798]: £158,011.09
+                            - link "GBP 22% £45,450.30" [ref=e801] [cursor=pointer]:
+                              - /url: /accounts
+                              - generic [ref=e802]:
+                                - img "GBP" [ref=e804]
+                                - generic [ref=e807]: 22%
+                              - generic [ref=e808]: £45,450.30
+                            - link "EUR <1% €540.75 £459.82" [ref=e812] [cursor=pointer]:
+                              - /url: /accounts
+                              - generic [ref=e813]:
+                                - img "EUR" [ref=e815]
+                                - generic [ref=e818]: <1%
+                              - generic [ref=e819]: €540.75
+                              - generic [ref=e821]: £459.82
+                        - generic [ref=e824]:
+                          - generic [ref=e825]:
+                            - generic [ref=e826]:
+                              - generic [ref=e827]: Net Worth History
+                              - generic [ref=e828]:
+                                - text: ▲
+                                - generic [ref=e829]: £402.31
+                                - text: today
+                            - generic [ref=e830]:
+                              - button "7D" [ref=e831] [cursor=pointer]
+                              - button "1M" [ref=e832] [cursor=pointer]
+                              - button "3M" [ref=e833] [cursor=pointer]
+                              - button "ALL" [ref=e834] [cursor=pointer]
+                          - img [ref=e837]:
+                            - generic [ref=e839]:
+                              - generic [ref=e840]: 1 Oct
+                              - generic [ref=e842]: 2 Oct
+                              - generic [ref=e844]: 3 Oct
+                            - generic [ref=e847]:
+                              - generic [ref=e848]: £0
+                              - generic [ref=e850]: £55k
+                              - generic [ref=e852]: £110k
+                              - generic [ref=e854]: £165k
+                              - generic [ref=e856]: £220k
+              - button "+ 18 MORE WIDGETS Click here to add them, rearrange this page, or take anything off it." [ref=e863] [cursor=pointer]:
+                - generic [ref=e864]: + 18 MORE WIDGETS
+                - generic [ref=e865]: Click here to add them, rearrange this page, or take anything off it.
+              - status [ref=e866]
+              - generic [ref=e867]:
+                - generic [ref=e868]: Insights
+                - generic [ref=e870]:
+                  - generic [ref=e871]: Upcoming
+                  - text: No upcoming bills due in the next 7 days.
+        - contentinfo [ref=e872]:
+          - generic [ref=e873]:
+            - generic [ref=e874]: CONNECTED
+            - generic [ref=e877]: │
+            - generic [ref=e878]: RENDER · TLS 1.3
+            - generic [ref=e879]: │
+            - generic [ref=e880]: seed@numeris.local
+          - generic [ref=e881]:
+            - generic [ref=e882]: ⌘[ SIDEBAR
+            - generic [ref=e883]: │
+            - generic [ref=e884]: / COMMAND
+            - generic [ref=e885]: │
+            - generic [ref=e886]: localhost
+    - generic [ref=e887]:
+      - generic [ref=e888]:
+        - generic [ref=e889]:
+          - generic [ref=e890]: ◈
+          - generic [ref=e891]: ALERTS
+        - generic [ref=e892]:
+          - generic [ref=e893]: 1 ACTIVE
+          - button "Close alerts panel" [ref=e894] [cursor=pointer]: ×
+      - generic [ref=e895]:
+        - generic [ref=e896]:
+          - generic [ref=e897]:
+            - generic [ref=e898]: ◈
+            - generic [ref=e899]: BDG·02 — BUDGET COMMANDER
+          - generic [ref=e900]: Budget overruns · category limits · spending velocity · monthly burn
+        - generic [ref=e901]:
+          - generic [ref=e902]: WARN
+          - generic [ref=e903]:
+            - generic [aria-hidden] [ref=e904]: ■
+            - generic [ref=e905]:
+              - generic [ref=e906]: "Due soon: Spotify"
+              - generic [ref=e907]: £11.99 due 2026-10-12
+            - button "Dismiss alert" [ref=e908] [cursor=pointer]: ×
+      - button "BALANCE ALERTS ▼" [ref=e910] [cursor=pointer]:
+        - generic [ref=e911]: BALANCE ALERTS
+        - generic [ref=e912]: ▼
+      - button "DISMISS ALL" [ref=e914] [cursor=pointer]
+    - button "Open AI Coach (G)" [ref=e915] [cursor=pointer]
+    - region "Notifications (F8)":
+      - list
+  - generic [aria-hidden] [ref=e919]: £165k
