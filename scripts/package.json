@@ -8,6 +8,7 @@
     "seed:dev": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/seed-dev-user.ts",
     "seed:testers:dev": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/seed-testers.ts --branch=dev",
     "seed:testers:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/seed-testers.ts --branch=prod",
+    "dev-db:check": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/dev-db-check.ts",
     "verify:tester-logins": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/verify-tester-logins.ts",
     "screenshot": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/screenshot.ts",
     "companion:observe": "tsx --env-file-if-exists=../artifacts/api-server/.env ./src/companion-observe.ts",
@@ -21,7 +22,7 @@
     "verify:tx-rate-lock:dev": "tsx --env-file-if-exists=../lib/db/.env ./src/verify-tx-rate-lock.ts --branch=dev",
     "verify:tx-rate-lock:prod": "tsx --env-file-if-exists=../lib/db/.env.production.backup ./src/verify-tx-rate-lock.ts --branch=prod",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "tsx ./src/app-routes.test.ts && tsx ./src/capture-lock.test.ts && tsx ./src/account-prefs.test.ts && tsx ./src/fabricated-zeros.test.ts"
+    "test": "tsx ./src/app-routes.test.ts && tsx ./src/capture-lock.test.ts && tsx ./src/account-prefs.test.ts && tsx ./src/fabricated-zeros.test.ts && tsx ./src/dev-db-schema-only.test.ts"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
