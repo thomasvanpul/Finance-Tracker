@@ -205,12 +205,20 @@ branch that no longer exists, and optionally rename `dev-clean` to `dev`.
 
 ### 11. Afterwards — the documents that still describe the old branch
 
-- `docs/PRIVACY.md` — remove the `[BLOCKED: a copy of the production
-  database…]` marker (line 271 on 4 Oct).
-- `docs/DATA-INVENTORY.md:63-64` — the "copy-on-write clone of production
+Line numbers drift; find each by its text. On 4 Oct 09:10 they were:
+
+```bash
+rg -n "BLOCKED: a copy of the production" docs/PRIVACY.md
+rg -n "copy-on-write" docs/DATA-INVENTORY.md CLAUDE.md docs/BACKLOG.md
+rg -n "^\| I10 |\*\*I10 ·" docs/BACKLOG.md
+```
+
+- `docs/PRIVACY.md:268` — remove the `[BLOCKED: a copy of the production
+  database…]` marker.
+- `docs/DATA-INVENTORY.md:63` — the "copy-on-write clone of production
   carrying real data" entry.
 - `CLAUDE.md:98-100` — branch id, and "carrying real data".
-- `docs/BACKLOG.md` — I10 (rows 203 and 1838) and line 285.
+- `docs/BACKLOG.md` — I10 (table row 203, entry 1851) and line 285.
 
 ## Hazards
 
