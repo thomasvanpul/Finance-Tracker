@@ -75,6 +75,7 @@ import {
 } from "./market-classifier";
 import { alpacaFetchPrices, polygonFetchPrices, twelveDataFetchPrices, frankfurterFetchPrices, priceToQuote } from "./market-adapters";
 import { assertMarketDataEnabled, isMarketDataEnabled } from "./market-flag";
+import { persistEcbFixing } from "./fx-rates-store";
 
 // Cache entries
 let fxCache: { data: FxRatesData; ts: number } | null = null;
@@ -143,8 +144,8 @@ interface FrankfurterResponse {
   date: string;
   rates: Record<string, number>;
 }
-async function fxRatesFromFrankfurter(missing: string[]): Promise<Record<string, number>> {
-  if (missing.length === 0) return {};
+async function fxRatesFromFrankfurter(missing: string[]): Promise<{ rates: Record<string, number>; date: string | null }> {
+  if (missing.length === 0) return { rates: {}, date: null };
   return withProvider("frankfurter", async () => {
     const url = `https://api.frankfurter.dev/v1/latest?base=GBP&symbols=${missing.join(",")}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
@@ -158,7 +159,9 @@ async function fxRatesFromFrankfurter(missing: string[]): Promise<Record<string,
     for (const [ccy, rate] of Object.entries(body.rates ?? {})) {
       if (typeof rate === "number" && rate > 0) out[ccy] = rate;
     }
-    return out;
+    // The ECB fixing day the rates are FOR, as Frankfurter states it.
+    const date = typeof body.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : null;
+    return { rates: out, date };
   });
 }
 
@@ -183,6 +186,8 @@ export async function getFxRates(): Promise<FxRatesData> {
   // went out with the rest of the market surface on 19 Sep 2026; with the
   // flag off every rate is the ECB fixing via Frankfurter.
   let rates: Record<string, number> = {};
+  let ecbCount = 0;
+  let fixingDate: string | null = null;
   if (isMarketDataEnabled()) try {
     rates = await fxRatesFromYahoo();
   } catch (err) {
@@ -199,8 +204,12 @@ export async function getFxRates(): Promise<FxRatesData> {
   const missing = Object.keys(FX_PAIRS).filter((ccy) => !(ccy in rates));
   if (missing.length > 0) {
     try {
-      const fallback = await fxRatesFromFrankfurter(missing);
+      const { rates: fallback, date } = await fxRatesFromFrankfurter(missing);
       let filled = 0;
+      if (date) {
+        fixingDate = date;
+        persistEcbFixing(date, "GBP", fallback);
+      }
       for (const [ccy, rate] of Object.entries(fallback)) {
         // Yahoo already provided this currency — do NOT overwrite. A
         // real-time Yahoo quote is closer to "now" than yesterday's
@@ -211,6 +220,7 @@ export async function getFxRates(): Promise<FxRatesData> {
         if (ccy in rates) continue;
         rates[ccy] = rate;
         filled += 1;
+        ecbCount += 1;
       }
       if (filled > 0) {
         logger.info(
@@ -228,9 +238,29 @@ export async function getFxRates(): Promise<FxRatesData> {
     }
   }
 
-  const data: FxRatesData = { base: "GBP", rates, updatedAt: new Date().toISOString() };
+  // Provenance for the whole map, so a converted figure can say where its
+  // rate came from (the fx mark, J28). "ecb" only when every rate is the
+  // ECB fixing; null when nothing answered, so no source is claimed for an
+  // empty map.
+  const total = Object.keys(rates).length;
+  const provider: FxRatesData["provider"] =
+    total === 0 ? null : ecbCount === total ? "ecb" : ecbCount === 0 ? "yahoo" : "mixed";
+  const data: FxRatesData = {
+    base: "GBP",
+    rates,
+    updatedAt: new Date().toISOString(),
+    provider,
+    fixingDate: ecbCount > 0 ? fixingDate : null,
+  };
   fxCache = { data, ts: now };
   return data;
+}
+
+// The provenance a response carries beside figures converted with these
+// rates, for the client's fx mark. Nothing is claimed that the map did not
+// state.
+export function fxProvenance(fx: FxRatesData): { fxProvider: FxRatesData["provider"]; fxFixingDate: string | null } {
+  return { fxProvider: fx.provider ?? null, fxFixingDate: fx.fixingDate ?? null };
 }
 
 export async function toGbp(amount: number, currency: string): Promise<number | null> {

@@ -14,6 +14,13 @@ export type FxRatesData = {
   base: string;
   rates: Record<string, number>;
   updatedAt: string;
+  // Where the rates came from: "ecb" when every rate is the ECB reference
+  // fixing (via Frankfurter), "yahoo" when none is, "mixed" otherwise, null
+  // when the map is empty. Optional so test fixtures that inject a cache
+  // (__setFxCacheForTesting) need not state one; getFxRates always does.
+  provider?: "ecb" | "yahoo" | "mixed" | null;
+  // The ECB fixing day (YYYY-MM-DD) of the ECB rates in the map, or null.
+  fixingDate?: string | null;
 };
 
 export type StockPriceData = {

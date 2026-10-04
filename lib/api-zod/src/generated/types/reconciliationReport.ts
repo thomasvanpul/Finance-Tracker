@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ReconciliationAccount } from './reconciliationAccount';
+import type { ReconciliationReportFxProvider } from './reconciliationReportFxProvider';
 import type { ReconciliationReportPeriodRule } from './reconciliationReportPeriodRule';
 import type { ReconciliationReportStatus } from './reconciliationReportStatus';
 
@@ -39,4 +40,14 @@ export interface ReconciliationReport {
   accounts: ReconciliationAccount[];
   /** Cash accounts whose gap could not be converted to base and are missing from gapBase */
   unconvertibleAccounts: number;
+  /**
+     * Where the rates behind every gapBase came from (the fx provenance mark). "ecb" when all were the ECB reference fixing. Omitted or null when unknown.
+     * @nullable
+     */
+  fxProvider?: ReconciliationReportFxProvider;
+  /**
+     * The ECB fixing day (YYYY-MM-DD) of those rates, when any were ECB
+     * @nullable
+     */
+  fxFixingDate?: string | null;
 }

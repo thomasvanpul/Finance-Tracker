@@ -17,4 +17,5 @@ export * from "./request-metrics";
 export * from "./recurring-patterns";
 export * from "./user-preferences";
 export * from "./eod-prices";
+export * from "./fx-rates";
 export * from "./provider-health";

@@ -18,7 +18,8 @@ import { PanelHeader, Text } from "@/components/primitives";
 import { Drill } from "@/components/drill";
 import { entityHref, accountTransactionsHref } from "@/lib/entity-href";
 import { formatMoney } from "@/lib/utils";
-import { formatShortDate, reconciliationPeriodLabel, isUntracked, ZERO_TOLERANCE } from "@/lib/reconciliation-insight";
+import { formatShortDate, reconciliationPeriodLabel, isUntracked, ecbFixingInstant, ZERO_TOLERANCE } from "@/lib/reconciliation-insight";
+import { FixingTag } from "@/components/FixingMark";
 
 const cell: CSSProperties = {
   fontFamily: "var(--font-mono)",
@@ -45,7 +46,10 @@ function gapColour(gap: number): string {
   return gap < 0 ? "var(--ft-red)" : "var(--ft-amber)";
 }
 
-function Row({ a, baseCurrency }: { a: ReconciliationAccount; baseCurrency: string }) {
+// ecbFixing: the instant of the ECB fixing every gap was converted at, or
+// null when the server did not say every rate was one — then the mark is
+// the bare "fx" it always was, and claims no source.
+function Row({ a, baseCurrency, ecbFixing }: { a: ReconciliationAccount; baseCurrency: string; ecbFixing: string | null }) {
   const foreign = a.currency !== baseCurrency;
   const notes: string[] = [];
   // Named first because it is a different diagnosis from the others: not a
@@ -74,6 +78,7 @@ function Row({ a, baseCurrency }: { a: ReconciliationAccount; baseCurrency: stri
         {foreign && (
           <span style={{ color: "var(--ft-dim)", fontWeight: 400, marginLeft: 6 }}>
             {a.gapBase == null ? "fx unavailable" : `fx ${formatMoney(a.gapBase, baseCurrency)}`}
+            {a.gapBase != null && ecbFixing && <> <FixingTag updatedAt={ecbFixing} /></>}
           </span>
         )}
       </td>
@@ -133,7 +138,7 @@ export function ReconciliationPanel() {
               </tr>
             </thead>
             <tbody>
-              {report.accounts.map((a) => <Row key={a.accountId} a={a} baseCurrency={report.baseCurrency} />)}
+              {report.accounts.map((a) => <Row key={a.accountId} a={a} baseCurrency={report.baseCurrency} ecbFixing={ecbFixingInstant(report)} />)}
             </tbody>
             <tfoot>
               <tr>

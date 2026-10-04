@@ -374,7 +374,9 @@ export const GetAccountsReconciliationResponse = zod.object({
   "editedSinceBaseline": zod.number().describe('Transactions created before the baseline but updated after it — their change to the balance is not recoverable, so part of the gap may be theirs'),
   "fxSkippedTransactions": zod.number().describe('Transactions in a currency other than the account\'s whose conversion was unavailable and were left out of ledgerChange')
 })),
-  "unconvertibleAccounts": zod.number().describe('Cash accounts whose gap could not be converted to base and are missing from gapBase')
+  "unconvertibleAccounts": zod.number().describe('Cash accounts whose gap could not be converted to base and are missing from gapBase'),
+  "fxProvider": zod.union([zod.literal('ecb'),zod.literal('yahoo'),zod.literal('mixed'),zod.literal(null)]).nullish().describe('Where the rates behind every gapBase came from (the fx provenance mark). \"ecb\" when all were the ECB reference fixing. Omitted or null when unknown.'),
+  "fxFixingDate": zod.string().nullish().describe('The ECB fixing day (YYYY-MM-DD) of those rates, when any were ECB')
 })
 
 
@@ -1011,7 +1013,9 @@ export const SettleDebtResponse = zod.object({
 export const GetFxRatesResponse = zod.object({
   "base": zod.string(),
   "rates": zod.record(zod.string(), zod.number()),
-  "updatedAt": zod.string()
+  "updatedAt": zod.string(),
+  "provider": zod.union([zod.literal('ecb'),zod.literal('yahoo'),zod.literal('mixed'),zod.literal(null)]).nullish().describe('Where the rates came from. \"ecb\" when every rate is the ECB reference fixing (via Frankfurter), \"yahoo\" when none is, \"mixed\" otherwise, null when the map is empty.'),
+  "fixingDate": zod.string().nullish().describe('The ECB fixing day (YYYY-MM-DD) of the ECB rates in the map, or null')
 })
 
 

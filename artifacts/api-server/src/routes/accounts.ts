@@ -12,7 +12,7 @@ import {
   GetAccountsFxDriftResponse,
   GetAccountsChangeAttributionResponse,
 } from "@workspace/api-zod";
-import { getFxRates, snapshotFxRate, toBase } from "../lib/market";
+import { fxProvenance, getFxRates, snapshotFxRate, toBase } from "../lib/market";
 import { getBaseCurrency } from "../lib/app-settings-db";
 import { captureAccountSnapshots } from "../lib/account-snapshots";
 import { computeReconciliation } from "../lib/reconciliation";
@@ -127,7 +127,10 @@ router.get("/accounts/reconciliation", async (req, res): Promise<void> => {
     baseCurrency,
     convert: toBase,
   });
-  res.json(GetAccountsReconciliationResponse.parse(report));
+  // toBase read getFxRates' cache moments ago; this reads the same entry, so
+  // the provenance names the rates the gaps were converted with.
+  const provenance = fxProvenance(await getFxRates());
+  res.json(GetAccountsReconciliationResponse.parse({ ...report, ...provenance }));
 });
 
 // Registered before /accounts/:id, like the reconciliation route above —

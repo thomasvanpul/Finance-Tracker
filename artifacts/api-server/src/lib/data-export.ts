@@ -130,6 +130,8 @@ export const EXCLUDED_TABLES: Readonly<Record<string, string>> = {
     "short-lived one-time tokens (password reset, 2FA challenge, trusted device); every row is a credential and none is content",
   eod_prices:
     "public closing prices keyed by (ticker, session date) with no user_id — market reference data shared by every account, not this user's content. What the user holds is exported from `investments`; the price VUSA.L closed at on 15 Sep is not theirs to take away",
+  fx_rates:
+    "public ECB reference fixings keyed by (date, currency pair, provider) with no user_id — FX reference data shared by every account, not this user's content. The rate each of their own transactions was converted at is exported with it, in transactions.native_to_base_rate",
   provider_health:
     "durable mirror of the in-process circuit-breaker state (lib/provider-health.ts) keyed by provider name with no user_id — operational evidence about Yahoo/Alpaca/Polygon/etc being up or down, not this user's content",
 };

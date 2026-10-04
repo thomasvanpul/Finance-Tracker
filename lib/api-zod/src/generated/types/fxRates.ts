@@ -5,10 +5,21 @@
  * Personal Finance Tracker API
  * OpenAPI spec version: 0.1.0
  */
+import type { FxRatesProvider } from './fxRatesProvider';
 import type { FxRatesRates } from './fxRatesRates';
 
 export interface FxRates {
   base: string;
   rates: FxRatesRates;
   updatedAt: string;
+  /**
+     * Where the rates came from. "ecb" when every rate is the ECB reference fixing (via Frankfurter), "yahoo" when none is, "mixed" otherwise, null when the map is empty.
+     * @nullable
+     */
+  provider?: FxRatesProvider;
+  /**
+     * The ECB fixing day (YYYY-MM-DD) of the ECB rates in the map, or null
+     * @nullable
+     */
+  fixingDate?: string | null;
 }

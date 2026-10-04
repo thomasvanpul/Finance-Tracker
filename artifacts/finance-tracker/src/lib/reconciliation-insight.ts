@@ -101,3 +101,15 @@ export function isUntracked(a: Pick<ReconciliationAccount, "transactionsCounted"
     && Math.abs(a.balanceChange) >= ZERO_TOLERANCE
     && Math.abs(a.gap - a.balanceChange) < ZERO_TOLERANCE;
 }
+
+// The fx mark says "ECB" only when the server stated every rate behind the
+// converted gaps was the ECB reference fixing, and dates it. Midday UTC so
+// the day FixingTag prints is the fixing day in every timezone the app is
+// read in, not the day before west of Greenwich.
+export function ecbFixingInstant(
+  report: Pick<ReconciliationReport, "fxProvider" | "fxFixingDate">,
+): string | null {
+  if (report.fxProvider !== "ecb" || !report.fxFixingDate) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(report.fxFixingDate)) return null;
+  return `${report.fxFixingDate}T12:00:00Z`;
+}

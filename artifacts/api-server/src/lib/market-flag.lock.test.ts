@@ -101,6 +101,9 @@ describe("no market export escapes the list above", () => {
     // previousSessionClose reads a chart response ALREADY fetched by the
     // gated price lane; it has no transport of its own.
     "previousSessionClose",
+    // fxProvenance reads two fields off an FxRatesData ALREADY fetched by
+    // getFxRates; it has no transport of its own.
+    "fxProvenance",
     // Test seams.
     "__setFxCacheForTesting", "__setYahooForTesting",
   ];

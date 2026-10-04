@@ -459,6 +459,19 @@ export const ReconciliationReportPeriodRule = {
   'since-first-snapshot': 'since-first-snapshot',
 } as const;
 
+/**
+ * Where the rates behind every gapBase came from (the fx provenance mark). "ecb" when all were the ECB reference fixing. Omitted or null when unknown.
+ * @nullable
+ */
+export type ReconciliationReportFxProvider = typeof ReconciliationReportFxProvider[keyof typeof ReconciliationReportFxProvider] | null;
+
+
+export const ReconciliationReportFxProvider = {
+  ecb: 'ecb',
+  yahoo: 'yahoo',
+  mixed: 'mixed',
+} as const;
+
 export interface ReconciliationReport {
   status: ReconciliationReportStatus;
   baseCurrency: string;
@@ -489,6 +502,16 @@ export interface ReconciliationReport {
   accounts: ReconciliationAccount[];
   /** Cash accounts whose gap could not be converted to base and are missing from gapBase */
   unconvertibleAccounts: number;
+  /**
+     * Where the rates behind every gapBase came from (the fx provenance mark). "ecb" when all were the ECB reference fixing. Omitted or null when unknown.
+     * @nullable
+     */
+  fxProvider?: ReconciliationReportFxProvider;
+  /**
+     * The ECB fixing day (YYYY-MM-DD) of those rates, when any were ECB
+     * @nullable
+     */
+  fxFixingDate?: string | null;
 }
 
 export interface FxDriftAccount {
@@ -1449,10 +1472,33 @@ export interface UpdateSubscriptionBody {
 
 export type FxRatesRates = {[key: string]: number};
 
+/**
+ * Where the rates came from. "ecb" when every rate is the ECB reference fixing (via Frankfurter), "yahoo" when none is, "mixed" otherwise, null when the map is empty.
+ * @nullable
+ */
+export type FxRatesProvider = typeof FxRatesProvider[keyof typeof FxRatesProvider] | null;
+
+
+export const FxRatesProvider = {
+  ecb: 'ecb',
+  yahoo: 'yahoo',
+  mixed: 'mixed',
+} as const;
+
 export interface FxRates {
   base: string;
   rates: FxRatesRates;
   updatedAt: string;
+  /**
+     * Where the rates came from. "ecb" when every rate is the ECB reference fixing (via Frankfurter), "yahoo" when none is, "mixed" otherwise, null when the map is empty.
+     * @nullable
+     */
+  provider?: FxRatesProvider;
+  /**
+     * The ECB fixing day (YYYY-MM-DD) of the ECB rates in the map, or null
+     * @nullable
+     */
+  fixingDate?: string | null;
 }
 
 export interface StockPrice {

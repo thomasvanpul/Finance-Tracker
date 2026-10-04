@@ -64,3 +64,15 @@ describe("reconciliationInsight", () => {
     expect(reconciliationPeriodLabel({ periodRule: "since-first-snapshot", periodFrom: "2026-09-03" })).toBe("since 3 Sep");
   });
 });
+
+describe("ecbFixingInstant — when the fx mark may say ECB", () => {
+  it("names the fixing day only when every rate was the ECB fixing", async () => {
+    const { ecbFixingInstant } = await import("./reconciliation-insight");
+    expect(ecbFixingInstant({ fxProvider: "ecb", fxFixingDate: "2026-10-02" })).toBe("2026-10-02T12:00:00Z");
+    expect(ecbFixingInstant({ fxProvider: "mixed", fxFixingDate: "2026-10-02" })).toBeNull();
+    expect(ecbFixingInstant({ fxProvider: "yahoo", fxFixingDate: null })).toBeNull();
+    expect(ecbFixingInstant({ fxProvider: "ecb", fxFixingDate: null })).toBeNull();
+    expect(ecbFixingInstant({ fxProvider: "ecb", fxFixingDate: "02/10/2026" })).toBeNull();
+    expect(ecbFixingInstant({})).toBeNull();
+  });
+});

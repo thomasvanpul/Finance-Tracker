@@ -2029,6 +2029,16 @@ components:
         unconvertibleAccounts:
           type: integer
           description: Cash accounts whose gap could not be converted to base and are missing from gapBase
+        fxProvider:
+          type: ["string", "null"]
+          enum: [ecb, yahoo, mixed, null]
+          description: >-
+            Where the rates behind every gapBase came from (the fx provenance
+            mark). "ecb" when all were the ECB reference fixing. Omitted or
+            null when unknown.
+        fxFixingDate:
+          type: ["string", "null"]
+          description: The ECB fixing day (YYYY-MM-DD) of those rates, when any were ECB
     FxDriftAccount:
       type: object
       required: [accountId, name, currency, type, baselineDate, baselineBalance, baselineRate, currentBalance, currentRate, fxDeltaBase, activityDeltaBase, totalDeltaBase, lastTransactionDate, daysSinceLastTransaction]
@@ -2987,6 +2997,16 @@ components:
             type: number
         updatedAt:
           type: string
+        provider:
+          type: ["string", "null"]
+          enum: [ecb, yahoo, mixed, null]
+          description: >-
+            Where the rates came from. "ecb" when every rate is the ECB
+            reference fixing (via Frankfurter), "yahoo" when none is,
+            "mixed" otherwise, null when the map is empty.
+        fixingDate:
+          type: ["string", "null"]
+          description: The ECB fixing day (YYYY-MM-DD) of the ECB rates in the map, or null
 
     StockPrice:
       type: object
