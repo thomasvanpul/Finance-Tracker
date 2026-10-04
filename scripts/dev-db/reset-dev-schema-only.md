@@ -141,7 +141,7 @@ The last command must print nothing.
 ### 7. Boot the api-server on the new branch
 
 ```bash
-pkill -f "dist/index.mjs"; cd artifacts/api-server && ENABLE_DEV_ROUTES=1 pnpm dev
+pkill -f "dist/index.mjs"; cd artifacts/api-server && DEV_EMAIL_LOG=1 ENABLE_DEV_ROUTES=1 pnpm dev
 ```
 
 It must log `database migrations: complete` and start listening on :3001. A
