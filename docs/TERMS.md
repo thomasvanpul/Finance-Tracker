@@ -156,7 +156,7 @@ Paths are relative to the repo root. `DATA-INVENTORY` is `docs/DATA-INVENTORY.md
 | 6 | Names and emails of others; mirror debt; names sent with receipt | DATA-INVENTORY §2.4, §4.2 |
 | 7 | Access to other accounts is blocked; interference is rate-limited | `artifacts/api-server/src/app.ts:107-173,230-239` |
 | 7 | Unlawful use, scraping, recording more than needed | `docs/I2-answer-sheet.md` F5, Q11 |
-| 8 | Small hosting plans | `CLAUDE.md` deploy section: Render free tier, Neon free tier |
+| 8 | Small hosting plans | `CLAUDE.md` deploy section: Render Starter ($7/mo) since 22 Sep 2026, Neon free tier |
 | 8 | Copy on device | DATA-INVENTORY §3.4 |
 | 8 | 30 days' notice of a shutdown or a change | `docs/I2-answer-sheet.md` F2, F6, Q10 |
 | 9 | Governed by the law of England and Wales | `docs/I2-answer-sheet.md` F8, accepted 24 Sep (vault `Efforts/Master-Plan/receipt.json` id `a-bdac0f`) |
