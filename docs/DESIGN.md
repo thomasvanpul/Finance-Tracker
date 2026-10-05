@@ -285,6 +285,19 @@ than adding a treatment to them.
 - Colour is semantic only: green positive, red negative, accent
   interactive. Gain/loss legibility never depends on hue alone — the sign or
   the glyph carries it too.
+- **A deficit carries its sign.** The surplus/deficit word underneath is a
+  label, not the sign: a month at -£3.85 rendered as `£3.85 · deficit` is a
+  figure that reads as its own opposite. Format from the signed value and add
+  `+` only for a surplus.
+- **Monthly income and savings rate have one definition, in
+  `lib/monthly-money.ts`.** `monthlyMoney()` returns this month's income
+  (null when nothing was recorded), expenses, net savings and savings rate =
+  `(income − expenses) / income × 100`; the dashboard, `/analytics`,
+  `/cashflow` and `/whatif` all read it, so the four cannot disagree. With no
+  recorded income the rate is **unknown**, not 0% and not a grade. A surface
+  that genuinely means something else — a projection, a 90-day trend, an
+  annualised figure — shows it alongside, with its window named on the label
+  ("90-day avg", "recorded months"), never in place of it.
 
 ## 8. Overflow
 

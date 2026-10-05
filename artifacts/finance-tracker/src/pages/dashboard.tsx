@@ -63,6 +63,7 @@ import { oneShotInsight } from "@/lib/ai-chat-client";
 import { isAiEnabled, AI_OFF_MESSAGE } from "@/lib/ai-enabled";
 import { DashboardCustomizeContext, useDashboardCustomize } from "@/lib/dashboard-customize-context";
 import { entityHref, ledgerHref, merchantTransactionsHref, thisMonthRange } from "@/lib/entity-href";
+import { monthlyMoney } from "@/lib/monthly-money";
 import { Drill } from "@/components/drill";
 import { useProtoDesign } from "@/lib/use-proto-design";
 import { topRegionVariant } from "@/lib/proto-design";
@@ -141,7 +142,7 @@ function SavingsRateKpi() {
   const target = useMemo(() => loadSavingsTarget(), []);
   const isCustomizing = useDashboardCustomize();
 
-  const savingsRate = dashData?.thisMonth?.savingsRate ?? null;
+  const savingsRate = monthlyMoney(dashData?.thisMonth).savingsRate;
 
   if (savingsRate === null) return (
     <div style={{ ...(isCustomizing && { background: "var(--ft-surface)", border: "1px solid var(--ft-border)", borderTop: "2px solid var(--ft-green)" }), minHeight: 120, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ft-dim)" }}>
@@ -2504,10 +2505,16 @@ export default function Dashboard() {
     if (!dashData) return [];
 
     const netWorth = dashData.netWorth ?? 0;
-    const income = dashData.thisMonth?.income ?? 0;
-    const expenses = dashData.thisMonth?.expenses ?? 0;
-    const savingsRate = dashData.thisMonth?.savingsRate ?? 0;
-    const netSavings = dashData.thisMonth?.netSavings ?? 0;
+    // Income and savings rate come from the ONE definition every surface
+    // reads (lib/monthly-money.ts), so this bar, /analytics, /cashflow and
+    // /whatif cannot show four different answers for the same month. Null
+    // means not recorded, and renders as the dash below — `?? 0` here is
+    // what made an unknown rate indistinguishable from a 0% one.
+    const money = monthlyMoney(dashData.thisMonth);
+    const income = money.income;
+    const expenses = money.expenses ?? 0;
+    const savingsRate = money.savingsRate;
+    const netSavings = money.netSavings ?? 0;
     const portfolioVal = dashData.portfolio?.totalValueBase ?? 0;
     // Null when nothing is priced (valued at cost there is no known return).
     const portfolioPl  = dashData.portfolio?.totalPlBase ?? null;
@@ -2636,9 +2643,9 @@ export default function Dashboard() {
     // and loss never on hue alone. kpi-sign.lock.test.ts holds it.
     const MONTHLY_INCOME: KpiCellData = {
       label: "MONTHLY INCOME",
-      href: drillWhen(income > 0, ledgerHref({ type: "income", ...thisMonthRange() })),
-      value: income > 0 ? `+${formatBaseMoney(Math.abs(income))}` : "—",
-      valueColor: income > 0 ? "var(--ft-green)" : "var(--ft-dim)",
+      href: drillWhen(income != null, ledgerHref({ type: "income", ...thisMonthRange() })),
+      value: income != null ? `+${formatBaseMoney(Math.abs(income))}` : "—",
+      valueColor: income != null ? "var(--ft-green)" : "var(--ft-dim)",
     };
     const MONTHLY_SPEND: KpiCellData = {
       label: "MONTHLY SPEND",
@@ -2648,10 +2655,12 @@ export default function Dashboard() {
     };
     const SAVINGS_RATE: KpiCellData = {
       label: "SAVINGS RATE",
-      value: income > 0 ? `${Math.round(savingsRate)}%` : "—",
+      value: savingsRate != null ? `${Math.round(savingsRate)}%` : "—",
       delta: netSavings !== 0 ? `${netSavings >= 0 ? "+" : ""}${formatBaseMoney(netSavings)}` : undefined,
       deltaColor: netSavings > 0 ? "var(--ft-green)" : "var(--ft-red)",
-      valueColor: savingsRate >= 20
+      valueColor: savingsRate == null
+        ? "var(--ft-dim)"
+        : savingsRate >= 20
         ? "var(--ft-green)"
         : savingsRate >= 10
         ? "var(--ft-amber)"
@@ -2777,9 +2786,14 @@ export default function Dashboard() {
   // ── AI Insights props ────────────────────────────────────────────────────────
   const aiInsightsProps = useMemo((): AiInsightsPanelProps => {
     const netWorth = dashData?.netWorth ?? 0;
-    const income = dashData?.thisMonth?.income ?? 0;
-    const expenses = dashData?.thisMonth?.expenses ?? 0;
-    const savingsRate = dashData?.thisMonth?.savingsRate ?? 0;
+    // Same definition as the KPI bar above. The AI panel's prop types are
+    // non-nullable numbers, so an unrecorded month still arrives here as 0
+    // — that panel is T2's to fix, and it is the one surface on this page
+    // that cannot yet say "unknown".
+    const aiMoney = monthlyMoney(dashData?.thisMonth);
+    const income = aiMoney.income ?? 0;
+    const expenses = aiMoney.expenses ?? 0;
+    const savingsRate = aiMoney.savingsRate ?? 0;
 
     const catMap: Record<string, number> = {};
     for (const t of (monthTxs ?? [])) {
