@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { Flame } from "lucide-react";
 import { formatBaseMoney } from "@/lib/utils";
+import { investedAssets } from "@/lib/invested-assets";
 import {
   useGetDashboard,
   useListTransactions,
@@ -554,18 +555,28 @@ export default function Fire() {
 
   // ── Derived defaults from live data ────────────────────────────────────────
 
-  const defaultPortfolio = useMemo(() => {
-    if (investData?.totalValueBase != null && investData.totalValueBase > 0) {
-      return Math.round(investData.totalValueBase);
-    }
-    if (dashData?.netWorth != null && dashData.netWorth > 0) {
-      return Math.round(dashData.netWorth);
-    }
-    return 0;
-  }, [investData, dashData]);
+  // Net worth is NOT the portfolio. The fallback that used to sit here
+  // seeded this input with £215,447.22 — a figure that includes a flat in
+  // Kuala Lumpur and the current accounts — under a label reading "Total
+  // invested assets (ISA, pension, brokerage)". Every figure on the screen
+  // descended from it: the FI number, 36% progress, "14.8 yrs".
+  //
+  // The portfolio is the invested accounts plus the valued securities, and
+  // nothing else (lib/invested-assets.ts).
+  const invested = useMemo(
+    () => investedAssets(dashData?.accountBreakdown, investData?.totalValueBase),
+    [dashData?.accountBreakdown, investData?.totalValueBase],
+  );
+  const defaultPortfolio = Math.round(invested.total);
 
   const defaultMonthlyExpenses = useMemo(() => {
-    if (!recentTxs || recentTxs.length === 0) return 2000;
+    // No recorded expenses → no default, and null rather than 0. The £2,000
+    // that used to stand in here is the same fabrication class as /whatif's
+    // £3,000: it produced a £600,000 FI number out of nothing. But zero is
+    // not the answer either — it produced an FI NUMBER of £0.00 under a
+    // "4% SWR" caption, which reads as a reachable target rather than as a
+    // missing input. Null is carried through to a stated unknown below.
+    if (!recentTxs || recentTxs.length === 0) return null;
     // recentTxs is pre-filtered to type="expense" (line 598).
     // baseEquivalent is signed negative for expenses → summing gave
     // a NEGATIVE default monthlyExpenses, seeding the FIRE
@@ -576,30 +587,50 @@ export default function Fire() {
       (sum, t) => t.baseEquivalent == null ? sum : sum + Math.abs(t.baseEquivalent),
       0,
     );
-    return Math.round(total / 3);
+    return total > 0 ? Math.round(total / 3) : null;
   }, [recentTxs]);
 
   // ── Inputs ─────────────────────────────────────────────────────────────────
 
-  const [monthlyExpenses, setMonthlyExpenses] = useState<number | "">(0);
+  // The four money inputs open EMPTY, not at 0. A 0 in the income box is an
+  // assertion that income is zero, and it sat on screen next to a dashboard
+  // reporting income as unknown. Expenses and portfolio are seeded from the
+  // API by the effect below; income and contribution have no recorded source
+  // on this screen, so they stay empty until typed. annualReturn,
+  // withdrawalRate and targetYears are modelling assumptions, not figures
+  // about Thomas, so they keep their stated defaults.
+  const [monthlyExpenses, setMonthlyExpenses] = useState<number | "">("");
   const [annualReturn, setAnnualReturn] = useState(7);
   const [withdrawalRate, setWithdrawalRate] = useState(4);
-  const [portfolioValue, setPortfolioValue] = useState<number | "">(0);
-  const [monthlyContrib, setMonthlyContrib] = useState<number | "">(0);
+  const [portfolioValue, setPortfolioValue] = useState<number | "">("");
+  const [monthlyContrib, setMonthlyContrib] = useState<number | "">("");
   const [targetYears, setTargetYears] = useState(20);
-  const [monthlyIncome, setMonthlyIncome] = useState<number | "">(0);
+  const [monthlyIncome, setMonthlyIncome] = useState<number | "">("");
 
   const [defaultsApplied, setDefaultsApplied] = useState(false);
 
+  // Every source must have ANSWERED before the defaults latch, because the
+  // latch is one-shot. It used to fire as soon as the dashboard arrived, so
+  // whichever of the other two queries was slower was simply not in the
+  // seed: the portfolio input opened at £41,700 (the invested ACCOUNTS
+  // alone) instead of £53,127.87, and monthly expenses opened empty even
+  // where three months of spend existed. Measured 5 Oct 2026.
   useEffect(() => {
-    if (!defaultsApplied && (defaultPortfolio > 0 || defaultMonthlyExpenses > 0)) {
-      setMonthlyExpenses(defaultMonthlyExpenses);
-      setPortfolioValue(defaultPortfolio);
-      setDefaultsApplied(true);
-    }
-  }, [defaultPortfolio, defaultMonthlyExpenses, defaultsApplied]);
+    if (defaultsApplied) return;
+    if (dashData == null || investData == null || recentTxs == null) return;
+    setMonthlyExpenses(defaultMonthlyExpenses ?? "");
+    setPortfolioValue(defaultPortfolio);
+    setDefaultsApplied(true);
+  }, [dashData, investData, recentTxs, defaultPortfolio, defaultMonthlyExpenses, defaultsApplied]);
 
   const effMonthlyExpenses = typeof monthlyExpenses === "number" ? monthlyExpenses : 0;
+  // Every figure below is 25× an annual expense total. With no expense
+  // figure — none recorded, none typed — there is no FI number, no progress
+  // towards one and no year it arrives in. They render as the stated unknown
+  // rather than as £0.00 / 100% / 0.0y, which is what £0 of expenses
+  // arithmetically produces and which reads as "you are already there".
+  const hasExpenseFigure = effMonthlyExpenses > 0;
+  const FI_DASH = "\u2014";
   const effPortfolio = typeof portfolioValue === "number" ? portfolioValue : 0;
   const effMonthlyContrib = typeof monthlyContrib === "number" ? monthlyContrib : 0;
   const effMonthlyIncome = typeof monthlyIncome === "number" ? monthlyIncome : 0;
@@ -712,26 +743,26 @@ export default function Fire() {
            className="ft-four-col">
         <KpiCell
           label="FI Number"
-          value={formatBaseMoney(fireNumber)}
-          sub={`${withdrawalRate}% SWR`}
+          value={hasExpenseFigure ? formatBaseMoney(fireNumber) : FI_DASH}
+          sub={hasExpenseFigure ? `${withdrawalRate}% SWR` : "enter monthly expenses"}
           color="var(--ft-amber)"
         />
         <KpiCell
           label="Progress"
-          value={`${progressPct}%`}
-          sub={`${formatBaseMoney(effPortfolio)} of ${formatBaseMoney(fireNumber)}`}
-          color={progressPct >= 100 ? "var(--ft-green)" : progressPct >= 50 ? "var(--ft-amber)" : "var(--ft-accent)"}
+          value={hasExpenseFigure ? `${progressPct}%` : FI_DASH}
+          sub={hasExpenseFigure ? `${formatBaseMoney(effPortfolio)} of ${formatBaseMoney(fireNumber)}` : "no target yet"}
+          color={!hasExpenseFigure ? "var(--ft-dim)" : progressPct >= 100 ? "var(--ft-green)" : progressPct >= 50 ? "var(--ft-amber)" : "var(--ft-accent)"}
         />
         <KpiCell
           label="Years to FIRE"
-          value={displayYearsToFire}
-          sub={fireAgeNote ? `target ${fireAgeNote}` : "enter contributions"}
-          color={isFinite(yearsToFire) && yearsToFire <= 15 ? "var(--ft-green)" : "var(--ft-amber)"}
+          value={hasExpenseFigure ? displayYearsToFire : FI_DASH}
+          sub={!hasExpenseFigure ? "no target yet" : fireAgeNote ? `target ${fireAgeNote}` : "enter contributions"}
+          color={!hasExpenseFigure ? "var(--ft-dim)" : isFinite(yearsToFire) && yearsToFire <= 15 ? "var(--ft-green)" : "var(--ft-amber)"}
         />
         <KpiCell
           label={`Needed in ${targetYears}yr`}
-          value={formatBaseMoney(Math.round(monthlyNeededForTarget))}
-          sub={effMonthlyContrib > 0 ? (effMonthlyContrib >= monthlyNeededForTarget ? "on track ✓" : `${formatBaseMoney(Math.round(monthlyNeededForTarget - effMonthlyContrib))} shortfall`) : "per month"}
+          value={hasExpenseFigure ? formatBaseMoney(Math.round(monthlyNeededForTarget)) : FI_DASH}
+          sub={!hasExpenseFigure ? "no target yet" : effMonthlyContrib > 0 ? (effMonthlyContrib >= monthlyNeededForTarget ? "on track ✓" : `${formatBaseMoney(Math.round(monthlyNeededForTarget - effMonthlyContrib))} shortfall`) : "per month"}
           color="var(--ft-cyan)"
           isLast
         />
@@ -761,10 +792,14 @@ export default function Fire() {
       <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" as const, flexDirection: isMobile ? "column" : "row" }}>
         <HeroResult
           label="FI Number"
-          value={formatBaseMoney(fireNumber)}
-          color="var(--ft-amber)"
-          sub={`${withdrawalRate}% safe withdrawal rate · ${Math.round(1 / (withdrawalRate / 100))}× annual expenses`}
-          note="The portfolio value at which you are financially independent"
+          value={hasExpenseFigure ? formatBaseMoney(fireNumber) : FI_DASH}
+          color={hasExpenseFigure ? "var(--ft-amber)" : "var(--ft-dim)"}
+          sub={hasExpenseFigure
+            ? `${withdrawalRate}% safe withdrawal rate · ${Math.round(1 / (withdrawalRate / 100))}× annual expenses`
+            : "no monthly expense figure recorded or entered"}
+          note={hasExpenseFigure
+            ? "The portfolio value at which you are financially independent"
+            : "Enter your monthly expenses below and this fills in — it is 25× the annual total at a 4% withdrawal rate"}
           isMobile={isMobile}
         />
         <HeroResult
@@ -772,7 +807,16 @@ export default function Fire() {
           value={displayYearsToFire}
           color={isFinite(yearsToFire) && yearsToFire <= 15 ? "var(--ft-green)" : "var(--ft-amber)"}
           sub={fireAgeNote ? `Target year: ${fireAgeNote}` : undefined}
-          note={isFinite(yearsToFire) ? `At £${effMonthlyContrib.toLocaleString()}/mo contributions` : "Increase contributions or reduce expenses"}
+          // The GAP panel shows MONTHLY CONTRIB as — when nothing is entered, so
+          // this note must not state a bare £0 beside it as though it were a
+          // recorded figure. It names the assumption instead.
+          note={
+            !isFinite(yearsToFire)
+              ? "Increase contributions or reduce expenses"
+              : effMonthlyContrib > 0
+                ? `At £${effMonthlyContrib.toLocaleString()}/mo contributions`
+                : "No contribution entered · assumed £0/mo"
+          }
           isMobile={isMobile}
         />
         <HeroResult
@@ -906,7 +950,14 @@ export default function Fire() {
           <PanelHeader>Inputs</PanelHeader>
 
           <PanelHeader>Current State</PanelHeader>
-          <InputRow label="Current Portfolio (£)" help="Total invested assets (ISA, pension, brokerage)">
+          <InputRow
+            label="Current Portfolio (£)"
+            help={
+              invested.total > 0
+                ? `Invested accounts ${formatBaseMoney(invested.accounts)}${invested.securities != null && invested.securities > 0 ? ` + valued securities ${formatBaseMoney(invested.securities)}` : ""}. Cash, property and liabilities are excluded.${invested.unconvertible > 0 ? ` ${invested.unconvertible} account(s) omitted — no FX rate.` : ""}`
+                : "Total invested assets (ISA, pension, brokerage). No invested accounts recorded — enter a figure."
+            }
+          >
             <input
               type="number"
               min={0}
