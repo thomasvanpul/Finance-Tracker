@@ -17,6 +17,7 @@ import {
   getListTransactionsQueryKey,
 } from "@workspace/api-client-react";
 import { formatBaseMoney, formatNative, formatDate } from "@/lib/utils";
+import { horizonNet, occurrencesInHorizon } from "@/lib/recurring-horizon";
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref } from "@/lib/entity-href";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
@@ -106,22 +107,19 @@ const STATUS_COLORS: Record<Status, { bg: string; text: string }> = {
   skipped: { bg: "#6E767122", text: "var(--ft-dim)" },
 };
 
+// A horizon's net change, with each pending item REPEATED by its own
+// frequency inside that horizon. Summing the dated rows alone gave 30d,
+// 60d and 90d the same number — every pending row already falls inside 30
+// days, because the server generates one occurrence ahead rather than a
+// horizon. See lib/recurring-horizon.ts.
+//
+// Items whose FX is unavailable are still skipped there, so the forecast is
+// under-stated rather than fabricated. Caveat surfaced on the summary cell.
 function computeForecast(
-  items: Array<{ status: string; type: string; dueDate: string; baseEquivalent: number | null }>,
+  items: Array<{ status: string; type: string; dueDate: string; frequency?: string | null; baseEquivalent: number | null }>,
   days: number
 ): number {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() + days);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
-
-  return items.reduce((sum, item) => {
-    if (item.status !== "pending") return sum;
-    if (item.dueDate > cutoffStr) return sum;
-    // Skip items whose FX is unavailable — forecast is under-stated
-    // rather than fabricated. Caveat surfaced on the summary cell.
-    if (item.baseEquivalent == null) return sum;
-    return sum + (item.type === "income" ? item.baseEquivalent : -item.baseEquivalent);
-  }, 0);
+  return horizonNet(items, days);
 }
 
 // ─── Summary KPI cell ─────────────────────────────────────────────────────────
@@ -466,26 +464,30 @@ export default function Upcoming() {
   const forecast90 = useMemo(() => computeForecast(upcoming ?? [], 90), [upcoming]);
 
   const cashflowChartData = useMemo(() => {
-    const items = (upcoming ?? []).filter((i) => i.status === "pending");
+    // Same expansion as the forecast cells: a monthly bill bends the line
+    // once a month for 90 days, not once. Unconvertible items are already
+    // dropped by occurrencesInHorizon — a fabricated 0 would still fire a
+    // bend where none exists. The bend disappears; the line continues.
+    const occurrences = occurrencesInHorizon(upcoming ?? [], 90);
     const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().slice(0, 10);
     const points: Array<{ label: string; balance: number; dayOffset: number }> = [];
     let running = totalBalance;
     points.push({ label: "Today", balance: Math.round(running), dayOffset: 0 });
+
+    const byDate = new Map<string, number>();
+    for (const o of occurrences) {
+      if (o.date === todayStr) continue;
+      byDate.set(o.date, (byDate.get(o.date) ?? 0) + (o.type === "income" ? o.amount : -o.amount));
+    }
+
     for (let d = 1; d <= 90; d++) {
       const day = new Date(today); day.setDate(day.getDate() + d);
-      const dayStr = day.toISOString().slice(0, 10);
-      const dayItems = items.filter((i) => i.dueDate === dayStr);
-      if (dayItems.length > 0) {
-        dayItems.forEach((item) => {
-          // Cashflow projection skips unconvertible items — a
-          // fabricated 0 would still fire the chart bend where none
-          // exists. The bend disappears; the line continues.
-          if (item.baseEquivalent == null) return;
-          running += item.type === "income" ? item.baseEquivalent : -item.baseEquivalent;
-        });
-        const label = d <= 7 ? `+${d}d` : d <= 30 ? `W${Math.ceil(d / 7)}` : `M${d <= 60 ? 2 : 3}`;
-        points.push({ label, balance: Math.round(running), dayOffset: d });
-      }
+      const delta = byDate.get(day.toISOString().slice(0, 10));
+      if (delta == null) continue;
+      running += delta;
+      const label = d <= 7 ? `+${d}d` : d <= 30 ? `W${Math.ceil(d / 7)}` : `M${d <= 60 ? 2 : 3}`;
+      points.push({ label, balance: Math.round(running), dayOffset: d });
     }
     if (points[points.length - 1].dayOffset < 90) {
       points.push({ label: "+90d", balance: Math.round(running), dayOffset: 90 });
@@ -962,7 +964,7 @@ export default function Upcoming() {
             cursor: "pointer",
           }}
         >
-          <span className="ft-panel-label">Cash Flow Forecast — Projected Net Change from Pending Items</span>
+          <span className="ft-panel-label">Cash Flow Forecast — Pending Items, Recurrences Repeated into Each Horizon</span>
           {forecastOpen
             ? <ChevronUp className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)", flexShrink: 0 }} />
             : <ChevronDown className="w-3.5 h-3.5" style={{ color: "var(--ft-muted)", flexShrink: 0 }} />
