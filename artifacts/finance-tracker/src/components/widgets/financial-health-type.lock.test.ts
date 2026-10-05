@@ -57,6 +57,19 @@ describe("Financial Health type: language is sans", () => {
 });
 
 describe("Financial Health type: data stays mono", () => {
-  it.each(["{pts}", "{impact}", "{result.total}", "/ 100", "{band}", "{v}", "Score Breakdown"])(
-    "keeps %s mono", (copy) => expect(styleBefore(copy)).toContain("--font-mono"));
+  // A pillar whose input is null, and the composite above it, now draw the
+  // stated unknown instead of a number (T1 item 3, 5 Oct 2026) — so the two
+  // drawn expressions are `{known ? pts : "..."}` and `{total ?? "..."}`
+  // rather than `{pts}` and `{result.total}`. The assertion is unchanged:
+  // whichever of the two a pillar shows, a number or the dash standing in for
+  // one, it is data and stays mono.
+  it.each([
+    '{known ? pts : "\\u2014"}',
+    "{impact}",
+    '{total ?? "\\u2014"}',
+    "/ 100",
+    "{band}",
+    "{v}",
+    "Score Breakdown",
+  ])("keeps %s mono", (copy) => expect(styleBefore(copy)).toContain("--font-mono"));
 });

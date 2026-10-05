@@ -4,7 +4,16 @@ import { WidgetShell } from "./widget-shell";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// A pillar is null when its input is null — unknown, not zero. The weights
+// are unchanged; only what an unknown input does to the render is.
 type ScoreComponents = {
+  savingsRate: number | null;
+  netLiquidity: number | null;
+  portfolio: number | null;
+  cashBuffer: number | null;
+};
+
+type ScoreMaxes = {
   savingsRate: number;
   netLiquidity: number;
   portfolio: number;
@@ -12,9 +21,15 @@ type ScoreComponents = {
 };
 
 type ScoreResult = {
-  total: number;
+  /** Null while any pillar is unscorable: a part-score out of 100 is a
+      claim the data does not support. */
+  total: number | null;
   components: ScoreComponents;
-  maxes: ScoreComponents;
+  maxes: ScoreMaxes;
+  /** Human names of the pillars that could not be scored. */
+  unscorable: string[];
+  /** How many of the 100 points those pillars are worth. */
+  unscorablePoints: number;
 };
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
@@ -25,15 +40,19 @@ function computeScore(d: {
   portfolio: { totalPlBase: number | null; totalValueBase: number | null };
   totalCash: number;
 }): ScoreResult {
-  // OPEN QUESTION (raised 2026-09-06, not decided here): savingsRate is now
-  // null when the month has no income, and a null scores 0 of 30 points —
-  // so a user with no income recorded reads as "scored zero on saving"
-  // rather than "not scorable yet". The honest alternatives are to drop
-  // both the component and its 30-point max (scoring out of 70, which
-  // changes what the band means) or to withhold the score entirely.
-  // Both change the product, so the pre-existing behaviour is preserved
-  // until that call is made.
-  const savingsRate = Math.min(30, (d.thisMonth.savingsRate ?? 0) * 1.5);
+  // DECIDED 2026-10-05 (T1 item 3), replacing the open question that stood
+  // here: an unknown input is rendered as unknown, never as 0 and never as
+  // a grade. The pillars and their weights are untouched — which pillars
+  // are real is still T3's call — but a null no longer silently scores
+  // zero. Measured before: a user with no income recorded and no prices
+  // read "50 / 100 MODERATE · Watch your expenses and build reserves",
+  // with SAVINGS RATE 0/30 and PORTFOLIO 0/20 presented as results and
+  // two HIGH-impact recommendations built on them. 50 of the 100 points
+  // were unscorable.
+  const savingsRate =
+    d.thisMonth.savingsRate == null
+      ? null
+      : Math.min(30, d.thisMonth.savingsRate * 1.5);
 
   const rawLiquidity = d.netLiquidity;
   const netLiquidity =
@@ -43,35 +62,61 @@ function computeScore(d: {
         ? 0
         : Math.max(0, 12 + (rawLiquidity / Math.abs(rawLiquidity || 1)) * 12);
 
-  // A null total (holdings, none valued) or a null P/L (nothing priced)
-  // scores like an empty portfolio: there is no known return to reward.
+  // Holdings with no valuation (null total), or a valued portfolio with no
+  // known return (null P/L), are unscorable. An empty portfolio is a real
+  // zero: there is nothing invested, which is a fact and not a gap.
   const portfolioValue = d.portfolio.totalValueBase;
-  const portfolioRatio =
-    portfolioValue != null && portfolioValue > 0 && d.portfolio.totalPlBase != null
-      ? d.portfolio.totalPlBase / portfolioValue
-      : 0;
-  const portfolio = Math.min(20, Math.max(0, portfolioRatio * 200));
+  const portfolio =
+    portfolioValue == null
+      ? null
+      : portfolioValue === 0
+        ? 0
+        : d.portfolio.totalPlBase == null
+          ? null
+          : Math.min(20, Math.max(0, (d.portfolio.totalPlBase / portfolioValue) * 200));
 
   const monthsCovered = d.totalCash / Math.max(1, d.thisMonth.expenses);
   const cashBuffer = Math.min(25, (monthsCovered / 3) * 25);
 
-  const total = Math.round(savingsRate + netLiquidity + portfolio + cashBuffer);
-
-  return {
-    total,
-    components: {
-      savingsRate: Math.round(savingsRate),
-      netLiquidity: Math.round(netLiquidity),
-      portfolio: Math.round(portfolio),
-      cashBuffer: Math.round(cashBuffer),
-    },
-    maxes: {
-      savingsRate: 30,
-      netLiquidity: 25,
-      portfolio: 20,
-      cashBuffer: 25,
-    },
+  const maxes: ScoreMaxes = {
+    savingsRate: 30,
+    netLiquidity: 25,
+    portfolio: 20,
+    cashBuffer: 25,
   };
+
+  const components: ScoreComponents = {
+    savingsRate: savingsRate == null ? null : Math.round(savingsRate),
+    netLiquidity: Math.round(netLiquidity),
+    portfolio: portfolio == null ? null : Math.round(portfolio),
+    cashBuffer: Math.round(cashBuffer),
+  };
+
+  const unscorable: string[] = [];
+  let unscorablePoints = 0;
+  if (components.savingsRate == null) {
+    unscorable.push("savings rate (no income recorded this month)");
+    unscorablePoints += maxes.savingsRate;
+  }
+  if (components.portfolio == null) {
+    unscorable.push("portfolio (no valuation for the holdings)");
+    unscorablePoints += maxes.portfolio;
+  }
+
+  // Withheld, not part-scored. A 50 that is really "50 points we could
+  // measure and 50 we could not" is the same class of defect as a
+  // fabricated figure: it reads as a result.
+  const total =
+    unscorable.length > 0
+      ? null
+      : Math.round(
+          (components.savingsRate ?? 0) +
+            (components.netLiquidity ?? 0) +
+            (components.portfolio ?? 0) +
+            (components.cashBuffer ?? 0),
+        );
+
+  return { total, components, maxes, unscorable, unscorablePoints };
 }
 
 function scoreColor(score: number): string {
@@ -149,15 +194,20 @@ function CircularGauge({ score, color }: GaugeProps) {
 type ComponentRowProps = {
   label: string;
   description: string;
-  pts: number;
+  /** Null = unscorable. Renders "—/30", an empty bar and a neutral dot,
+      so an unknown pillar never reads as a failed one. */
+  pts: number | null;
   maxPts: number;
   isWeakest?: boolean;
 };
 
 function ComponentRow({ label, description, pts, maxPts, isWeakest }: ComponentRowProps) {
   const [hov, setHov] = useState(false);
-  const pct = maxPts > 0 ? (pts / maxPts) * 100 : 0;
-  const dotColor = pct >= 70 ? "var(--ft-green)" : pct >= 40 ? "var(--ft-amber)" : "var(--ft-red)";
+  const known = pts != null;
+  const pct = known && maxPts > 0 ? (pts / maxPts) * 100 : 0;
+  const dotColor = !known
+    ? "var(--ft-border2)"
+    : pct >= 70 ? "var(--ft-green)" : pct >= 40 ? "var(--ft-amber)" : "var(--ft-red)";
   const barColor = dotColor;
 
   return (
@@ -171,7 +221,7 @@ function ComponentRow({ label, description, pts, maxPts, isWeakest }: ComponentR
         borderBottom: "1px solid var(--ft-border)",
         background: hov
           ? "color-mix(in srgb, var(--ft-accent) 5%, var(--ft-surface))"
-          : isWeakest
+          : isWeakest && known
           ? "rgba(248,81,73,0.04)"
           : undefined,
         transition: "background 0.1s",
@@ -251,13 +301,13 @@ function ComponentRow({ label, description, pts, maxPts, isWeakest }: ComponentR
           fontFamily: "var(--font-mono)",
           fontSize: 13,
           fontWeight: 700,
-          color: dotColor,
+          color: known ? dotColor : "var(--ft-dim)",
           textAlign: "right",
           minWidth: 48,
           letterSpacing: "-0.01em",
         }}
       >
-        {pts}
+        {known ? pts : "\u2014"}
         <span style={{ fontWeight: 400, color: "var(--ft-dim)", fontSize: 9 }}>
           /{maxPts}
         </span>
@@ -341,51 +391,67 @@ function BreakdownItem({ label, impact, message }: BreakdownItemProps) {
 
 function buildBreakdown(
   components: ScoreComponents,
-  maxes: ScoreComponents
+  maxes: ScoreMaxes,
+  unscorable: string[]
 ): BreakdownItemProps[] {
   const items: BreakdownItemProps[] = [];
 
-  const srPct = maxes.savingsRate > 0 ? components.savingsRate / maxes.savingsRate : 0;
-  const nlPct = maxes.netLiquidity > 0 ? components.netLiquidity / maxes.netLiquidity : 0;
-  const pfPct = maxes.portfolio > 0 ? components.portfolio / maxes.portfolio : 0;
-  const cbPct = maxes.cashBuffer > 0 ? components.cashBuffer / maxes.cashBuffer : 0;
+  // A null pillar yields a null ratio, and every rule below skips a null.
+  // Advice built on an unknown is the defect, not a lesser form of it: the
+  // widget used to tell a user with no recorded income that their savings
+  // were "very low" at HIGH impact, and a user with no prices that their
+  // portfolio was "underperforming".
+  const ratio = (pts: number | null, max: number): number | null =>
+    pts == null || max <= 0 ? null : pts / max;
+  const srPct = ratio(components.savingsRate, maxes.savingsRate);
+  const nlPct = ratio(components.netLiquidity, maxes.netLiquidity);
+  const pfPct = ratio(components.portfolio, maxes.portfolio);
+  const cbPct = ratio(components.cashBuffer, maxes.cashBuffer);
 
-  if (srPct < 0.5) {
+  for (const what of unscorable) {
+    items.push({
+      label: "Not scorable yet",
+      impact: "low",
+      message: `${what} — recorded once, this pillar scores and the total appears`,
+    });
+  }
+
+  if (srPct != null && srPct < 0.5) {
     items.push({
       label: "Savings Rate",
-      impact: srPct < 0.25 ? "high" : "medium",
+      impact: srPct != null && srPct < 0.25 ? "high" : "medium",
       message:
-        srPct < 0.25
+        srPct != null && srPct < 0.25
           ? "Very low savings — target 15%+ of income each month"
           : "Below ideal savings rate — aim to reduce discretionary spend",
     });
   }
-  if (nlPct < 0.5) {
+  if (nlPct != null && nlPct < 0.5) {
     items.push({
       label: "Net Liquidity",
-      impact: nlPct < 0.25 ? "high" : "medium",
+      impact: nlPct != null && nlPct < 0.25 ? "high" : "medium",
       message:
-        nlPct < 0.25
+        nlPct != null && nlPct < 0.25
           ? "Net worth is negative — liabilities exceed assets"
           : "Net position is thin — watch debt levels",
     });
   }
-  if (pfPct < 0.5) {
+  if (pfPct != null && pfPct < 0.5) {
     items.push({
       label: "Portfolio",
-      impact: pfPct < 0.25 ? "high" : "medium",
+      impact: pfPct != null && pfPct < 0.25 ? "high" : "medium",
       message:
-        pfPct < 0.25
+        pfPct != null && pfPct < 0.25
           ? "Portfolio underperforming or very small — consider diversifying"
           : "Portfolio gains below benchmark — review allocation",
     });
   }
-  if (cbPct < 0.5) {
+  if (cbPct != null && cbPct < 0.5) {
     items.push({
       label: "Cash Buffer",
-      impact: cbPct < 0.25 ? "high" : "medium",
+      impact: cbPct != null && cbPct < 0.25 ? "high" : "medium",
       message:
-        cbPct < 0.25
+        cbPct != null && cbPct < 0.25
           ? "Less than 1 month expenses in cash — rebuild emergency fund"
           : "Under 1.5 months' runway — build towards 3 months",
     });
@@ -408,17 +474,26 @@ export function FinancialHealthWidget() {
   const { data: d, isLoading } = useGetDashboard();
 
   const result = d ? computeScore(d) : null;
-  const color = result ? scoreColor(result.total) : "var(--ft-dim)";
-  const band = result ? scoreBand(result.total) : "";
-  const verdict = result ? scoreVerdict(result.total) : "";
-  const breakdown = result ? buildBreakdown(result.components, result.maxes) : [];
+  const total = result?.total ?? null;
+  const color = total != null ? scoreColor(total) : "var(--ft-dim)";
+  const band = total != null ? scoreBand(total) : result ? "NOT SCORABLE YET" : "";
+  const verdict =
+    total != null
+      ? scoreVerdict(total)
+      : result
+        ? `${result.unscorablePoints} of the 100 points cannot be measured yet: ${result.unscorable.join("; ")}. A score is withheld rather than part-counted.`
+        : "";
+  const breakdown = result ? buildBreakdown(result.components, result.maxes, result.unscorable) : [];
 
-  // Find the weakest component
+  // Find the weakest component. An unscorable pillar is not a candidate —
+  // it is not weak, it is unmeasured.
   let weakestKey: keyof ScoreComponents | null = null;
   if (result) {
     let lowestPct = 1;
     for (const k of Object.keys(result.components) as (keyof ScoreComponents)[]) {
-      const pct = result.components[k] / result.maxes[k];
+      const pts = result.components[k];
+      if (pts == null) continue;
+      const pct = pts / result.maxes[k];
       if (pct < lowestPct) {
         lowestPct = pct;
         weakestKey = k;
@@ -448,7 +523,7 @@ export function FinancialHealthWidget() {
             }}
           >
             <div style={{ position: "relative", width: 128, flexShrink: 0 }}>
-              <CircularGauge score={result.total} color={color} />
+              <CircularGauge score={total ?? 0} color={color} />
               <div
                 style={{
                   position: "absolute",
@@ -471,7 +546,7 @@ export function FinancialHealthWidget() {
                     letterSpacing: "-0.03em",
                   }}
                 >
-                  {result.total}
+                  {total ?? "\u2014"}
                 </div>
                 <div
                   style={{
@@ -555,7 +630,7 @@ export function FinancialHealthWidget() {
                 <div
                   style={{
                     height: "100%",
-                    width: `${result.total}%`,
+                    width: `${total ?? 0}%`,
                     background: color,
                     borderRadius: 2,
                     transition: "width 0.35s ease",
