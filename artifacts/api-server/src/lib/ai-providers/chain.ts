@@ -166,7 +166,9 @@ export type ChainStreamEvent =
   | { kind: "attempt"; provider: AiProviderName; attemptIndex: number }
   | { kind: "fallthrough"; from: AiProviderName; to: AiProviderName; reason: string }
   | { kind: "token"; text: string }
-  | { kind: "done"; servingProvider: AiProviderName; reducedCapacity: boolean; triedProviders: AiProviderName[] }
+  // finishReason is the provider's own: "length" means the answer hit
+  // maxTokens and stopped mid-thought. null when the provider never said.
+  | { kind: "done"; servingProvider: AiProviderName; reducedCapacity: boolean; triedProviders: AiProviderName[]; finishReason: string | null }
   | { kind: "cut"; servingProvider: AiProviderName; reason: string; triedProviders: AiProviderName[] }
   | { kind: "exhausted"; triedProviders: AiProviderName[] };
 
@@ -219,7 +221,7 @@ export async function* chainChatStream(opts: {
           } else {
             logger.info({ route: opts.route, servingProvider: provider, tokensEmitted }, "AI chain (streaming) served from primary");
           }
-          yield { kind: "done", servingProvider: provider, reducedCapacity: reduced, triedProviders: tried };
+          yield { kind: "done", servingProvider: provider, reducedCapacity: reduced, triedProviders: tried, finishReason: chunk.finishReason };
           return;
         }
       }
@@ -227,7 +229,7 @@ export async function* chainChatStream(opts: {
       // completion if we got tokens, otherwise fall through.
       if (tokensEmitted > 0) {
         const reduced = provider !== PRIMARY;
-        yield { kind: "done", servingProvider: provider, reducedCapacity: reduced, triedProviders: tried };
+        yield { kind: "done", servingProvider: provider, reducedCapacity: reduced, triedProviders: tried, finishReason: null };
         return;
       }
     } catch (err) {

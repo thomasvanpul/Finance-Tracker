@@ -33,13 +33,13 @@ import { readFile } from "node:fs/promises";
 import { eq } from "drizzle-orm";
 import { db, userTable } from "@workspace/db";
 import { buildChatContext } from "../lib/ai-context";
-import { SYSTEM_PROMPT } from "../routes/ai";
+import { SYSTEM_PROMPT, CHAT_MAX_TOKENS } from "../routes/ai";
 
 const OLLAMA = "http://localhost:11434/v1/chat/completions";
 
 // Same knobs routes/ai.ts passes to chainChatStream, so the only variable
 // between a before-run and an after-run is the prompt text itself.
-const MAX_TOKENS = 1024;
+const MAX_TOKENS = CHAT_MAX_TOKENS;
 const TEMPERATURE = 0.7;
 
 const DEFAULT_QUESTION = "How am I doing this month?";
