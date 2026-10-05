@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useListTransactions, useListBudgets } from "@workspace/api-client-react";
+import { useListTransactions, useListBudgets, useGetDashboard } from "@workspace/api-client-react";
+import { monthlyMoney, UNKNOWN_FIGURE } from "@/lib/monthly-money";
 import { Skeleton as FtSkeleton } from "@/components/skeleton";
 import { ErrorState } from "@/components/error-state";
 import { MonoTooltip, monoTooltipStyle, type TooltipEntry } from "@/components/mono-tooltip";
@@ -616,7 +617,7 @@ function RangeSelector({ value, onChange }: { value: Range; onChange: (r: Range)
 
 // ─── Page-level KPI Bar ───────────────────────────────────────────────────────
 
-function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: Tx[]; range: Range }) {
+function AnalyticsKpiBar({ expenses, allTxs, range, savingsRate }: { expenses: Tx[]; allTxs: Tx[]; range: Range; savingsRate: number | null }) {
   const isMobile = useIsMobile();
   const now = new Date();
   const thisM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -673,9 +674,9 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
     ? (() => { const [y, m] = bestMonthEntry[0].split("-"); return `${MONTH_SHORT[parseInt(m) - 1]} ${y}`; })()
     : "—";
 
-  // Savings rate this month
-  const thisMonthIncome = allTxs.filter(t => t.type === "income" && getYYYYMM(t.date) === thisM).reduce((s, t) => s + t.baseEquivalent, 0);
-  const savingsRate = thisMonthIncome > 0 ? Math.round(((thisMonthIncome - thisMonthSpend) / thisMonthIncome) * 100) : null;
+  // Savings rate comes in from the one shared definition rather than being
+  // recomputed here off the transaction list — this strip and the dashboard
+  // answered the same question differently for the same month (audit X3).
 
   const cells: { label: string; value: string; delta?: React.ReactNode; valueColor?: string }[] = [
     {
@@ -708,7 +709,7 @@ function AnalyticsKpiBar({ expenses, allTxs, range }: { expenses: Tx[]; allTxs: 
     },
     {
       label: "Savings Rate",
-      value: savingsRate !== null ? `${savingsRate}%` : "—",
+      value: savingsRate !== null ? `${savingsRate.toFixed(1)}%` : UNKNOWN_FIGURE,
       valueColor: savingsRate !== null && savingsRate >= 20 ? "var(--ft-green)" : savingsRate !== null && savingsRate >= 0 ? "var(--ft-amber)" : "var(--ft-red)",
       delta: <Text as="span" mono size={9} color="var(--ft-dim)">this month</Text>,
     },
@@ -1740,18 +1741,25 @@ function SavingsRateTrend({ allTxs }: { allTxs: Tx[] }) {
   // reference line is omitted rather than pinned to a fabricated "avg 0%".
   const avgRate: number | null =
     validRates.length > 0 ? Math.round(validRates.reduce((a, b) => a + b, 0) / validRates.length) : null;
-  const latestRate = validRates[validRates.length - 1] ?? null;
+  // THIS month's rate, which is the last element of `data` — not the last
+  // non-null one. It was `validRates[validRates.length - 1]`, the most recent
+  // month that happened to have income, labelled "this month" regardless.
+  // Measured 5 Oct 2026: the chip read "-9% this month" while the KPI bar two
+  // panels up read SAVINGS RATE — for the same month, because this month had
+  // no income at all and -9% belonged to a month in the past.
+  const latestRate: number | null = data[data.length - 1]?.rate ?? null;
 
   return (
     <div style={panelStyle}>
       <PanelHeader
         right={
           <HStack gap={8} align="center">
-            {latestRate !== null && (
-              <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: latestRate >= 20 ? "var(--ft-green)" : latestRate >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>
-                <span className="pnum">{latestRate}%</span> this month
-              </span>
-            )}
+            {/* Stated, not hidden: a chip that disappears reads as a layout
+                change, while the dash says the month has no income to divide
+                by (DESIGN.md §7). */}
+            <span style={{ ...mono, fontSize: 11, fontWeight: 700, color: latestRate === null ? "var(--ft-dim)" : latestRate >= 20 ? "var(--ft-green)" : latestRate >= 0 ? "var(--ft-amber)" : "var(--ft-red)" }}>
+              <span className="pnum">{latestRate === null ? "\u2014" : `${latestRate}%`}</span> this month
+            </span>
             <HStack gap={4} align="center">
               <div style={{ width: 14, height: 1, borderTop: "2px dashed var(--ft-accent)", display: "inline-block" }} />
               <span style={{ ...mono, fontSize: 8, color: "var(--ft-dim)" }}>target 20%</span>
@@ -2197,11 +2205,20 @@ function SpendingWaterfall({ allTxs, expenses }: { allTxs: Tx[]; expenses: Tx[] 
     bucketAmounts[cat] = (bucketAmounts[cat] || 0) + Math.abs(tx.baseEquivalent);
   }
 
-  const activeBuckets: [string, number][] = Object.entries(bucketAmounts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const ranked: [string, number][] = Object.entries(bucketAmounts).sort((a, b) => b[1] - a[1]);
+  const topBuckets: [string, number][] = ranked.slice(0, 6);
+  // The seventh category onward is shown as one row rather than dropped.
+  // `savings` used to be income minus the top six only, so the header rate
+  // disagreed with the dashboard's for the same month — a third savings
+  // rate on this page (audit X3). It is income minus ALL of this month's
+  // expenses, which is the shared definition (lib/monthly-money.ts).
+  const restTotal = ranked.slice(6).reduce((sum, [, v]) => sum + v, 0);
+  const activeBuckets: [string, number][] =
+    restTotal > 0 ? [...topBuckets, ["Other Categories", restTotal]] : topBuckets;
 
-  const totalExp = activeBuckets.reduce((s, [, v]) => s + v, 0);
+  const totalExp = ranked.reduce((sum, [, v]) => sum + v, 0);
   const savings  = income - totalExp;
-  const savingsRate = income > 0 ? (savings / income) * 100 : 0;
+  const savingsRate = (savings / income) * 100;
   const savingsColor = savings >= 0 ? "var(--ft-green)" : "var(--ft-red)";
 
   const prevBuckets: Record<string, number> = {};
@@ -2966,7 +2983,7 @@ function SubscriptionTracker({ expenses }: { expenses: Tx[] }) {
 
 // ─── Financial Runway ────────────────────────────────────────────────────────
 
-function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
+function FinancialRunway({ allTxs, liquidCash }: { allTxs: Tx[]; liquidCash: number | null }) {
   const hasEnoughData = allTxs.filter(t => t.type === "expense").length >= 5;
   const data = useMemo(() => {
     if (!hasEnoughData) return null;
@@ -2985,26 +3002,44 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
     // No income across the window → the save rate has no denominator.
     const savingsRate: number | null =
       monthlyIncome > 0 ? ((monthlyIncome - recentBurn) / monthlyIncome) * 100 : null;
+    // Runway is how long the cash on hand lasts at the current burn —
+    // liquid cash over monthly burn. It was net savings over burn, which
+    // is a different quantity entirely: with £0.00 saved this month the
+    // screen read "RUNWAY 0.0m", badged it red LOW and advised cutting
+    // discretionary spend, for a user holding £11,377.34 in cash against
+    // £914.91/mo of burn — about 12.4 months. Measured 5 Oct 2026.
+    //
+    // Null cash (the dashboard has not answered) is unknown, not zero.
+    const runwayMonths =
+      liquidCash == null ? null : recentBurn > 0 ? liquidCash / recentBurn : Infinity;
     return {
       monthlyBurn: recentBurn,
       netSavings,
-      runwayMonths: recentBurn > 0 ? netSavings / recentBurn : Infinity,
+      liquidCash,
+      runwayMonths,
       monthlyIncome,
       savingsRate,
       trend: months.reverse(),
     };
-  }, [allTxs, hasEnoughData]);
+  }, [allTxs, hasEnoughData, liquidCash]);
 
   if (!data) {
     return <PanelEmpty title="Financial Runway" message="Runway needs at least 5 expense transactions to compute a meaningful monthly burn rate." />;
   }
 
   const { runwayMonths, monthlyBurn, netSavings, monthlyIncome, savingsRate, trend } = data;
-  const isInfinite = !isFinite(runwayMonths);
-  const runwayLabel = isInfinite ? "∞" : runwayMonths >= 12 ? `${(runwayMonths / 12).toFixed(1)}y` : `${runwayMonths.toFixed(1)}m`;
-  const runwayColor = isInfinite || runwayMonths >= 6 ? "var(--ft-green)" : runwayMonths >= 3 ? "var(--ft-amber)" : "var(--ft-red)";
-  const runwayStatus = isInfinite || runwayMonths >= 6 ? "COMFORTABLE" : runwayMonths >= 3 ? "MODERATE" : "LOW";
-  const runwayStatusColor = isInfinite || runwayMonths >= 6 ? "var(--ft-green)" : runwayMonths >= 3 ? "var(--ft-amber)" : "var(--ft-red)";
+  const known = runwayMonths != null;
+  const isInfinite = known && !isFinite(runwayMonths);
+  const comfortable = known && (isInfinite || runwayMonths >= 6);
+  const moderate = known && !comfortable && runwayMonths >= 3;
+  const runwayLabel = !known
+    ? UNKNOWN_FIGURE
+    : isInfinite ? "∞" : runwayMonths >= 12 ? `${(runwayMonths / 12).toFixed(1)}y` : `${runwayMonths.toFixed(1)}m`;
+  const runwayColor = !known
+    ? "var(--ft-dim)"
+    : comfortable ? "var(--ft-green)" : moderate ? "var(--ft-amber)" : "var(--ft-red)";
+  const runwayStatus = !known ? "UNKNOWN" : comfortable ? "COMFORTABLE" : moderate ? "MODERATE" : "LOW";
+  const runwayStatusColor = !known ? "var(--ft-dim)" : runwayColor;
 
   const maxTrend = Math.max(...trend, 1);
   const mono: React.CSSProperties = { fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums" };
@@ -3023,7 +3058,11 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
           <div>
             <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 2 }}>RUNWAY</div>
             <div style={{ ...mono, fontSize: 36, fontWeight: 700, color: runwayColor, letterSpacing: "-0.04em", lineHeight: 1 }}>{runwayLabel}</div>
-            <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>at <span className="pnum">£{monthlyBurn.toFixed(0)}</span>/mo burn rate</div>
+            <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", marginTop: 3 }}>
+            {data.liquidCash == null
+              ? "cash on hand unknown"
+              : <><span className="pnum">{formatBaseMoney(data.liquidCash)}</span> cash at <span className="pnum">£{monthlyBurn.toFixed(0)}</span>/mo burn</>}
+          </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, paddingTop: 8, borderTop: "1px solid var(--ft-border)" }}>
             <div>
@@ -3031,11 +3070,11 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
               <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: netSavings >= 0 ? "var(--ft-green)" : "var(--ft-red)" }}>{formatBaseMoney(netSavings)}</div>
             </div>
             <div>
-              <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Save Rate</div>
+              <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Avg Save Rate · recorded months</div>
               <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: savingsRate == null ? "var(--ft-dim)" : savingsRate >= 20 ? "var(--ft-green)" : savingsRate >= 10 ? "var(--ft-amber)" : "var(--ft-red)" }}>{savingsRate == null ? "—" : `${savingsRate.toFixed(1)}%`}</div>
             </div>
             <div>
-              <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Mo. Income</div>
+              <div style={{ ...mono, fontSize: 8, color: "var(--ft-dim)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 2 }}>Avg Mo. Income · recorded months</div>
               <div className="pnum" style={{ ...mono, fontSize: 13, fontWeight: 700, color: "var(--ft-text)" }}>{formatBaseMoney(monthlyIncome)}</div>
             </div>
             <div>
@@ -3065,7 +3104,7 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
               {[3, 6].map(m => (
                 <div key={m} style={{ position: "absolute", top: 0, bottom: 0, left: `${(m / 12) * 100}%`, width: 1, background: "var(--ft-border2)", zIndex: 1 }} />
               ))}
-              <div style={{ height: "100%", width: `${Math.min(100, (isInfinite ? 100 : runwayMonths) / 12 * 100)}%`, background: runwayColor, opacity: 0.8 }} />
+              <div style={{ height: "100%", width: `${!known ? 0 : Math.min(100, (isInfinite ? 1200 : runwayMonths) / 12 * 100)}%`, background: runwayColor, opacity: 0.8 }} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
               {["0", "3m", "6m", "9m", "12m+"].map(l => (
@@ -3074,9 +3113,11 @@ function FinancialRunway({ allTxs }: { allTxs: Tx[] }) {
             </div>
           </div>
           <div style={{ ...mono, fontSize: 9, color: "var(--ft-dim)", lineHeight: 1.6, paddingTop: 4, borderTop: "1px solid var(--ft-border)" }}>
-            {isInfinite || runwayMonths >= 6
-              ? "You're saving more than you spend. Keep growing the buffer."
-              : runwayMonths >= 3
+            {!known
+              ? "Runway needs the cash balance, which has not loaded. No advice until it has."
+              : comfortable
+              ? "Cash on hand covers more than 6 months of burn. Keep growing the buffer."
+              : moderate
               ? "Runway is moderate. Aim for 6 months of expenses as your safety net."
               : "Runway is below 3 months. Prioritise cutting discretionary spend."}
           </div>
@@ -3393,6 +3434,13 @@ export default function Analytics() {
   const isMobile = useIsMobile();
   const { data: txs, isLoading, isError, error } = useListTransactions({});
   const { data: rawBudgets = [] } = useListBudgets();
+  // The dashboard payload is the source of two things this page used to
+  // derive for itself and get different answers for: the cash balance the
+  // runway divides, and the canonical monthly income / savings rate pair
+  // (lib/monthly-money.ts, DESIGN.md s10).
+  const { data: dashData } = useGetDashboard();
+  const spendableCash = dashData?.spendableCash ?? null;
+  const money = monthlyMoney(dashData?.thisMonth);
   const [range, setRange] = useState<Range>("3m");
   const [activeTab, setActiveTab] = useState<AnalyticsTab>("overview");
   const [drillCategory, setDrillCategory] = useState<string | null>(null);
@@ -3448,7 +3496,7 @@ export default function Analytics() {
   return (
     <div>
       {/* ── All-time KPI bar ── */}
-      <AnalyticsKpiBar expenses={expenses} allTxs={allTxs} range={range} />
+      <AnalyticsKpiBar expenses={expenses} allTxs={allTxs} range={range} savingsRate={money.savingsRate} />
 
       {/* ── Persona focus strip ── */}
       {(() => {
@@ -3550,7 +3598,7 @@ export default function Analytics() {
       {activeTab === "overview" && (
         <>
           <KpiStrip expenses={expenses} range={range} onRangeChange={setRange} />
-          <FinancialRunway allTxs={allTxs} />
+          <FinancialRunway allTxs={allTxs} liquidCash={spendableCash} />
           <SpendingVelocity allExpenses={expenses} budgetTotal={budgetTotal} range={range} onRangeChange={setRange} />
           <WeeklySpendingPulse expenses={expenses} />
           <SavingsRateTrend allTxs={allTxs} />
