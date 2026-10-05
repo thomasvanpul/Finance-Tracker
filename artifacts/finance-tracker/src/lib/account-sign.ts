@@ -49,3 +49,23 @@ export function netAccountsTotal(
     0,
   );
 }
+
+/**
+ * Cash accounts only, signed. This is the total that any claim about IDLE
+ * CASH has to be made against: /decisions used `netAccountsTotal` and so
+ * read a Kuala Lumpur flat, a Vanguard ISA and an Aviva SIPP as "cash
+ * sitting in accounts" — £203,921.21 of it on 5 Oct 2026 — then advised
+ * moving a pension into a high-yield savings account.
+ *
+ * Mirrors the server's `spendableCashTotal` (routes/dashboard.ts), which
+ * filters to `type = cash` for the same reason: an overdraft belongs here
+ * as a negative, a loan does not belong here at all.
+ */
+export function cashAccountsTotal(
+  accounts: readonly { type: string; baseEquivalent: number | null | undefined }[],
+): number {
+  return accounts.reduce(
+    (sum, a) => (a.type === "cash" ? sum + (signedAccountAmount(a.type, a.baseEquivalent) ?? 0) : sum),
+    0,
+  );
+}

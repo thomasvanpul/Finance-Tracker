@@ -26,7 +26,7 @@ import { PageHeader } from "@/components/page-header";
 import { formatBaseMoney } from "@/lib/utils";
 import { Zap, X, ChevronRight, RefreshCw } from "lucide-react";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
-import { isLiabilityType, netAccountsTotal } from "@/lib/account-sign";
+import { cashAccountsTotal, netAccountsTotal } from "@/lib/account-sign";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -43,6 +43,12 @@ interface Decision {
   href: string;
   annualCost?: number;
   daysUntilDeadline?: number;
+  /** Set when this decision is a per-account breakdown of another one.
+      Its annualCost is already inside the parent's, so the headline total
+      counts the parent and skips this. The headline used to read
+      £17,941.23/yr — exactly the sum of one £8,970.75 item and the three
+      rows that broke the same cash down. Measured 5 Oct 2026. */
+  partOfId?: string;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -113,20 +119,26 @@ function buildDecisions(
   // yet, treating portfolio as £0 makes cashRatio look 100% cash and
   // fires the idle-cash decision on partial data. Skip the whole
   // cash-vs-portfolio decision when the portfolio side is not known.
-  const totalCashGbp = netAccountsTotal(accounts);
+  const netWealthGbp = netAccountsTotal(accounts);
+  // IDLE CASH means cash. `netAccountsTotal` nets every account type, so
+  // the idle-cash rule was reading a flat in Kuala Lumpur, a Vanguard ISA
+  // and an Aviva SIPP as "cash sitting in accounts" — £203,921.21 of it —
+  // and advising that a pension be moved into a high-yield savings
+  // account. Classify by type before deciding anything about yield.
+  const cashOnlyGbp = cashAccountsTotal(accounts);
   const portfolioGbp = summary?.totalValueBase ?? null;
-  const totalWealth = portfolioGbp != null ? totalCashGbp + portfolioGbp : null;
-  const cashRatio = totalWealth != null && totalWealth > 0 ? totalCashGbp / totalWealth : null;
+  const totalWealth = portfolioGbp != null ? netWealthGbp + portfolioGbp : null;
+  const cashRatio = totalWealth != null && totalWealth > 0 ? cashOnlyGbp / totalWealth : null;
 
-  if (portfolioGbp != null && cashRatio != null && totalCashGbp > 5000 && cashRatio > 0.6) {
-    const idleGbp = totalCashGbp - portfolioGbp * 0.4;
+  if (portfolioGbp != null && cashRatio != null && cashOnlyGbp > 5000 && cashRatio > 0.6) {
+    const idleGbp = cashOnlyGbp - portfolioGbp * 0.4;
     const annualCost = Math.max(0, idleGbp) * 0.045;
     out.push({
       id: "idle-cash",
       category: "cash",
       priority: idleGbp > 20000 ? "critical" : idleGbp > 10000 ? "high" : "medium",
       title: "Large cash balance — money losing value",
-      detail: `${formatBaseMoney(totalCashGbp)} sitting in accounts (${Math.round(cashRatio * 100)}% of net worth). At 4.5% HYSA rate you're leaving ~${formatBaseMoney(annualCost)}/yr on the table.`,
+      detail: `${formatBaseMoney(cashOnlyGbp)} sitting in cash accounts (${Math.round(cashRatio * 100)}% of net worth). At 4.5% HYSA rate you're leaving ~${formatBaseMoney(annualCost)}/yr on the table.`,
       action: "Move to high-yield savings or invest",
       href: "/accounts",
       annualCost,
@@ -141,31 +153,36 @@ function buildDecisions(
     // liability stores a positive balance, so an unfiltered `> 10000` read a
     // £11,000 loan as a large idle balance and advised moving it into a
     // high-yield savings account.
-    if (!isLiabilityType(a.type) && a.baseEquivalent != null && a.baseEquivalent > 10000) {
+    // Cash only. A pension, an ISA, a brokerage account and a property are
+    // not idle cash, and "move it to a high-yield savings account" is wrong
+    // advice for every one of them — materially so for the first two,
+    // which carry tax wrappers and exit penalties.
+    if (a.type === "cash" && a.baseEquivalent != null && a.baseEquivalent > 10000) {
       const annualCost = a.baseEquivalent * 0.045;
       out.push({
         id: `idle-account-${a.id}`,
         category: "cash",
         priority: "medium",
-        title: `${a.name}: large balance with no yield`,
+        title: `${a.name}: large cash balance with no yield`,
         detail: `${formatBaseMoney(a.baseEquivalent)} held in ${a.currency}. Could earn ~${formatBaseMoney(annualCost)}/yr at 4.5% HYSA.`,
         action: "Open a high-yield savings account",
         href: "/accounts",
         annualCost,
+        partOfId: "idle-cash",
       });
     }
   });
 
-  if (investments.length === 0 && totalCashGbp > 1000) {
+  if (investments.length === 0 && cashOnlyGbp > 1000) {
     out.push({
       id: "no-investments",
       category: "portfolio",
       priority: "high",
       title: "Not invested yet",
-      detail: `You have ${formatBaseMoney(totalCashGbp)} in accounts but no investments. Long-term equity returns average 7-10%/yr vs 4-5% cash.`,
+      detail: `You have ${formatBaseMoney(cashOnlyGbp)} in cash accounts but no investments. Long-term equity returns average 7-10%/yr vs 4-5% cash.`,
       action: "Start building your portfolio",
       href: "/portfolio",
-      annualCost: totalCashGbp * 0.05,
+      annualCost: cashOnlyGbp * 0.05,
     });
   }
 
@@ -641,7 +658,13 @@ export default function Decisions() {
   const active = allDecisions.filter((d) => !dismissed.has(d.id));
   const dismissedList = allDecisions.filter((d) => dismissed.has(d.id));
 
-  const totalAnnualCost = active.reduce((s, d) => s + (d.annualCost ?? 0), 0);
+  // A breakdown row's cost is already inside its parent's. Counting both
+  // billed the same pound twice and made the headline the sum of an item
+  // and its own breakdown.
+  const totalAnnualCost = active.reduce(
+    (s, d) => (d.partOfId && active.some((p) => p.id === d.partOfId) ? s : s + (d.annualCost ?? 0)),
+    0,
+  );
   const criticalCount = active.filter((d) => d.priority === "critical").length;
   const highCount = active.filter((d) => d.priority === "high").length;
 
