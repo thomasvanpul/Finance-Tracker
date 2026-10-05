@@ -14,6 +14,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { formatBaseMoney } from "@/lib/utils";
+import { monthlyMoney, NO_INCOME_RECORDED, NO_INCOME_ACTION, UNKNOWN_FIGURE } from "@/lib/monthly-money";
 import { useGetDashboard, useListBudgets, useListInvestments, useGetInvestmentSummary } from "@workspace/api-client-react";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
 import { PageHeader } from "@/components/page-header";
@@ -426,9 +427,14 @@ function TimeTargetRow({ target, before, after, yearsToTarget, currentSurplus, n
 
 // ── Tab: Income Change ─────────────────────────────────────────────────────
 
-function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; baseExpenses: number }) {
-  const [currentIncome, setCurrentIncome] = useState(Math.round(baseIncome) || 3000);
-  const [newIncome, setNewIncome] = useState(Math.round(baseIncome) + 500 || 3500);
+function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number | null; baseExpenses: number }) {
+  // No income recorded → no starting point. The literals that used to
+  // stand in here (|| 3000 and || 3500) made every figure below them a
+  // fabrication: £3,000 income, a £2,996.15 surplus and "£100,000 in 2.6
+  // yrs", none of which came from the API. The simulator now says so and
+  // asks for the one input it needs.
+  const [currentIncome, setCurrentIncome] = useState(baseIncome == null ? 0 : Math.round(baseIncome));
+  const [newIncome, setNewIncome] = useState(baseIncome == null ? 0 : Math.round(baseIncome) + 500);
 
   const currentSurplus = currentIncome - baseExpenses;
   const newSurplus = newIncome - baseExpenses;
@@ -444,6 +450,26 @@ function IncomeChangeTab({ baseIncome, baseExpenses }: { baseIncome: number; bas
   }
 
   const targets = [100_000, 500_000, 1_000_000];
+
+  if (baseIncome == null) {
+    return (
+      <div className="space-y-1.5">
+        <Panel title="Income Change Simulator" padding="12px 16px">
+          <VStack gap={8}>
+            <MonoLabel size={9} color="var(--ft-dim)">MONTHLY INCOME {UNKNOWN_FIGURE}</MonoLabel>
+            <Text size={11} color="var(--ft-muted)" lineHeight={1.7}>
+              {NO_INCOME_RECORDED} A simulation of an income change needs the
+              income it is changing, so this tab has nothing to model yet.
+            </Text>
+            <Text size={11} color="var(--ft-dim)" lineHeight={1.7}>
+              {NO_INCOME_ACTION}: add an income transaction, or import a
+              statement, and this tab fills in from the recorded figure.
+            </Text>
+          </VStack>
+        </Panel>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-1.5">
@@ -1343,8 +1369,11 @@ export default function WhatIf() {
   const [activeTab, setActiveTab] = useState<TabId>("INCOME_CHANGE");
   const { data: dashData } = useGetDashboard();
 
-  const baseIncome = dashData?.thisMonth?.income ?? 0;
-  const baseExpenses = dashData?.thisMonth?.expenses ?? 0;
+  // One definition of monthly income, shared with the dashboard,
+  // /analytics and /cashflow (lib/monthly-money.ts, DESIGN.md s10).
+  const money = monthlyMoney(dashData?.thisMonth);
+  const baseIncome = money.income;
+  const baseExpenses = money.expenses ?? 0;
 
   const tabs: { id: TabId; label: string }[] = [
     { id: "INCOME_CHANGE", label: "Income Change" },
