@@ -1772,12 +1772,18 @@ function SummaryStrip({ transactions, upcoming, year, month }: { transactions: T
         // fraction of a whole over calendar events rather than ledger
         // rows — both stay flat.
         //
+        // Net is formatted from the signed figure, never from its
+        // magnitude. `+` is added for a surplus; a deficit's `-` comes
+        // from the formatter itself, so a -£3.85 month cannot render as
+        // £3.85 with only the word "deficit" underneath to say which way
+        // it went. Same rule as /year-review and the cash-flow tile.
+        //
         // Each drill is gated on the count the cell is already showing:
         // a month with "0 tx" has no rows to open, and a drill that
         // lands on an empty list is a promise the product did not keep.
         { label: "Income",       value: formatBaseMoney(income),                              color: "var(--ft-green)",                                      sub: `${incomeCount} tx`,   accent: "var(--ft-green)", href: incomeCount > 0 ? monthTransactionsHref(prefix, "income") : undefined },
         { label: "Expenses",     value: formatBaseMoney(expenses),                            color: "var(--ft-red)",                                        sub: `${expenseCount} tx`,  accent: "var(--ft-red)", href: expenseCount > 0 ? monthTransactionsHref(prefix, "expense") : undefined },
-        { label: "Net",          value: (net >= 0 ? "+" : "") + formatBaseMoney(Math.abs(net)), color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)",        sub: net >= 0 ? "surplus" : "deficit",                          accent: net >= 0 ? "var(--ft-green)" : "var(--ft-red)", href: undefined },
+        { label: "Net",          value: (net > 0 ? "+" : "") + formatBaseMoney(net), color: net >= 0 ? "var(--ft-green)" : "var(--ft-red)",        sub: net >= 0 ? "surplus" : "deficit",                          accent: net >= 0 ? "var(--ft-green)" : "var(--ft-red)", href: undefined },
         { label: "Transactions", value: String(monthTx.length),                          color: "var(--ft-text)",                                       sub: "this month",                                              accent: "var(--ft-muted)", href: monthTx.length > 0 ? monthTransactionsHref(prefix) : undefined },
         { label: "Bills",        value: `${billsPaid}/${billsPaid + billsPending}`,       color: billsPending > 0 ? "var(--ft-amber)" : "var(--ft-green)", sub: billsPending > 0 ? `${billsPending} pending` : "all paid", accent: billsPending > 0 ? "var(--ft-amber)" : "var(--ft-green)", href: undefined },
       ].map(({ label, value, color, sub, accent, href }) => (
