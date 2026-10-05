@@ -93,10 +93,9 @@ services:
   # DPA and is non-commercial; Render's DPA covers every tier. Same-origin
   # /api keeps the auth cookies first-party, which is why the SPA does not
   # call numeris-api directly (Safari ITP and the iOS WebView would drop them).
-  # Mirrors artifacts/finance-tracker/vercel.json. The service exists and serves
-  # at numeris-web.onrender.com (measured 4 Oct 2026); numeris.page DNS still
-  # points at Vercel, which keeps serving until it moves. Delete vercel.json only
-  # after the cutover: docs/OPERATIONS.md, "numeris.page cutover".
+  # Live at numeris.page since 5 Oct 2026 (BACKLOG I11); vercel.json, which this
+  # used to mirror, is deleted. Cutover and rollback: docs/OPERATIONS.md,
+  # "numeris.page cutover to Render".
   - type: web
     name: numeris-web
     runtime: static

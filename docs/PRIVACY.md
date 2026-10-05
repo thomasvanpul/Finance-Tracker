@@ -164,8 +164,7 @@ What AI features produce can be wrong. They are not financial advice.
 
 | Service | What it receives | Where | Safeguard |
 | --- | --- | --- | --- |
-| **Vercel** | Serves the web app and **passes every request from the web app to the server**, so it handles all your data in transit and your IP address. The phone app does not go through Vercel | US and wherever its nearest region is | `[BLOCKED: Numeris is on Vercel's Hobby plan. Vercel's data processing agreement covers Pro and Enterprise only, and Hobby is for non-commercial use.]` |
-| **Render** | Runs the server; processes everything; keeps logs about 7 days | Frankfurt region; Render's primary processing is in the US | Render's data processing agreement, part of its terms; EU-US Data Privacy Framework and Standard Contractual Clauses |
+| **Render** | Serves the web app and **passes every request from it to the server**; runs the server; processes everything; keeps logs about 7 days | Frankfurt region; Render's primary processing is in the US | Render's data processing agreement, part of its terms; EU-US Data Privacy Framework and Standard Contractual Clauses |
 | **Neon** | The database | London (AWS eu-west-2) | `[TO CONFIRM: in writing from Neon, that its data processing agreement covers the Free plan]` |
 | **Resend** | Password reset: your email address and a reset link. Weekly digest, sent when you press send: your name, email, and the week's income, spending, top categories and transaction count | Stored in the US | Resend's data processing agreement; Standard Contractual Clauses, UK Addendum, Data Privacy Framework |
 | **Groq, Cerebras** | Section 5 | US | Section 5.2 |

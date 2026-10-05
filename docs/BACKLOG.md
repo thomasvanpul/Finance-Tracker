@@ -201,7 +201,7 @@ cap can be re-imposed per phase rather than across the whole tier.
 | I8 | Digest unsubscribe link is dead | TODO | NOW |
 | I9 | Non-users have no data-rights route | DECIDE | NOW |
 | I10 | Neon dev clone never reached by deletion | DECIDE | NOW |
-| I11 | Vercel Hobby: no DPA, proxies /api | TODO | NOW |
+| I11 | Vercel Hobby: no DPA, proxies /api | DONE | — |
 | I12 | Google Fonts from Google's CDN | TODO | NOT YET |
 | I13 | Cerebras controller position | TODO | NOT YET |
 | I14 | Export covers the whole account | DONE | — |
@@ -1851,8 +1851,9 @@ From the vault register (section C) and roadmap. Re-checked against source on
 - **I10 · Neon `dev` branch is a live clone of production that deletion never reaches — TODO (Thomas, infra) · NOW.** [C4, N9] Infra, unverifiable from source; `DATA-INVENTORY.md:58-59` lists it.
   *Default decided, main chat, 4 Oct 2026: replace it with made-up seed data only. Not run this session — no Neon CLI or API key authenticated on this machine. Commands left for Thomas in `.review/archive/2026-10-04*push-and-deploy-for-testers.report.md`.*
   *Superseded 4 Oct 2026: that recipe reset `dev` from production (copying the real data in again) and truncated a table list written from memory. The prepared fix is a Neon schema-only branch — `scripts/dev-db/reset-dev-schema-only.md`, checked by `pnpm --filter @workspace/scripts run dev-db:check`. Not run; the final step, deleting the old `dev` branch, is Thomas's. Measured on `dev` that day: 21 of 28 tables hold rows, 8 of 17 users are not seed or tester accounts.*
-- **I11 · Vercel Hobby has no DPA and is non-commercial, yet proxies every `/api` request — TODO (cutover) · NOW.** [C9, N10] The rewrite is in `artifacts/finance-tracker/vercel.json`; the plan tier is stated only in PRIVACY:164.
+- **I11 · Vercel Hobby has no DPA and is non-commercial, yet proxies every `/api` request — DONE (cutover 4–5 Oct 2026).** [C9, N10] The rewrite is in `artifacts/finance-tracker/vercel.json`; the plan tier is stated only in PRIVACY:164.
   *Call, Thomas, 3 Oct 2026: a free Render static site with an `/api/*` rewrite; no paid plan. Declared as `numeris-web` in `render.yaml` (`df6a78f`). Left: create the service, point numeris.page DNS at it, then delete `vercel.json` and update PRIVACY:164. Measured 4 Oct 15:49 UTC: `numeris-web` already exists and serves the SPA with a working `/api` rewrite at numeris-web.onrender.com; only the custom domain and Cloudflare DNS remain (still Vercel, `76.76.21.21`). Steps and a check that actually discriminates (not `x-render-origin-server`, which Vercel's proxy also carries) in OPERATIONS.md, "numeris.page cutover". The privacy row is PRIVACY:167, not 164.*
+  *Done 5 Oct 2026: Thomas changed the Cloudflare records on 4 Oct; both domains verified in Render, certificates issued. Header check re-run 5 Oct 02:49 UTC: numeris.page 200 with `rndr-id` and no `x-vercel-id`; www 301 to the apex; `/api/auth/get-session` 200 with `x-render-origin-server: Render`; same bundle `index-jt8xy7la.js`. Thomas, 5 Oct ~00:05: signed in with password, Google and passkey on https://numeris.page, all worked. `vercel.json` deleted, the Vercel row removed from PRIVACY § 6 and the Render row widened. The Vercel project is kept, not deleted, as the rollback until 11 Oct 2026 (record values in OPERATIONS.md); deleting it is Thomas's.*
 - **I12 · Google Fonts loaded from Google's CDN (LG München I, 3 O 17493/20) — TODO · NOT YET.** [C10] Also cached by the service worker (`vite.config.ts:54`). The roadmap puts it "just below the line".
 - **I13 · Cerebras treats a personal-capacity customer as an independent controller — TODO · NOT YET.** [C11] Just below the line, as I12.
 - **I14 · Export covers the whole account, less credentials — DONE (`e5f3ace`, `788463c`).** [C1]

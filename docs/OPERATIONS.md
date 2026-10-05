@@ -1,6 +1,7 @@
 # Operations — keep-alive, upgrade signal, retention
 
-Living operational notes for the Render + Neon + Vercel deployment.
+Living operational notes for the Render + Neon deployment (Vercel is the
+rollback for numeris.page until 11 Oct 2026 and no longer serves it).
 Written 2026-09-01 alongside the request_metrics table and
 Healthchecks.io wire. Update this file when the arrangement changes;
 someone in six months should be able to read only this to understand
@@ -269,7 +270,7 @@ Generated from `artifacts/api-server/src/lib/service-facts.ts`. Total monthly sp
 | --- | --- | --- | --- | --- | --- |
 | Render | Starter ($7/mo) | £5.5/mo | Standard ($25/mo) ≈ £19.6/mo | RAM 512 MB | 2026-10-03 |
 | Neon | Free | £0 | Launch ($19/mo) ≈ £15/mo | Storage 500 MB | 2026-09-01 |
-| Vercel | Hobby | £0 | Pro ($20/mo) ≈ £16/mo | Bandwidth 100 GB/month | 2026-09-01 |
+| Vercel | Hobby | £0 | Pro ($20/mo) ≈ £16/mo | Bandwidth 100 GB/month | 2026-10-05 |
 | cron-job.org | Free | £0 | — | Cron jobs 50 jobs | 2026-09-01 |
 | Healthchecks.io | Free | £0 | — | Checks 20 checks | 2026-09-01 |
 | Yahoo Finance | Undocumented public endpoints — no plan, no contract, no key | £0 | — | Rate limit — unpublished | 2026-09-06 |
@@ -310,13 +311,19 @@ Generated from `artifacts/api-server/src/lib/service-facts.ts`. Total monthly sp
 
 ### Vercel (numeris-web)
 
+- **No longer serves numeris.page since 5 Oct 2026**; kept as the rollback until
+  11 Oct 2026 (see the cutover section). The limits below are historical.
 - 100 GB bandwidth/mo, 1s CPU per function invocation, 100
   GB-hours function runtime.
 - First symptom: rate-limit errors on the serverless functions
   that proxy /api. Unlikely bottleneck at current traffic; noted
   for completeness.
 
-### numeris.page cutover from Vercel to Render (BACKLOG I11)
+### numeris.page cutover to Render (BACKLOG I11) — done 5 Oct 2026
+
+Done and verified 5 Oct 2026 (see "Cutover result" and "Vercel rollback window" at the
+end of this section). The text below is the runbook as it was run, kept for the
+check and the rollback.
 
 State measured 4 Oct 2026, 15:49 UTC:
 
@@ -363,11 +370,32 @@ Rollback: restore the two Cloudflare records (A `76.76.21.21`, CNAME
 `cname.vercel-dns.com`). Vercel keeps serving as long as its project is not
 deleted, so leave it in place for a week after the check passes.
 
-After the check passes (a session can do this): delete
-`artifacts/finance-tracker/vercel.json`, remove the Vercel row from
-`docs/PRIVACY.md` § 6 and widen the Render row to "Serves the web app and
-passes every request from it to the server; runs the server …". Also rename
-the section header above to Render and close BACKLOG I11.
+Cutover result, 5 Oct 2026 02:49 UTC (check re-run by a session after Thomas
+signed in with password, Google and passkey on `https://numeris.page`):
+
+- `https://numeris.page/` → 200, `rndr-id` present, no `x-vercel-id`.
+- `https://www.numeris.page/` → 301 `location: https://numeris.page/`.
+- `/api/auth/get-session` → 200, `rndr-id` and `x-render-origin-server: Render`,
+  no `x-vercel-id`.
+- Bundle `index-jt8xy7la.js`, the same as before the move.
+- `server: cloudflare` on all three is Render's own edge, not Vercel.
+
+Clean-up done the same day: `artifacts/finance-tracker/vercel.json` deleted, the
+Vercel row removed from `docs/PRIVACY.md` § 6 and the Render row widened, BACKLOG
+I11 marked done.
+
+**Vercel rollback window.** The Vercel project `numeris-web` is deliberately still
+in place as the rollback and is **not deleted**. To roll back, restore the two
+Cloudflare records: apex A `76.76.21.21` and `www` CNAME `cname.vercel-dns.com`.
+Vercel will serve its last deployment, which predates the `vercel.json` deletion.
+A new Vercel build from `main` fails without that file (recover it with
+`git show 1c97495:artifacts/finance-tracker/vercel.json`), and
+`financetracker.work` is still served by that Vercel project (`server: Vercel`,
+`x-vercel-id`, measured 5 Oct 2026 02:5x UTC), so its next deploy will fail
+while the last good one keeps serving.
+It can be deleted from 11 Oct 2026, if numeris.page has stayed healthy on Render
+until then and `financetracker.work` is retired or moved. Deleting it is Thomas's
+to do (account access).
 
 ## request_metrics — retention and Neon budget
 

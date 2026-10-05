@@ -148,7 +148,7 @@ export const SERVICE_FACTS: readonly ServiceFact[] = [
     id: "vercel",
     name: "Vercel",
     category: "infrastructure",
-    role: "Serves the React SPA at financetracker.work; numeris.page once DNS cuts over",
+    role: "Still serves financetracker.work; rollback for numeris.page (moved to Render 5 Oct 2026) until 11 Oct 2026, then deletable",
     plan: "Hobby",
     monthlyCostGbp: 0,
     nextPlan: { name: "Pro ($20/mo)", monthlyCostGbp: 16 },
@@ -169,7 +169,7 @@ export const SERVICE_FACTS: readonly ServiceFact[] = [
       },
     ],
     launchBlocker: null,
-    checkedOn: "2026-09-01",
+    checkedOn: "2026-10-05",
     dashboardUrl: "https://vercel.com/dashboard",
   },
   {

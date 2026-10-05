@@ -73,10 +73,12 @@ processes running.
 | `lib/db` | drizzle schema. Every table carries `userId` — the app is multi-tenant |
 | `docs/` | see the index at the bottom of this file |
 
-Deploy: Vercel serves the SPA, with its project **root directory set to
-`artifacts/finance-tracker`**, so that package's `vercel.json` is the live
-one (the repo-root `vercel.json`, dead config still pointing at the old
-Railway URL, was deleted 2026-09-30 — BACKLOG § G3). The API is on **Render** at
+Deploy: **Render** serves the SPA at `https://numeris.page` as the static site
+`numeris-web` (declared in `render.yaml`, with the `/api/*` rewrite). It moved
+from Vercel on 4–5 Oct 2026 (BACKLOG I11). `artifacts/finance-tracker/vercel.json`
+is deleted; the Vercel project is kept only as the rollback until 11 Oct 2026
+(`docs/OPERATIONS.md`), and `financetracker.work` is still served by it, so a
+new Vercel build from `main` fails. The API is on **Render** at
 `https://numeris-api.onrender.com` — the Railway migration completed and the
 Railway subscription is gone; Railway URLs anywhere in the repo (footer,
 doc examples) are stale references, not active hosts.
