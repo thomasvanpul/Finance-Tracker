@@ -210,7 +210,6 @@ const ALLOWLIST_B: readonly AllowEntry[] = [
   { path: "artifacts/finance-tracker/src/lib/currency-query.ts", text: "const decimals = Math.abs(value) >= 1 ? 2 : 4;", reason: "decimal-place count for the palette conversion result: 2dp at |value| >= 1, 4dp below a unit where 2dp would round a real difference to nothing. A precision setting, not a figure — the value itself comes from convertVia, which returns null rather than a fallback when a leg is unpriced." },
   { path: "artifacts/finance-tracker/src/lib/currency-query.ts", text: "const decimals = unit >= 100 ? 2 : 4;", reason: "decimal-place count for the unit rate, mirroring FxRateCell in accounts.tsx: 2dp at >= 100, else 4dp. A precision setting, not a figure." },
   { path: "artifacts/finance-tracker/src/components/mobile/MobileHome.tsx", text: "const decimals = opts.decimals ?? 2;", reason: "default decimals count (2) for local nfmt fallback" },
-  { path: "artifacts/finance-tracker/src/pages/cashflow.tsx", text: "const intervalDays = SUB_FREQ_DAYS[sub.frequency] ?? 30;", reason: "SUB_FREQ_DAYS fallback: unrecognised frequency → 30 days (monthly assumption; refactor to strict enum tracked separately)" },
 
   // Streaks, thresholds — non-money integers.
   { path: "artifacts/finance-tracker/src/pages/health-score.tsx", text: "const target = savingsRate < 10 ? 10 : 20;", reason: "savings-rate percentile threshold selector (10% or 20%), not a currency value" },

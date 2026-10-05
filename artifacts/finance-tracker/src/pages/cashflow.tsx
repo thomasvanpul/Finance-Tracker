@@ -3,7 +3,7 @@ import {
   useListUpcoming,
   useListTransactions,
   useListAccounts,
-  useListSubscriptions,
+  useGetDashboard,
 } from "@workspace/api-client-react";
 import { formatBaseMoney } from "@/lib/utils";
 import { loadPersonaIds, PERSONA_COLORS } from "@/lib/persona";
@@ -21,6 +21,8 @@ import {
 } from "recharts";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 import { netAccountsTotal } from "@/lib/account-sign";
+import { occurrencesInHorizon, type Occurrence } from "@/lib/recurring-horizon";
+import { monthlyMoney, UNKNOWN_FIGURE } from "@/lib/monthly-money";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -36,8 +38,14 @@ interface UpcomingItem {
   description: string;
   category: string;
   type: string;
-  baseEquivalent: number;
+  // Nullable, as the API returns it: an item whose currency has no rate
+  // today has no base figure. It used to be typed `number`, which is how
+  // a missing conversion could reach the curve as a bend of 0.
+  baseEquivalent: number | null;
   status: string;
+  // The recurrence rule, so one row can be projected across the horizon
+  // instead of the subscriptions list being added on top of it.
+  frequency: string;
 }
 
 interface Account {
@@ -47,14 +55,6 @@ interface Account {
   // raw sum below survived this long.
   type: string;
   baseEquivalent: number | null;
-}
-
-interface SubForCashflow {
-  name: string;
-  amount: number;
-  frequency: string;
-  nextDue?: string;
-  active: boolean;
 }
 
 type Horizon = 30 | 60 | 90 | 180;
@@ -184,13 +184,6 @@ function computeBaseTrend(allTxs: Tx[]): { dailyIncome: number; dailyExpense: nu
 
 // ─── projection engine ───────────────────────────────────────────────────────
 
-const SUB_FREQ_DAYS: Record<string, number> = {
-  weekly: 7,
-  monthly: 30,
-  quarterly: 91,
-  annual: 365,
-};
-
 function buildProjection(
   startingBalance: number,
   upcomingItems: UpcomingItem[],
@@ -198,7 +191,6 @@ function buildProjection(
   horizonDays: Horizon,
   scenario: Scenario,
   multipliers: ScenarioMultipliers,
-  subs: SubForCashflow[],
 ): { date: string; balance: number; events: string[] }[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -228,29 +220,23 @@ function buildProjection(
   const endDate = addDays(today, horizonDays);
   const endStr = toDateStr(endDate);
   const todayStr = toDateStr(today);
-  const upcomingByDate: Record<string, UpcomingItem[]> = {};
-  for (const item of upcomingItems) {
-    if (item.status !== "pending") continue;
-    if (item.dueDate > endStr) continue;
-    if (item.dueDate < todayStr) continue;
-    if (!upcomingByDate[item.dueDate]) upcomingByDate[item.dueDate] = [];
-    upcomingByDate[item.dueDate].push(item);
-  }
-
-  const subsByDate: Record<string, Array<{ name: string; amount: number }>> = {};
-  for (const sub of subs) {
-    if (!sub.active || !sub.nextDue) continue;
-    const intervalDays = SUB_FREQ_DAYS[sub.frequency] ?? 30;
-    let d = new Date(sub.nextDue);
-    d.setHours(0, 0, 0, 0);
-    while (toDateStr(d) <= endStr) {
-      const ds = toDateStr(d);
-      if (ds >= todayStr) {
-        if (!subsByDate[ds]) subsByDate[ds] = [];
-        subsByDate[ds].push({ name: sub.name, amount: sub.amount });
-      }
-      d = addDays(d, intervalDays);
-    }
+  // One row per recurring item, projected forward by its own frequency.
+  //
+  // This used to be two maps: the pending `upcoming` rows, and a second pass
+  // over the SUBSCRIPTIONS list walking its own interval. But /api/upcoming
+  // already contains the rows those subscriptions generate — the api-server
+  // writes them (ensureGeneratedUpcoming), and its own note says reading
+  // subscriptions on top "would double-count every subscription the user has
+  // also entered by hand as an upcoming item". Spotify and ChatGPT Plus were
+  // on the curve twice, ChatGPT at two different amounts, because the
+  // subscription pass also used the NATIVE amount as if it were sterling.
+  //
+  // `upcoming` is canonical. The horizon walk now comes from it alone.
+  const occurrencesByDate: Record<string, Occurrence[]> = {};
+  for (const o of occurrencesInHorizon(upcomingItems, horizonDays)) {
+    if (o.date < todayStr || o.date > endStr) continue;
+    if (!occurrencesByDate[o.date]) occurrencesByDate[o.date] = [];
+    occurrencesByDate[o.date].push(o);
   }
 
   const points: { date: string; balance: number; events: string[] }[] = [];
@@ -264,20 +250,15 @@ function buildProjection(
     if (i > 0) {
       balance += dailyNetFlow;
 
-      const scheduled = upcomingByDate[dateStr] ?? [];
-      for (const item of scheduled) {
-        const impact =
-          item.type === "income" ? item.baseEquivalent : -item.baseEquivalent;
-        balance += impact;
+      const scheduled = occurrencesByDate[dateStr] ?? [];
+      for (const o of scheduled) {
+        balance += o.type === "income" ? o.amount : -o.amount;
         events.push(
-          `${item.description} ${item.type === "income" ? "+" : "-"}${formatBaseMoney(Math.abs(item.baseEquivalent))}`
+          // Math.abs is a no-op — occurrencesInHorizon already returns a
+          // magnitude — but the glyph in front of it means the caller owns
+          // the sign, and Lock #19 is right to want that said here.
+          `${o.description} ${o.type === "income" ? "+" : "-"}${formatBaseMoney(Math.abs(o.amount))}`
         );
-      }
-
-      const subsOnDay = subsByDate[dateStr] ?? [];
-      for (const sub of subsOnDay) {
-        balance -= sub.amount;
-        events.push(`${sub.name} (sub) -${formatBaseMoney(Math.abs(sub.amount))}`);
       }
     }
 
@@ -489,18 +470,19 @@ export default function CashflowPage() {
   const { data: rawUpcoming, isLoading: loadingUp } = useListUpcoming();
   const { data: rawTxs, isLoading: loadingTx } = useListTransactions({});
   const { data: rawAccounts, isLoading: loadingAcc } = useListAccounts();
-  const { data: rawSubs = [] } = useListSubscriptions();
+  const { data: dashData } = useGetDashboard();
+
+  // The ONE definition of monthly income and savings rate, shared with the
+  // dashboard, /analytics and /whatif. This page's own figures are a 90-day
+  // transaction trend, which is a different thing; both are shown, each
+  // named, rather than one quietly standing in for the other.
+  const money = monthlyMoney(dashData?.thisMonth);
 
   const isLoading = loadingUp || loadingTx || loadingAcc;
 
   const upcoming = (rawUpcoming ?? []) as UpcomingItem[];
   const allTxs = (rawTxs ?? []) as Tx[];
   const accounts = (rawAccounts ?? []) as Account[];
-  const activeSubs = useMemo(
-    () => (rawSubs as SubForCashflow[]).filter((s) => s.active && s.nextDue),
-    [rawSubs]
-  );
-
   // The projection starts from what the accounts are actually worth. Summing
   // raw added a liability's positive balance to the opening figure, so every
   // point on the curve carried the loan twice — once as an asset here and
@@ -511,8 +493,8 @@ export default function CashflowPage() {
   );
 
   const projection = useMemo(
-    () => buildProjection(startingBalance, upcoming, allTxs, horizon, scenario, multipliers, activeSubs),
-    [startingBalance, upcoming, allTxs, horizon, scenario, multipliers, activeSubs]
+    () => buildProjection(startingBalance, upcoming, allTxs, horizon, scenario, multipliers),
+    [startingBalance, upcoming, allTxs, horizon, scenario, multipliers]
   );
 
   const { dailyIncome: baseDailyIncome, dailyExpense: baseDailyExpense } = useMemo(
@@ -780,7 +762,7 @@ export default function CashflowPage() {
           label="Avg Net / Month"
           value={`${baseMonthlyNet >= 0 ? "+" : ""}${formatBaseMoney(baseMonthlyNet)}`}
           color={baseMonthlyNet >= 0 ? "var(--ft-green)" : "var(--ft-red)"}
-          sub={`${baseDailyIncome > 0 ? `in ${formatBaseMoney(baseDailyIncome * 30)}/mo` : "no income"} · out ${formatBaseMoney(baseDailyExpense * 30)}/mo`}
+          sub={`${baseDailyIncome > 0 ? `in ${formatBaseMoney(baseDailyIncome * 30)}/mo` : "no income"} · out ${formatBaseMoney(baseDailyExpense * 30)}/mo · 90-day avg`}
         />
         {/* An empty projection has no lowest or highest point. Rendering
             £0.00 made "no projection" indistinguishable from a real zero
@@ -796,6 +778,15 @@ export default function CashflowPage() {
           value={highestPoint === -Infinity ? "—" : formatBaseMoney(highestPoint)}
           color="var(--ft-green)"
         />
+      </div>
+      {/* The recorded figures, named as such. Everything above is a
+          projection off a 90-day average; these two are what the ledger
+          actually holds for this month, and they are the same numbers the
+          dashboard, /analytics and /whatif show, from the same function. */}
+      <div style={{ ...sans, fontSize: 9, color: "var(--ft-dim)", letterSpacing: "0.04em", borderTop: "1px solid var(--ft-border)", padding: "6px 12px" }}>
+        RECORDED THIS MONTH ·{" "}
+        <span className="pnum">{money.income == null ? UNKNOWN_FIGURE : formatBaseMoney(money.income)}</span> income ·{" "}
+        <span className="pnum">{money.savingsRate == null ? UNKNOWN_FIGURE : `${money.savingsRate.toFixed(1)}%`}</span> savings rate
       </div>
       </div>
 
