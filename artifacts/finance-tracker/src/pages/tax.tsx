@@ -5,7 +5,9 @@ import {
   useListInvestments,
   useGetMarketQuotes,
   getGetMarketQuotesQueryKey,
+  useGetDashboard,
 } from "@workspace/api-client-react";
+import { recordedAnnualIncome } from "@/lib/monthly-money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -573,8 +575,12 @@ function QuickAddButton({ inv, onClick }: QuickAddButtonProps) {
 // ── UK Tax Year Progress ───────────────────────────────────────────────────────
 
 function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: {
+  // Null when no income has been recorded and none has been typed in. The
+  // four KPI cells below then read "—" instead of tax on a placeholder
+  // salary: this panel used to open at £35,000 and present £4,486.00 as
+  // "EST. INCOME TAX" for a user whose recorded income was £3,750.
+  grossSalary: number | null;
   sym: string;
-  grossSalary: number;
   shelterContribs: ShelterContrib[];
   selectedYear: string;
 }) {
@@ -600,8 +606,10 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
   const yearISA = shelterContribs.filter(c => c.taxYear === selectedYear).reduce((s, c) => s + c.amount, 0);
   const estimatedIsaTaxSaved = yearISA * 0.18 * 0.10;
 
-  const { totalIncomeTax, totalNI, netPay, effectiveRate, totalDeductions } = computeUkIncomeTax(grossSalary);
-  const marginRate = grossSalary > 125_140 ? 45 : grossSalary > 50_270 ? 40 : 20;
+  const known = grossSalary != null;
+  const { totalIncomeTax, totalNI, netPay, effectiveRate, totalDeductions } = computeUkIncomeTax(grossSalary ?? 0);
+  const marginRate = (grossSalary ?? 0) > 125_140 ? 45 : (grossSalary ?? 0) > 50_270 ? 40 : 20;
+  const dash = "\u2014";
 
   return (
     <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
@@ -623,10 +631,10 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             Est. Income Tax
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-amber)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-            {fmt(totalIncomeTax, sym)}
+            {known ? fmt(totalIncomeTax, sym) : dash}
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-            on <span className="pnum">{fmt(grossSalary, sym)}</span> gross
+            {known ? <>on <span className="pnum">{fmt(grossSalary, sym)}</span> gross</> : "gross salary unknown"}
           </div>
         </div>
         <div style={{ padding: "12px 16px 12px 0" }}>
@@ -634,10 +642,10 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             Effective Rate
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: effectiveRate > 40 ? "var(--ft-red)" : effectiveRate > 25 ? "var(--ft-amber)" : "var(--ft-green)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-            {effectiveRate.toFixed(1)}%
+            {known ? `${effectiveRate.toFixed(1)}%` : dash}
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-            marginal: <span style={{ fontFamily: "var(--font-mono)" }}>{marginRate}%</span>
+            {known ? <>marginal: <span style={{ fontFamily: "var(--font-mono)" }}>{marginRate}%</span></> : "needs a gross salary"}
           </div>
         </div>
         <div style={{ padding: "12px 16px 12px 0" }}>
@@ -645,10 +653,10 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             Take-Home Pay
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-green)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-            {fmt(netPay, sym)}
+            {known ? fmt(netPay, sym) : dash}
           </div>
           <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-            <span className="pnum">{fmt(netPay / 12, sym)}</span>/mo
+            {known ? <><span className="pnum">{fmt(netPay / 12, sym)}</span>/mo</> : dash}
           </div>
         </div>
         <div style={{ padding: "12px 16px 12px 0" }}>
@@ -656,16 +664,16 @@ function UkTaxYearProgress({ sym, grossSalary, shelterContribs, selectedYear }: 
             NI Contributions
           </div>
           <div className="pnum" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: "var(--ft-blue)", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
-            {fmt(totalNI, sym)}
+            {known ? fmt(totalNI, sym) : dash}
           </div>
           <div style={{ fontFamily: "var(--font-sans)", fontSize: 9, color: "var(--ft-dim)", marginTop: 4 }}>
-            total deductions: <span className="pnum">{fmt(totalDeductions, sym)}</span>
+            {known ? <>total deductions: <span className="pnum">{fmt(totalDeductions, sym)}</span></> : dash}
           </div>
         </div>
       </div>
 
       {/* UK Income Brackets Stacked Bar */}
-      {grossSalary > 0 && (() => {
+      {grossSalary != null && grossSalary > 0 && (() => {
         const { bands } = computeUkIncomeTax(grossSalary);
         return (
           <div style={{ padding: "16px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-base)" }}>
@@ -822,7 +830,20 @@ export default function Tax() {
   const [selectedYear, setSelectedYear] = useState<string>(() => getTaxYearLabel(new Date(), rules.yearFmt));
   const [addDisposalOpen, setAddDisposalOpen] = useState(false);
   const [addShelterOpen, setAddShelterOpen] = useState(false);
-  const [grossSalary, setGrossSalary] = useState(35000);
+  // The £35,000 that used to sit here was a placeholder salary presented
+  // as the user's own: the panel read "EST. INCOME TAX £4,486.00 on
+  // £35,000.00 gross" against £3,750 of recorded income. The estimator
+  // now opens on recorded income, annualised over the months that have
+  // any, and on nothing at all when there is none. Null means unknown:
+  // the panel says so rather than estimating tax on a number we invented.
+  const { data: dashData } = useGetDashboard();
+  const recordedIncome = useMemo(
+    () => recordedAnnualIncome(dashData?.monthlyHistory),
+    [dashData?.monthlyHistory],
+  );
+  const [typedSalary, setTypedSalary] = useState<number | null>(null);
+  const grossSalary = typedSalary ?? recordedIncome?.annual ?? null;
+  const setGrossSalary = setTypedSalary;
   const [disposalForm, setDisposalForm] = useState<DisposalForm>({ assetName: "", ticker: "", acquiredDate: "", disposedDate: "", proceeds: "", costBasis: "" });
   const [shelterForm, setShelterForm] = useState<ShelterForm>({ taxYear: selectedYear, amount: "", provider: "" });
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -1030,7 +1051,7 @@ export default function Tax() {
       {/* ── UK Income Tax + Year Overview ─────────────────────────────────────── */}
       {country === "uk" && (
         <div style={{ border: "1px solid var(--ft-border)", background: "var(--ft-surface)" }}>
-          <PanelHeader>UK INCOME TAX ESTIMATOR (2024/25)</PanelHeader>
+          <PanelHeader>{`UK INCOME TAX ESTIMATOR (${selectedYear})`}</PanelHeader>
           <div style={{ padding: "12px 16px 4px", borderBottom: "1px solid var(--ft-border)", background: "var(--ft-base)", display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" as const }}>
             <label style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", textTransform: "uppercase" as const, letterSpacing: "0.06em", whiteSpace: "nowrap" as const }}>
               Gross Annual Salary
@@ -1039,11 +1060,25 @@ export default function Tax() {
               type="number"
               min={0}
               step={1000}
-              value={grossSalary}
-              onChange={e => setGrossSalary(Math.max(0, parseInt(e.target.value) || 0))}
+              value={grossSalary ?? ""}
+              placeholder="unknown"
+              onChange={e => {
+                const raw = e.target.value.trim();
+                setGrossSalary(raw === "" ? null : Math.max(0, parseInt(raw) || 0));
+              }}
               style={{ fontFamily: "var(--font-mono)", fontSize: 13, background: "var(--ft-raised)", border: "1px solid var(--ft-border2)", color: "var(--ft-text)", padding: "5px 10px", width: 140, textAlign: "right" as const, outline: "none", marginBottom: 8 }}
             />
-            {grossSalary > 100_000 && (
+            {/* Where the figure in the box came from, every time it was not
+                typed — a seeded estimate that does not say it is seeded is
+                indistinguishable from one the user entered. */}
+            {typedSalary == null && (
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-dim)", marginBottom: 8 }}>
+                {recordedIncome
+                  ? <>from <span style={{ fontFamily: "var(--font-mono)" }}>{fmt(recordedIncome.total, sym)}</span> recorded over {recordedIncome.months} month{recordedIncome.months === 1 ? "" : "s"}, annualised</>
+                  : "no income recorded — enter your gross salary to estimate"}
+              </span>
+            )}
+            {(grossSalary ?? 0) > 100_000 && (
               <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--ft-amber)", marginBottom: 8 }}>
                 PA tapering applies above <span style={{ fontFamily: "var(--font-mono)" }}>£100k</span>
               </span>
