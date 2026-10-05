@@ -12,6 +12,8 @@ import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/compon
 import { Drill } from "@/components/drill";
 import { categoryTransactionsHref, ledgerHref } from "@/lib/entity-href";
 import { oneShotInsight } from "@/lib/ai-chat-client";
+import { useAiEnabled } from "@/lib/use-ai-enabled";
+import { AiOffNotice } from "@/components/ai-coach/ai-off-notice";
 import { cashAccountsTotal } from "@/lib/liquidity";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -397,6 +399,10 @@ export default function Briefing() {
   const [briefing, setBriefing] = useState<BriefingData | null>(loadCached);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The account's AI switch. The briefing is written by the AI, so with it
+  // off there is no Generate action to offer — only the way to turn it on
+  // (audit A10). A briefing generated while it was on is still shown.
+  const aiOn = useAiEnabled();
 
   const dashboard = dashData as { netWorth?: number; thisMonth?: { income?: number; expenses?: number; savingsRate?: number } } | undefined;
 
@@ -420,6 +426,7 @@ export default function Briefing() {
     [txRaw, lastYm]);
 
   const generate = useCallback(async () => {
+    if (!aiOn) return;
     setGenerating(true);
     setError(null);
     try {
@@ -431,7 +438,7 @@ export default function Briefing() {
     } finally {
       setGenerating(false);
     }
-  }, []);
+  }, [aiOn]);
 
   const rating = briefing ? RATING_STYLES[briefing.situationRating] ?? RATING_STYLES.healthy : null;
 
@@ -497,6 +504,7 @@ export default function Briefing() {
                 Generated {generatedAgo < 1 ? "just now" : `${generatedAgo}m ago`}
               </Text>
             )}
+            {aiOn && (
             <button
               type="button"
               onClick={generate}
@@ -515,6 +523,7 @@ export default function Briefing() {
                 : <><RefreshCw size={11} /> {briefing ? "Regenerate" : "Generate Report"}</>
               }
             </button>
+            )}
           </HStack>
         }
       />
@@ -613,7 +622,10 @@ export default function Briefing() {
             </div>
           </div>
 
-          {/* CTA */}
+          {/* CTA — or, with AI off, the way to turn it on */}
+          {!aiOn ? (
+            <AiOffNotice what={`The ${monthLabel(ym)} briefing is written by the AI from your spending, budgets, goals and investments.`} />
+          ) : (
           <div style={{
             border: "1px solid var(--ft-border)", background: "var(--ft-surface)",
             padding: isMobile ? "20px 16px" : "28px 24px",
@@ -652,6 +664,7 @@ export default function Briefing() {
               Generate Report ▸
             </button>
           </div>
+          )}
         </VStack>
       )}
 
@@ -882,6 +895,7 @@ export default function Briefing() {
               <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
                 FINANCE TRACKER · {monthLabel(ym)} REPORT
               </Text>
+              {aiOn && (
               <button
                 type="button"
                 onClick={generate}
@@ -898,6 +912,7 @@ export default function Briefing() {
               >
                 <RefreshCw size={8} /> REGENERATE
               </button>
+              )}
             </HStack>
           </div>
         </VStack>

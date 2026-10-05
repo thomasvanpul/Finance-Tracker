@@ -132,6 +132,37 @@ export function StreamingCut({ provider, reason }: { provider: string; reason: s
   );
 }
 
+// ── Truncated (the answer hit the token cap) ──────────────────────────────
+// Not a failure: the provider finished cleanly with finish_reason
+// "length", so the text above stops wherever the budget ran out —
+// sometimes mid-clause (audit A4, 5 Oct 2026). Say so, and offer the
+// one honest remedy: ask the model to carry on from there. onContinue
+// is absent when continuing is not possible (not the last answer, a
+// reply in flight, or AI switched off).
+export function StreamingTruncated({ onContinue }: { onContinue?: () => void }) {
+  return (
+    <div style={{
+      marginTop: 8,
+      paddingTop: 6,
+      borderTop: "1px solid var(--ft-border)",
+    }}>
+      <HStack gap={6} align="baseline" wrap>
+        <MonoLabel size={9} color="var(--ft-amber)" letterSpacing="0.1em">ANSWER CUT SHORT</MonoLabel>
+        <Words size={9} color="var(--ft-dim)">· it reached the length limit before it finished</Words>
+        {onContinue && (
+          <button
+            type="button"
+            onClick={onContinue}
+            style={{ marginLeft: "auto", fontFamily: "var(--font-sans)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-accent)", padding: "3px 8px", cursor: "pointer" }}
+          >
+            Continue ▸
+          </button>
+        )}
+      </HStack>
+    </div>
+  );
+}
+
 // ── Error (chain exhausted or client failure) ─────────────────────────────
 // Red, honest, actionable. Never generic "something went wrong".
 export function StreamingError({ message }: { message: string }) {

@@ -52,7 +52,10 @@ export type ChatServerEvent =
   | { type: "attempt"; provider: string; attemptIndex: number }
   | { type: "fallthrough"; from: string; to: string; reason: string }
   | { type: "token"; text: string }
-  | { type: "done"; servingProvider: string; reducedCapacity: boolean; triedProviders: string[] }
+  // finishReason "length": the answer hit the server's token cap and
+  // stopped wherever the budget ran out. Optional — a server older than
+  // 5 Oct 2026 does not send it.
+  | { type: "done"; servingProvider: string; reducedCapacity: boolean; triedProviders: string[]; finishReason?: string | null }
   | { type: "cut"; servingProvider: string; reason: string; triedProviders: string[] }
   | { type: "error"; message: string; triedProviders?: string[] };
 

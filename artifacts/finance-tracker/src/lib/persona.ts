@@ -169,7 +169,7 @@ export const PERSONAS: Persona[] = [
     id: "full",
     code: "ANL·05",
     label: "Full Analyst",
-    tagline: "The complete Bloomberg experience",
+    tagline: "Every page and every tool, nothing hidden",
     description:
       "Every page, every tool, every widget. For power users who want the full terminal with nothing hidden.",
     defaultPage: "/",

@@ -6,6 +6,8 @@ import { formatBaseMoney } from "@/lib/utils";
 import { PERSONAS, type PersonaId } from "@/lib/persona";
 import { useActivePersona } from "@/lib/persona-hook";
 import { useMarketDataEnabled } from "@/lib/market-visibility";
+import { useAiEnabled } from "@/lib/use-ai-enabled";
+import { coachIntro } from "@/lib/ai-coach-copy";
 import { PageHeader } from "@/components/page-header";
 import { HStack, MonoLabel, PanelBox, PanelHeader, Text, VStack } from "@/components/primitives";
 
@@ -26,8 +28,15 @@ interface Message {
   servingProvider?: string | null;
   reducedCapacity?: boolean;
   cutReason?: string;
+  // The provider finished with finish_reason "length": the answer ran
+  // out of token budget, so the text ends wherever the budget did.
+  truncated?: boolean;
   errorMessage?: string;
 }
+
+// Sent by the Continue button under a truncated answer. The model sees
+// the cut answer in the history, so it can pick up where it stopped.
+const CONTINUE_PROMPT = "Continue from exactly where your last answer stopped. Do not repeat what you already said.";
 
 // ── API ───────────────────────────────────────────────────────────────────────
 // Shared streaming client. This page used to have its own sendChat +
@@ -41,9 +50,11 @@ import {
   StreamingProgress,
   StreamingReducedCapacity,
   StreamingCut,
+  StreamingTruncated,
   StreamingError,
   QueuedPromptChip,
 } from "@/components/ai-coach/streaming-meta";
+import { AiOffNotice } from "@/components/ai-coach/ai-off-notice";
 
 // (buildSpendingContext was here — a client-side assembler that shipped
 // the user's finances up in the request body. Removed 2026-08-23 along
@@ -171,7 +182,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
     });
 }
 
-function MessageBubble({ msg }: { msg: Message; index: number }) {
+function MessageBubble({ msg, onContinue }: { msg: Message; index: number; onContinue?: () => void }) {
   const isUser = msg.role === "user";
   return (
     <div style={{
@@ -212,6 +223,9 @@ function MessageBubble({ msg }: { msg: Message; index: number }) {
 
         {msg.status === "done" && msg.reducedCapacity && msg.servingProvider && (
           <StreamingReducedCapacity provider={msg.servingProvider} />
+        )}
+        {msg.status === "done" && msg.truncated && (
+          <StreamingTruncated onContinue={onContinue} />
         )}
         {msg.status === "cut" && msg.servingProvider && (
           <StreamingCut provider={msg.servingProvider} reason={msg.cutReason ?? "unknown"} />
@@ -388,6 +402,11 @@ export default function AiCoach() {
   const [pending, setPending] = useState<string[]>([]);
   const streaming = useRef(false);
   const [aiAvailable, setAiAvailable] = useState<boolean | null>(null);
+  // The account's AI switch (Settings → AI Coach). Distinct from
+  // aiAvailable, which is whether the SERVER has a provider answering:
+  // with the switch off, the page shows the off state before anything is
+  // clicked, and nothing on it looks live (audit A2/A3).
+  const aiOn = useAiEnabled();
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -420,7 +439,7 @@ export default function AiCoach() {
       else if (event.type === "attempt") m.caption = `Asking ${event.provider}`;
       else if (event.type === "fallthrough") m.caption = `${event.from} failed → trying ${event.to}`;
       else if (event.type === "token") { m.text = (m.text ?? "") + event.text; m.caption = undefined; }
-      else if (event.type === "done") { m.status = "done"; m.servingProvider = event.servingProvider; m.reducedCapacity = event.reducedCapacity; m.caption = undefined; }
+      else if (event.type === "done") { m.status = "done"; m.servingProvider = event.servingProvider; m.reducedCapacity = event.reducedCapacity; m.truncated = event.finishReason === "length"; m.caption = undefined; }
       else if (event.type === "cut") { m.status = "cut"; m.servingProvider = event.servingProvider; m.cutReason = event.reason; m.caption = undefined; }
       else if (event.type === "error") { m.status = "error"; m.errorMessage = event.message; m.caption = undefined; }
       next[idx] = m;
@@ -454,14 +473,14 @@ export default function AiCoach() {
 
   const handleSend = useCallback((text?: string) => {
     const msg = (text ?? input).trim();
-    if (!msg) return;
+    if (!msg || !aiOn) return;
     setInput("");
     if (streaming.current) {
       setPending((q) => [...q, msg]);
       return;
     }
     void runPrompt(msg, messages);
-  }, [input, messages, runPrompt]);
+  }, [input, messages, runPrompt, aiOn]);
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -614,14 +633,20 @@ export default function AiCoach() {
         }
       />
 
-      {/* AI status banners */}
-      {aiAvailable === null && (
+      {/* AI status banners. With the switch off, the provider's health is
+          beside the point: the off notice is the one thing to say. */}
+      {!aiOn && !isEmpty && (
+        <div style={{ marginBottom: 12 }}>
+          <AiOffNotice what="The coach cannot answer while AI is off. The conversation below is kept from earlier in this session." />
+        </div>
+      )}
+      {aiOn && aiAvailable === null && (
         <div style={{ marginBottom: 12, padding: "8px 12px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontSize: 10, color: "var(--ft-dim)", fontFamily: "var(--font-sans)", display: "flex", alignItems: "center", gap: 8, letterSpacing: "0.04em" }}>
           <Loader2 size={10} style={{ animation: "spin 1s linear infinite", flexShrink: 0 }} />
           Checking AI availability…
         </div>
       )}
-      {aiAvailable === false && (
+      {aiOn && aiAvailable === false && (
         <div style={{ marginBottom: 12, padding: "10px 14px", background: "var(--ft-surface)", border: "1px solid var(--ft-border)", fontFamily: "var(--font-sans)", display: "flex", alignItems: "baseline", gap: 8 }}>
           <MonoLabel as="span" size={9} color="var(--ft-red)" letterSpacing="0.14em">AI OFFLINE</MonoLabel>
           <span style={{ fontSize: 11, color: "var(--ft-muted)", lineHeight: 1.5 }}>
@@ -632,7 +657,13 @@ export default function AiCoach() {
 
       {/* Chat area */}
       <div style={{ flex: 1, overflowY: "auto", padding: "0 0 8px", display: "flex", flexDirection: "column" }}>
-        {isEmpty ? (
+        {isEmpty && !aiOn ? (
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingBottom: 40 }}>
+            <div style={{ width: "100%", maxWidth: 480 }}>
+              <AiOffNotice what="The coach answers questions about your accounts, budgets, goals and investments. It needs AI on to do that." />
+            </div>
+          </div>
+        ) : isEmpty ? (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 28, paddingBottom: 40 }}>
 
             {/* Hero section */}
@@ -651,10 +682,7 @@ export default function AiCoach() {
                 Your AI Financial Coach
               </div>
               <Text as="div" size={10} color="var(--ft-dim)" lineHeight={1.7}>
-                {primaryPersona
-                  ? `Focused on ${primaryPersona.tagline.toLowerCase()}. I have full access to your spending, budgets, investments, and goals.`
-                  : "Ask anything about your finances. I have access to your current month's spending, budgets, and account balances."
-                }
+                {coachIntro(primaryPersona)}
               </Text>
             </div>
 
@@ -812,6 +840,7 @@ export default function AiCoach() {
                 key={i}
                 msg={msg}
                 index={messages.slice(0, i).filter(m => m.role === "user").length}
+                onContinue={i === messages.length - 1 && aiOn && pending.length === 0 ? () => handleSend(CONTINUE_PROMPT) : undefined}
               />
             ))}
             {/* Queued follow-ups typed while a stream is in flight — shared visual. */}
@@ -841,9 +870,9 @@ export default function AiCoach() {
         {!isEmpty && (
           <HStack align="center" justify="between" marginBottom={8}>
             <HStack gap={6} align="center">
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: aiAvailable ? "var(--ft-green)" : "var(--ft-dim)" }} />
+              <div style={{ width: 6, height: 6, borderRadius: "50%", background: aiOn && aiAvailable ? "var(--ft-green)" : "var(--ft-dim)" }} />
               <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
-                {aiAvailable ? "AI ONLINE" : "AI OFFLINE"}
+                {!aiOn ? "AI OFF" : aiAvailable ? "AI ONLINE" : "AI OFFLINE"}
               </Text>
             </HStack>
             <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.04em">
@@ -857,8 +886,8 @@ export default function AiCoach() {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
-            placeholder={isStreaming ? "Ask a follow-up (queued while replying)…" : isEmpty ? "Ask anything about your finances…" : "Follow-up question…"}
-            disabled={aiAvailable === false}
+            placeholder={!aiOn ? "AI is off. Turn it on in Settings → AI Coach." : isStreaming ? "Ask a follow-up (queued while replying)…" : isEmpty ? "Ask anything about your finances…" : "Follow-up question…"}
+            disabled={!aiOn || aiAvailable === false}
             rows={2}
             style={{
               flex: 1,
@@ -878,7 +907,7 @@ export default function AiCoach() {
           <button
             type="button"
             onClick={() => handleSend()}
-            disabled={!input.trim() || aiAvailable === false}
+            disabled={!aiOn || !input.trim() || aiAvailable === false}
             title={isStreaming ? "Queue follow-up (Enter)" : "Send (Enter)"}
             style={{
               width: 40,
