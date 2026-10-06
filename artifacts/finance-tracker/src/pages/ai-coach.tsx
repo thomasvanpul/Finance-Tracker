@@ -38,6 +38,9 @@ interface Message {
 // the cut answer in the history, so it can pick up where it stopped.
 const CONTINUE_PROMPT = "Continue from exactly where your last answer stopped. Do not repeat what you already said.";
 
+// why fixed: steps on the app's spacing scale, which lives as literals (docs/STYLE-INVENTORY.md), not as config.
+const OFF_LAYOUT = { bannerGap: 12, emptyLift: 40, noticeWidth: 480, dot: 6 } as const;
+
 // ── API ───────────────────────────────────────────────────────────────────────
 // Shared streaming client. This page used to have its own sendChat +
 // client-side buildSpendingContext — the second copy of the exact
@@ -636,7 +639,7 @@ export default function AiCoach() {
       {/* AI status banners. With the switch off, the provider's health is
           beside the point: the off notice is the one thing to say. */}
       {!aiOn && !isEmpty && (
-        <div style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: OFF_LAYOUT.bannerGap }}>
           <AiOffNotice what="The coach cannot answer while AI is off. The conversation below is kept from earlier in this session." />
         </div>
       )}
@@ -658,8 +661,8 @@ export default function AiCoach() {
       {/* Chat area */}
       <div style={{ flex: 1, overflowY: "auto", padding: "0 0 8px", display: "flex", flexDirection: "column" }}>
         {isEmpty && !aiOn ? (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingBottom: 40 }}>
-            <div style={{ width: "100%", maxWidth: 480 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingBottom: OFF_LAYOUT.emptyLift }}>
+            <div style={{ width: "100%", maxWidth: OFF_LAYOUT.noticeWidth }}>
               <AiOffNotice what="The coach answers questions about your accounts, budgets, goals and investments. It needs AI on to do that." />
             </div>
           </div>
@@ -870,7 +873,7 @@ export default function AiCoach() {
         {!isEmpty && (
           <HStack align="center" justify="between" marginBottom={8}>
             <HStack gap={6} align="center">
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: aiOn && aiAvailable ? "var(--ft-green)" : "var(--ft-dim)" }} />
+              <div style={{ width: OFF_LAYOUT.dot, height: OFF_LAYOUT.dot, borderRadius: "50%", background: aiOn && aiAvailable ? "var(--ft-green)" : "var(--ft-dim)" }} />
               <Text as="span" mono size={8} color="var(--ft-dim)" letterSpacing="0.06em">
                 {!aiOn ? "AI OFF" : aiAvailable ? "AI ONLINE" : "AI OFFLINE"}
               </Text>

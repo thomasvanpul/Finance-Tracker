@@ -127,10 +127,11 @@ The USER PORTFOLIO CONTEXT block below contains the user's own data as of the ti
 // Completion budget for one coach answer, reasoning tokens included.
 // Measured 5 Oct 2026 on the seed account (gpt-oss-120b on Groq,
 // reasoning_effort low, the page's 30 suggested questions, 38 answers that
-// all finished "stop" when uncapped): p50 691, p95 1365, max 1519 (1549 in an earlier partial run), of which
-// reasoning was p50 45, max 300. At 1024, 10 of 38 were cut mid-sentence
+// all finished "stop" when uncapped): p50 691, p95 1365, max 1519 (1549 in an earlier partial run),
+// of which reasoning was p50 45, max 300. At 1024, 10 of 38 were cut mid-sentence
 // (audit A4). 2048 clears the measured max by about a third; an answer that
 // still runs out reports finishReason "length" and the page says so.
+// why fixed: a measured budget, not a tunable; change it only with a new measurement.
 export const CHAT_MAX_TOKENS = 2048;
 
 // requireAuth (app.ts) writes session.user.id to req.userId. Every

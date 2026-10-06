@@ -24,6 +24,13 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { FRONTEND, API, signInSeedUser, openAccountPrefs, assertTheme, assertRoute, seedCacheScript } from "./account-prefs.js";
 
+// why fixed: capture parameters, not config. 1440 is the width the task asks for; the
+// waits match the other capture scripts, and a live answer gets two minutes.
+const VIEWPORT = { width: 1440, height: 900 };
+const RENDER_WAIT_MS = 15_000; // why fixed: same render wait as the other capture scripts
+const ANSWER_WAIT_MS = 120_000; // why fixed: a live answer at the 2048 cap, with retries, can take this long
+const POLL_MS = 500; // why fixed: polling interval, no behaviour depends on it
+
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "../../.review/shots/t2");
 const AI_KEY = "nr-ai-enabled";
 // With ft-persona seeded to the server's own value, the gate never calls
@@ -57,7 +64,7 @@ async function textVisible(page: Page, text: string): Promise<boolean> {
 const browser = await chromium.launch();
 try {
   for (const theme of ["void", "arctic"] as const) {
-    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const ctx = await browser.newContext({ viewport: VIEWPORT });
     await ctx.route(`${FRONTEND}/api/**`, async (route) => {
       try {
         const req = route.request();
@@ -67,7 +74,7 @@ try {
           headers: { ...req.headers(), origin: FRONTEND, cookie: cs.map((c) => `${c.name}=${c.value}`).join("; ") },
           data: req.postDataBuffer() ?? undefined,
           maxRedirects: 0,
-          timeout: 120_000,
+          timeout: ANSWER_WAIT_MS,
         });
         await route.fulfill({
           status: r.status(),
@@ -108,7 +115,7 @@ try {
         await page.goto(`${FRONTEND}/ai-coach`, { waitUntil: "networkidle" });
         await assertRoute(page, "/ai-coach");
         await assertTheme(page, theme);
-        await page.getByText(OFF_TEXT).first().waitFor({ timeout: 15_000 }).catch(async (e: unknown) => {
+        await page.getByText(OFF_TEXT).first().waitFor({ timeout: RENDER_WAIT_MS }).catch(async (e: unknown) => {
           await page.screenshot({ path: join(OUT, `FAILED-coach-ai-off_${theme}.png`) });
           throw e;
         });
@@ -121,7 +128,7 @@ try {
 
         await page.goto(`${FRONTEND}/briefing`, { waitUntil: "networkidle" });
         await assertRoute(page, "/briefing");
-        await page.getByText(OFF_TEXT).first().waitFor({ timeout: 15_000 });
+        await page.getByText(OFF_TEXT).first().waitFor({ timeout: RENDER_WAIT_MS });
         check((await page.getByRole("button", { name: /generate|regenerate/i }).count()) === 0, `${theme} briefing AI off: no Generate action`);
         await page.screenshot({ path: join(OUT, `briefing-ai-off_${theme}.png`) });
         await page.close();
@@ -135,7 +142,7 @@ try {
           try { if (!sessionStorage.getItem("t2-seeded")) { sessionStorage.removeItem("nr-ai-coach-msgs"); sessionStorage.setItem("t2-seeded", "1"); } } catch (e) {}`);
         await page.goto(`${FRONTEND}/ai-coach`, { waitUntil: "networkidle" });
         await assertTheme(page, theme);
-        await page.getByText("Common questions").first().waitFor({ timeout: 15_000 });
+        await page.getByText("Common questions").first().waitFor({ timeout: RENDER_WAIT_MS });
         check(!(await textVisible(page, OFF_TEXT)), `${theme} coach AI on: no off notice`);
         check(await textVisible(page, A1_EXPECTED), `${theme} coach AI on: A1 line reads "${A1_EXPECTED}…"`);
         check(!(await textVisible(page, "bloomberg")) && !(await textVisible(page, "Bloomberg")), `${theme} coach AI on: no Bloomberg`);
@@ -146,9 +153,9 @@ try {
         await page.waitForFunction(
           () => !(document.querySelector("textarea")?.getAttribute("placeholder") ?? "").includes("queued"),
           undefined,
-          { timeout: 120_000, polling: 500 },
+          { timeout: ANSWER_WAIT_MS, polling: POLL_MS },
         );
-        await page.waitForTimeout(500);
+        await page.waitForTimeout(POLL_MS);
         check(await textVisible(page, "AI ONLINE"), `${theme} coach AI on: badge reads AI ONLINE`);
         const cut = await textVisible(page, "ANSWER CUT SHORT");
         const errored = await textVisible(page, "AI temporarily unavailable");
@@ -163,7 +170,7 @@ try {
           try { sessionStorage.setItem("nr-ai-coach-msgs", ${JSON.stringify(JSON.stringify(CUT_FIXTURE))}); } catch (e) {}`);
         await page.goto(`${FRONTEND}/ai-coach`, { waitUntil: "networkidle" });
         await assertTheme(page, theme);
-        await page.getByText("ANSWER CUT SHORT").first().waitFor({ timeout: 15_000 });
+        await page.getByText("ANSWER CUT SHORT").first().waitFor({ timeout: RENDER_WAIT_MS });
         check((await page.getByRole("button", { name: /Continue/ }).count()) === 1, `${theme} cut fixture: one Continue action`);
         await page.screenshot({ path: join(OUT, `coach-cut-FIXTURE_${theme}.png`) });
         await page.close();

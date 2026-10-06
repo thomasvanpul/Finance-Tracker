@@ -93,8 +93,8 @@ export function StreamingChainFallthrough({ from, to }: { from: string; to: stri
 export function StreamingReducedCapacity({ provider }: { provider: string }) {
   return (
     <div style={{
-      marginTop: 8,
-      paddingTop: 6,
+      marginTop: CUT.above,
+      paddingTop: CUT.inset,
       borderTop: "1px solid var(--ft-border)",
     }}>
       <HStack gap={6} align="baseline">
@@ -115,8 +115,8 @@ export function StreamingCut({ provider, reason }: { provider: string; reason: s
   // via title attribute); users see the plain-language line only.
   return (
     <div style={{
-      marginTop: 8,
-      paddingTop: 6,
+      marginTop: CUT.above,
+      paddingTop: CUT.inset,
       borderTop: "1px solid var(--ft-border)",
     }} title={`Provider ${provider}: ${reason}`}>
       <VStack gap={2}>
@@ -139,21 +139,24 @@ export function StreamingCut({ provider, reason }: { provider: string; reason: s
 // one honest remedy: ask the model to carry on from there. onContinue
 // is absent when continuing is not possible (not the last answer, a
 // reply in flight, or AI switched off).
+// why fixed: steps on the app's type ladder and spacing scale, which live as literals (docs/STYLE-INVENTORY.md), not as config.
+const CUT = { above: 8, inset: 6, gap: 6, size: 9, weight: 700 } as const;
+
 export function StreamingTruncated({ onContinue }: { onContinue?: () => void }) {
   return (
     <div style={{
-      marginTop: 8,
-      paddingTop: 6,
+      marginTop: CUT.above,
+      paddingTop: CUT.inset,
       borderTop: "1px solid var(--ft-border)",
     }}>
-      <HStack gap={6} align="baseline" wrap>
-        <MonoLabel size={9} color="var(--ft-amber)" letterSpacing="0.1em">ANSWER CUT SHORT</MonoLabel>
-        <Words size={9} color="var(--ft-dim)">· it reached the length limit before it finished</Words>
+      <HStack gap={CUT.gap} align="baseline" wrap>
+        <MonoLabel size={CUT.size} color="var(--ft-amber)" letterSpacing="0.1em">ANSWER CUT SHORT</MonoLabel>
+        <Words size={CUT.size} color="var(--ft-dim)">· it reached the length limit before it finished</Words>
         {onContinue && (
           <button
             type="button"
             onClick={onContinue}
-            style={{ marginLeft: "auto", fontFamily: "var(--font-sans)", fontSize: 9, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-accent)", padding: "3px 8px", cursor: "pointer" }}
+            style={{ marginLeft: "auto", fontFamily: "var(--font-sans)", fontSize: CUT.size, fontWeight: CUT.weight, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ft-accent)", background: "none", border: "1px solid var(--ft-accent)", padding: "3px 8px", cursor: "pointer" }}
           >
             Continue ▸
           </button>
