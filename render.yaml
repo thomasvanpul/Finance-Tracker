@@ -2,7 +2,7 @@ services:
   - type: web
     name: numeris-api
     runtime: node
-    plan: free
+    plan: starter
     region: frankfurt
     rootDir: .
     # Do NOT use `corepack enable` — it symlinks into /usr/bin, which is
